@@ -34,6 +34,29 @@ archives:
       - goos: windows
         formats: [zip]
 
+dockers:
+  - image_templates:
+      - "{{ .Env.FRONTEND_IMAGE }}:{{ .Tag }}-amd64"
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+    dockerfile: frontend.goreleaser.Dockerfile
+  - image_templates:
+      - "{{ .Env.FRONTEND_IMAGE }}:{{ .Tag }}-arm64"
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+    goarch: arm64
+    dockerfile: frontend.goreleaser.Dockerfile
+
+docker_manifests:
+  - name_template: "{{ .Env.FRONTEND_IMAGE }}:{{ .Tag }}"
+    image_templates:
+      - "{{ .Env.FRONTEND_IMAGE }}:{{ .Tag }}-amd64"
+      - "{{ .Env.FRONTEND_IMAGE }}:{{ .Tag }}-arm64"
+
 changelog:
   use: github-native
 

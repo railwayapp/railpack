@@ -47,7 +47,7 @@ docker build -t railpack-frontend:latest \
   --label "org.opencontainers.image.source=https://github.com/railwayapp/railpack" \
   --label "org.opencontainers.image.description=BuildKit frontend for Railpack" \
   --label "org.opencontainers.image.licenses=MIT" \
-  -f frontend.Dockerfile .
+  -f Dockerfiles/frontend.Dockerfile .
 
 docker tag railpack-frontend:latest ghcr.io/railwayapp/railpack:railpack-frontend
 docker push ghcr.io/railwayapp/railpack:railpack-frontend
