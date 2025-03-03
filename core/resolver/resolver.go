@@ -1,6 +1,7 @@
 package resolver
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -18,9 +19,10 @@ type Resolver struct {
 }
 
 type RequestedPackage struct {
-	Name    string
-	Version string
-	Source  string
+	Name               string
+	Version            string
+	Source             string
+	IsVersionAvailable func(version string) bool
 }
 
 type ResolvedPackage struct {
@@ -66,10 +68,33 @@ func (r *Resolver) ResolvePackages() (map[string]*ResolvedPackage, error) {
 
 	for name, pkg := range r.packages {
 		fuzzyVersion := resolveToFuzzyVersion(pkg.Version)
-		latestVersion, err := r.mise.GetLatestVersion(name, fuzzyVersion)
 
-		if err != nil {
-			return nil, err
+		var latestVersion string
+
+		// If there is a custom version validator, we get possible versions and pick the latest one that matches
+		if pkg.IsVersionAvailable != nil {
+			versions, err := r.mise.GetAllVersions(name, fuzzyVersion)
+			if err != nil {
+				return nil, err
+			}
+
+			for i := len(versions) - 1; i >= 0; i-- {
+				if pkg.IsVersionAvailable(versions[i]) {
+					latestVersion = versions[i]
+					break
+				}
+			}
+
+			if latestVersion == "" {
+				return nil, fmt.Errorf("no version available for %s %s", name, pkg.Version)
+			}
+		} else {
+			// Otherwise, we just get the latest version
+			var err error
+			latestVersion, err = r.mise.GetLatestVersion(name, fuzzyVersion)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		log.Debugf("Resolved package version %s %s to %s from %s", name, pkg.Version, latestVersion, pkg.Source)
@@ -111,4 +136,8 @@ func (r *Resolver) Version(ref PackageRef, version, source string) PackageRef {
 
 func (r *Resolver) SetPreviousVersion(name, version string) {
 	r.previousVersions[name] = version
+}
+
+func (r *Resolver) SetVersionAvailable(ref PackageRef, isVersionAvailable func(version string) bool) {
+	r.packages[ref.Name].IsVersionAvailable = isVersionAvailable
 }

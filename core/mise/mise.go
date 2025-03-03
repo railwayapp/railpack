@@ -48,7 +48,7 @@ func (m *Mise) GetLatestVersion(pkg, version string) (string, error) {
 	defer unlock()
 
 	query := fmt.Sprintf("%s@%s", pkg, strings.TrimSpace(version))
-	output, err := m.runCmd("latest", "--verbose", query)
+	output, err := m.runCmd("latest", query)
 	if err != nil {
 		return "", err
 	}
@@ -59,6 +59,36 @@ func (m *Mise) GetLatestVersion(pkg, version string) (string, error) {
 	}
 
 	return latestVersion, nil
+}
+
+func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
+	_, unlock, err := m.createAndLock(pkg)
+	if err != nil {
+		return nil, err
+	}
+	defer unlock()
+
+	query := fmt.Sprintf("%s@%s", pkg, strings.TrimSpace(version))
+	output, err := m.runCmd("ls-remote", query)
+	if err != nil {
+		return nil, err
+	}
+
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	var versions []string
+	for _, line := range lines {
+		version := strings.TrimSpace(line)
+		if version == "" || strings.Contains(version, "RC") {
+			continue
+		}
+		versions = append(versions, version)
+	}
+
+	if len(versions) == 0 {
+		return nil, fmt.Errorf(ErrMiseGetLatestVersion, version, pkg)
+	}
+
+	return versions, nil
 }
 
 // runCmd runs a mise command with the given arguments

@@ -92,6 +92,7 @@ func (b *MiseStepBuilder) Build(options *BuildStepOptions) (*plan.Step, error) {
 	}
 
 	// Setup apt commands
+	// TODO: This should be a separate step
 	if len(b.SupportingAptPackages) > 0 {
 		step.AddCommands([]plan.Command{
 			options.NewAptInstallCommand(b.SupportingAptPackages),

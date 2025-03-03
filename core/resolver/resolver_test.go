@@ -39,10 +39,16 @@ func TestPackageResolver(t *testing.T) {
 	resolver.Version(python, "3.12", "PYTHON_VERSION environment variable")
 	resolver.Version(python, "3.13", ".python-version")
 
+	// Set up PHP
+	php := resolver.Default("php", "7.3")
+	resolver.SetVersionAvailable(php, func(version string) bool {
+		return version == "7.3.27"
+	})
+
 	// Resolve all packages
 	resolvedPackages, err := resolver.ResolvePackages()
 	require.NoError(t, err)
-	assert.Equal(t, 4, len(resolvedPackages))
+	assert.Equal(t, 5, len(resolvedPackages))
 
 	// Check Node.js resolution
 	nodeResolved := resolvedPackages["node"]
@@ -65,6 +71,12 @@ func TestPackageResolver(t *testing.T) {
 	require.NotNil(t, pythonResolved)
 	require.NotNil(t, pythonResolved.ResolvedVersion)
 	assert.Contains(t, *pythonResolved.ResolvedVersion, "3.13")
+
+	// Check PHP resolution
+	phpResolved := resolvedPackages["php"]
+	require.NotNil(t, phpResolved)
+	require.NotNil(t, phpResolved.ResolvedVersion)
+	assert.Contains(t, *phpResolved.ResolvedVersion, "7.3.27")
 }
 
 func TestPackageResolverWithPreviousVersions(t *testing.T) {
@@ -90,4 +102,17 @@ func TestPackageResolverWithPreviousVersions(t *testing.T) {
 	pkg = resolver.Get("go")
 	assert.Equal(t, "1.23", pkg.Version)
 	assert.Equal(t, DefaultSource, pkg.Source)
+}
+
+func TestResolvingPackagesNotAvailable(t *testing.T) {
+	resolver, err := NewResolver(mise.TestInstallDir)
+	require.NoError(t, err)
+
+	node := resolver.Default("node", "18.20")
+	resolver.SetVersionAvailable(node, func(version string) bool {
+		return version == "100"
+	})
+
+	_, err = resolver.ResolvePackages()
+	require.Error(t, err)
 }
