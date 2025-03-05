@@ -1,0 +1,13 @@
+arguments=--init-script /var/folders/4n/_jlxfcwd2tv0vmt7m5j50fjm0000gp/T/db3b08fc4a9ef609cb16b96b200fa13e563f396e9bb1ed0905fdab7bc3bc513b.gradle
+auto.sync=false
+build.scans.enabled=false
+connection.gradle.distribution=GRADLE_DISTRIBUTION(WRAPPER)
+connection.project.dir=
+eclipse.preferences.version=1
+gradle.user.home=
+java.home=/Users/aleks/Library/Java/JavaVirtualMachines/openjdk-22.0.2/Contents/Home
+jvm.arguments=
+offline.mode=false
+override.workspace.settings=true
+show.console.view=true
+show.executions.view=true

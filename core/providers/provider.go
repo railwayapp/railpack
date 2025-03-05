@@ -3,6 +3,7 @@ package providers
 import (
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/providers/golang"
+	"github.com/railwayapp/railpack/core/providers/java"
 	"github.com/railwayapp/railpack/core/providers/node"
 	"github.com/railwayapp/railpack/core/providers/php"
 	"github.com/railwayapp/railpack/core/providers/python"
@@ -26,6 +27,7 @@ func GetLanguageProviders() []Provider {
 		&golang.GoProvider{},
 		&staticfile.StaticfileProvider{},
 		&shell.ShellProvider{},
+		&java.JavaProvider{},
 	}
 }
 
