@@ -29,11 +29,11 @@ type MiseStepBuilder struct {
 	env                   *a.Environment
 }
 
-func (c *GenerateContext) newMiseStepBuilder() *MiseStepBuilder {
+func (c *GenerateContext) NewMiseStepBuilder(displayName string) *MiseStepBuilder {
 	supportingAptPackages := c.Config.BuildAptPackages
 
 	step := &MiseStepBuilder{
-		DisplayName:           MisePackageStepName,
+		DisplayName:           displayName,
 		Resolver:              c.Resolver,
 		MisePackages:          []*resolver.PackageRef{},
 		SupportingAptPackages: append(supportingAptPackages, c.Config.BuildAptPackages...),
@@ -45,6 +45,12 @@ func (c *GenerateContext) newMiseStepBuilder() *MiseStepBuilder {
 	}
 
 	c.Steps = append(c.Steps, step)
+
+	return step
+}
+
+func (c *GenerateContext) newMiseStepBuilder() *MiseStepBuilder {
+	step := c.NewMiseStepBuilder(MisePackageStepName)
 
 	return step
 }
