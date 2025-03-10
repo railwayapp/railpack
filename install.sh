@@ -81,7 +81,7 @@ get_tmpfile() {
   local suffix
   suffix="$1"
   if has mktemp; then
-    printf "%s%s.%s.%s" "$(mktemp)" "-railpack" "${RANDOM}" "${suffix}"
+    printf "%s%s.%s.%s" "$(mktemp)" "-railpack" "$(date +%s)" "${suffix}"
   else
     printf "/tmp/railpack.%s" "${suffix}"
   fi
