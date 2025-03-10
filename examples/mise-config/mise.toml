@@ -1,4 +1,4 @@
 [tools]
 bun = "latest"
-python = "latest"
+python = "3.13"
 go = "latest"
