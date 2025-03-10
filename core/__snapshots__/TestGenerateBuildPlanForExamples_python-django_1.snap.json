@@ -34,12 +34,6 @@
      "."
     ],
     "step": "build"
-   },
-   {
-    "include": [
-     "."
-    ],
-    "local": true
    }
   ],
   "startCommand": "python manage.py migrate \u0026\u0026 gunicorn mysite.wsgi:application",
@@ -150,6 +144,12 @@
    }
   },
   {
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    }
+   ],
    "inputs": [
     {
      "step": "install"

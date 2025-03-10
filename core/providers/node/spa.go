@@ -94,11 +94,11 @@ func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.
 		plan.NewStepInput(installCaddyStep.Name(), plan.InputOptions{
 			Include: installCaddyStep.GetOutputPaths(),
 		}),
-		plan.NewStepInput(build.Name(), plan.InputOptions{
-			Include: []string{outputDir},
-		}),
 		plan.NewStepInput(caddy.Name(), plan.InputOptions{
 			Include: []string{DefaultCaddyfilePath},
+		}),
+		plan.NewStepInput(build.Name(), plan.InputOptions{
+			Include: []string{outputDir},
 		}),
 	}
 

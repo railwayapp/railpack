@@ -34,12 +34,6 @@
      "."
     ],
     "step": "build"
-   },
-   {
-    "include": [
-     "."
-    ],
-    "local": true
    }
   ],
   "startCommand": "python main.py",
@@ -134,6 +128,12 @@
    }
   },
   {
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    }
+   ],
    "inputs": [
     {
      "step": "install"

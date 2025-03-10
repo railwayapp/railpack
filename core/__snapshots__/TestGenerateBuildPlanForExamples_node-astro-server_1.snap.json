@@ -30,15 +30,19 @@
    },
    {
     "include": [
-     "."
+     "/app/node_modules"
     ],
     "step": "build"
    },
    {
+    "exclude": [
+     "node_modules",
+     ".yarn"
+    ],
     "include": [
      "."
     ],
-    "local": true
+    "step": "build"
    }
   ],
   "startCommand": "pnpm run start",

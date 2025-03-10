@@ -26,15 +26,19 @@
    },
    {
     "include": [
-     "."
+     "/app/node_modules"
     ],
     "step": "build"
    },
    {
+    "exclude": [
+     "node_modules",
+     ".yarn"
+    ],
     "include": [
      "."
     ],
-    "local": true
+    "step": "build"
    }
   ],
   "startCommand": "npm run start",
@@ -124,6 +128,12 @@
   {
    "caches": [
     "node-modules"
+   ],
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    }
    ],
    "inputs": [
     {

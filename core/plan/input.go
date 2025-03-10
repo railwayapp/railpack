@@ -59,6 +59,28 @@ func (i *Input) String() string {
 	return string(bytes)
 }
 
+func (i *Input) DisplayName() string {
+	include := strings.Join(i.Include, ", ")
+
+	if i.Local {
+		return fmt.Sprintf("local %s", include)
+	}
+
+	if i.Spread {
+		return fmt.Sprintf("spread %s", include)
+	}
+
+	if i.Step != "" {
+		return fmt.Sprintf("$%s", i.Step)
+	}
+
+	if i.Image != "" {
+		return i.Image
+	}
+
+	return fmt.Sprintf("input %s", include)
+}
+
 func (i Input) IsSpread() bool {
 	return i.Spread
 }

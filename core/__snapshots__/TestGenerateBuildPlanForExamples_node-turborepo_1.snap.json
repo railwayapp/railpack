@@ -34,16 +34,20 @@
    },
    {
     "include": [
-     ".",
-     "/root/.cache"
+     "/app/node_modules"
     ],
     "step": "build"
    },
    {
-    "include": [
-     "."
+    "exclude": [
+     "node_modules",
+     ".yarn"
     ],
-    "local": true
+    "include": [
+     ".",
+     "/opt/corepack"
+    ],
+    "step": "build"
    }
   ],
   "variables": {
@@ -148,6 +152,7 @@
    "name": "install",
    "variables": {
     "CI": "true",
+    "COREPACK_HOME": "/opt/corepack",
     "NODE_ENV": "production",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",

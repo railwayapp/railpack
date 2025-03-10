@@ -22,15 +22,15 @@
    },
    {
     "include": [
-     "dist/node-angular/browser"
-    ],
-    "step": "build"
-   },
-   {
-    "include": [
      "/Caddyfile"
     ],
     "step": "caddy"
+   },
+   {
+    "include": [
+     "dist/node-angular/browser"
+    ],
+    "step": "build"
    }
   ],
   "startCommand": "caddy run --config /Caddyfile --adapter caddyfile 2\u003e\u00261",

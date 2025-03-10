@@ -34,12 +34,6 @@
      "."
     ],
     "step": "build"
-   },
-   {
-    "include": [
-     "."
-    ],
-    "local": true
    }
   ],
   "startCommand": "gunicorn --bind 0.0.0.0:3333 main:app",
@@ -150,6 +144,12 @@
    }
   },
   {
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    }
+   ],
    "inputs": [
     {
      "step": "install"

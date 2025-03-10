@@ -22,15 +22,15 @@
    },
    {
     "include": [
-     "build"
-    ],
-    "step": "build"
-   },
-   {
-    "include": [
      "/Caddyfile"
     ],
     "step": "caddy"
+   },
+   {
+    "include": [
+     "build"
+    ],
+    "step": "build"
    }
   ],
   "startCommand": "caddy run --config /Caddyfile --adapter caddyfile 2\u003e\u00261",

@@ -44,29 +44,17 @@ func (p *GoProvider) Plan(ctx *generate.GenerateContext) error {
 
 	ctx.Deploy.StartCmd = fmt.Sprintf("./%s", GO_BINARY_NAME)
 
+	runtimePkgs := []string{"tzdata"}
 	if p.hasCGOEnabled(ctx) {
 		ctx.Logger.LogInfo("CGO is enabled")
+		runtimePkgs = append(runtimePkgs, "libc6")
+	}
 
-		runtimeAptStep := ctx.NewAptStepBuilder("runtime")
-		runtimeAptStep.AddInput(ctx.DefaultRuntimeInputWithPackages([]string{"libc6", "tzdata"}))
-
-		ctx.Deploy.Inputs = []plan.Input{
-			plan.NewStepInput(runtimeAptStep.Name()),
-			plan.NewStepInput(build.Name(), plan.InputOptions{
-				Include: []string{"."},
-			}),
-			plan.NewLocalInput("."),
-		}
-	} else {
-		ctx.Logger.LogInfo("Building static binary")
-
-		ctx.Deploy.Inputs = []plan.Input{
-			ctx.DefaultRuntimeInputWithPackages([]string{"tzdata"}),
-			plan.NewStepInput(build.Name(), plan.InputOptions{
-				Include: []string{"."},
-			}),
-			plan.NewLocalInput("."),
-		}
+	ctx.Deploy.Inputs = []plan.Input{
+		ctx.DefaultRuntimeInputWithPackages(runtimePkgs),
+		plan.NewStepInput(build.Name(), plan.InputOptions{
+			Include: []string{"."},
+		}),
 	}
 
 	p.addMetadata(ctx)
@@ -94,16 +82,16 @@ func (p *GoProvider) Build(ctx *generate.GenerateContext, build *generate.Comman
 		buildCmd = fmt.Sprintf("%s main.go", baseBuildCmd)
 	}
 
+	build.AddCommand(plan.NewCopyCommand("."))
+
 	if buildCmd == "" {
 		return
 	}
 
 	build.AddCache(p.goBuildCache(ctx))
 	build.AddCommands([]plan.Command{
-		plan.NewCopyCommand("."),
 		plan.NewExecCommand(buildCmd),
 	})
-
 }
 
 func (p *GoProvider) InstallGoDeps(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {

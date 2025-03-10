@@ -26,16 +26,21 @@
    },
    {
     "include": [
-     ".",
+     "/app/.yarn",
      "/root/.yarn"
     ],
     "step": "build"
    },
    {
-    "include": [
-     "."
+    "exclude": [
+     "node_modules",
+     ".yarn"
     ],
-    "local": true
+    "include": [
+     ".",
+     "/root/.yarn"
+    ],
+    "step": "build"
    }
   ],
   "startCommand": "yarn run start",

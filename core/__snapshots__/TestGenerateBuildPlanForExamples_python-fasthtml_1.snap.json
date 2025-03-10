@@ -33,12 +33,6 @@
      "."
     ],
     "step": "build"
-   },
-   {
-    "include": [
-     "."
-    ],
-    "local": true
    }
   ],
   "startCommand": "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}",
@@ -129,6 +123,12 @@
    }
   },
   {
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    }
+   ],
    "inputs": [
     {
      "step": "install"

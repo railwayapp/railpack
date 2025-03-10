@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/log"
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/buildkit/util/system"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
@@ -90,103 +89,6 @@ func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *Buil
 	// g.graph.PrintGraph()
 
 	return g, nil
-}
-
-func (g *BuildGraph) GetStateForInput(input plan.Input, baseState llb.State) llb.State {
-	var state llb.State
-
-	if input.Image != "" {
-		state = llb.Image(input.Image, llb.Platform(*g.Platform))
-	} else if input.Local {
-		state = *g.LocalState
-	} else if input.Step != "" {
-		if node, exists := g.graph.GetNode(input.Step); exists {
-			nodeState := node.(*StepNode).State
-			if nodeState == nil {
-				return baseState
-			}
-			state = *nodeState
-		}
-	} else {
-		state = baseState
-	}
-
-	return state
-}
-
-func (g *BuildGraph) GetFullStateFromInputs(inputs []plan.Input) llb.State {
-	if len(inputs) == 0 {
-		return llb.Scratch()
-	}
-
-	if len(inputs[0].Include)+len(inputs[0].Exclude) > 0 {
-		panic("first input must not have include or exclude paths")
-	}
-
-	// Get the base state from the first input
-	state := g.GetStateForInput(inputs[0], llb.Scratch())
-	if len(inputs) == 1 {
-		return state
-	}
-
-	// Copy from subsequent inputs into the base state
-	for _, input := range inputs[1:] {
-		inputState := g.GetStateForInput(input, llb.Scratch())
-
-		// Copy the specified paths (or everything) from this input into our base state
-		if len(input.Include) > 0 {
-			for _, include := range input.Include {
-				if input.Local {
-					// For local context, always copy into /app
-					destPath := filepath.Join("/app", filepath.Base(include))
-					state = state.File(llb.Copy(inputState, include, destPath, &llb.CopyInfo{
-						CopyDirContentsOnly: true,
-						CreateDestPath:      true,
-						FollowSymlinks:      true,
-						AllowWildcard:       true,
-						AllowEmptyWildcard:  true,
-						ExcludePatterns:     input.Exclude,
-					}))
-				} else {
-					// For other states, handle paths based on whether they're absolute or relative
-					srcPath := include
-					var destPath string
-
-					switch {
-					case include == "." || include == "/app" || include == "/app/":
-						// Copy entire /app directory
-						srcPath = "/app"
-						destPath = "/app"
-					case filepath.IsAbs(include):
-						// Preserve absolute paths exactly
-						destPath = include
-					default:
-						// Relative paths are relative to /app
-						srcPath = filepath.Join("/app", include)
-						destPath = filepath.Join("/app", include)
-					}
-
-					opts := []llb.ConstraintsOpt{}
-					if srcPath == destPath {
-						opts = append(opts, llb.WithCustomName(fmt.Sprintf("copy %s", srcPath)))
-					}
-
-					state = state.File(llb.Copy(inputState, srcPath, destPath, &llb.CopyInfo{
-						CopyDirContentsOnly: true,
-						CreateDestPath:      true,
-						FollowSymlinks:      true,
-						AllowWildcard:       true,
-						AllowEmptyWildcard:  true,
-						ExcludePatterns:     input.Exclude,
-					}), opts...)
-				}
-			}
-		} else {
-			log.Warnf("input %s has no include or exclude paths. This is probably a mistake.", input.Step)
-		}
-	}
-
-	return state
 }
 
 // GenerateLLB generates the LLB state for the build graph
