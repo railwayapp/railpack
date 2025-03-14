@@ -32,6 +32,11 @@ func (p *NodeProvider) isSPA(ctx *generate.GenerateContext) bool {
 		return false
 	}
 
+	// If there is no build command, we don't want to deploy as an SPA because there will be no build output
+	if !p.hasBuildCommand(ctx) {
+		return false
+	}
+
 	isVite := p.isVite(ctx)
 	isAstro := p.isAstroSPA(ctx)
 	isCRA := p.isCRA(ctx)
@@ -131,4 +136,10 @@ func (p *NodeProvider) hasCustomStartCommand(ctx *generate.GenerateContext) bool
 	isAngularDefaultStartCommand := startCommand == DefaultAngularStartCommand
 	isCRAStartCommand := startCommand == DefaultCRAStartCommand
 	return startCommand != "" && !isAngularDefaultStartCommand && !isCRAStartCommand
+}
+
+func (p *NodeProvider) hasBuildCommand(ctx *generate.GenerateContext) bool {
+	configBuildStep := ctx.Config.Steps["build"]
+	hasConfigBuildCommands := configBuildStep != nil && len(configBuildStep.Commands) > 0
+	return p.packageJson.Scripts["build"] != "" || hasConfigBuildCommands
 }
