@@ -30,9 +30,7 @@ func ValidatePlan(plan *plan.BuildPlan, app *app.App, logger *logger.Logger, opt
 		}
 	}
 
-	return true
-
-	// return validateInputs(plan.Deploy.Inputs, "deploy", logger)
+	return validateDeployLayers(plan, logger)
 }
 
 // validateCommands checks if the plan has at least one command
