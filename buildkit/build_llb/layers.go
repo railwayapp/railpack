@@ -115,6 +115,14 @@ func copyLayerPaths(destState, srcState llb.State, layer plan.Layer) llb.State {
 
 func shouldLLBMerge(layers []plan.Layer) bool {
 	for i, layer := range layers {
+		if i != 0 && layer.Include == nil {
+			return false
+		}
+
+		if slices.Contains(layer.Include, "/") {
+			return false
+		}
+
 		for j := i + 1; j < len(layers); j++ {
 			if hasPathOverlap(layer.Include, layers[j].Include) {
 				return false

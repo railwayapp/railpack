@@ -82,6 +82,8 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 		Logger:   logger,
 	}
 
+	ctx.applyPackagesFromConfig()
+
 	return ctx, nil
 }
 
@@ -165,13 +167,17 @@ func (o *BuildStepOptions) NewAptInstallCommand(pkgs []string) plan.Command {
 	})
 }
 
-func (c *GenerateContext) applyConfig() {
+func (c *GenerateContext) applyPackagesFromConfig() {
 	miseStep := c.GetMiseStepBuilder()
 	for _, pkg := range slices.Sorted(maps.Keys(c.Config.Packages)) {
 		version := c.Config.Packages[pkg]
 		pkgRef := miseStep.Default(pkg, version)
 		miseStep.Version(pkgRef, version, "custom config")
 	}
+}
+
+func (c *GenerateContext) applyConfig() {
+	c.applyPackagesFromConfig()
 
 	// Apply the cache config to the context
 	maps.Copy(c.Caches.Caches, c.Config.Caches)
@@ -206,7 +212,7 @@ func (c *GenerateContext) applyConfig() {
 			// If no build step found, create a new one
 			// Run the build in the builder context and copy the /app contents to the final image
 			commandStepBuilder = c.NewCommandStep(name)
-			commandStepBuilder.AddInput(plan.NewStepLayer(miseStep.Name()))
+			commandStepBuilder.AddInput(plan.NewStepLayer(c.GetMiseStepBuilder().Name()))
 		}
 
 		commandStepBuilder.Inputs = plan.Spread(configStep.Inputs, commandStepBuilder.Inputs)

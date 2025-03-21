@@ -91,10 +91,7 @@ func (p *PhpProvider) Plan(ctx *generate.GenerateContext) error {
 		build.AddInput(plan.NewStepLayer(composer.Name()))
 		build.AddCommand(plan.NewCopyCommand("."))
 		ctx.Deploy.Base = plan.NewStepLayer(build.Name())
-
-		// ctx.Deploy.Inputs = []plan.Layer{
-		// 	plan.NewStepLayer(build.Name()),
-		// }
+		ctx.Deploy.AddInputs([]plan.Layer{ctx.GetMiseStepBuilder().GetLayer()})
 	}
 
 	ctx.Deploy.StartCmd = "/start-container.sh"

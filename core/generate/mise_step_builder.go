@@ -84,6 +84,10 @@ func (b *MiseStepBuilder) Name() string {
 }
 
 func (b *MiseStepBuilder) GetOutputPaths() []string {
+	if len(b.MisePackages) == 0 {
+		return []string{}
+	}
+
 	supportingMiseConfigFiles := b.GetSupportingMiseConfigFiles(b.app.Source)
 	files := []string{"/mise/shims", "/mise/installs", "/usr/local/bin/mise", "/etc/mise/config.toml", "/root/.local/state/mise"}
 	files = append(files, supportingMiseConfigFiles...)
@@ -91,8 +95,13 @@ func (b *MiseStepBuilder) GetOutputPaths() []string {
 }
 
 func (b *MiseStepBuilder) GetLayer() plan.Layer {
+	outputPaths := b.GetOutputPaths()
+	if len(outputPaths) == 0 {
+		return plan.Layer{}
+	}
+
 	return plan.NewStepLayer(b.Name(), plan.Filter{
-		Include: b.GetOutputPaths(),
+		Include: outputPaths,
 	})
 }
 

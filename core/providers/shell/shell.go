@@ -42,6 +42,7 @@ func (p *ShellProvider) Plan(ctx *generate.GenerateContext) error {
 	)
 
 	ctx.Deploy.Base = plan.NewStepLayer(setup.Name())
+	ctx.Deploy.AddInputs([]plan.Layer{ctx.GetMiseStepBuilder().GetLayer()})
 
 	return nil
 }
