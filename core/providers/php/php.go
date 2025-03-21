@@ -191,9 +191,9 @@ func (p *PhpProvider) DeployWithNode(ctx *generate.GenerateContext, nodeProvider
 	install.AddInput(plan.NewStepLayer(miseStep.Name()))
 	nodeProvider.InstallNodeDeps(ctx, install)
 
-	// prune := ctx.NewCommandStep("prune:node")
-	// prune.AddInput(plan.NewStepLayer(install.Name()))
-	// nodeProvider.PruneNodeDeps(ctx, prune)
+	prune := ctx.NewCommandStep("prune:node")
+	prune.AddInput(plan.NewStepLayer(install.Name()))
+	nodeProvider.PruneNodeDeps(ctx, prune)
 
 	build := ctx.NewCommandStep("build")
 	build.Inputs = []plan.Layer{
@@ -214,17 +214,18 @@ func (p *PhpProvider) DeployWithNode(ctx *generate.GenerateContext, nodeProvider
 		})
 	}
 
-	ctx.Deploy.Base = plan.NewStepLayer(build.Name())
+	ctx.Deploy.Base = plan.NewStepLayer(composer.Name())
 
-	// ctx.Deploy.AddInputs([]plan.Layer{
-	// 	plan.NewStepLayer(build.Name(), plan.Filter{
-	// 		Include: []string{"."},
-	// 		Exclude: []string{"node_modules", "vendor"},
-	// 	}),
-	// 	plan.NewStepLayer(prune.Name(), plan.Filter{
-	// 		Include: []string{"/app/node_modules"},
-	// 	}),
-	// })
+	ctx.Deploy.AddInputs([]plan.Layer{
+		miseStep.GetLayer(),
+		plan.NewStepLayer(prune.Name(), plan.Filter{
+			Include: []string{"/app/node_modules"},
+		}),
+		plan.NewStepLayer(build.Name(), plan.Filter{
+			Include: []string{"."},
+			Exclude: []string{"node_modules"},
+		}),
+	})
 
 	return nil
 }
