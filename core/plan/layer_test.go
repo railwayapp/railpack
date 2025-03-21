@@ -17,13 +17,13 @@ func TestUnmarshalInput(t *testing.T) {
 		{
 			name:     "JSON step input",
 			input:    []byte(`{"step": "build", "include": ["src"]}`),
-			expected: NewStepLayer("build", InputOptions{Include: []string{"src"}}),
+			expected: NewStepLayer("build", Filter{Include: []string{"src"}}),
 			wantErr:  false,
 		},
 		{
 			name:     "JSON image input",
 			input:    []byte(`{"image": "golang:1.21", "exclude": ["tmp"]}`),
-			expected: NewImageLayer("golang:1.21", InputOptions{Exclude: []string{"tmp"}}),
+			expected: NewImageLayer("golang:1.21", Filter{Exclude: []string{"tmp"}}),
 			wantErr:  false,
 		},
 		{

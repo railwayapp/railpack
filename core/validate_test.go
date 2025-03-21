@@ -87,7 +87,7 @@ func TestValidateInputs(t *testing.T) {
 	t.Run("valid inputs", func(t *testing.T) {
 		inputs := []plan.Layer{
 			plan.NewImageLayer("node:18"),
-			plan.NewStepLayer("build", plan.InputOptions{Include: []string{"src"}}),
+			plan.NewStepLayer("build", plan.Filter{Include: []string{"src"}}),
 		}
 		require.True(t, validateInputs(inputs, "test", logger))
 	})
@@ -106,7 +106,7 @@ func TestValidateInputs(t *testing.T) {
 
 	t.Run("first input with includes", func(t *testing.T) {
 		inputs := []plan.Layer{
-			plan.NewImageLayer("node:18", plan.InputOptions{Include: []string{"src"}}),
+			plan.NewImageLayer("node:18", plan.Filter{Include: []string{"src"}}),
 		}
 		require.False(t, validateInputs(inputs, "test", logger))
 	})

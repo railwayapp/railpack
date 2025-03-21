@@ -82,9 +82,6 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 		Logger:   logger,
 	}
 
-	// The default runtime image should include the runtime apt packages
-	// ctx.Deploy.Inputs = append(ctx.Deploy.Inputs, ctx.DefaultRuntimeInput())
-
 	return ctx, nil
 }
 
@@ -159,24 +156,6 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 	return buildPlan, resolvedPackages, nil
 }
 
-// func (c *GenerateContext) DefaultRuntimeInput() plan.Layer {
-// 	return c.DefaultRuntimeInputWithPackages([]string{})
-// }
-
-// func (c *GenerateContext) DefaultRuntimeInputWithPackages(additionalAptPackages []string) plan.Layer {
-// 	aptPackages := append(c.Config.Deploy.AptPackages, additionalAptPackages...)
-
-// 	if len(aptPackages) == 0 {
-// 		return plan.NewImageLayer(plan.RailpackRuntimeImage)
-// 	}
-
-// 	runtimeAptStep := c.NewAptStepBuilder("runtime")
-// 	runtimeAptStep.Packages = aptPackages
-// 	runtimeAptStep.AddInput(plan.NewImageLayer(plan.RailpackRuntimeImage))
-
-// 	return plan.NewStepLayer(runtimeAptStep.Name())
-// }
-
 func (o *BuildStepOptions) NewAptInstallCommand(pkgs []string) plan.Command {
 	pkgs = utils.RemoveDuplicates(pkgs)
 	sort.Strings(pkgs)
@@ -215,7 +194,6 @@ func (c *GenerateContext) applyConfig() {
 		configStep := c.Config.Steps[name]
 
 		var commandStepBuilder *CommandStepBuilder
-		deployInputs := []plan.Layer{}
 
 		if existingStep := c.GetStepByName(name); existingStep != nil {
 			if csb, ok := (*existingStep).(*CommandStepBuilder); ok {
@@ -229,33 +207,22 @@ func (c *GenerateContext) applyConfig() {
 			// Run the build in the builder context and copy the /app contents to the final image
 			commandStepBuilder = c.NewCommandStep(name)
 			commandStepBuilder.AddInput(plan.NewStepLayer(miseStep.Name()))
-
 		}
 
-		fmt.Printf("\nstep: %s\n", name)
-		fmt.Printf("configStep: %v\n", configStep)
-
-		outputFilters := []plan.Filter{plan.NewIncludeFilter([]string{"."})}
-		fmt.Printf("configStep.DeployOutputs: %v\n", configStep.DeployOutputs)
-		if len(configStep.DeployOutputs) > 0 {
-			outputFilters = configStep.DeployOutputs
-		}
-
-		fmt.Printf("outputFilters: %v\n", outputFilters)
-
-		for _, filter := range outputFilters {
-			deployInputs = append(deployInputs, plan.NewStepLayer(name, filter))
-		}
-		c.Deploy.AddInputs(deployInputs)
-
-		commandStepBuilder.Commands = plan.Spread(configStep.Commands, commandStepBuilder.Commands)
 		commandStepBuilder.Inputs = plan.Spread(configStep.Inputs, commandStepBuilder.Inputs)
-
+		commandStepBuilder.Commands = plan.Spread(configStep.Commands, commandStepBuilder.Commands)
 		commandStepBuilder.Secrets = plan.SpreadStrings(configStep.Secrets, commandStepBuilder.Secrets)
-
 		commandStepBuilder.Caches = plan.SpreadStrings(configStep.Caches, commandStepBuilder.Caches)
 		commandStepBuilder.AddEnvVars(configStep.Variables)
 		maps.Copy(commandStepBuilder.Assets, configStep.Assets)
-	}
 
+		// Convert the deploy outputs into layers that will be added to the deploy
+		outputFilters := []plan.Filter{plan.NewIncludeFilter([]string{"."})}
+		if configStep.DeployOutputs != nil {
+			outputFilters = configStep.DeployOutputs
+		}
+		for _, filter := range outputFilters {
+			c.Deploy.AddInputs([]plan.Layer{plan.NewStepLayer(name, filter)})
+		}
+	}
 }

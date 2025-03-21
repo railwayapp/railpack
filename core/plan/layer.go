@@ -173,7 +173,7 @@ func (Layer) JSONSchema() *jsonschema.Schema {
 	stringSchema := &jsonschema.Schema{
 		Type:        "string",
 		Description: "Strings will be parsed and interpreted as an input. Valid formats are: '.', '...', or '$step'",
-		Enum:        []interface{}{".", "...", "$step"},
+		Enum:        []interface{}{".", "..."},
 	}
 
 	availableInputs := []*jsonschema.Schema{stepSchema, imageSchema, localSchema, stringSchema}

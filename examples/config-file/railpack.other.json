@@ -13,6 +13,9 @@
     "custom": {
       "commands": ["echo 'world' > /hello"],
       "deployOutputs": [{ "include": ["/hello"] }]
+    },
+    "playwright": {
+      "commands": ["echo 'boop' > /boop"]
     }
   },
   "deploy": {
