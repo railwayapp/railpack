@@ -76,7 +76,6 @@ func (g *BuildGraph) getMergeState(layers []plan.Layer) llb.State {
 	for _, input := range layers[1:] {
 		if len(input.Include) == 0 {
 			log.Warnf("input %s has no include or exclude paths. This is probably a mistake.", input.Step)
-			fmt.Printf("ALL LAYERS: %v\n", layers)
 		}
 		inputState := g.GetStateForLayer(input)
 		destState := copyLayerPaths(llb.Scratch(), inputState, input)

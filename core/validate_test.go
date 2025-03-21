@@ -31,8 +31,9 @@ func TestValidatePlan(t *testing.T) {
 		buildStep.Inputs = []plan.Layer{plan.NewImageLayer("node:18")}
 		buildPlan.Steps = append(buildPlan.Steps, *buildStep)
 		buildPlan.Deploy = plan.Deploy{
+			Base:     plan.NewImageLayer("node:18"),
 			StartCmd: "npm start",
-			Inputs:   []plan.Layer{plan.NewImageLayer("node:18")},
+			Inputs:   []plan.Layer{plan.NewStepLayer("build", plan.Filter{Include: []string{"."}})},
 		}
 
 		options := &ValidatePlanOptions{

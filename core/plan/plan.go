@@ -14,7 +14,7 @@ type BuildPlan struct {
 
 type Deploy struct {
 	// The base layer for the deploy step
-	Base *Layer `json:"base,omitempty"`
+	Base Layer `json:"base,omitempty"`
 
 	// The layers for the deploy step
 	Inputs []Layer `json:"inputs,omitempty"`

@@ -51,7 +51,7 @@ func (b *DeployBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) {
 		baseLayer = plan.NewStepLayer(runtimeAptStep.Name)
 	}
 
-	p.Deploy.Base = &baseLayer
+	p.Deploy.Base = baseLayer
 
 	p.Deploy.Inputs = append(p.Deploy.Inputs, b.DeployInputs...)
 	p.Deploy.StartCmd = b.StartCmd

@@ -96,7 +96,9 @@ func validateInputs(inputs []plan.Layer, stepName string, logger *logger.Logger)
 }
 
 func validateDeployLayers(plan *plan.BuildPlan, logger *logger.Logger) bool {
-	if plan.Deploy.Base == nil {
+	fmt.Printf("PLAN DEPLOY: %+v\n", plan.Deploy.Base)
+
+	if plan.Deploy.Base.Image == "" && plan.Deploy.Base.Step == "" {
 		logger.LogError("deploy.base is required")
 		return false
 	}
