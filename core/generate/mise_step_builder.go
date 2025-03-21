@@ -125,58 +125,51 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 
 	step.Inputs = []plan.Layer{baseLayer}
 
-	// if len(b.MisePackages) == 0 {
-	// 	return nil
-	// }
-
-	// Setup mise
-	step.AddCommands([]plan.Command{
-		plan.NewPathCommand("/mise/shims"),
-	})
-	maps.Copy(step.Variables, map[string]string{
-		"MISE_DATA_DIR":     "/mise",
-		"MISE_CONFIG_DIR":   "/mise",
-		"MISE_CACHE_DIR":    "/mise/cache",
-		"MISE_SHIMS_DIR":    "/mise/shims",
-		"MISE_INSTALLS_DIR": "/mise/installs",
-	})
-	maps.Copy(step.Variables, b.Variables)
-
-	if verbose := b.env.GetVariable("MISE_VERBOSE"); verbose != "" {
-		step.Variables["MISE_VERBOSE"] = verbose
-	}
-
-	// Add user mise config files if they exist
-	supportingMiseConfigFiles := b.GetSupportingMiseConfigFiles(b.app.Source)
-	for _, file := range supportingMiseConfigFiles {
-		step.AddCommands([]plan.Command{
-			plan.NewCopyCommand(file),
-		})
-	}
-
-	// Setup mise commands
-	packagesToInstall := make(map[string]string)
-	for _, pkg := range b.MisePackages {
-		resolved, ok := options.ResolvedPackages[pkg.Name]
-		if ok && resolved.ResolvedVersion != nil {
-			packagesToInstall[pkg.Name] = *resolved.ResolvedVersion
-		}
-	}
-
-	miseToml, err := mise.GenerateMiseToml(packagesToInstall)
-	if err != nil {
-		return fmt.Errorf("failed to generate mise.toml: %w", err)
-	}
-
-	b.Assets["mise.toml"] = miseToml
-
-	pkgNames := make([]string, 0, len(packagesToInstall))
-	for k := range packagesToInstall {
-		pkgNames = append(pkgNames, k)
-	}
-	sort.Strings(pkgNames)
-
 	if len(b.MisePackages) > 0 {
+		step.AddCommands([]plan.Command{plan.NewPathCommand("/mise/shims")})
+		maps.Copy(step.Variables, map[string]string{
+			"MISE_DATA_DIR":     "/mise",
+			"MISE_CONFIG_DIR":   "/mise",
+			"MISE_CACHE_DIR":    "/mise/cache",
+			"MISE_SHIMS_DIR":    "/mise/shims",
+			"MISE_INSTALLS_DIR": "/mise/installs",
+		})
+		maps.Copy(step.Variables, b.Variables)
+
+		if verbose := b.env.GetVariable("MISE_VERBOSE"); verbose != "" {
+			step.Variables["MISE_VERBOSE"] = verbose
+		}
+
+		// Add user mise config files if they exist
+		supportingMiseConfigFiles := b.GetSupportingMiseConfigFiles(b.app.Source)
+		for _, file := range supportingMiseConfigFiles {
+			step.AddCommands([]plan.Command{
+				plan.NewCopyCommand(file),
+			})
+		}
+
+		// Setup mise commands
+		packagesToInstall := make(map[string]string)
+		for _, pkg := range b.MisePackages {
+			resolved, ok := options.ResolvedPackages[pkg.Name]
+			if ok && resolved.ResolvedVersion != nil {
+				packagesToInstall[pkg.Name] = *resolved.ResolvedVersion
+			}
+		}
+
+		miseToml, err := mise.GenerateMiseToml(packagesToInstall)
+		if err != nil {
+			return fmt.Errorf("failed to generate mise.toml: %w", err)
+		}
+
+		b.Assets["mise.toml"] = miseToml
+
+		pkgNames := make([]string, 0, len(packagesToInstall))
+		for k := range packagesToInstall {
+			pkgNames = append(pkgNames, k)
+		}
+		sort.Strings(pkgNames)
+
 		step.AddCommands([]plan.Command{
 			plan.NewFileCommand("/etc/mise/config.toml", "mise.toml", plan.FileOptions{
 				CustomName: "create mise config",
