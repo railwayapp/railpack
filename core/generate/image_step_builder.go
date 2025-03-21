@@ -53,12 +53,10 @@ func (b *ImageStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) e
 	image := b.ResolveStepImage(options)
 
 	step := plan.NewStep(b.DisplayName)
-
+	step.Secrets = []string{}
 	step.Inputs = []plan.Layer{
 		plan.NewImageLayer(image),
 	}
-
-	step.Secrets = []string{}
 
 	if len(b.AptPackages) > 0 {
 		step.Commands = []plan.Command{

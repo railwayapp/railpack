@@ -15,7 +15,7 @@ type DeployBuilder struct {
 
 func NewDeployBuilder() *DeployBuilder {
 	return &DeployBuilder{
-		Base:         plan.Layer{},
+		Base:         plan.NewImageLayer(plan.RailpackRuntimeImage),
 		DeployInputs: []plan.Layer{},
 		StartCmd:     "",
 		Variables:    map[string]string{},
@@ -37,7 +37,7 @@ func (b *DeployBuilder) AddAptPackages(packages []string) {
 }
 
 func (b *DeployBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) {
-	baseLayer := plan.NewImageLayer(plan.RailpackRuntimeImage)
+	baseLayer := b.Base
 
 	if len(b.AptPackages) > 0 {
 		runtimeAptStep := plan.NewStep("packages:apt:runtime")
@@ -46,6 +46,7 @@ func (b *DeployBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) {
 			options.NewAptInstallCommand(b.AptPackages),
 		})
 		runtimeAptStep.Caches = options.Caches.GetAptCaches()
+		runtimeAptStep.Secrets = []string{}
 		p.Steps = append(p.Steps, *runtimeAptStep)
 		baseLayer = plan.NewStepLayer(runtimeAptStep.Name)
 	}

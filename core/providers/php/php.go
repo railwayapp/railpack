@@ -219,16 +219,15 @@ func (p *PhpProvider) DeployWithNode(ctx *generate.GenerateContext, nodeProvider
 
 	ctx.Deploy.Base = plan.NewStepLayer(build.Name())
 
-	// ctx.Deploy.Inputs = []plan.Layer{
-	// 	plan.NewStepLayer(composer.Name()),
-	// 	plan.NewStepLayer(build.Name(), plan.InputOptions{
+	// ctx.Deploy.AddInputs([]plan.Layer{
+	// 	plan.NewStepLayer(build.Name(), plan.Filter{
 	// 		Include: []string{"."},
 	// 		Exclude: []string{"node_modules", "vendor"},
 	// 	}),
-	// 	plan.NewStepLayer(prune.Name(), plan.InputOptions{
+	// 	plan.NewStepLayer(prune.Name(), plan.Filter{
 	// 		Include: []string{"/app/node_modules"},
 	// 	}),
-	// }
+	// })
 
 	return nil
 }

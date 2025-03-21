@@ -18,10 +18,10 @@
   }
  },
  "deploy": {
+  "base": {
+   "step": "packages:apt:runtime"
+  },
   "inputs": [
-   {
-    "step": "packages:runtime"
-   },
    {
     "include": [
      "/mise/shims",
@@ -48,6 +48,12 @@
      "."
     ],
     "step": "build"
+   },
+   {
+    "include": [
+     "."
+    ],
+    "step": "build"
    }
   ],
   "startCommand": "python --version \u0026\u0026 neofetch $HELLO",
@@ -67,30 +73,22 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y neofetch'",
-     "customName": "install apt packages: neofetch"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y neofetch nodejs'",
+     "customName": "install apt packages: neofetch nodejs"
     }
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
     }
    ],
-   "name": "packages:runtime"
+   "name": "packages:apt:build"
   },
   {
    "assets": {
     "mise.toml": "[mise.toml]"
    },
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
    "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y neofetch nodejs'",
-     "customName": "install apt packages: neofetch nodejs"
-    },
     {
      "path": "/mise/shims"
     },
@@ -106,7 +104,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+     "step": "packages:apt:build"
     }
    ],
    "name": "packages:mise",
@@ -199,7 +197,7 @@
      "image": "ghcr.io/railwayapp/railpack-runtime:latest"
     }
    ],
-   "name": "packages:runtime"
+   "name": "packages:apt:runtime"
   }
  ]
 }

@@ -26,27 +26,9 @@
   }
  },
  "deploy": {
-  "inputs": [
-   {
-    "step": "install:composer"
-   },
-   {
-    "exclude": [
-     "node_modules",
-     "vendor"
-    ],
-    "include": [
-     "."
-    ],
-    "step": "build"
-   },
-   {
-    "include": [
-     "/app/node_modules"
-    ],
-    "step": "prune:node"
-   }
-  ],
+  "base": {
+   "step": "build"
+  },
   "startCommand": "/start-container.sh"
  },
  "steps": [
@@ -228,25 +210,6 @@
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",
     "NPM_CONFIG_UPDATE_NOTIFIER": "false"
-   }
-  },
-  {
-   "caches": [
-    "npm-install"
-   ],
-   "commands": [
-    {
-     "cmd": "npm prune --omit=dev"
-    }
-   ],
-   "inputs": [
-    {
-     "step": "install:node"
-    }
-   ],
-   "name": "prune:node",
-   "variables": {
-    "NPM_CONFIG_PRODUCTION": "true"
    }
   },
   {

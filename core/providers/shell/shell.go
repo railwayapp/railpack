@@ -33,7 +33,7 @@ func (p *ShellProvider) Plan(ctx *generate.GenerateContext) error {
 	ctx.Logger.LogInfo("Using shell script: %s", p.scriptName)
 
 	setup := ctx.NewCommandStep("setup")
-	setup.AddInput(ctx.MiseStepBuilder.GetLayer())
+	setup.AddInput(plan.NewImageLayer(plan.RailpackRuntimeImage))
 	setup.AddCommands(
 		[]plan.Command{
 			plan.NewCopyCommand("."),
@@ -41,9 +41,7 @@ func (p *ShellProvider) Plan(ctx *generate.GenerateContext) error {
 		},
 	)
 
-	ctx.Deploy.AddInputs([]plan.Layer{
-		plan.NewStepLayer(setup.Name()),
-	})
+	ctx.Deploy.Base = plan.NewStepLayer(setup.Name())
 
 	return nil
 }

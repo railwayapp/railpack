@@ -6,11 +6,9 @@
   }
  },
  "deploy": {
-  "inputs": [
-   {
-    "step": "build"
-   }
-  ],
+  "base": {
+   "step": "build"
+  },
   "startCommand": "/start-container.sh"
  },
  "steps": [
@@ -129,15 +127,27 @@
    ]
   },
   {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "commands": [
+    {
+     "path": "/mise/shims"
+    }
+   ],
    "inputs": [
     {
      "image": "ghcr.io/railwayapp/railpack-builder:latest"
     }
    ],
    "name": "packages:mise",
-   "secrets": [
-    "*"
-   ]
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_SHIMS_DIR": "/mise/shims"
+   }
   }
  ]
 }

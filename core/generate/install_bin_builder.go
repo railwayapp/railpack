@@ -60,7 +60,7 @@ func (b *InstallBinStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptio
 	}
 
 	step := plan.NewStep(b.DisplayName)
-
+	step.Secrets = []string{}
 	step.Inputs = []plan.Layer{
 		plan.NewImageLayer(plan.RailpackBuilderImage),
 	}
@@ -73,7 +73,7 @@ func (b *InstallBinStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptio
 		plan.NewPathCommand(fmt.Sprintf("%s/bin", binPath)),
 	})
 
-	step.Secrets = []string{}
+	p.Steps = append(p.Steps, *step)
 
 	return nil
 }

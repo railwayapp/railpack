@@ -106,6 +106,8 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			options.NewAptInstallCommand(b.SupportingAptPackages),
 		})
 		aptStep.Caches = options.Caches.GetAptCaches()
+		aptStep.Secrets = []string{}
+
 		p.Steps = append(p.Steps, *aptStep)
 		baseLayer = plan.NewStepLayer(aptStep.Name)
 	}
@@ -114,9 +116,9 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 
 	step.Inputs = []plan.Layer{baseLayer}
 
-	if len(b.MisePackages) == 0 {
-		return nil
-	}
+	// if len(b.MisePackages) == 0 {
+	// 	return nil
+	// }
 
 	// Setup mise
 	step.AddCommands([]plan.Command{
@@ -165,14 +167,16 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 	}
 	sort.Strings(pkgNames)
 
-	step.AddCommands([]plan.Command{
-		plan.NewFileCommand("/etc/mise/config.toml", "mise.toml", plan.FileOptions{
-			CustomName: "create mise config",
-		}),
-		plan.NewExecCommand("sh -c 'mise trust -a && mise install'", plan.ExecOptions{
-			CustomName: "install mise packages: " + strings.Join(pkgNames, ", "),
-		}),
-	})
+	if len(b.MisePackages) > 0 {
+		step.AddCommands([]plan.Command{
+			plan.NewFileCommand("/etc/mise/config.toml", "mise.toml", plan.FileOptions{
+				CustomName: "create mise config",
+			}),
+			plan.NewExecCommand("sh -c 'mise trust -a && mise install'", plan.ExecOptions{
+				CustomName: "install mise packages: " + strings.Join(pkgNames, ", "),
+			}),
+		})
+	}
 
 	step.Assets = b.Assets
 	step.Secrets = []string{}
