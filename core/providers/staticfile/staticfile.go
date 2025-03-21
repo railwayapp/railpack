@@ -61,7 +61,7 @@ func (p *StaticfileProvider) Plan(ctx *generate.GenerateContext) error {
 
 	ctx.Deploy.AddInputs([]plan.Layer{
 		miseStep.GetLayer(),
-		plan.NewStepLayer(setup.Name(), plan.InputOptions{
+		plan.NewStepLayer(setup.Name(), plan.Filter{
 			Include: []string{"."},
 		}),
 		plan.NewLocalLayer("."),

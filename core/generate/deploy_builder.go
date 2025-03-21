@@ -6,7 +6,7 @@ import (
 
 type DeployBuilder struct {
 	Base         plan.Layer
-	DeployLaters []plan.Layer
+	DeployInputs []plan.Layer
 	StartCmd     string
 	Variables    map[string]string
 	Paths        []string
@@ -16,7 +16,7 @@ type DeployBuilder struct {
 func NewDeployBuilder() *DeployBuilder {
 	return &DeployBuilder{
 		Base:         plan.Layer{},
-		DeployLaters: []plan.Layer{},
+		DeployInputs: []plan.Layer{},
 		StartCmd:     "",
 		Variables:    map[string]string{},
 		Paths:        []string{},
@@ -24,8 +24,12 @@ func NewDeployBuilder() *DeployBuilder {
 	}
 }
 
+func (b *DeployBuilder) SetInputs(layers []plan.Layer) {
+	b.DeployInputs = layers
+}
+
 func (b *DeployBuilder) AddInputs(layers []plan.Layer) {
-	b.DeployLaters = append(b.DeployLaters, layers...)
+	b.DeployInputs = append(b.DeployInputs, layers...)
 }
 
 func (b *DeployBuilder) AddAptPackages(packages []string) {
@@ -48,7 +52,7 @@ func (b *DeployBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) {
 
 	p.Deploy.Base = &baseLayer
 
-	p.Deploy.Inputs = append(p.Deploy.Inputs, b.DeployLaters...)
+	p.Deploy.Inputs = append(p.Deploy.Inputs, b.DeployInputs...)
 	p.Deploy.StartCmd = b.StartCmd
 	p.Deploy.Variables = b.Variables
 	p.Deploy.Paths = b.Paths

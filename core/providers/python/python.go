@@ -70,7 +70,7 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 	maps.Copy(ctx.Deploy.Variables, p.GetPythonEnvVars(ctx))
 
-	installArtifacts := plan.NewStepLayer(build.Name(), plan.InputOptions{
+	installArtifacts := plan.NewStepLayer(build.Name(), plan.Filter{
 		Include: installOutputs,
 	})
 
@@ -79,7 +79,7 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 	ctx.Deploy.AddInputs([]plan.Layer{
 		ctx.GetMiseStepBuilder().GetLayer(),
 		installArtifacts,
-		plan.NewStepLayer(build.Name(), plan.InputOptions{
+		plan.NewStepLayer(build.Name(), plan.Filter{
 			Include: []string{"."},
 			Exclude: []string{strings.TrimPrefix(VENV_PATH, "/app/")},
 		}),

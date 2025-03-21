@@ -66,7 +66,7 @@ func (p *JavaProvider) Plan(ctx *generate.GenerateContext) error {
 
 	ctx.Deploy.AddInputs([]plan.Layer{
 		runtimeMiseStep.GetLayer(),
-		plan.NewStepLayer(build.Name(), plan.InputOptions{
+		plan.NewStepLayer(build.Name(), plan.Filter{
 			Include: []string{outPath},
 		}),
 	})

@@ -2,9 +2,12 @@ package generate
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
 	"strings"
 
+	"github.com/charmbracelet/log"
 	a "github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/logger"
@@ -184,59 +187,75 @@ func (o *BuildStepOptions) NewAptInstallCommand(pkgs []string) plan.Command {
 }
 
 func (c *GenerateContext) applyConfig() {
-	// miseStep := c.GetMiseStepBuilder()
-	// for _, pkg := range slices.Sorted(maps.Keys(c.Config.Packages)) {
-	// 	version := c.Config.Packages[pkg]
-	// 	pkgRef := miseStep.Default(pkg, version)
-	// 	miseStep.Version(pkgRef, version, "custom config")
-	// }
+	miseStep := c.GetMiseStepBuilder()
+	for _, pkg := range slices.Sorted(maps.Keys(c.Config.Packages)) {
+		version := c.Config.Packages[pkg]
+		pkgRef := miseStep.Default(pkg, version)
+		miseStep.Version(pkgRef, version, "custom config")
+	}
 
-	// // Apply the cache config to the context
-	// maps.Copy(c.Caches.Caches, c.Config.Caches)
-	// c.Secrets = plan.SpreadStrings(c.Config.Secrets, c.Secrets)
+	// Apply the cache config to the context
+	maps.Copy(c.Caches.Caches, c.Config.Caches)
+	c.Secrets = plan.SpreadStrings(c.Config.Secrets, c.Secrets)
 
-	// // Apply step config to the context
-	// for _, name := range slices.Sorted(maps.Keys(c.Config.Steps)) {
-	// 	configStep := c.Config.Steps[name]
+	// Update deploy from config
+	if c.Config.Deploy != nil {
+		if c.Config.Deploy.StartCmd != "" {
+			c.Deploy.StartCmd = c.Config.Deploy.StartCmd
+		}
 
-	// 	var commandStepBuilder *CommandStepBuilder
+		c.Deploy.AptPackages = plan.SpreadStrings(c.Config.Deploy.AptPackages, c.Deploy.AptPackages)
+		c.Deploy.DeployInputs = plan.Spread(c.Config.Deploy.Inputs, c.Deploy.DeployInputs)
+		c.Deploy.Paths = plan.SpreadStrings(c.Config.Deploy.Paths, c.Deploy.Paths)
+		maps.Copy(c.Deploy.Variables, c.Config.Deploy.Variables)
+	}
 
-	// 	if existingStep := c.GetStepByName(name); existingStep != nil {
-	// 		if csb, ok := (*existingStep).(*CommandStepBuilder); ok {
-	// 			commandStepBuilder = csb
-	// 		} else {
-	// 			log.Warnf("Step `%s` exists, but it is not a command step. Skipping...", name)
-	// 			continue
-	// 		}
-	// 	} else {
-	// 		// If no build step found, create a new one
-	// 		// Run the build in the builder context and copy the /app contents to the final image
-	// 		commandStepBuilder = c.NewCommandStep(name)
-	// 		commandStepBuilder.AddInput(plan.NewStepLayer(miseStep.Name()))
-	// 		c.Deploy.Inputs = append(c.Deploy.Inputs, plan.NewStepLayer(commandStepBuilder.Name(), plan.InputOptions{
-	// 			Include: []string{"."},
-	// 		}))
-	// 	}
+	// Apply step config to the context
+	for _, name := range slices.Sorted(maps.Keys(c.Config.Steps)) {
+		configStep := c.Config.Steps[name]
 
-	// 	commandStepBuilder.Commands = plan.Spread(configStep.Commands, commandStepBuilder.Commands)
-	// 	commandStepBuilder.Inputs = plan.Spread(configStep.Inputs, commandStepBuilder.Inputs)
+		var commandStepBuilder *CommandStepBuilder
+		deployInputs := []plan.Layer{}
 
-	// 	commandStepBuilder.Secrets = plan.SpreadStrings(configStep.Secrets, commandStepBuilder.Secrets)
+		if existingStep := c.GetStepByName(name); existingStep != nil {
+			if csb, ok := (*existingStep).(*CommandStepBuilder); ok {
+				commandStepBuilder = csb
+			} else {
+				log.Warnf("Step `%s` exists, but it is not a command step. Skipping...", name)
+				continue
+			}
+		} else {
+			// If no build step found, create a new one
+			// Run the build in the builder context and copy the /app contents to the final image
+			commandStepBuilder = c.NewCommandStep(name)
+			commandStepBuilder.AddInput(plan.NewStepLayer(miseStep.Name()))
 
-	// 	commandStepBuilder.Caches = plan.SpreadStrings(configStep.Caches, commandStepBuilder.Caches)
-	// 	commandStepBuilder.AddEnvVars(configStep.Variables)
-	// 	maps.Copy(commandStepBuilder.Assets, configStep.Assets)
-	// }
+		}
 
-	// // Update deploy from config
-	// if c.Config.Deploy != nil {
-	// 	if c.Config.Deploy.StartCmd != "" {
-	// 		c.Deploy.StartCmd = c.Config.Deploy.StartCmd
-	// 	}
+		fmt.Printf("\nstep: %s\n", name)
+		fmt.Printf("configStep: %v\n", configStep)
 
-	// 	c.Deploy.Inputs = plan.Spread(c.Config.Deploy.Inputs, c.Deploy.Inputs)
-	// 	c.Deploy.Paths = plan.SpreadStrings(c.Config.Deploy.Paths, c.Deploy.Paths)
-	// 	maps.Copy(c.Deploy.Variables, c.Config.Deploy.Variables)
-	// }
+		outputFilters := []plan.Filter{plan.NewIncludeFilter([]string{"."})}
+		fmt.Printf("configStep.DeployOutputs: %v\n", configStep.DeployOutputs)
+		if len(configStep.DeployOutputs) > 0 {
+			outputFilters = configStep.DeployOutputs
+		}
+
+		fmt.Printf("outputFilters: %v\n", outputFilters)
+
+		for _, filter := range outputFilters {
+			deployInputs = append(deployInputs, plan.NewStepLayer(name, filter))
+		}
+		c.Deploy.AddInputs(deployInputs)
+
+		commandStepBuilder.Commands = plan.Spread(configStep.Commands, commandStepBuilder.Commands)
+		commandStepBuilder.Inputs = plan.Spread(configStep.Inputs, commandStepBuilder.Inputs)
+
+		commandStepBuilder.Secrets = plan.SpreadStrings(configStep.Secrets, commandStepBuilder.Secrets)
+
+		commandStepBuilder.Caches = plan.SpreadStrings(configStep.Caches, commandStepBuilder.Caches)
+		commandStepBuilder.AddEnvVars(configStep.Variables)
+		maps.Copy(commandStepBuilder.Assets, configStep.Assets)
+	}
 
 }

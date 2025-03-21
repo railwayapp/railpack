@@ -77,7 +77,7 @@ func validateStartCommand(plan *plan.BuildPlan, logger *logger.Logger, provider 
 // 3. the first input does not have any includes or excludes
 func validateInputs(inputs []plan.Layer, stepName string, logger *logger.Logger) bool {
 	if len(inputs) == 0 {
-		logger.LogError("step %s has no inputs", stepName)
+		logger.LogError("step `%s` has no inputs", stepName)
 		return false
 	}
 

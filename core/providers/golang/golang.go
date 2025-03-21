@@ -52,7 +52,7 @@ func (p *GoProvider) Plan(ctx *generate.GenerateContext) error {
 
 	ctx.Deploy.AddAptPackages(runtimePkgs)
 	ctx.Deploy.AddInputs([]plan.Layer{
-		plan.NewStepLayer(build.Name(), plan.InputOptions{
+		plan.NewStepLayer(build.Name(), plan.Filter{
 			Include: []string{"."},
 		}),
 	})

@@ -48,7 +48,7 @@ func (b *InstallBinStepBuilder) Version(name resolver.PackageRef, version string
 }
 
 func (b *InstallBinStepBuilder) GetLayer() plan.Layer {
-	return plan.NewStepLayer(b.Name(), plan.InputOptions{
+	return plan.NewStepLayer(b.Name(), plan.Filter{
 		Include: b.GetOutputPaths(),
 	})
 }
@@ -74,8 +74,6 @@ func (b *InstallBinStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptio
 	})
 
 	step.Secrets = []string{}
-
-	p.Steps = append(p.Steps, *step)
 
 	return nil
 }

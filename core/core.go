@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"maps"
 	"slices"
 	"strings"
@@ -155,6 +156,12 @@ func GenerateConfigFromFile(app *app.App, env *app.Environment, options *Generat
 
 	logger.LogInfo("Using config file `%s`", configFileName)
 	logger.LogWarn("The config file format is not yet finalized and subject to change.")
+
+	fmt.Printf("config: %+v\n", config)
+	for _, step := range config.Steps {
+		fmt.Printf("step: %+v\n", step)
+		fmt.Printf("deploy outputs: %+v\n", step.DeployOutputs)
+	}
 
 	return config, nil
 }

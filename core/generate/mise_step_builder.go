@@ -91,7 +91,7 @@ func (b *MiseStepBuilder) GetOutputPaths() []string {
 }
 
 func (b *MiseStepBuilder) GetLayer() plan.Layer {
-	return plan.NewStepLayer(b.Name(), plan.InputOptions{
+	return plan.NewStepLayer(b.Name(), plan.Filter{
 		Include: b.GetOutputPaths(),
 	})
 }

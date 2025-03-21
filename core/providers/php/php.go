@@ -201,7 +201,7 @@ func (p *PhpProvider) DeployWithNode(ctx *generate.GenerateContext, nodeProvider
 	build := ctx.NewCommandStep("build")
 	build.Inputs = []plan.Layer{
 		plan.NewStepLayer(composer.Name()),
-		plan.NewStepLayer(install.Name(), plan.InputOptions{
+		plan.NewStepLayer(install.Name(), plan.Filter{
 			Include: append([]string{"."}, miseStep.GetOutputPaths()...),
 		}),
 	}

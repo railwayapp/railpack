@@ -17,32 +17,27 @@ type Layer struct {
 	Filter
 }
 
-type InputOptions struct {
-	Include []string
-	Exclude []string
-}
-
-func NewStepLayer(stepName string, options ...InputOptions) Layer {
+func NewStepLayer(stepName string, filter ...Filter) Layer {
 	input := Layer{
 		Step: stepName,
 	}
 
-	if len(options) > 0 {
-		input.Include = options[0].Include
-		input.Exclude = options[0].Exclude
+	if len(filter) > 0 {
+		input.Include = filter[0].Include
+		input.Exclude = filter[0].Exclude
 	}
 
 	return input
 }
 
-func NewImageLayer(image string, options ...InputOptions) Layer {
+func NewImageLayer(image string, filter ...Filter) Layer {
 	input := Layer{
 		Image: image,
 	}
 
-	if len(options) > 0 {
-		input.Include = options[0].Include
-		input.Exclude = options[0].Exclude
+	if len(filter) > 0 {
+		input.Include = filter[0].Include
+		input.Exclude = filter[0].Exclude
 	}
 
 	return input

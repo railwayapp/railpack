@@ -44,7 +44,7 @@ func (p *DenoProvider) Plan(ctx *generate.GenerateContext) error {
 
 	ctx.Deploy.AddInputs([]plan.Layer{
 		miseStep.GetLayer(),
-		plan.NewStepLayer(build.Name(), plan.InputOptions{
+		plan.NewStepLayer(build.Name(), plan.Filter{
 			Include: []string{".", ROOT_CACHE},
 		}),
 	})

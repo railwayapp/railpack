@@ -36,7 +36,7 @@ func (p *TestProvider) Plan(ctx *GenerateContext) error {
 	buildStep.AddCommand(plan.NewExecCommand("npm run build", plan.ExecOptions{}))
 	buildStep.AddInput(plan.NewStepLayer(installStep.Name()))
 
-	ctx.Deploy.Inputs = []plan.Layer{
+	ctx.Deploy.DeployInputs = []plan.Layer{
 		plan.NewStepLayer(buildStep.Name()),
 	}
 
