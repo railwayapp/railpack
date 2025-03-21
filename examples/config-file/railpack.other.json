@@ -3,12 +3,7 @@
   "buildAptPackages": ["cowsay"],
   "steps": {
     "cowsay": {
-      "commands": [
-        "...",
-        { "path": "/usr/games" },
-        { "src": "custom-start.sh", "dest": "custom-start.sh" },
-        "cowsay hello"
-      ]
+      "commands": ["...", { "path": "/usr/games" }, "cowsay hello"]
     },
     "custom": {
       "commands": ["echo 'world' > /hello"],
@@ -20,7 +15,8 @@
   },
   "deploy": {
     "inputs": [
-      { "image": "macabees/neofetch", "include": ["/usr/bin/neofetch"] }
+      { "image": "macabees/neofetch", "include": ["/usr/bin/neofetch"] },
+      { "local": true, "include": ["custom-start.sh"] }
     ],
     "aptPackages": ["cowsay"],
     "startCommand": "neofetch && cowsay hello && ./custom-start.sh"

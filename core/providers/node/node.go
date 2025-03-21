@@ -136,15 +136,6 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 		buildLayer,
 	})
 
-	// ctx.Deploy.Inputs = []plan.Layer{
-	// 	ctx.DefaultRuntimeInputWithPackages(runtimeAptPackages),
-	// 	plan.NewStepLayer(miseStep.Name(), plan.InputOptions{
-	// 		Include: miseStep.GetOutputPaths(),
-	// 	}),
-	// 	nodeModulesInput,
-	// 	buildInput,
-	// }
-
 	return nil
 }
 

@@ -3,29 +3,12 @@
   "base": {
    "step": "setup"
   },
+  "inputs": [
+   {}
+  ],
   "startCommand": "sh start.sh"
  },
  "steps": [
-  {
-   "commands": [
-    {
-     "dest": ".",
-     "src": "."
-    },
-    {
-     "cmd": "chmod +x start.sh"
-    }
-   ],
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
-    }
-   ],
-   "name": "setup",
-   "secrets": [
-    "*"
-   ]
-  },
   {
    "assets": {
     "mise.toml": "[mise.toml]"
@@ -48,6 +31,26 @@
     "MISE_INSTALLS_DIR": "/mise/installs",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
+  },
+  {
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    },
+    {
+     "cmd": "chmod +x start.sh"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+    }
+   ],
+   "name": "setup",
+   "secrets": [
+    "*"
+   ]
   }
  ]
 }

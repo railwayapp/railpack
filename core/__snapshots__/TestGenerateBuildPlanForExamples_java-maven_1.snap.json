@@ -31,29 +31,6 @@
  },
  "steps": [
   {
-   "caches": [
-    "maven"
-   ],
-   "commands": [
-    {
-     "dest": ".",
-     "src": "."
-    },
-    {
-     "cmd": "mvn -DoutputFile=target/mvn-dependency-list.log -B -DskipTests clean dependency:list install"
-    }
-   ],
-   "inputs": [
-    {
-     "step": "packages:mise"
-    }
-   ],
-   "name": "build",
-   "secrets": [
-    "*"
-   ]
-  },
-  {
    "assets": {
     "mise.toml": "[mise.toml]"
    },
@@ -84,6 +61,29 @@
     "MISE_INSTALLS_DIR": "/mise/installs",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
+  },
+  {
+   "caches": [
+    "maven"
+   ],
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    },
+    {
+     "cmd": "mvn -DoutputFile=target/mvn-dependency-list.log -B -DskipTests clean dependency:list install"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ]
   },
   {
    "assets": {
