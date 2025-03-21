@@ -74,6 +74,8 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 		Include: installOutputs,
 	})
 
+	p.AddRuntimeDeps(ctx)
+
 	ctx.Deploy.AddInputs([]plan.Layer{
 		ctx.GetMiseStepBuilder().GetLayer(),
 		installArtifacts,

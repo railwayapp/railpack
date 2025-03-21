@@ -153,7 +153,7 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 
 	buildPlan.Caches = c.Caches.Caches
 	buildPlan.Secrets = utils.RemoveDuplicates(c.Secrets)
-	c.Deploy.Build(buildPlan)
+	c.Deploy.Build(buildPlan, buildStepOptions)
 
 	return buildPlan, resolvedPackages, nil
 }
