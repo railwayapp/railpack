@@ -1,8 +1,8 @@
 package plan
 
 const (
-	RAILPACK_BUILDER_IMAGE = "ghcr.io/railwayapp/railpack-builder:latest"
-	RAILPACK_RUNTIME_IMAGE = "ghcr.io/railwayapp/railpack-runtime:latest"
+	RailpackBuilderImage = "ghcr.io/railwayapp/railpack-builder:latest"
+	RailpackRuntimeImage = "ghcr.io/railwayapp/railpack-runtime:latest"
 )
 
 type BuildPlan struct {
@@ -13,8 +13,11 @@ type BuildPlan struct {
 }
 
 type Deploy struct {
-	// The inputs for the deploy step
-	Inputs []Input `json:"inputs,omitempty"`
+	// The base layer for the deploy step
+	Base *Layer `json:"base,omitempty"`
+
+	// The layers for the deploy step
+	Inputs []Layer `json:"inputs,omitempty"`
 
 	// The command to run in the container
 	StartCmd string `json:"startCommand,omitempty"`

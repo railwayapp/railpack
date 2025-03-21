@@ -11,43 +11,43 @@ func TestUnmarshalInput(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    []byte
-		expected Input
+		expected Layer
 		wantErr  bool
 	}{
 		{
 			name:     "JSON step input",
 			input:    []byte(`{"step": "build", "include": ["src"]}`),
-			expected: NewStepInput("build", InputOptions{Include: []string{"src"}}),
+			expected: NewStepLayer("build", InputOptions{Include: []string{"src"}}),
 			wantErr:  false,
 		},
 		{
 			name:     "JSON image input",
 			input:    []byte(`{"image": "golang:1.21", "exclude": ["tmp"]}`),
-			expected: NewImageInput("golang:1.21", InputOptions{Exclude: []string{"tmp"}}),
+			expected: NewImageLayer("golang:1.21", InputOptions{Exclude: []string{"tmp"}}),
 			wantErr:  false,
 		},
 		{
 			name:     "JSON local input",
 			input:    []byte(`{"local": true, "include": ["."]}`),
-			expected: NewLocalInput("."),
+			expected: NewLocalLayer("."),
 			wantErr:  false,
 		},
 		{
 			name:     "String local input with dot",
 			input:    []byte(`"."`),
-			expected: NewLocalInput("."),
+			expected: NewLocalLayer("."),
 			wantErr:  false,
 		},
 		{
 			name:     "String spread input",
 			input:    []byte(`"..."`),
-			expected: Input{Spread: true},
+			expected: Layer{Spread: true},
 			wantErr:  false,
 		},
 		{
 			name:     "String step input",
 			input:    []byte(`"$build"`),
-			expected: NewStepInput("build"),
+			expected: NewStepLayer("build"),
 			wantErr:  false,
 		},
 		{
@@ -64,7 +64,7 @@ func TestUnmarshalInput(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var got Input
+			var got Layer
 			err := json.Unmarshal(tt.input, &got)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UnmarshalInput() error = %v, wantErr %v", err, tt.wantErr)

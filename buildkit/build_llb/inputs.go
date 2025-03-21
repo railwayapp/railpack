@@ -10,7 +10,7 @@ import (
 	"github.com/railwayapp/railpack/core/plan"
 )
 
-func (g *BuildGraph) GetStateForInput(input plan.Input) llb.State {
+func (g *BuildGraph) GetStateForInput(input plan.Layer) llb.State {
 	var state llb.State
 
 	if input.Image != "" {
@@ -32,10 +32,12 @@ func (g *BuildGraph) GetStateForInput(input plan.Input) llb.State {
 	return state
 }
 
-func (g *BuildGraph) GetFullStateFromInputs(inputs []plan.Input) llb.State {
+func (g *BuildGraph) GetFullStateFromInputs(inputs []plan.Layer) llb.State {
 	if len(inputs) == 0 {
 		return llb.Scratch()
 	}
+
+	fmt.Println("inputs", inputs)
 
 	if len(inputs[0].Include)+len(inputs[0].Exclude) > 0 {
 		panic("first input must not have include or exclude paths")

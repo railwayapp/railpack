@@ -9,7 +9,7 @@ import (
 
 const (
 	DEFAULT_DENO_VERSION = "2"
-	DENO_DIR             = "/root/.cache/deno"
+	ROOT_CACHE           = "/root/.cache"
 )
 
 type DenoJson struct {
@@ -39,18 +39,15 @@ func (p *DenoProvider) Plan(ctx *generate.GenerateContext) error {
 	p.InstallMisePackages(ctx, miseStep)
 
 	build := ctx.NewCommandStep("build")
-	build.AddInput(plan.NewStepInput(miseStep.Name()))
+	build.AddInput(plan.NewStepLayer(miseStep.Name()))
 	p.Build(ctx, build)
 
-	ctx.Deploy.Inputs = []plan.Input{
-		ctx.DefaultRuntimeInput(),
-		plan.NewStepInput(miseStep.Name(), plan.InputOptions{
-			Include: miseStep.GetOutputPaths(),
+	ctx.Deploy.AddInputs([]plan.Layer{
+		miseStep.GetLayer(),
+		plan.NewStepLayer(build.Name(), plan.InputOptions{
+			Include: []string{".", ROOT_CACHE},
 		}),
-		plan.NewStepInput(build.Name(), plan.InputOptions{
-			Include: []string{".", DENO_DIR},
-		}),
-	}
+	})
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 
 	return nil

@@ -28,7 +28,7 @@ func (p *JavaProvider) StartCommandHelp() string {
 func (p *JavaProvider) Plan(ctx *generate.GenerateContext) error {
 	build := ctx.NewCommandStep("build")
 	build.AddCommand(plan.NewCopyCommand("."))
-	build.Inputs = []plan.Input{plan.NewStepInput(ctx.GetMiseStepBuilder().Name())}
+	build.Inputs = []plan.Layer{plan.NewStepLayer(ctx.GetMiseStepBuilder().Name())}
 
 	if p.usesGradle(ctx) {
 		ctx.Logger.LogInfo("Using Gradle")
@@ -64,15 +64,13 @@ func (p *JavaProvider) Plan(ctx *generate.GenerateContext) error {
 		outPath = "."
 	}
 
-	ctx.Deploy.Inputs = []plan.Input{
-		ctx.DefaultRuntimeInput(),
-		plan.NewStepInput(runtimeMiseStep.Name(), plan.InputOptions{
-			Include: runtimeMiseStep.GetOutputPaths(),
-		}),
-		plan.NewStepInput(build.Name(), plan.InputOptions{
+	ctx.Deploy.AddInputs([]plan.Layer{
+		runtimeMiseStep.GetLayer(),
+		plan.NewStepLayer(build.Name(), plan.InputOptions{
 			Include: []string{outPath},
 		}),
-	}
+	})
+
 	ctx.Deploy.StartCmd = p.getStartCmd(ctx)
 
 	p.addMetadata(ctx)

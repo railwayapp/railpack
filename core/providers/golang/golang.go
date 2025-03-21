@@ -35,11 +35,11 @@ func (p *GoProvider) Plan(ctx *generate.GenerateContext) error {
 	p.InstallGoPackages(ctx, builder)
 
 	install := ctx.NewCommandStep("install")
-	install.AddInput(plan.NewStepInput(builder.Name()))
+	install.AddInput(plan.NewStepLayer(builder.Name()))
 	p.InstallGoDeps(ctx, install)
 
 	build := ctx.NewCommandStep("build")
-	build.AddInput(plan.NewStepInput(install.Name()))
+	build.AddInput(plan.NewStepLayer(install.Name()))
 	p.Build(ctx, build)
 
 	ctx.Deploy.StartCmd = fmt.Sprintf("./%s", GO_BINARY_NAME)
@@ -50,12 +50,12 @@ func (p *GoProvider) Plan(ctx *generate.GenerateContext) error {
 		runtimePkgs = append(runtimePkgs, "libc6")
 	}
 
-	ctx.Deploy.Inputs = []plan.Input{
-		ctx.DefaultRuntimeInputWithPackages(runtimePkgs),
-		plan.NewStepInput(build.Name(), plan.InputOptions{
+	ctx.Deploy.AddAptPackages(runtimePkgs)
+	ctx.Deploy.AddInputs([]plan.Layer{
+		plan.NewStepLayer(build.Name(), plan.InputOptions{
 			Include: []string{"."},
 		}),
-	}
+	})
 
 	p.addMetadata(ctx)
 

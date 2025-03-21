@@ -42,7 +42,7 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 	p.InstallMisePackages(ctx, ctx.GetMiseStepBuilder())
 
 	install := ctx.NewCommandStep("install")
-	install.AddInput(plan.NewStepInput(p.GetBuilderDeps(ctx).Name()))
+	install.AddInput(plan.NewStepLayer(p.GetBuilderDeps(ctx).Name()))
 
 	install.Secrets = []string{}
 	install.UseSecretsWithPrefixes([]string{"PYTHON", "PIP", "PIPX", "UV", "PDM", "POETRY"})
@@ -64,27 +64,24 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 	p.addMetadata(ctx)
 
 	build := ctx.NewCommandStep("build")
-	build.AddInput(plan.NewStepInput(install.Name()))
+	build.AddInput(plan.NewStepLayer(install.Name()))
 	build.AddCommand(plan.NewCopyCommand("."))
 
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 	maps.Copy(ctx.Deploy.Variables, p.GetPythonEnvVars(ctx))
 
-	installArtifacts := plan.NewStepInput(build.Name(), plan.InputOptions{
+	installArtifacts := plan.NewStepLayer(build.Name(), plan.InputOptions{
 		Include: installOutputs,
 	})
 
-	ctx.Deploy.Inputs = []plan.Input{
-		plan.NewStepInput(p.GetImageWithRuntimeDeps(ctx).Name()),
-		plan.NewStepInput(ctx.GetMiseStepBuilder().Name(), plan.InputOptions{
-			Include: ctx.GetMiseStepBuilder().GetOutputPaths(),
-		}),
+	ctx.Deploy.AddInputs([]plan.Layer{
+		ctx.GetMiseStepBuilder().GetLayer(),
 		installArtifacts,
-		plan.NewStepInput(build.Name(), plan.InputOptions{
+		plan.NewStepLayer(build.Name(), plan.InputOptions{
 			Include: []string{"."},
 			Exclude: []string{strings.TrimPrefix(VENV_PATH, "/app/")},
 		}),
-	}
+	})
 
 	return nil
 }
@@ -250,28 +247,21 @@ func (p *PythonProvider) InstallPip(ctx *generate.GenerateContext, install *gene
 	return []string{VENV_PATH}
 }
 
-func (p *PythonProvider) GetImageWithRuntimeDeps(ctx *generate.GenerateContext) *generate.AptStepBuilder {
-	aptStep := ctx.NewAptStepBuilder("python-runtime-deps")
-	aptStep.Inputs = []plan.Input{
-		ctx.DefaultRuntimeInput(),
-	}
-
+func (p *PythonProvider) AddRuntimeDeps(ctx *generate.GenerateContext) {
 	for dep, requiredPkgs := range pythonRuntimeDepRequirements {
 		if p.usesDep(ctx, dep) {
 			ctx.Logger.LogInfo("Installing apt packages for %s", dep)
-			aptStep.Packages = append(aptStep.Packages, requiredPkgs...)
+			ctx.Deploy.AddAptPackages(requiredPkgs)
 		}
 	}
 
 	if p.usesPostgres(ctx) {
-		aptStep.Packages = append(aptStep.Packages, "libpq5")
+		ctx.Deploy.AddAptPackages([]string{"libpq5"})
 	}
 
 	if p.usesMysql(ctx) {
-		aptStep.Packages = append(aptStep.Packages, "default-mysql-client")
+		ctx.Deploy.AddAptPackages([]string{"default-mysql-client"})
 	}
-
-	return aptStep
 }
 
 func (p *PythonProvider) GetBuilderDeps(ctx *generate.GenerateContext) *generate.MiseStepBuilder {

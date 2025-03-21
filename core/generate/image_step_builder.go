@@ -53,8 +53,8 @@ func (b *ImageStepBuilder) Build(options *BuildStepOptions) (*plan.Step, error) 
 	image := b.ResolveStepImage(options)
 
 	step := plan.NewStep(b.DisplayName)
-	step.Inputs = []plan.Input{
-		plan.NewImageInput(image),
+	step.Inputs = []plan.Layer{
+		plan.NewImageLayer(image),
 	}
 
 	step.Secrets = []string{}

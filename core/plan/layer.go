@@ -8,13 +8,13 @@ import (
 	"github.com/invopop/jsonschema"
 )
 
-type Input struct {
-	Image   string   `json:"image,omitempty" jsonschema:"description=The image to use as input"`
-	Step    string   `json:"step,omitempty" jsonschema:"description=The step to use as input"`
-	Local   bool     `json:"local,omitempty" jsonschema:"description=Whether to use local files as input"`
-	Spread  bool     `json:"spread,omitempty" jsonschema:"description=Whether to spread the input"`
-	Include []string `json:"include,omitempty" jsonschema:"description=Files or directories to include"`
-	Exclude []string `json:"exclude,omitempty" jsonschema:"description=Files or directories to exclude"`
+type Layer struct {
+	Image  string `json:"image,omitempty" jsonschema:"description=The image to use as input"`
+	Step   string `json:"step,omitempty" jsonschema:"description=The step to use as input"`
+	Local  bool   `json:"local,omitempty" jsonschema:"description=Whether to use local files as input"`
+	Spread bool   `json:"spread,omitempty" jsonschema:"description=Whether to spread the input"`
+
+	Filter
 }
 
 type InputOptions struct {
@@ -22,8 +22,8 @@ type InputOptions struct {
 	Exclude []string
 }
 
-func NewStepInput(stepName string, options ...InputOptions) Input {
-	input := Input{
+func NewStepLayer(stepName string, options ...InputOptions) Layer {
+	input := Layer{
 		Step: stepName,
 	}
 
@@ -35,8 +35,8 @@ func NewStepInput(stepName string, options ...InputOptions) Input {
 	return input
 }
 
-func NewImageInput(image string, options ...InputOptions) Input {
-	input := Input{
+func NewImageLayer(image string, options ...InputOptions) Layer {
+	input := Layer{
 		Image: image,
 	}
 
@@ -44,22 +44,27 @@ func NewImageInput(image string, options ...InputOptions) Input {
 		input.Include = options[0].Include
 		input.Exclude = options[0].Exclude
 	}
+
 	return input
 }
 
-func NewLocalInput(path string) Input {
-	return Input{
-		Local:   true,
-		Include: []string{path},
+func NewLocalLayer(path string) Layer {
+	return Layer{
+		Local:  true,
+		Filter: NewIncludeFilter([]string{path}),
 	}
 }
 
-func (i *Input) String() string {
+func (i Layer) IsSpread() bool {
+	return i.Spread
+}
+
+func (i *Layer) String() string {
 	bytes, _ := json.Marshal(i)
 	return string(bytes)
 }
 
-func (i *Input) DisplayName() string {
+func (i *Layer) DisplayName() string {
 	include := strings.Join(i.Include, ", ")
 
 	if i.Local {
@@ -81,13 +86,9 @@ func (i *Input) DisplayName() string {
 	return fmt.Sprintf("input %s", include)
 }
 
-func (i Input) IsSpread() bool {
-	return i.Spread
-}
-
-func (i *Input) UnmarshalJSON(data []byte) error {
+func (i *Layer) UnmarshalJSON(data []byte) error {
 	// First try normal JSON unmarshal
-	type Alias Input
+	type Alias Layer
 	aux := &struct {
 		*Alias
 	}{
@@ -102,22 +103,22 @@ func (i *Input) UnmarshalJSON(data []byte) error {
 	str = strings.Trim(str, "\"")
 	switch str {
 	case ".":
-		*i = NewLocalInput(".")
+		*i = NewLocalLayer(".")
 		return nil
 	case "...":
-		*i = Input{Spread: true}
+		*i = Layer{Spread: true}
 		return nil
 	default:
 		if strings.HasPrefix(str, "$") {
 			stepName := strings.TrimPrefix(str, "$")
-			*i = NewStepInput(stepName)
+			*i = NewStepLayer(stepName)
 			return nil
 		}
 		return fmt.Errorf("invalid input format: %s", str)
 	}
 }
 
-func (Input) JSONSchema() *jsonschema.Schema {
+func (Layer) JSONSchema() *jsonschema.Schema {
 	// Create common schemas for include/exclude
 	includeSchema := &jsonschema.Schema{
 		Type:        "array",

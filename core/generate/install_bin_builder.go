@@ -47,6 +47,12 @@ func (b *InstallBinStepBuilder) Version(name resolver.PackageRef, version string
 	b.Resolver.Version(name, version, source)
 }
 
+func (b *InstallBinStepBuilder) GetLayer() plan.Layer {
+	return plan.NewStepLayer(b.Name(), plan.InputOptions{
+		Include: b.GetOutputPaths(),
+	})
+}
+
 func (b *InstallBinStepBuilder) Build(options *BuildStepOptions) (*plan.Step, error) {
 	packageVersion := options.ResolvedPackages[b.Package.Name].ResolvedVersion
 	if packageVersion == nil {
@@ -55,8 +61,8 @@ func (b *InstallBinStepBuilder) Build(options *BuildStepOptions) (*plan.Step, er
 
 	step := plan.NewStep(b.DisplayName)
 
-	step.Inputs = []plan.Input{
-		plan.NewImageInput(plan.RAILPACK_BUILDER_IMAGE),
+	step.Inputs = []plan.Layer{
+		plan.NewImageLayer(plan.RailpackBuilderImage),
 	}
 
 	binPath := b.getBinPath()

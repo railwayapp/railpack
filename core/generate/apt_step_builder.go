@@ -9,14 +9,14 @@ import (
 type AptStepBuilder struct {
 	DisplayName string
 	Packages    []string
-	Inputs      []plan.Input
+	Inputs      []plan.Layer
 }
 
 func (c *GenerateContext) NewAptStepBuilder(name string) *AptStepBuilder {
 	step := &AptStepBuilder{
 		DisplayName: c.GetStepName(fmt.Sprintf("packages:%s", name)),
 		Packages:    []string{},
-		Inputs:      []plan.Input{},
+		Inputs:      []plan.Layer{},
 	}
 
 	c.Steps = append(c.Steps, step)
@@ -24,7 +24,7 @@ func (c *GenerateContext) NewAptStepBuilder(name string) *AptStepBuilder {
 	return step
 }
 
-func (b *AptStepBuilder) AddInput(input plan.Input) {
+func (b *AptStepBuilder) AddInput(input plan.Layer) {
 	b.Inputs = append(b.Inputs, input)
 }
 

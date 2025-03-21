@@ -12,7 +12,7 @@ const (
 
 type DeployConfig struct {
 	AptPackages []string          `json:"aptPackages,omitempty" jsonschema:"description=List of apt packages to include at runtime"`
-	Inputs      []plan.Input      `json:"inputs,omitempty" jsonschema:"description=The inputs for the deploy step"`
+	Inputs      []plan.Layer      `json:"inputs,omitempty" jsonschema:"description=The inputs for the deploy step"`
 	StartCmd    string            `json:"startCommand,omitempty" jsonschema:"description=The command to run in the container"`
 	Variables   map[string]string `json:"variables,omitempty" jsonschema:"description=The variables available to this step. The key is the name of the variable that is referenced in a variable command"`
 	Paths       []string          `json:"paths,omitempty" jsonschema:"description=The paths to prepend to the $PATH environment variable"`

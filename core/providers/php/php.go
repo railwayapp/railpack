@@ -58,15 +58,15 @@ func (p *PhpProvider) Plan(ctx *generate.GenerateContext) error {
 	isLaravel := p.usesLaravel(ctx)
 
 	prepare := ctx.NewCommandStep("prepare")
-	prepare.AddInput(plan.NewStepInput(phpImageStep.Name()))
+	prepare.AddInput(plan.NewStepLayer(phpImageStep.Name()))
 	p.Prepare(ctx, prepare, configFiles)
 
 	extensions := ctx.NewCommandStep("extensions")
-	extensions.AddInput(plan.NewStepInput(prepare.Name()))
+	extensions.AddInput(plan.NewStepLayer(prepare.Name()))
 	p.InstallExtensions(ctx, extensions)
 
 	composer := ctx.NewCommandStep("install:composer")
-	composer.AddInput(plan.NewStepInput(extensions.Name()))
+	composer.AddInput(plan.NewStepLayer(extensions.Name()))
 	p.InstallCompose(ctx, composer)
 
 	// Node (if necessary)
@@ -88,11 +88,13 @@ func (p *PhpProvider) Plan(ctx *generate.GenerateContext) error {
 	} else {
 		// A manual build command will go here
 		build := ctx.NewCommandStep("build")
-		build.AddInput(plan.NewStepInput(composer.Name()))
+		build.AddInput(plan.NewStepLayer(composer.Name()))
 		build.AddCommand(plan.NewCopyCommand("."))
-		ctx.Deploy.Inputs = []plan.Input{
-			plan.NewStepInput(build.Name()),
-		}
+		ctx.Deploy.Base = plan.NewStepLayer(build.Name())
+
+		// ctx.Deploy.Inputs = []plan.Layer{
+		// 	plan.NewStepLayer(build.Name()),
+		// }
 	}
 
 	ctx.Deploy.StartCmd = "/start-container.sh"
@@ -189,17 +191,17 @@ func (p *PhpProvider) DeployWithNode(ctx *generate.GenerateContext, nodeProvider
 	nodeProvider.InstallMisePackages(ctx, miseStep)
 
 	install := ctx.NewCommandStep("install:node")
-	install.AddInput(plan.NewStepInput(miseStep.Name()))
+	install.AddInput(plan.NewStepLayer(miseStep.Name()))
 	nodeProvider.InstallNodeDeps(ctx, install)
 
-	prune := ctx.NewCommandStep("prune:node")
-	prune.AddInput(plan.NewStepInput(install.Name()))
-	nodeProvider.PruneNodeDeps(ctx, prune)
+	// prune := ctx.NewCommandStep("prune:node")
+	// prune.AddInput(plan.NewStepLayer(install.Name()))
+	// nodeProvider.PruneNodeDeps(ctx, prune)
 
 	build := ctx.NewCommandStep("build")
-	build.Inputs = []plan.Input{
-		plan.NewStepInput(composer.Name()),
-		plan.NewStepInput(install.Name(), plan.InputOptions{
+	build.Inputs = []plan.Layer{
+		plan.NewStepLayer(composer.Name()),
+		plan.NewStepLayer(install.Name(), plan.InputOptions{
 			Include: append([]string{"."}, miseStep.GetOutputPaths()...),
 		}),
 	}
@@ -215,16 +217,18 @@ func (p *PhpProvider) DeployWithNode(ctx *generate.GenerateContext, nodeProvider
 		})
 	}
 
-	ctx.Deploy.Inputs = []plan.Input{
-		plan.NewStepInput(composer.Name()),
-		plan.NewStepInput(build.Name(), plan.InputOptions{
-			Include: []string{"."},
-			Exclude: []string{"node_modules", "vendor"},
-		}),
-		plan.NewStepInput(prune.Name(), plan.InputOptions{
-			Include: []string{"/app/node_modules"},
-		}),
-	}
+	ctx.Deploy.Base = plan.NewStepLayer(build.Name())
+
+	// ctx.Deploy.Inputs = []plan.Layer{
+	// 	plan.NewStepLayer(composer.Name()),
+	// 	plan.NewStepLayer(build.Name(), plan.InputOptions{
+	// 		Include: []string{"."},
+	// 		Exclude: []string{"node_modules", "vendor"},
+	// 	}),
+	// 	plan.NewStepLayer(prune.Name(), plan.InputOptions{
+	// 		Include: []string{"/app/node_modules"},
+	// 	}),
+	// }
 
 	return nil
 }

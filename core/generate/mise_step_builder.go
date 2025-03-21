@@ -23,7 +23,7 @@ type MiseStepBuilder struct {
 	MisePackages          []*resolver.PackageRef
 	SupportingMiseFiles   []string
 	Assets                map[string]string
-	Inputs                []plan.Input
+	Inputs                []plan.Layer
 	Variables             map[string]string
 	app                   *a.App
 	env                   *a.Environment
@@ -38,7 +38,7 @@ func (c *GenerateContext) NewMiseStepBuilder(displayName string) *MiseStepBuilde
 		MisePackages:          []*resolver.PackageRef{},
 		SupportingAptPackages: append(supportingAptPackages, c.Config.BuildAptPackages...),
 		Assets:                map[string]string{},
-		Inputs:                []plan.Input{},
+		Inputs:                []plan.Layer{},
 		Variables:             map[string]string{},
 		app:                   c.App,
 		env:                   c.Env,
@@ -59,7 +59,7 @@ func (b *MiseStepBuilder) AddSupportingAptPackage(name string) {
 	b.SupportingAptPackages = append(b.SupportingAptPackages, name)
 }
 
-func (b *MiseStepBuilder) AddInput(input plan.Input) {
+func (b *MiseStepBuilder) AddInput(input plan.Layer) {
 	b.Inputs = append(b.Inputs, input)
 }
 
@@ -90,11 +90,17 @@ func (b *MiseStepBuilder) GetOutputPaths() []string {
 	return files
 }
 
+func (b *MiseStepBuilder) GetLayer() plan.Layer {
+	return plan.NewStepLayer(b.Name(), plan.InputOptions{
+		Include: b.GetOutputPaths(),
+	})
+}
+
 func (b *MiseStepBuilder) Build(options *BuildStepOptions) (*plan.Step, error) {
 	step := plan.NewStep(b.DisplayName)
 
-	step.Inputs = []plan.Input{
-		plan.NewImageInput(plan.RAILPACK_BUILDER_IMAGE),
+	step.Inputs = []plan.Layer{
+		plan.NewImageLayer(plan.RailpackBuilderImage),
 	}
 
 	// Setup apt commands

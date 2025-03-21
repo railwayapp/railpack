@@ -108,7 +108,8 @@ func (g *BuildGraph) GenerateLLB() (*BuildGraphOutput, error) {
 	}
 
 	// Process deploy state
-	deployState := g.GetFullStateFromInputs(g.Plan.Deploy.Inputs)
+	deployInputs := append([]plan.Layer{*g.Plan.Deploy.Base}, g.Plan.Deploy.Inputs...)
+	deployState := g.GetFullStateFromInputs(deployInputs)
 
 	graphEnv := NewGraphEnvironment()
 	for _, input := range g.Plan.Deploy.Inputs {

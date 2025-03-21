@@ -72,12 +72,12 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 
 	// Install
 	install := ctx.NewCommandStep("install")
-	install.AddInput(plan.NewStepInput(miseStep.Name()))
+	install.AddInput(plan.NewStepLayer(miseStep.Name()))
 	p.InstallNodeDeps(ctx, install)
 
 	// Prune
 	prune := ctx.NewCommandStep("prune")
-	prune.AddInput(plan.NewStepInput(install.Name()))
+	prune.AddInput(plan.NewStepLayer(install.Name()))
 	prune.Secrets = []string{}
 	if p.shouldPrune(ctx) && !isSPA {
 		p.PruneNodeDeps(ctx, prune)
@@ -85,7 +85,7 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 
 	// Build
 	build := ctx.NewCommandStep("build")
-	build.AddInput(plan.NewStepInput(install.Name()))
+	build.AddInput(plan.NewStepLayer(install.Name()))
 	p.Build(ctx, build)
 
 	// Deploy
@@ -115,28 +115,35 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 		runtimeAptPackages = append(runtimeAptPackages, "xvfb", "gconf-service", "libasound2", "libatk1.0-0", "libc6", "libcairo2", "libcups2", "libdbus-1-3", "libexpat1", "libfontconfig1", "libgbm1", "libgcc1", "libgconf-2-4", "libgdk-pixbuf2.0-0", "libglib2.0-0", "libgtk-3-0", "libnspr4", "libpango-1.0-0", "libpangocairo-1.0-0", "libstdc++6", "libx11-6", "libx11-xcb1", "libxcb1", "libxcomposite1", "libxcursor1", "libxdamage1", "libxext6", "libxfixes3", "libxi6", "libxrandr2", "libxrender1", "libxss1", "libxtst6", "ca-certificates", "fonts-liberation", "libappindicator1", "libnss3", "lsb-release", "xdg-utils", "wget")
 	}
 
-	nodeModulesInput := plan.NewStepInput(build.Name(), plan.InputOptions{
+	nodeModulesLayer := plan.NewStepLayer(build.Name(), plan.InputOptions{
 		Include: p.packageManager.GetInstallFolder(ctx),
 	})
 	if p.shouldPrune(ctx) {
-		nodeModulesInput = plan.NewStepInput(prune.Name(), plan.InputOptions{
+		nodeModulesLayer = plan.NewStepLayer(prune.Name(), plan.InputOptions{
 			Include: p.packageManager.GetInstallFolder(ctx),
 		})
 	}
 
-	buildInput := plan.NewStepInput(build.Name(), plan.InputOptions{
+	buildLayer := plan.NewStepLayer(build.Name(), plan.InputOptions{
 		Include: buildIncludeDirs,
 		Exclude: []string{"node_modules", ".yarn"},
 	})
 
-	ctx.Deploy.Inputs = []plan.Input{
-		ctx.DefaultRuntimeInputWithPackages(runtimeAptPackages),
-		plan.NewStepInput(miseStep.Name(), plan.InputOptions{
-			Include: miseStep.GetOutputPaths(),
-		}),
-		nodeModulesInput,
-		buildInput,
-	}
+	ctx.Deploy.AddAptPackages(runtimeAptPackages)
+	ctx.Deploy.AddInputs([]plan.Layer{
+		miseStep.GetLayer(),
+		nodeModulesLayer,
+		buildLayer,
+	})
+
+	// ctx.Deploy.Inputs = []plan.Layer{
+	// 	ctx.DefaultRuntimeInputWithPackages(runtimeAptPackages),
+	// 	plan.NewStepLayer(miseStep.Name(), plan.InputOptions{
+	// 		Include: miseStep.GetOutputPaths(),
+	// 	}),
+	// 	nodeModulesInput,
+	// 	buildInput,
+	// }
 
 	return nil
 }

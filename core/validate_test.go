@@ -28,11 +28,11 @@ func TestValidatePlan(t *testing.T) {
 		buildPlan := plan.NewBuildPlan()
 		buildStep := plan.NewStep("build")
 		buildStep.Commands = []plan.Command{plan.NewExecShellCommand("npm build")}
-		buildStep.Inputs = []plan.Input{plan.NewImageInput("node:18")}
+		buildStep.Inputs = []plan.Layer{plan.NewImageLayer("node:18")}
 		buildPlan.Steps = append(buildPlan.Steps, *buildStep)
 		buildPlan.Deploy = plan.Deploy{
 			StartCmd: "npm start",
-			Inputs:   []plan.Input{plan.NewImageInput("node:18")},
+			Inputs:   []plan.Layer{plan.NewImageLayer("node:18")},
 		}
 
 		options := &ValidatePlanOptions{
@@ -85,28 +85,28 @@ func TestValidateInputs(t *testing.T) {
 	logger := logger.NewLogger()
 
 	t.Run("valid inputs", func(t *testing.T) {
-		inputs := []plan.Input{
-			plan.NewImageInput("node:18"),
-			plan.NewStepInput("build", plan.InputOptions{Include: []string{"src"}}),
+		inputs := []plan.Layer{
+			plan.NewImageLayer("node:18"),
+			plan.NewStepLayer("build", plan.InputOptions{Include: []string{"src"}}),
 		}
 		require.True(t, validateInputs(inputs, "test", logger))
 	})
 
 	t.Run("no inputs", func(t *testing.T) {
-		inputs := []plan.Input{}
+		inputs := []plan.Layer{}
 		require.False(t, validateInputs(inputs, "test", logger))
 	})
 
 	t.Run("invalid first input", func(t *testing.T) {
-		inputs := []plan.Input{
-			plan.NewLocalInput("."),
+		inputs := []plan.Layer{
+			plan.NewLocalLayer("."),
 		}
 		require.False(t, validateInputs(inputs, "test", logger))
 	})
 
 	t.Run("first input with includes", func(t *testing.T) {
-		inputs := []plan.Input{
-			plan.NewImageInput("node:18", plan.InputOptions{Include: []string{"src"}}),
+		inputs := []plan.Layer{
+			plan.NewImageLayer("node:18", plan.InputOptions{Include: []string{"src"}}),
 		}
 		require.False(t, validateInputs(inputs, "test", logger))
 	})

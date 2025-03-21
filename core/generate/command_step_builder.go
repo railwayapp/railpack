@@ -11,7 +11,7 @@ import (
 type CommandStepBuilder struct {
 	DisplayName string
 	Commands    []plan.Command
-	Inputs      []plan.Input
+	Inputs      []plan.Layer
 	Assets      map[string]string
 	Variables   map[string]string
 	Caches      []string
@@ -23,7 +23,7 @@ type CommandStepBuilder struct {
 func (c *GenerateContext) NewCommandStep(name string) *CommandStepBuilder {
 	step := &CommandStepBuilder{
 		DisplayName: c.GetStepName(name),
-		Inputs:      []plan.Input{},
+		Inputs:      []plan.Layer{},
 		Commands:    []plan.Command{},
 		Assets:      map[string]string{},
 		Variables:   map[string]string{},
@@ -46,11 +46,11 @@ func (c *GenerateContext) NewCommandStep(name string) *CommandStepBuilder {
 	return step
 }
 
-func (b *CommandStepBuilder) AddInput(input plan.Input) {
+func (b *CommandStepBuilder) AddInput(input plan.Layer) {
 	b.Inputs = append(b.Inputs, input)
 }
 
-func (b *CommandStepBuilder) AddInputs(inputs []plan.Input) {
+func (b *CommandStepBuilder) AddInputs(inputs []plan.Layer) {
 	b.Inputs = append(b.Inputs, inputs...)
 }
 
