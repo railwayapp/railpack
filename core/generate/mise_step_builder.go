@@ -96,24 +96,26 @@ func (b *MiseStepBuilder) GetLayer() plan.Layer {
 	})
 }
 
-func (b *MiseStepBuilder) Build(options *BuildStepOptions) (*plan.Step, error) {
-	step := plan.NewStep(b.DisplayName)
+func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) error {
+	baseLayer := plan.NewImageLayer(plan.RailpackBuilderImage)
 
-	step.Inputs = []plan.Layer{
-		plan.NewImageLayer(plan.RailpackBuilderImage),
-	}
-
-	// Setup apt commands
-	// TODO: This should be a separate step
 	if len(b.SupportingAptPackages) > 0 {
-		step.AddCommands([]plan.Command{
+		aptStep := plan.NewStep("packages:apt:build")
+		aptStep.Inputs = []plan.Layer{baseLayer}
+		aptStep.AddCommands([]plan.Command{
 			options.NewAptInstallCommand(b.SupportingAptPackages),
 		})
-		step.Caches = options.Caches.GetAptCaches()
+		aptStep.Caches = options.Caches.GetAptCaches()
+		p.Steps = append(p.Steps, *aptStep)
+		baseLayer = plan.NewStepLayer(aptStep.Name)
 	}
 
+	step := plan.NewStep(b.DisplayName)
+
+	step.Inputs = []plan.Layer{baseLayer}
+
 	if len(b.MisePackages) == 0 {
-		return step, nil
+		return nil
 	}
 
 	// Setup mise
@@ -152,7 +154,7 @@ func (b *MiseStepBuilder) Build(options *BuildStepOptions) (*plan.Step, error) {
 
 	miseToml, err := mise.GenerateMiseToml(packagesToInstall)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate mise.toml: %w", err)
+		return fmt.Errorf("failed to generate mise.toml: %w", err)
 	}
 
 	b.Assets["mise.toml"] = miseToml
@@ -175,7 +177,9 @@ func (b *MiseStepBuilder) Build(options *BuildStepOptions) (*plan.Step, error) {
 	step.Assets = b.Assets
 	step.Secrets = []string{}
 
-	return step, nil
+	p.Steps = append(p.Steps, *step)
+
+	return nil
 }
 
 var miseConfigFiles = []string{

@@ -111,7 +111,7 @@ func (b *CommandStepBuilder) Name() string {
 	return b.DisplayName
 }
 
-func (b *CommandStepBuilder) Build(options *BuildStepOptions) (*plan.Step, error) {
+func (b *CommandStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) error {
 	step := plan.NewStep(b.DisplayName)
 
 	step.Inputs = b.Inputs
@@ -121,5 +121,7 @@ func (b *CommandStepBuilder) Build(options *BuildStepOptions) (*plan.Step, error
 	step.Variables = b.Variables
 	step.Secrets = b.Secrets
 
-	return step, nil
+	p.Steps = append(p.Steps, *step)
+
+	return nil
 }

@@ -21,7 +21,7 @@ type BuildStepOptions struct {
 
 type StepBuilder interface {
 	Name() string
-	Build(options *BuildStepOptions) (*plan.Step, error)
+	Build(p *plan.BuildPlan, options *BuildStepOptions) error
 }
 
 type GenerateContext struct {
@@ -142,13 +142,11 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 	}
 
 	for _, stepBuilder := range c.Steps {
-		step, err := stepBuilder.Build(buildStepOptions)
+		err := stepBuilder.Build(buildPlan, buildStepOptions)
 
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to build step: %w", err)
 		}
-
-		buildPlan.AddStep(*step)
 	}
 
 	buildPlan.Caches = c.Caches.Caches

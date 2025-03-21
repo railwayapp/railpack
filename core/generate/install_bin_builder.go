@@ -53,10 +53,10 @@ func (b *InstallBinStepBuilder) GetLayer() plan.Layer {
 	})
 }
 
-func (b *InstallBinStepBuilder) Build(options *BuildStepOptions) (*plan.Step, error) {
+func (b *InstallBinStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) error {
 	packageVersion := options.ResolvedPackages[b.Package.Name].ResolvedVersion
 	if packageVersion == nil {
-		return nil, fmt.Errorf("package %s not found", b.Package.Name)
+		return fmt.Errorf("package %s not found", b.Package.Name)
 	}
 
 	step := plan.NewStep(b.DisplayName)
@@ -75,7 +75,9 @@ func (b *InstallBinStepBuilder) Build(options *BuildStepOptions) (*plan.Step, er
 
 	step.Secrets = []string{}
 
-	return step, nil
+	p.Steps = append(p.Steps, *step)
+
+	return nil
 }
 
 func (b *InstallBinStepBuilder) getBinPath() string {
