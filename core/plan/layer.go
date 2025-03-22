@@ -50,6 +50,10 @@ func NewLocalLayer(path string) Layer {
 	}
 }
 
+func (i Layer) IsEmpty() bool {
+	return i.Step == "" && i.Image == "" && !i.Local && !i.Spread
+}
+
 func (i Layer) IsSpread() bool {
 	return i.Spread
 }

@@ -121,6 +121,7 @@ func copyLayerPaths(destState, srcState llb.State, filter plan.Filter, isLocal b
 // We should not merge layers if:
 // - The non-first layer has no include filters
 // - Any layer includes the root path "/"
+// - Any layer pulls from a local filesystem
 // - Any layer has overlapping paths with subsequent layers
 func shouldLLBMerge(layers []plan.Layer) bool {
 	for i, layer := range layers {
@@ -129,6 +130,10 @@ func shouldLLBMerge(layers []plan.Layer) bool {
 		}
 
 		if slices.Contains(layer.Include, "/") {
+			return false
+		}
+
+		if layer.Local {
 			return false
 		}
 

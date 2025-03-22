@@ -155,6 +155,8 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 	buildPlan.Secrets = utils.RemoveDuplicates(c.Secrets)
 	c.Deploy.Build(buildPlan, buildStepOptions)
 
+	buildPlan.Normalize()
+
 	return buildPlan, resolvedPackages, nil
 }
 
