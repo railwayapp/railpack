@@ -51,6 +51,10 @@ export default defineConfig({
               link: "/guides/installing-packages",
             },
             {
+              label: "Adding Steps",
+              link: "/guides/adding-steps",
+            },
+            {
               label: "Developing Locally",
               link: "/guides/developing-locally",
             },
