@@ -135,7 +135,7 @@ func TestNormalize(t *testing.T) {
 			},
 		},
 		{
-			name: "removes unreferenced steps and keeps Deploy.Base references",
+			name: "removes unreferenced steps",
 			plan: &BuildPlan{
 				Steps: []Step{
 					{
@@ -190,7 +190,7 @@ func TestNormalize(t *testing.T) {
 			},
 		},
 		{
-			name: "keeps all steps if none are referenced",
+			name: "keeps only transitively referenced steps",
 			plan: &BuildPlan{
 				Steps: []Step{
 					{
@@ -198,13 +198,32 @@ func TestNormalize(t *testing.T) {
 						Inputs: []Layer{},
 					},
 					{
-						Name:   "step2",
+						Name: "step2",
+						Inputs: []Layer{
+							NewStepLayer("step1"),
+						},
+					},
+					{
+						Name: "step3",
+						Inputs: []Layer{
+							NewStepLayer("step2"),
+						},
+					},
+					{
+						Name: "step4",
+						Inputs: []Layer{
+							NewStepLayer("step3"),
+						},
+					},
+					{
+						Name:   "step5",
 						Inputs: []Layer{},
 					},
 				},
 				Deploy: Deploy{
+					Base: NewStepLayer("step3"),
 					Inputs: []Layer{
-						NewImageLayer("ubuntu:22.04"),
+						NewStepLayer("step5"),
 					},
 				},
 			},
@@ -215,14 +234,121 @@ func TestNormalize(t *testing.T) {
 						Inputs: []Layer{},
 					},
 					{
-						Name:   "step2",
+						Name: "step2",
+						Inputs: []Layer{
+							NewStepLayer("step1"),
+						},
+					},
+					{
+						Name: "step3",
+						Inputs: []Layer{
+							NewStepLayer("step2"),
+						},
+					},
+					{
+						Name:   "step5",
 						Inputs: []Layer{},
 					},
 				},
 				Deploy: Deploy{
+					Base: NewStepLayer("step3"),
 					Inputs: []Layer{
-						NewImageLayer("ubuntu:22.04"),
+						NewStepLayer("step5"),
 					},
+				},
+			},
+		},
+		{
+			name: "handles circular dependencies",
+			plan: &BuildPlan{
+				Steps: []Step{
+					{
+						Name: "step1",
+						Inputs: []Layer{
+							NewStepLayer("step2"),
+						},
+					},
+					{
+						Name: "step2",
+						Inputs: []Layer{
+							NewStepLayer("step3"),
+						},
+					},
+					{
+						Name: "step3",
+						Inputs: []Layer{
+							NewStepLayer("step1"),
+						},
+					},
+					{
+						Name: "step4",
+						Inputs: []Layer{
+							NewStepLayer("step1"),
+						},
+					},
+				},
+				Deploy: Deploy{
+					Base: NewStepLayer("step4"),
+				},
+			},
+			expectedPlan: &BuildPlan{
+				Steps: []Step{
+					{
+						Name: "step4",
+						Inputs: []Layer{
+							NewStepLayer("step1"),
+						},
+					},
+					{
+						Name: "step1",
+						Inputs: []Layer{
+							NewStepLayer("step2"),
+						},
+					},
+					{
+						Name: "step2",
+						Inputs: []Layer{
+							NewStepLayer("step3"),
+						},
+					},
+					{
+						Name: "step3",
+						Inputs: []Layer{
+							NewStepLayer("step1"),
+						},
+					},
+				},
+				Deploy: Deploy{
+					Base: NewStepLayer("step4"),
+				},
+			},
+		},
+		{
+			name: "handles self-referential step",
+			plan: &BuildPlan{
+				Steps: []Step{
+					{
+						Name: "step1",
+						Inputs: []Layer{
+							NewStepLayer("step1"), // References itself
+						},
+					},
+				},
+				Deploy: Deploy{
+					Base: NewStepLayer("step1"),
+				},
+			},
+			expectedPlan: &BuildPlan{
+				Steps: []Step{
+					{
+						Name: "step1",
+						Inputs: []Layer{
+							NewStepLayer("step1"),
+						},
+					},
+				},
+				Deploy: Deploy{
+					Base: NewStepLayer("step1"),
 				},
 			},
 		},

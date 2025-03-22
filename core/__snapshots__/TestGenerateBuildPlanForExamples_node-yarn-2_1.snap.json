@@ -129,14 +129,6 @@
    }
   },
   {
-   "inputs": [
-    {
-     "step": "install"
-    }
-   ],
-   "name": "prune"
-  },
-  {
    "caches": [
     "node-modules"
    ],
