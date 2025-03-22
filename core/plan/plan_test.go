@@ -81,3 +81,302 @@ func TestSerialization(t *testing.T) {
 		t.Errorf("plans mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestNormalize(t *testing.T) {
+	tests := []struct {
+		name         string
+		plan         *BuildPlan
+		expectedPlan *BuildPlan
+	}{
+		{
+			name: "empty plan",
+			plan: &BuildPlan{
+				Steps:  []Step{},
+				Deploy: Deploy{},
+			},
+			expectedPlan: &BuildPlan{
+				Steps:  []Step{},
+				Deploy: Deploy{},
+			},
+		},
+		{
+			name: "removes empty inputs",
+			plan: &BuildPlan{
+				Steps: []Step{
+					{
+						Name: "step1",
+						Inputs: []Layer{
+							{},
+							NewStepLayer("step2"),
+						},
+					},
+				},
+				Deploy: Deploy{
+					Inputs: []Layer{
+						{},
+						NewImageLayer("ubuntu:22.04"),
+					},
+				},
+			},
+			expectedPlan: &BuildPlan{
+				Steps: []Step{
+					{
+						Name: "step1",
+						Inputs: []Layer{
+							NewStepLayer("step2"),
+						},
+					},
+				},
+				Deploy: Deploy{
+					Inputs: []Layer{
+						NewImageLayer("ubuntu:22.04"),
+					},
+				},
+			},
+		},
+		{
+			name: "removes unreferenced steps",
+			plan: &BuildPlan{
+				Steps: []Step{
+					{
+						Name:   "step1",
+						Inputs: []Layer{},
+					},
+					{
+						Name:   "step2",
+						Inputs: []Layer{},
+					},
+					{
+						Name: "step3",
+						Inputs: []Layer{
+							NewStepLayer("step2"),
+						},
+					},
+					{
+						Name:   "step4",
+						Inputs: []Layer{},
+					},
+				},
+				Deploy: Deploy{
+					Base: NewStepLayer("step4"),
+					Inputs: []Layer{
+						NewStepLayer("step3"),
+					},
+				},
+			},
+			expectedPlan: &BuildPlan{
+				Steps: []Step{
+					{
+						Name: "step3",
+						Inputs: []Layer{
+							NewStepLayer("step2"),
+						},
+					},
+					{
+						Name:   "step2",
+						Inputs: []Layer{},
+					},
+					{
+						Name:   "step4",
+						Inputs: []Layer{},
+					},
+				},
+				Deploy: Deploy{
+					Base: NewStepLayer("step4"),
+					Inputs: []Layer{
+						NewStepLayer("step3"),
+					},
+				},
+			},
+		},
+		{
+			name: "keeps only transitively referenced steps",
+			plan: &BuildPlan{
+				Steps: []Step{
+					{
+						Name:   "step1",
+						Inputs: []Layer{},
+					},
+					{
+						Name: "step2",
+						Inputs: []Layer{
+							NewStepLayer("step1"),
+						},
+					},
+					{
+						Name: "step3",
+						Inputs: []Layer{
+							NewStepLayer("step2"),
+						},
+					},
+					{
+						Name: "step4",
+						Inputs: []Layer{
+							NewStepLayer("step3"),
+						},
+					},
+					{
+						Name:   "step5",
+						Inputs: []Layer{},
+					},
+				},
+				Deploy: Deploy{
+					Base: NewStepLayer("step3"),
+					Inputs: []Layer{
+						NewStepLayer("step5"),
+					},
+				},
+			},
+			expectedPlan: &BuildPlan{
+				Steps: []Step{
+					{
+						Name:   "step1",
+						Inputs: []Layer{},
+					},
+					{
+						Name: "step2",
+						Inputs: []Layer{
+							NewStepLayer("step1"),
+						},
+					},
+					{
+						Name: "step3",
+						Inputs: []Layer{
+							NewStepLayer("step2"),
+						},
+					},
+					{
+						Name:   "step5",
+						Inputs: []Layer{},
+					},
+				},
+				Deploy: Deploy{
+					Base: NewStepLayer("step3"),
+					Inputs: []Layer{
+						NewStepLayer("step5"),
+					},
+				},
+			},
+		},
+		{
+			name: "handles circular dependencies",
+			plan: &BuildPlan{
+				Steps: []Step{
+					{
+						Name: "step1",
+						Inputs: []Layer{
+							NewStepLayer("step2"),
+						},
+					},
+					{
+						Name: "step2",
+						Inputs: []Layer{
+							NewStepLayer("step3"),
+						},
+					},
+					{
+						Name: "step3",
+						Inputs: []Layer{
+							NewStepLayer("step1"),
+						},
+					},
+					{
+						Name: "step4",
+						Inputs: []Layer{
+							NewStepLayer("step1"),
+						},
+					},
+				},
+				Deploy: Deploy{
+					Base: NewStepLayer("step4"),
+				},
+			},
+			expectedPlan: &BuildPlan{
+				Steps: []Step{
+					{
+						Name: "step4",
+						Inputs: []Layer{
+							NewStepLayer("step1"),
+						},
+					},
+					{
+						Name: "step1",
+						Inputs: []Layer{
+							NewStepLayer("step2"),
+						},
+					},
+					{
+						Name: "step2",
+						Inputs: []Layer{
+							NewStepLayer("step3"),
+						},
+					},
+					{
+						Name: "step3",
+						Inputs: []Layer{
+							NewStepLayer("step1"),
+						},
+					},
+				},
+				Deploy: Deploy{
+					Base: NewStepLayer("step4"),
+				},
+			},
+		},
+		{
+			name: "handles self-referential step",
+			plan: &BuildPlan{
+				Steps: []Step{
+					{
+						Name: "step1",
+						Inputs: []Layer{
+							NewStepLayer("step1"), // References itself
+						},
+					},
+				},
+				Deploy: Deploy{
+					Base: NewStepLayer("step1"),
+				},
+			},
+			expectedPlan: &BuildPlan{
+				Steps: []Step{
+					{
+						Name: "step1",
+						Inputs: []Layer{
+							NewStepLayer("step1"),
+						},
+					},
+				},
+				Deploy: Deploy{
+					Base: NewStepLayer("step1"),
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.plan.Normalize()
+
+			// Compare Steps length
+			require.Equal(t, len(tc.expectedPlan.Steps), len(tc.plan.Steps), "Steps length mismatch")
+
+			// Create map of expected steps by name for easier comparison
+			expectedSteps := make(map[string]Step)
+			for _, step := range tc.expectedPlan.Steps {
+				expectedSteps[step.Name] = step
+			}
+
+			// Verify each step is as expected
+			for _, step := range tc.plan.Steps {
+				expectedStep, exists := expectedSteps[step.Name]
+				require.True(t, exists, "Unexpected step: %s", step.Name)
+				require.Equal(t, expectedStep.Inputs, step.Inputs, "Inputs mismatch for step %s", step.Name)
+			}
+
+			// Compare Deploy inputs and base
+			require.Equal(t, tc.expectedPlan.Deploy.Inputs, tc.plan.Deploy.Inputs, "Deploy inputs mismatch")
+			require.Equal(t, tc.expectedPlan.Deploy.Base, tc.plan.Deploy.Base, "Deploy base mismatch")
+		})
+	}
+}

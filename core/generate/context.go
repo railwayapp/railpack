@@ -24,7 +24,7 @@ type BuildStepOptions struct {
 
 type StepBuilder interface {
 	Name() string
-	Build(options *BuildStepOptions) (*plan.Step, error)
+	Build(p *plan.BuildPlan, options *BuildStepOptions) error
 }
 
 type GenerateContext struct {
@@ -82,8 +82,7 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 		Logger:   logger,
 	}
 
-	// The default runtime image should include the runtime apt packages
-	ctx.Deploy.Inputs = append(ctx.Deploy.Inputs, ctx.DefaultRuntimeInput())
+	ctx.applyPackagesFromConfig()
 
 	return ctx, nil
 }
@@ -145,38 +144,20 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 	}
 
 	for _, stepBuilder := range c.Steps {
-		step, err := stepBuilder.Build(buildStepOptions)
+		err := stepBuilder.Build(buildPlan, buildStepOptions)
 
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to build step: %w", err)
 		}
-
-		buildPlan.AddStep(*step)
 	}
 
 	buildPlan.Caches = c.Caches.Caches
 	buildPlan.Secrets = utils.RemoveDuplicates(c.Secrets)
-	buildPlan.Deploy = c.Deploy.Build()
+	c.Deploy.Build(buildPlan, buildStepOptions)
+
+	buildPlan.Normalize()
 
 	return buildPlan, resolvedPackages, nil
-}
-
-func (c *GenerateContext) DefaultRuntimeInput() plan.Input {
-	return c.DefaultRuntimeInputWithPackages([]string{})
-}
-
-func (c *GenerateContext) DefaultRuntimeInputWithPackages(additionalAptPackages []string) plan.Input {
-	aptPackages := append(c.Config.Deploy.AptPackages, additionalAptPackages...)
-
-	if len(aptPackages) == 0 {
-		return plan.NewImageInput(plan.RAILPACK_RUNTIME_IMAGE)
-	}
-
-	runtimeAptStep := c.NewAptStepBuilder("runtime")
-	runtimeAptStep.Packages = aptPackages
-	runtimeAptStep.AddInput(plan.NewImageInput(plan.RAILPACK_RUNTIME_IMAGE))
-
-	return plan.NewStepInput(runtimeAptStep.Name())
 }
 
 func (o *BuildStepOptions) NewAptInstallCommand(pkgs []string) plan.Command {
@@ -188,17 +169,33 @@ func (o *BuildStepOptions) NewAptInstallCommand(pkgs []string) plan.Command {
 	})
 }
 
-func (c *GenerateContext) applyConfig() {
+func (c *GenerateContext) applyPackagesFromConfig() {
 	miseStep := c.GetMiseStepBuilder()
 	for _, pkg := range slices.Sorted(maps.Keys(c.Config.Packages)) {
 		version := c.Config.Packages[pkg]
 		pkgRef := miseStep.Default(pkg, version)
 		miseStep.Version(pkgRef, version, "custom config")
 	}
+}
+
+func (c *GenerateContext) applyConfig() {
+	c.applyPackagesFromConfig()
 
 	// Apply the cache config to the context
 	maps.Copy(c.Caches.Caches, c.Config.Caches)
 	c.Secrets = plan.SpreadStrings(c.Config.Secrets, c.Secrets)
+
+	// Update deploy from config
+	if c.Config.Deploy != nil {
+		if c.Config.Deploy.StartCmd != "" {
+			c.Deploy.StartCmd = c.Config.Deploy.StartCmd
+		}
+
+		c.Deploy.AptPackages = plan.SpreadStrings(c.Config.Deploy.AptPackages, c.Deploy.AptPackages)
+		c.Deploy.DeployInputs = plan.Spread(c.Config.Deploy.Inputs, c.Deploy.DeployInputs)
+		c.Deploy.Paths = plan.SpreadStrings(c.Config.Deploy.Paths, c.Deploy.Paths)
+		maps.Copy(c.Deploy.Variables, c.Config.Deploy.Variables)
+	}
 
 	// Apply step config to the context
 	for _, name := range slices.Sorted(maps.Keys(c.Config.Steps)) {
@@ -217,31 +214,23 @@ func (c *GenerateContext) applyConfig() {
 			// If no build step found, create a new one
 			// Run the build in the builder context and copy the /app contents to the final image
 			commandStepBuilder = c.NewCommandStep(name)
-			commandStepBuilder.AddInput(plan.NewStepInput(miseStep.Name()))
-			c.Deploy.Inputs = append(c.Deploy.Inputs, plan.NewStepInput(commandStepBuilder.Name(), plan.InputOptions{
-				Include: []string{"."},
-			}))
+			commandStepBuilder.AddInput(plan.NewStepLayer(c.GetMiseStepBuilder().Name()))
 		}
 
-		commandStepBuilder.Commands = plan.Spread(configStep.Commands, commandStepBuilder.Commands)
 		commandStepBuilder.Inputs = plan.Spread(configStep.Inputs, commandStepBuilder.Inputs)
-
+		commandStepBuilder.Commands = plan.Spread(configStep.Commands, commandStepBuilder.Commands)
 		commandStepBuilder.Secrets = plan.SpreadStrings(configStep.Secrets, commandStepBuilder.Secrets)
-
 		commandStepBuilder.Caches = plan.SpreadStrings(configStep.Caches, commandStepBuilder.Caches)
 		commandStepBuilder.AddEnvVars(configStep.Variables)
 		maps.Copy(commandStepBuilder.Assets, configStep.Assets)
-	}
 
-	// Update deploy from config
-	if c.Config.Deploy != nil {
-		if c.Config.Deploy.StartCmd != "" {
-			c.Deploy.StartCmd = c.Config.Deploy.StartCmd
+		// Convert the deploy outputs into layers that will be added to the deploy
+		outputFilters := []plan.Filter{plan.NewIncludeFilter([]string{"."})}
+		if configStep.DeployOutputs != nil {
+			outputFilters = configStep.DeployOutputs
 		}
-
-		c.Deploy.Inputs = plan.Spread(c.Config.Deploy.Inputs, c.Deploy.Inputs)
-		c.Deploy.Paths = plan.SpreadStrings(c.Config.Deploy.Paths, c.Deploy.Paths)
-		maps.Copy(c.Deploy.Variables, c.Config.Deploy.Variables)
+		for _, filter := range outputFilters {
+			c.Deploy.AddInputs([]plan.Layer{plan.NewStepLayer(name, filter)})
+		}
 	}
-
 }

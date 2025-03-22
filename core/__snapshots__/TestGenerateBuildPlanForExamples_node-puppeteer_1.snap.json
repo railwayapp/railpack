@@ -18,10 +18,10 @@
   }
  },
  "deploy": {
+  "base": {
+   "step": "packages:apt:runtime"
+  },
   "inputs": [
-   {
-    "step": "packages:runtime"
-   },
    {
     "include": [
      "/mise/shims",
@@ -127,14 +127,6 @@
    }
   },
   {
-   "inputs": [
-    {
-     "step": "install"
-    }
-   ],
-   "name": "prune"
-  },
-  {
    "caches": [
     "node-modules"
    ],
@@ -170,7 +162,7 @@
      "image": "ghcr.io/railwayapp/railpack-runtime:latest"
     }
    ],
-   "name": "packages:runtime"
+   "name": "packages:apt:runtime"
   }
  ]
 }

@@ -47,16 +47,22 @@ func (b *InstallBinStepBuilder) Version(name resolver.PackageRef, version string
 	b.Resolver.Version(name, version, source)
 }
 
-func (b *InstallBinStepBuilder) Build(options *BuildStepOptions) (*plan.Step, error) {
+func (b *InstallBinStepBuilder) GetLayer() plan.Layer {
+	return plan.NewStepLayer(b.Name(), plan.Filter{
+		Include: b.GetOutputPaths(),
+	})
+}
+
+func (b *InstallBinStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) error {
 	packageVersion := options.ResolvedPackages[b.Package.Name].ResolvedVersion
 	if packageVersion == nil {
-		return nil, fmt.Errorf("package %s not found", b.Package.Name)
+		return fmt.Errorf("package %s not found", b.Package.Name)
 	}
 
 	step := plan.NewStep(b.DisplayName)
-
-	step.Inputs = []plan.Input{
-		plan.NewImageInput(plan.RAILPACK_BUILDER_IMAGE),
+	step.Secrets = []string{}
+	step.Inputs = []plan.Layer{
+		plan.NewImageLayer(plan.RailpackBuilderImage),
 	}
 
 	binPath := b.getBinPath()
@@ -67,9 +73,9 @@ func (b *InstallBinStepBuilder) Build(options *BuildStepOptions) (*plan.Step, er
 		plan.NewPathCommand(fmt.Sprintf("%s/bin", binPath)),
 	})
 
-	step.Secrets = []string{}
+	p.Steps = append(p.Steps, *step)
 
-	return step, nil
+	return nil
 }
 
 func (b *InstallBinStepBuilder) getBinPath() string {

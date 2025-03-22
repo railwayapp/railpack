@@ -6,10 +6,10 @@
   }
  },
  "deploy": {
+  "base": {
+   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+  },
   "inputs": [
-   {
-    "image": "ghcr.io/railwayapp/railpack-runtime:latest"
-   },
    {
     "include": [
      "/mise/shims",
@@ -30,29 +30,6 @@
   "startCommand": "java $JAVA_OPTS -jar  $(ls -1 */build/libs/*jar | grep -v plain)"
  },
  "steps": [
-  {
-   "caches": [
-    "gradle"
-   ],
-   "commands": [
-    {
-     "dest": ".",
-     "src": "."
-    },
-    {
-     "cmd": "./gradlew clean build -x check -x test"
-    }
-   ],
-   "inputs": [
-    {
-     "step": "packages:mise"
-    }
-   ],
-   "name": "build",
-   "secrets": [
-    "*"
-   ]
-  },
   {
    "assets": {
     "mise.toml": "[mise.toml]"
@@ -84,6 +61,29 @@
     "MISE_INSTALLS_DIR": "/mise/installs",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
+  },
+  {
+   "caches": [
+    "gradle"
+   ],
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    },
+    {
+     "cmd": "./gradlew clean build -x check -x test"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ]
   },
   {
    "assets": {
