@@ -38,9 +38,6 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 
 	install := ctx.NewCommandStep("install")
 	install.AddInput(plan.NewStepInput(miseStep.Name()))
-	install.Secrets = []string{}
-	install.UseSecretsWithPrefixes([]string{"RUBY", "GEM", "BUNDLE"})
-
 	installOutputs := p.Install(ctx, install)
 	p.addMetadata(ctx)
 
@@ -51,17 +48,39 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 	}
 	if nodeDetected || p.usesDep(ctx, "execjs") {
 		nodeProvider.InstallMisePackages(ctx, miseStep)
+	}
 
-		// Install
-		// install := ctx.NewCommandStep("install")
-		// install.AddInput(plan.NewStepInput(miseStep.Name()))
-		// nodeProvider.InstallNodeDeps(ctx, install)
+	var (
+		buildNode *generate.CommandStepBuilder
+		pruneNode *generate.CommandStepBuilder
+	)
+	if nodeDetected {
+		err := nodeProvider.Initialize(ctx)
+		if err != nil {
+			return err
+		}
+
+		nodeProvider.InstallMisePackages(ctx, miseStep)
+		installNode := ctx.NewCommandStep("install:node")
+		installNode.AddInput(plan.NewStepInput(miseStep.Name()))
+		nodeProvider.InstallNodeDeps(ctx, installNode)
+
+		pruneNode = ctx.NewCommandStep("prune:node")
+		pruneNode.AddInput(plan.NewStepInput(installNode.Name()))
+		nodeProvider.PruneNodeDeps(ctx, pruneNode)
+
+		buildNode = ctx.NewCommandStep("build:node")
+		buildNode.Inputs = []plan.Input{
+			plan.NewStepInput(install.Name()),
+			plan.NewStepInput(installNode.Name(), plan.InputOptions{
+				Include: append([]string{"."}, miseStep.GetOutputPaths()...),
+			}),
+		}
+		nodeProvider.Build(ctx, buildNode)
 	}
 
 	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewStepInput(install.Name()))
-	build.Secrets = []string{}
-	build.UseSecretsWithPrefixes([]string{"RAILS", "NODE", "BUNDLE", "BOOTSNAP", "SPROCKETS", "WEBPACKER", "ASSET", "DISABLE_SPRING"})
 	buildOutputs := p.Build(ctx, build)
 
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
@@ -78,6 +97,17 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 		plan.NewStepInput(build.Name(), plan.InputOptions{
 			Include: buildOutputs,
 		}),
+	}
+	if buildNode != nil && pruneNode != nil {
+		ctx.Deploy.Inputs = append(ctx.Deploy.Inputs,
+			plan.NewStepInput(buildNode.Name(), plan.InputOptions{
+				Include: []string{"."},
+				Exclude: []string{"node_modules", ".yarn"},
+			}),
+			plan.NewStepInput(pruneNode.Name(), plan.InputOptions{
+				Include: []string{"/app/node_modules"},
+			}),
+		)
 	}
 
 	return nil
@@ -114,6 +144,8 @@ func (p *RubyProvider) StartCommandHelp() string {
 }
 
 func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
+	install.Secrets = []string{}
+	install.UseSecretsWithPrefixes([]string{"RUBY", "GEM", "BUNDLE"})
 	envVars := p.GetRubyEnvVars(ctx)
 	install.AddEnvVars(envVars)
 	bundlerVersion := parseBundlerVersionFromGemfile(ctx)
@@ -139,6 +171,8 @@ func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.
 }
 
 func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) []string {
+	build.Secrets = []string{}
+	build.UseSecretsWithPrefixes([]string{"RAILS", "BUNDLE", "BOOTSNAP", "SPROCKETS", "WEBPACKER", "ASSET", "DISABLE_SPRING"})
 	build.AddEnvVars(p.GetRubyEnvVars(ctx))
 	build.AddCommand(plan.NewCopyCommand("."))
 	outputs := []string{"/app"}
