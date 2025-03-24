@@ -113,19 +113,19 @@ func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.
 	install.AddCache(ctx.Caches.AddCache("bundle", BUNDLE_CACHE_DIR))
 	install.AddEnvVars(p.GetRubyEnvVars(ctx))
 	bundlerVersion := parseBundlerVersionFromGemfile(ctx)
+	version := p.getRubyVersion(ctx)
 	commands := []plan.Command{
-		plan.NewExecCommand("gem update --system --no-document"),
 		plan.NewExecCommand(fmt.Sprintf("gem install -N %s", bundlerVersion)),
 		plan.NewCopyCommand("Gemfile"),
 		plan.NewCopyCommand("Gemfile.lock"),
 		plan.NewExecCommand("bundle install"),
 	}
+
 	if p.usesDep(ctx, "bootsnap") {
 		commands = append(commands, plan.NewExecCommand("bundle exec bootsnap precompile --gemfile"))
 	}
 
 	install.AddCommands(commands)
-	version := p.getRubyVersion(ctx)
 	install.AddPaths([]string{
 		fmt.Sprintf("/usr/local/rvm/rubies/%s/bin", version),
 		fmt.Sprintf("/usr/local/rvm/gems/%s/bin", version),
