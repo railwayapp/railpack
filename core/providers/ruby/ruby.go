@@ -113,8 +113,13 @@ func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.
 		plan.NewExecCommand(fmt.Sprintf("gem install -N %s", bundlerVersion)),
 		plan.NewCopyCommand("Gemfile"),
 		plan.NewCopyCommand("Gemfile.lock"),
-		plan.NewExecCommand("bundle install"),
 	}
+
+	for _, path := range parseLocalPathsFromGemfile(ctx) {
+		commands = append(commands, plan.NewCopyCommand(path))
+	}
+
+	commands = append(commands, plan.NewExecCommand("bundle install"))
 
 	if p.usesDep(ctx, "bootsnap") {
 		commands = append(commands, plan.NewExecCommand("bundle exec bootsnap precompile --gemfile"))
@@ -122,7 +127,6 @@ func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.
 
 	install.AddCommands(commands)
 	install.AddPaths([]string{envVars["GEM_HOME"]})
-
 	return []string{}
 }
 
@@ -326,4 +330,24 @@ func parseBundlerVersionFromGemfile(ctx *generate.GenerateContext) string {
 
 	// note: we don't need to worry about the scanner error because we are just returning "bundler" in that case anyway
 	return "bundler"
+}
+
+func parseLocalPathsFromGemfile(ctx *generate.GenerateContext) []string {
+	gemfile, err := ctx.App.ReadFile("Gemfile")
+	if err != nil {
+		return []string{}
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(string(gemfile)))
+	paths := []string{}
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "path:") {
+			p := strings.TrimSpace(strings.Split(line, "path:")[1])
+			paths = append(paths, strings.Trim(p, "\""))
+		}
+	}
+
+	return paths
 }
