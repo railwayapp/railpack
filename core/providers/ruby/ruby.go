@@ -14,7 +14,7 @@ import (
 
 const (
 	DEFAULT_RUBY_VERSION = "3.4.2"
-	BUNDLE_CACHE_DIR     = "/usr/local/bundle"
+	BUNDLE_CACHE_DIR     = "/root/.bundle/cache/"
 )
 
 type RubyProvider struct{}
@@ -38,14 +38,15 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 
 	install := ctx.NewCommandStep("install")
 	install.AddInput(plan.NewStepInput(miseStep.Name()))
-	maps.Copy(install.Variables, p.GetRubyEnvVars(ctx))
 	install.Secrets = []string{}
 	install.UseSecretsWithPrefixes([]string{"RUBY", "GEM", "BUNDLE"})
 
-	installOutputs := p.Install(ctx, install)
+	p.Install(ctx, install)
 	p.addMetadata(ctx)
 
 	build := ctx.NewCommandStep("build")
+	build.AddInput(plan.NewStepInput(miseStep.Name()))
+	build.AddInput(plan.NewStepInput(install.Name()))
 	build.Secrets = []string{}
 	build.UseSecretsWithPrefixes([]string{"RAILS", "NODE", "BUNDLE", "BOOTSNAP", "SPROCKETS", "WEBPACKER", "ASSET", "DISABLE_SPRING"})
 	build.AddInput(plan.NewStepInput(install.Name()))
@@ -61,7 +62,7 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 		}),
 		plan.NewStepInput(p.GetImageWithRuntimeDeps(ctx).Name()),
 		plan.NewStepInput(install.Name(), plan.InputOptions{
-			Include: installOutputs,
+			Include: []string{"/root/.bundle/cache/", "/usr/local/bundle"},
 		}),
 		plan.NewStepInput(build.Name(), plan.InputOptions{
 			Include: buildOutputs,
@@ -107,11 +108,8 @@ func (p *RubyProvider) StartCommandHelp() string {
 
 func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
 	envVars := p.GetRubyEnvVars(ctx)
-	install.AddCache(ctx.Caches.AddCache("bundle", BUNDLE_CACHE_DIR))
-	install.AddCache(ctx.Caches.AddCache("gem", envVars["GEM_HOME"]))
-	install.AddEnvVars(p.GetRubyEnvVars(ctx))
+	install.AddEnvVars(envVars)
 	bundlerVersion := parseBundlerVersionFromGemfile(ctx)
-	version := p.getRubyVersion(ctx)
 	commands := []plan.Command{
 		plan.NewExecCommand(fmt.Sprintf("gem install -N %s", bundlerVersion)),
 		plan.NewCopyCommand("Gemfile"),
@@ -124,16 +122,13 @@ func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.
 	}
 
 	install.AddCommands(commands)
-	install.AddPaths([]string{
-		fmt.Sprintf("/usr/local/rvm/rubies/%s/bin", version),
-		fmt.Sprintf("/usr/local/rvm/gems/%s/bin", version),
-		fmt.Sprintf("/usr/local/rvm/gems/%s@global/bin", version),
-	})
+	install.AddPaths([]string{envVars["GEM_HOME"]})
 
 	return []string{}
 }
 
 func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) []string {
+	build.AddEnvVars(p.GetRubyEnvVars(ctx))
 	build.AddCommand(plan.NewCopyCommand("."))
 	outputs := []string{"/app"}
 	// Only compile assets if a Rails app have an asset pipeline gem
@@ -232,11 +227,10 @@ func (p *RubyProvider) getRubyVersion(ctx *generate.GenerateContext) string {
 }
 
 func (p *RubyProvider) GetRubyEnvVars(ctx *generate.GenerateContext) map[string]string {
-	version := p.getRubyVersion(ctx)
 	return map[string]string{
 		"BUNDLE_GEMFILE":   "/app/Gemfile",
-		"GEM_PATH":         fmt.Sprintf("/usr/local/rvm/gems/%s:/usr/local/rvm/gems/%s@global", version, version),
-		"GEM_HOME":         fmt.Sprintf("/usr/local/rvm/gems/%s", version),
+		"GEM_PATH":         "/usr/local/bundle",
+		"GEM_HOME":         "/usr/local/bundle",
 		"MALLOC_ARENA_MAX": "2",
 	}
 }
