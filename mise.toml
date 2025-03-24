@@ -1,3 +1,6 @@
+[env]
+BUILDKIT_HOST = "docker-container://buildkit"
+
 [tasks.build]
 run = "go build -o bin/cli cmd/cli/main.go"
 

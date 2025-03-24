@@ -1,0 +1,180 @@
+{
+ "caches": {
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  },
+  "bundle": {
+   "directory": "/root/.bundle/cache",
+   "type": "shared"
+  }
+ },
+ "deploy": {
+  "inputs": [
+   {
+    "step": "packages:ruby-runtime-deps"
+   },
+   {
+    "include": [
+     "/mise/shims",
+     "/mise/installs",
+     "/usr/local/bin/mise",
+     "/etc/mise/config.toml",
+     "/root/.local/state/mise"
+    ],
+    "step": "packages:mise"
+   },
+   {
+    "include": [
+     "/root/.bundle/cache"
+    ],
+    "step": "build"
+   },
+   {
+    "include": [
+     "/app"
+    ],
+    "step": "build"
+   },
+   {
+    "exclude": [
+     "/app/"
+    ],
+    "include": [
+     "."
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "ruby app.rb",
+  "variables": {
+   "BUNDLE_GEMFILE": "/app/Gemfile",
+   "GEM_HOME": "/usr/local/rvm/gems/2.6.6",
+   "GEM_PATH": "/usr/local/rvm/gems/2.6.6:/usr/local/rvm/gems/2.6.6@global",
+   "MALLOC_ARENA_MAX": "2"
+  }
+ },
+ "steps": [
+  {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y procps'",
+     "customName": "install apt packages: procps"
+    },
+    {
+     "path": "/mise/shims"
+    },
+    {
+     "customName": "create mise config",
+     "name": "mise.toml",
+     "path": "/etc/mise/config.toml"
+    },
+    {
+     "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
+     "customName": "install mise packages: ruby"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:mise",
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_SHIMS_DIR": "/mise/shims"
+   }
+  },
+  {
+   "caches": [
+    "bundle"
+   ],
+   "commands": [
+    {
+     "cmd": "gem update --system --no-document"
+    },
+    {
+     "cmd": "gem install -N bundler:2.3.7"
+    },
+    {
+     "dest": "Gemfile",
+     "src": "Gemfile"
+    },
+    {
+     "dest": "Gemfile.lock",
+     "src": "Gemfile.lock"
+    },
+    {
+     "cmd": "bundle install"
+    },
+    {
+     "path": "/usr/local/rvm/rubies/2.6.6/bin"
+    },
+    {
+     "path": "/usr/local/rvm/gems/2.6.6/bin"
+    },
+    {
+     "path": "/usr/local/rvm/gems/2.6.6@global/bin"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install",
+   "variables": {
+    "BUNDLE_GEMFILE": "/app/Gemfile",
+    "GEM_HOME": "/usr/local/rvm/gems/2.6.6",
+    "GEM_PATH": "/usr/local/rvm/gems/2.6.6:/usr/local/rvm/gems/2.6.6@global",
+    "MALLOC_ARENA_MAX": "2"
+   }
+  },
+  {
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    }
+   ],
+   "inputs": [
+    {
+     "step": "install"
+    }
+   ],
+   "name": "build"
+  },
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y '",
+     "customName": "install apt packages: "
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+    }
+   ],
+   "name": "packages:ruby-runtime-deps"
+  }
+ ]
+}

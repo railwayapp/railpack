@@ -15,23 +15,8 @@ func TestDetect(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "pip",
-			path: "../../../examples/ruby-pip",
-			want: true,
-		},
-		{
-			name: "poetry",
-			path: "../../../examples/ruby-poetry",
-			want: true,
-		},
-		{
-			name: "pdm",
-			path: "../../../examples/ruby-pdm",
-			want: true,
-		},
-		{
-			name: "uv",
-			path: "../../../examples/ruby-uv",
+			name: "ruby",
+			path: "../../../examples/ruby",
 			want: true,
 		},
 		{

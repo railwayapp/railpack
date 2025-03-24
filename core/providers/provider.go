@@ -28,9 +28,9 @@ func GetLanguageProviders() []Provider {
 		&golang.GoProvider{},
 		&java.JavaProvider{},
 		&python.PythonProvider{},
+		&ruby.RubyProvider{},
 		&deno.DenoProvider{},
 		&node.NodeProvider{},
-		&ruby.RubyProvider{},
 		&staticfile.StaticfileProvider{},
 		&shell.ShellProvider{},
 	}

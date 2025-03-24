@@ -15,7 +15,6 @@ import (
 const (
 	DEFAULT_RUBY_VERSION = "3.4.2"
 	BUNDLE_CACHE_DIR     = "/root/.bundle/cache"
-	LOCAL_BIN_PATH       = "/root/.local/bin"
 )
 
 type RubyProvider struct{}
@@ -34,7 +33,9 @@ func (p *RubyProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 }
 
 func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
-	p.InstallMisePackages(ctx, ctx.GetMiseStepBuilder())
+	miseStep := ctx.GetMiseStepBuilder()
+	miseStep.AddSupportingAptPackage("libyaml-dev")
+	p.InstallMisePackages(ctx, miseStep)
 
 	install := ctx.NewCommandStep("install")
 	install.AddInput(plan.NewStepInput(p.GetBuilderDeps(ctx).Name()))
@@ -55,6 +56,10 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 	maps.Copy(ctx.Deploy.Variables, p.GetRubyEnvVars(ctx))
 
 	ctx.Deploy.Inputs = []plan.Input{
+		ctx.DefaultRuntimeInput(),
+		plan.NewStepInput(miseStep.Name(), plan.InputOptions{
+			Include: miseStep.GetOutputPaths(),
+		}),
 		plan.NewStepInput(p.GetImageWithRuntimeDeps(ctx).Name()),
 		plan.NewStepInput(ctx.GetMiseStepBuilder().Name(), plan.InputOptions{
 			Include: ctx.GetMiseStepBuilder().GetOutputPaths(),
@@ -127,7 +132,7 @@ func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.
 		fmt.Sprintf("/usr/local/rvm/gems/%s@global/bin", version),
 	})
 
-	return []string{BUNDLE_CACHE_DIR}
+	return []string{}
 }
 
 func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) []string {
