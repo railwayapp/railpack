@@ -12,7 +12,7 @@
  "deploy": {
   "inputs": [
    {
-    "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+    "step": "packages:runtime"
    },
    {
     "include": [
@@ -25,9 +25,6 @@
     "step": "packages:mise"
    },
    {
-    "step": "packages:ruby-runtime-deps"
-   },
-   {
     "include": [
      "/usr/local/bundle"
     ],
@@ -36,16 +33,7 @@
    {
     "include": [
      "/app",
-     "/lib/assets"
-    ],
-    "step": "build"
-   },
-   {
-    "exclude": [
-     "/app/"
-    ],
-    "include": [
-     "."
+     "lib/"
     ],
     "step": "build"
    }
@@ -147,12 +135,6 @@
    ],
    "inputs": [
     {
-     "step": "packages:mise"
-    },
-    {
-     "step": "install"
-    },
-    {
      "step": "install"
     }
    ],
@@ -171,8 +153,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y '",
-     "customName": "install apt packages: "
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libyaml-dev'",
+     "customName": "install apt packages: libyaml-dev"
     }
    ],
    "inputs": [
@@ -180,7 +162,7 @@
      "image": "ghcr.io/railwayapp/railpack-runtime:latest"
     }
    ],
-   "name": "packages:ruby-runtime-deps"
+   "name": "packages:runtime"
   }
  ]
 }
