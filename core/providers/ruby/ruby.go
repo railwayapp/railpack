@@ -68,11 +68,10 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 	maps.Copy(ctx.Deploy.Variables, p.GetRubyEnvVars(ctx))
 
 	ctx.Deploy.Inputs = []plan.Input{
-		ctx.DefaultRuntimeInput(),
+		p.GetImageWithRuntimeDeps(ctx),
 		plan.NewStepInput(miseStep.Name(), plan.InputOptions{
 			Include: miseStep.GetOutputPaths(),
 		}),
-		plan.NewStepInput(p.GetImageWithRuntimeDeps(ctx).Name()),
 		plan.NewStepInput(install.Name(), plan.InputOptions{
 			Include: installOutputs,
 		}),
@@ -159,33 +158,30 @@ func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 	return outputs
 }
 
-func (p *RubyProvider) GetImageWithRuntimeDeps(ctx *generate.GenerateContext) *generate.AptStepBuilder {
-	aptStep := ctx.NewAptStepBuilder("ruby-runtime-deps")
-	aptStep.Inputs = []plan.Input{
-		ctx.DefaultRuntimeInput(),
-	}
+func (p *RubyProvider) GetImageWithRuntimeDeps(ctx *generate.GenerateContext) plan.Input {
+	packages := []string{"libyaml-dev"}
 
 	if p.usesPostgres(ctx) {
-		aptStep.Packages = append(aptStep.Packages, "libpq-dev")
+		packages = append(packages, "libpq-dev")
 	}
 
 	if p.usesMysql(ctx) {
-		aptStep.Packages = append(aptStep.Packages, "default-libmysqlclient-dev")
+		packages = append(packages, "default-libmysqlclient-dev")
 	}
 
 	if p.usesDep(ctx, "magick") {
-		aptStep.Packages = append(aptStep.Packages, "libmagickwand-dev")
+		packages = append(packages, "libmagickwand-dev")
 	}
 
 	if p.usesDep(ctx, "vips") {
-		aptStep.Packages = append(aptStep.Packages, "libvips-dev")
+		packages = append(packages, "libvips-dev")
 	}
 
 	if p.usesDep(ctx, "charlock_holmes") {
-		aptStep.Packages = append(aptStep.Packages, "libicu-dev", "libxml2-dev", "libxslt-dev")
+		packages = append(packages, "libicu-dev", "libxml2-dev", "libxslt-dev")
 	}
 
-	return aptStep
+	return ctx.DefaultRuntimeInputWithPackages(packages)
 }
 
 func (p *RubyProvider) GetBuilderDeps(ctx *generate.GenerateContext) *generate.MiseStepBuilder {
