@@ -14,7 +14,6 @@ import (
 
 const (
 	DEFAULT_RUBY_VERSION = "3.4.2"
-	BUNDLE_CACHE_DIR     = "/root/.bundle/cache/"
 )
 
 type RubyProvider struct{}
@@ -62,7 +61,7 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 		}),
 		plan.NewStepInput(p.GetImageWithRuntimeDeps(ctx).Name()),
 		plan.NewStepInput(install.Name(), plan.InputOptions{
-			Include: []string{"/root/.bundle/cache/", "/usr/local/bundle"},
+			Include: []string{"/usr/local/bundle"},
 		}),
 		plan.NewStepInput(build.Name(), plan.InputOptions{
 			Include: buildOutputs,
