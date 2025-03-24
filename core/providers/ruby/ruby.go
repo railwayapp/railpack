@@ -41,7 +41,7 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 	install.Secrets = []string{}
 	install.UseSecretsWithPrefixes([]string{"RUBY", "GEM", "BUNDLE"})
 
-	p.Install(ctx, install)
+	installOutputs := p.Install(ctx, install)
 	p.addMetadata(ctx)
 
 	nodeProvider := &node.NodeProvider{}
@@ -59,11 +59,9 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 	}
 
 	build := ctx.NewCommandStep("build")
-	build.AddInput(plan.NewStepInput(miseStep.Name()))
 	build.AddInput(plan.NewStepInput(install.Name()))
 	build.Secrets = []string{}
 	build.UseSecretsWithPrefixes([]string{"RAILS", "NODE", "BUNDLE", "BOOTSNAP", "SPROCKETS", "WEBPACKER", "ASSET", "DISABLE_SPRING"})
-	build.AddInput(plan.NewStepInput(install.Name()))
 	buildOutputs := p.Build(ctx, build)
 
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
@@ -76,14 +74,10 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 		}),
 		plan.NewStepInput(p.GetImageWithRuntimeDeps(ctx).Name()),
 		plan.NewStepInput(install.Name(), plan.InputOptions{
-			Include: []string{"/usr/local/bundle"},
+			Include: installOutputs,
 		}),
 		plan.NewStepInput(build.Name(), plan.InputOptions{
 			Include: buildOutputs,
-		}),
-		plan.NewStepInput(build.Name(), plan.InputOptions{
-			Include: []string{"."},
-			Exclude: []string{"/app/"},
 		}),
 	}
 
@@ -142,7 +136,7 @@ func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.
 
 	install.AddCommands(commands)
 	install.AddPaths([]string{envVars["GEM_HOME"]})
-	return []string{}
+	return []string{"/usr/local/bundle"}
 }
 
 func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) []string {
@@ -159,7 +153,7 @@ func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 
 	if p.usesRails(ctx) && p.usesDep(ctx, "bootsnap") {
 		build.AddCommand(plan.NewExecCommand("bundle exec bootsnap precompile app/ lib/"))
-		outputs = append(outputs, "/lib/assets")
+		outputs = append(outputs, "lib/")
 	}
 
 	return outputs
