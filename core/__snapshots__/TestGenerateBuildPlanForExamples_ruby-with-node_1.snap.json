@@ -7,6 +7,14 @@
   "apt-lists": {
    "directory": "/var/lib/apt/lists",
    "type": "locked"
+  },
+  "node-modules": {
+   "directory": "/app/node_modules/.cache",
+   "type": "shared"
+  },
+  "npm-install": {
+   "directory": "/root/.npm",
+   "type": "shared"
   }
  },
  "deploy": {
@@ -35,6 +43,22 @@
      "/app"
     ],
     "step": "build"
+   },
+   {
+    "exclude": [
+     "node_modules",
+     ".yarn"
+    ],
+    "include": [
+     "."
+    ],
+    "step": "build:node"
+   },
+   {
+    "include": [
+     "/app/node_modules"
+    ],
+    "step": "prune:node"
    }
   ],
   "startCommand": "ruby app.rb",
@@ -118,6 +142,90 @@
     "GEM_PATH": "/usr/local/bundle",
     "MALLOC_ARENA_MAX": "2"
    }
+  },
+  {
+   "caches": [
+    "npm-install"
+   ],
+   "commands": [
+    {
+     "path": "/app/node_modules/.bin"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
+    },
+    {
+     "dest": "package-lock.json",
+     "src": "package-lock.json"
+    },
+    {
+     "cmd": "npm ci"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install:node",
+   "variables": {
+    "CI": "true",
+    "NODE_ENV": "production",
+    "NPM_CONFIG_FUND": "false",
+    "NPM_CONFIG_PRODUCTION": "false",
+    "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+   }
+  },
+  {
+   "caches": [
+    "npm-install"
+   ],
+   "commands": [
+    {
+     "cmd": "npm prune --omit=dev"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "install:node"
+    }
+   ],
+   "name": "prune:node",
+   "variables": {
+    "NPM_CONFIG_PRODUCTION": "true"
+   }
+  },
+  {
+   "caches": [
+    "node-modules"
+   ],
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    }
+   ],
+   "inputs": [
+    {
+     "step": "install"
+    },
+    {
+     "include": [
+      ".",
+      "/mise/shims",
+      "/mise/installs",
+      "/usr/local/bin/mise",
+      "/etc/mise/config.toml",
+      "/root/.local/state/mise"
+     ],
+     "step": "install:node"
+    }
+   ],
+   "name": "build:node",
+   "secrets": [
+    "*"
+   ]
   },
   {
    "commands": [
