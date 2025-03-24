@@ -16,7 +16,7 @@ func TestDetect(t *testing.T) {
 	}{
 		{
 			name: "ruby",
-			path: "../../../examples/ruby",
+			path: "../../../examples/ruby-vanilla",
 			want: true,
 		},
 		{
