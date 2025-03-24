@@ -7,16 +7,12 @@
   "apt-lists": {
    "directory": "/var/lib/apt/lists",
    "type": "locked"
-  },
-  "bundle": {
-   "directory": "/root/.bundle/cache",
-   "type": "shared"
   }
  },
  "deploy": {
   "inputs": [
    {
-    "step": "packages:ruby-runtime-deps"
+    "image": "ghcr.io/railwayapp/railpack-runtime:latest"
    },
    {
     "include": [
@@ -29,10 +25,13 @@
     "step": "packages:mise"
    },
    {
+    "step": "packages:ruby-runtime-deps"
+   },
+   {
     "include": [
-     "/root/.bundle/cache"
+     "/usr/local/bundle"
     ],
-    "step": "build"
+    "step": "install"
    },
    {
     "include": [
@@ -54,8 +53,8 @@
   "startCommand": "rake db:migrate \u0026\u0026 bundle exec bin/rails server -b 0.0.0.0 -p ${PORT:-3000}",
   "variables": {
    "BUNDLE_GEMFILE": "/app/Gemfile",
-   "GEM_HOME": "/usr/local/rvm/gems/3.2.1",
-   "GEM_PATH": "/usr/local/rvm/gems/3.2.1:/usr/local/rvm/gems/3.2.1@global",
+   "GEM_HOME": "/usr/local/bundle",
+   "GEM_PATH": "/usr/local/bundle",
    "MALLOC_ARENA_MAX": "2"
   }
  },
@@ -70,8 +69,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y default-libmysqlclient-dev libpq-dev procps'",
-     "customName": "install apt packages: default-libmysqlclient-dev libpq-dev procps"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y cargo libyaml-dev rustc'",
+     "customName": "install apt packages: cargo libyaml-dev rustc"
     },
     {
      "path": "/mise/shims"
@@ -101,13 +100,7 @@
    }
   },
   {
-   "caches": [
-    "bundle"
-   ],
    "commands": [
-    {
-     "cmd": "gem update --system --no-document"
-    },
     {
      "cmd": "gem install -N bundler:2.4.9"
     },
@@ -126,13 +119,7 @@
      "cmd": "bundle exec bootsnap precompile --gemfile"
     },
     {
-     "path": "/usr/local/rvm/rubies/3.2.1/bin"
-    },
-    {
-     "path": "/usr/local/rvm/gems/3.2.1/bin"
-    },
-    {
-     "path": "/usr/local/rvm/gems/3.2.1@global/bin"
+     "path": "/usr/local/bundle"
     }
    ],
    "inputs": [
@@ -143,8 +130,8 @@
    "name": "install",
    "variables": {
     "BUNDLE_GEMFILE": "/app/Gemfile",
-    "GEM_HOME": "/usr/local/rvm/gems/3.2.1",
-    "GEM_PATH": "/usr/local/rvm/gems/3.2.1:/usr/local/rvm/gems/3.2.1@global",
+    "GEM_HOME": "/usr/local/bundle",
+    "GEM_PATH": "/usr/local/bundle",
     "MALLOC_ARENA_MAX": "2"
    }
   },
@@ -163,10 +150,22 @@
    ],
    "inputs": [
     {
+     "step": "packages:mise"
+    },
+    {
+     "step": "install"
+    },
+    {
      "step": "install"
     }
    ],
-   "name": "build"
+   "name": "build",
+   "variables": {
+    "BUNDLE_GEMFILE": "/app/Gemfile",
+    "GEM_HOME": "/usr/local/bundle",
+    "GEM_PATH": "/usr/local/bundle",
+    "MALLOC_ARENA_MAX": "2"
+   }
   },
   {
    "caches": [
@@ -175,8 +174,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y default-libmysqlclient-dev libicu-dev libmagickwand-dev libpq-dev libvips-dev libxml2-dev libxslt-dev rustc'",
-     "customName": "install apt packages: default-libmysqlclient-dev libicu-dev libmagickwand-dev libpq-dev libvips-dev libxml2-dev libxslt-dev rustc"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y default-libmysqlclient-dev libicu-dev libmagickwand-dev libpq-dev libvips-dev libxml2-dev libxslt-dev'",
+     "customName": "install apt packages: default-libmysqlclient-dev libicu-dev libmagickwand-dev libpq-dev libvips-dev libxml2-dev libxslt-dev"
     }
    ],
    "inputs": [

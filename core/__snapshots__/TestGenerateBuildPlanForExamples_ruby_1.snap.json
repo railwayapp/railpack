@@ -7,16 +7,12 @@
   "apt-lists": {
    "directory": "/var/lib/apt/lists",
    "type": "locked"
-  },
-  "bundle": {
-   "directory": "/root/.bundle/cache",
-   "type": "shared"
   }
  },
  "deploy": {
   "inputs": [
    {
-    "step": "packages:ruby-runtime-deps"
+    "image": "ghcr.io/railwayapp/railpack-runtime:latest"
    },
    {
     "include": [
@@ -29,10 +25,13 @@
     "step": "packages:mise"
    },
    {
+    "step": "packages:ruby-runtime-deps"
+   },
+   {
     "include": [
-     "/root/.bundle/cache"
+     "/usr/local/bundle"
     ],
-    "step": "build"
+    "step": "install"
    },
    {
     "include": [
@@ -53,8 +52,8 @@
   "startCommand": "ruby app.rb",
   "variables": {
    "BUNDLE_GEMFILE": "/app/Gemfile",
-   "GEM_HOME": "/usr/local/rvm/gems/3.4.2",
-   "GEM_PATH": "/usr/local/rvm/gems/3.4.2:/usr/local/rvm/gems/3.4.2@global",
+   "GEM_HOME": "/usr/local/bundle",
+   "GEM_PATH": "/usr/local/bundle",
    "MALLOC_ARENA_MAX": "2"
   }
  },
@@ -69,8 +68,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y procps'",
-     "customName": "install apt packages: procps"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libyaml-dev'",
+     "customName": "install apt packages: libyaml-dev"
     },
     {
      "path": "/mise/shims"
@@ -100,13 +99,7 @@
    }
   },
   {
-   "caches": [
-    "bundle"
-   ],
    "commands": [
-    {
-     "cmd": "gem update --system --no-document"
-    },
     {
      "cmd": "gem install -N bundler:2.3.7"
     },
@@ -122,13 +115,7 @@
      "cmd": "bundle install"
     },
     {
-     "path": "/usr/local/rvm/rubies/3.4.2/bin"
-    },
-    {
-     "path": "/usr/local/rvm/gems/3.4.2/bin"
-    },
-    {
-     "path": "/usr/local/rvm/gems/3.4.2@global/bin"
+     "path": "/usr/local/bundle"
     }
    ],
    "inputs": [
@@ -139,8 +126,8 @@
    "name": "install",
    "variables": {
     "BUNDLE_GEMFILE": "/app/Gemfile",
-    "GEM_HOME": "/usr/local/rvm/gems/3.4.2",
-    "GEM_PATH": "/usr/local/rvm/gems/3.4.2:/usr/local/rvm/gems/3.4.2@global",
+    "GEM_HOME": "/usr/local/bundle",
+    "GEM_PATH": "/usr/local/bundle",
     "MALLOC_ARENA_MAX": "2"
    }
   },
@@ -153,10 +140,22 @@
    ],
    "inputs": [
     {
+     "step": "packages:mise"
+    },
+    {
+     "step": "install"
+    },
+    {
      "step": "install"
     }
    ],
-   "name": "build"
+   "name": "build",
+   "variables": {
+    "BUNDLE_GEMFILE": "/app/Gemfile",
+    "GEM_HOME": "/usr/local/bundle",
+    "GEM_PATH": "/usr/local/bundle",
+    "MALLOC_ARENA_MAX": "2"
+   }
   },
   {
    "caches": [
@@ -165,8 +164,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y rustc'",
-     "customName": "install apt packages: rustc"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y '",
+     "customName": "install apt packages: "
     }
    ],
    "inputs": [
