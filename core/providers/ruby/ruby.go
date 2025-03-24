@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	DEFAULT_RUBY_VERSION = "3.1.1"
+	DEFAULT_RUBY_VERSION = "3.4.2"
 	BUNDLE_CACHE_DIR     = "/root/.bundle/cache"
 	LOCAL_BIN_PATH       = "/root/.local/bin"
 )
