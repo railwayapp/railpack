@@ -8,6 +8,7 @@ import (
 	"github.com/railwayapp/railpack/core/providers/node"
 	"github.com/railwayapp/railpack/core/providers/php"
 	"github.com/railwayapp/railpack/core/providers/python"
+	"github.com/railwayapp/railpack/core/providers/ruby"
 	"github.com/railwayapp/railpack/core/providers/shell"
 	"github.com/railwayapp/railpack/core/providers/staticfile"
 )
@@ -29,6 +30,7 @@ func GetLanguageProviders() []Provider {
 		&python.PythonProvider{},
 		&deno.DenoProvider{},
 		&node.NodeProvider{},
+		&ruby.RubyProvider{},
 		&staticfile.StaticfileProvider{},
 		&shell.ShellProvider{},
 	}
