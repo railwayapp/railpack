@@ -14,7 +14,7 @@ import (
 
 const (
 	DEFAULT_RUBY_VERSION = "3.4.2"
-	BUNDLE_CACHE_DIR     = "/root/.bundle/cache"
+	BUNDLE_CACHE_DIR     = "/usr/local/bundle"
 )
 
 type RubyProvider struct{}
@@ -34,24 +34,11 @@ func (p *RubyProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 
 func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 	miseStep := ctx.GetMiseStepBuilder()
-	miseStep.AddSupportingAptPackage("libyaml-dev")
-	version := p.getRubyVersion(ctx)
-	version = utils.ExtractSemverVersion(version)
-	semver, err := utils.ParseSemver(version)
-	// YJIT in Ruby 3.1+ requires rustc to install
-	if err == nil && semver != nil && semver.Major >= 3 && semver.Minor > 1 {
-		miseStep.AddSupportingAptPackage("rustc")
-		miseStep.AddSupportingAptPackage("cargo")
-	}
-
-	miseStep.Variables = map[string]string{
-		"RUBY_CONFIGURE_OPTS": "--enable-yjit",
-	}
 	p.InstallMisePackages(ctx, miseStep)
 
 	install := ctx.NewCommandStep("install")
-	install.AddInput(plan.NewStepInput(p.GetBuilderDeps(ctx).Name()))
-
+	install.AddInput(plan.NewStepInput(miseStep.Name()))
+	maps.Copy(install.Variables, p.GetRubyEnvVars(ctx))
 	install.Secrets = []string{}
 	install.UseSecretsWithPrefixes([]string{"RUBY", "GEM", "BUNDLE"})
 
@@ -73,10 +60,7 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 			Include: miseStep.GetOutputPaths(),
 		}),
 		plan.NewStepInput(p.GetImageWithRuntimeDeps(ctx).Name()),
-		plan.NewStepInput(ctx.GetMiseStepBuilder().Name(), plan.InputOptions{
-			Include: ctx.GetMiseStepBuilder().GetOutputPaths(),
-		}),
-		plan.NewStepInput(build.Name(), plan.InputOptions{
+		plan.NewStepInput(install.Name(), plan.InputOptions{
 			Include: installOutputs,
 		}),
 		plan.NewStepInput(build.Name(), plan.InputOptions{
@@ -122,7 +106,9 @@ func (p *RubyProvider) StartCommandHelp() string {
 }
 
 func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
+	envVars := p.GetRubyEnvVars(ctx)
 	install.AddCache(ctx.Caches.AddCache("bundle", BUNDLE_CACHE_DIR))
+	install.AddCache(ctx.Caches.AddCache("gem", envVars["GEM_HOME"]))
 	install.AddEnvVars(p.GetRubyEnvVars(ctx))
 	bundlerVersion := parseBundlerVersionFromGemfile(ctx)
 	version := p.getRubyVersion(ctx)
@@ -224,6 +210,16 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	if gemfileVersion := parseVersionFromGemfile(ctx); gemfileVersion != "" {
 		miseStep.Version(ruby, gemfileVersion, "Gemfile")
 	}
+
+	miseStep.AddSupportingAptPackage("libyaml-dev")
+	version := p.getRubyVersion(ctx)
+	version = utils.ExtractSemverVersion(version)
+	semver, err := utils.ParseSemver(version)
+	// YJIT in Ruby 3.1+ requires rustc to install
+	if err == nil && semver != nil && semver.Major >= 3 && semver.Minor > 1 {
+		miseStep.AddSupportingAptPackage("rustc")
+		miseStep.AddSupportingAptPackage("cargo")
+	}
 }
 
 func (p *RubyProvider) getRubyVersion(ctx *generate.GenerateContext) string {
@@ -286,7 +282,7 @@ func (p *RubyProvider) addMetadata(ctx *generate.GenerateContext) {
 
 var (
 	gemfileVersionRegex     = regexp.MustCompile(`ruby (?:'|")(.*)(?:'|")[^>]"`)
-	gemfileLockVersionRegex = regexp.MustCompile(`"ruby ((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))[^>]"`)
+	gemfileLockVersionRegex = regexp.MustCompile(`ruby ((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))[^>]`)
 )
 
 func parseVersionFromGemfile(ctx *generate.GenerateContext) string {
