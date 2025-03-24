@@ -35,6 +35,18 @@ func (p *RubyProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 	miseStep := ctx.GetMiseStepBuilder()
 	miseStep.AddSupportingAptPackage("libyaml-dev")
+	version := p.getRubyVersion(ctx)
+	version = utils.ExtractSemverVersion(version)
+	semver, err := utils.ParseSemver(version)
+	// YJIT in Ruby 3.1+ requires rustc to install
+	if err == nil && semver != nil && semver.Major >= 3 && semver.Minor > 1 {
+		miseStep.AddSupportingAptPackage("rustc")
+		miseStep.AddSupportingAptPackage("cargo")
+	}
+
+	miseStep.Variables = map[string]string{
+		"RUBY_CONFIGURE_OPTS": "--enable-yjit",
+	}
 	p.InstallMisePackages(ctx, miseStep)
 
 	install := ctx.NewCommandStep("install")
@@ -178,14 +190,6 @@ func (p *RubyProvider) GetImageWithRuntimeDeps(ctx *generate.GenerateContext) *g
 
 	if p.usesDep(ctx, "charlock_holmes") {
 		aptStep.Packages = append(aptStep.Packages, "libicu-dev", "libxml2-dev", "libxslt-dev")
-	}
-
-	version := p.getRubyVersion(ctx)
-	version = utils.ExtractSemverVersion(version)
-	semver, err := utils.ParseSemver(version)
-	// YJIT in Ruby 3.1+ requires rustc to install
-	if err == nil && semver != nil && semver.Major >= 3 && semver.Minor > 1 {
-		aptStep.Packages = append(aptStep.Packages, "rustc")
 	}
 
 	return aptStep
