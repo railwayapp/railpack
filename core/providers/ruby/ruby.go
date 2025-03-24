@@ -9,6 +9,7 @@ import (
 
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	"github.com/railwayapp/railpack/core/providers/node"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -42,6 +43,20 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 
 	p.Install(ctx, install)
 	p.addMetadata(ctx)
+
+	nodeProvider := &node.NodeProvider{}
+	nodeDetected, err := nodeProvider.Detect(ctx)
+	if err != nil {
+		return err
+	}
+	if nodeDetected || p.usesDep(ctx, "execjs") {
+		nodeProvider.InstallMisePackages(ctx, miseStep)
+
+		// Install
+		// install := ctx.NewCommandStep("install")
+		// install.AddInput(plan.NewStepInput(miseStep.Name()))
+		// nodeProvider.InstallNodeDeps(ctx, install)
+	}
 
 	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewStepInput(miseStep.Name()))
