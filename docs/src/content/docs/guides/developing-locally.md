@@ -16,19 +16,13 @@ Install and use all versions of tools needed for Railpack
 
 ```bash
 # Assuming you are cd'd into the repo root
-mise install
-```
-
-Install all the Go dependencies
-
-```bash
-go mod tidy
+mise run setup
 ```
 
 List all the commands available
 
 ```bash
-go run cmd/cli/main.go --help
+mise run cli --help
 ```
 
 ## Building directly with Buildkit
@@ -41,7 +35,7 @@ Railpack will instantiate a BuildKit client and communicate to over GRPC in
 order to build the generated LLB.
 
 ```bash
-go run cmd/cli/main.go --verbose build examples/node-bun
+mise run cli --verbose build examples/node-bun
 ```
 
 You need to have a BuildKit instance running (see below).
@@ -60,7 +54,7 @@ Once you have an image, you can do:
 Generate a build plan for an app:
 
 ```bash
-go run cmd/cli/main.go plan examples/node-bun --out test/railpack-plan.json
+mise run cli plan examples/node-bun --out test/railpack-plan.json
 ```
 
 Build the app with Docker:
@@ -86,19 +80,6 @@ buildctl build \
 _Note the `docker load` here to load the image into Docker. However, you can
 change the [output](https://github.com/moby/buildkit?tab=readme-ov-file#output)
 or push to a registry instead._
-
-## Run BuildKit Locally
-
-If building with the `build` command, you need to have a BuildKit instance
-running with the `BUILDKIT_HOST` environment variable set to the container.
-
-```bash
-# Run a BuildKit instance as a container
-docker run --rm --privileged -d --name buildkit moby/buildkit
-
-# Set the buildkit host to the container
-export BUILDKIT_HOST=docker-container://buildkit
-```
 
 ## Mise commands
 

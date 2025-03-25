@@ -18,6 +18,17 @@ Please ensure your PRs:
 Note: We prefer focused, well-thought-out contributions over "drive-by" PRs that
 make superficial changes.
 
+## Setup
+
+We use [Mise](https://mise.jdx.dev/) for managing language dependencies and
+tasks for building and testing Railpack.
+
+To set up your local environment, follow these steps:
+
+```bash
+mise run setup
+```
+
 ## Testing
 
 ### Core Tests

@@ -1,6 +1,16 @@
 [env]
 BUILDKIT_HOST = "docker-container://buildkit"
 
+[tasks.setup]
+run = [
+  "mise install",
+  "docker run --rm --privileged -d --name buildkit moby/buildkit || true",
+  "mise run tidy",
+]
+
+[tasks.cli]
+run = "go run cmd/cli/main.go"
+
 [tasks.build]
 run = "go build -o bin/cli cmd/cli/main.go"
 

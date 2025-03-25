@@ -49,8 +49,7 @@ through the `BUILDKIT_HOST` environment variable. The easiest way to do this is
 to run a BuildKit instance as a container:
 
 ```bash
-docker run --rm --privileged -d --name buildkit moby/buildkit
-export BUILDKIT_HOST=docker-container://buildkit
+mise run setup
 ```
 
 Now you can build your image using Railpack:
