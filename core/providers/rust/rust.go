@@ -2,6 +2,8 @@ package rust
 
 import (
 	"fmt"
+	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/railwayapp/railpack/core/generate"
@@ -79,43 +81,31 @@ func (p *RustProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 func (p *RustProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	rust := miseStep.Default("rust", DEFAULT_RUST_VERSION)
 
+	cargoToml, _ := parseCargoTOML(ctx)
+	if cargoToml != nil {
+		// Fall back to the edition
+		switch cargoToml.Package.Edition {
+		case "2015":
+			// https://doc.rust-lang.org/edition-guide/rust-2015/index.html
+			// >= 1.0.0
+			miseStep.Version(rust, "1.30.0", "Cargo.toml")
+		case "2018":
+			// https://doc.rust-lang.org/edition-guide/rust-2021/index.html
+			// >= 1.31.0
+			miseStep.Version(rust, "1.55.0", "Cargo.toml")
+		case "2021":
+			// https://doc.rust-lang.org/edition-guide/rust-2021/index.html
+			// >= 1.56.0
+			miseStep.Version(rust, "1.84.0", "Cargo.toml")
+		case "2024":
+			// https://doc.rust-lang.org/edition-guide/rust-2024/index.html
+			// >= 1.85.0
+			miseStep.Version(rust, "1.85.1", "Cargo.toml")
+		}
+	}
+
 	if envVersion, varName := ctx.Env.GetConfigVariable("RUST_VERSION"); envVersion != "" {
 		miseStep.Version(rust, envVersion, varName)
-	}
-
-	if cargoToml, err := parseCargoTOML(ctx); err == nil {
-		if cargoToml.Package.RustVersion != "" {
-			// Newer versions of Rust allow the `rust-version` field in Cargo.toml
-			if version := utils.ExtractSemverVersion(cargoToml.Package.RustVersion); version != "" {
-				miseStep.Version(rust, version, "Cargo.toml")
-			}
-		} else {
-			// Fall back to the edition
-			switch cargoToml.Package.Edition {
-			case "2015":
-				// https://doc.rust-lang.org/edition-guide/rust-2015/index.html
-				// >= 1.0.0
-				miseStep.Version(rust, "1.30.0", "Cargo.toml")
-			case "2018":
-				// https://doc.rust-lang.org/edition-guide/rust-2021/index.html
-				// >= 1.31.0
-				miseStep.Version(rust, "1.55.0", "Cargo.toml")
-			case "2021":
-				// https://doc.rust-lang.org/edition-guide/rust-2021/index.html
-				// >= 1.56.0
-				miseStep.Version(rust, "1.84.0", "Cargo.toml")
-			case "2024":
-				// https://doc.rust-lang.org/edition-guide/rust-2024/index.html
-				// >= 1.85.0
-				miseStep.Version(rust, "1.85.1", "Cargo.toml")
-			}
-		}
-	}
-
-	if toolchain, err := parseRustToolchain(ctx); err == nil {
-		if version := utils.ExtractSemverVersion(toolchain.Toolchain.Version); version != "" {
-			miseStep.Version(rust, version, "rust-toolchain.toml")
-		}
 	}
 
 	// Try several common filenames
@@ -126,6 +116,161 @@ func (p *RustProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			}
 		}
 	}
+
+	if toolchain, err := parseRustToolchain(ctx); err == nil {
+		if version := utils.ExtractSemverVersion(toolchain.Toolchain.Version); version != "" {
+			miseStep.Version(rust, version, "rust-toolchain.toml")
+		}
+	}
+
+	if cargoToml != nil {
+		if cargoToml.Package.RustVersion != "" {
+			// Newer versions of Rust allow the `rust-version` field in Cargo.toml
+			if version := utils.ExtractSemverVersion(cargoToml.Package.RustVersion); version != "" {
+				miseStep.Version(rust, version, "Cargo.toml")
+			}
+		}
+	}
+}
+
+func (p *RustProvider) shouldUseMusl(ctx *generate.GenerateContext) bool {
+	if p.shouldMakeWasm32Wasi(ctx) {
+		return false
+	}
+
+	if ctx.Env.IsConfigVariableTruthy("NO_MUSL") {
+		return false
+	}
+
+	toolchainFile, _ := parseRustToolchain(ctx)
+	if toolchainFile != nil {
+		return false
+	}
+
+	if p.usesOpenSSL(ctx) {
+		return false
+	}
+
+	return true
+}
+
+var wasmRegex = regexp.MustCompile(`target\s*=\s*"wasm32-wasi"`)
+
+func (p *RustProvider) shouldMakeWasm32Wasi(ctx *generate.GenerateContext) bool {
+	matches := ctx.App.FindFilesWithContent(".cargo/config.toml", wasmRegex)
+	return len(matches) > 0
+}
+
+func (p *RustProvider) usesOpenSSL(ctx *generate.GenerateContext) bool {
+	app := ctx.App
+	// Check Cargo.toml
+	cargoToml, err := parseCargoTOML(ctx)
+	if err == nil {
+		// Check all dependency maps for "openssl"
+		if _, ok := cargoToml.Dependencies["openssl"]; ok {
+			return true
+		}
+		if _, ok := cargoToml.DevDependencies["openssl"]; ok {
+			return true
+		}
+		if _, ok := cargoToml.BuildDependencies["openssl"]; ok {
+			return true
+		}
+	}
+
+	// Check Cargo.lock
+	if app.HasMatch("Cargo.lock") {
+		content, err := app.ReadFile("Cargo.lock")
+		if err == nil && strings.Contains(content, "openssl") {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (p *RustProvider) resolveCargoWorkspace(ctx *generate.GenerateContext) string {
+	if name, _ := ctx.Env.GetConfigVariable("CARGO_WORKSPACE"); name != "" {
+		return name
+	}
+
+	if cargoToml, err := parseCargoTOML(ctx); err == nil && cargoToml.Workspace.Members != nil {
+		if binary, err := p.findBinaryInWorkspace(ctx, cargoToml.Workspace); err == nil && binary != "" {
+			return binary
+		}
+	}
+
+	return ""
+}
+
+func (p *RustProvider) findBinaryInWorkspace(ctx *generate.GenerateContext, workspace WorkspaceConfig) (string, error) {
+	findBinary := func(member string) (string, error) {
+		path := fmt.Sprintf("%s/Cargo.toml", member)
+		var manifest CargoTOML
+		if err := ctx.App.ReadTOML(path, &manifest); err != nil {
+			return "", err
+		}
+
+		if manifest.Package.Name != "" {
+			if len(manifest.Bin) > 0 || manifest.Lib.Name == "" {
+				return manifest.Package.Name, nil
+			}
+		}
+
+		return "", nil
+	}
+
+	for _, defaultMember := range workspace.DefaultMembers {
+		if slices.Contains(workspace.ExcludeMembers, defaultMember) {
+			continue
+		}
+
+		if strings.Contains(defaultMember, "*") || strings.Contains(defaultMember, "?") {
+			dirs, err := ctx.App.FindDirectories(defaultMember)
+			if err != nil {
+				return "", err
+			}
+
+			for _, dir := range dirs {
+				binary, err := findBinary(dir)
+				if err == nil && binary != "" {
+					return binary, nil
+				}
+			}
+		} else {
+			binary, err := findBinary(defaultMember)
+			if err == nil && binary != "" {
+				return binary, nil
+			}
+		}
+	}
+
+	for _, member := range workspace.Members {
+		if slices.Contains(workspace.ExcludeMembers, member) {
+			continue
+		}
+
+		if strings.Contains(member, "*") || strings.Contains(member, "?") {
+			dirs, err := ctx.App.FindDirectories(member)
+			if err != nil {
+				return "", err
+			}
+
+			for _, dir := range dirs {
+				binary, err := findBinary(dir)
+				if err == nil && binary != "" {
+					return binary, nil
+				}
+			}
+		} else {
+			binary, err := findBinary(member)
+			if err == nil && binary != "" {
+				return binary, nil
+			}
+		}
+	}
+
+	return "", nil
 }
 
 // parseCargoTOML parses a Cargo.toml file
