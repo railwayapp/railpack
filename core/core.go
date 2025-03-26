@@ -149,7 +149,7 @@ func GenerateConfigFromFile(app *app.App, env *app.Environment, options *Generat
 	}
 
 	if err := app.ReadJSON(configFileName, config); err != nil {
-		logger.LogWarn("Failed to read config file `%s`\nUse the following schema to validate your config file: %s\n", configFileName, c.SchemaUrl)
+		logger.LogWarn("Failed to read config file `%s`: %s\nUse the following schema to validate your config file: %s\n", configFileName, err.Error(), c.SchemaUrl)
 		return config, nil
 	}
 
