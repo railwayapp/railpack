@@ -166,8 +166,8 @@ func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.
 	}
 
 	install.AddCommands(commands)
-	install.AddPaths([]string{envVars["GEM_HOME"]})
-	return []string{"/usr/local/bundle"}
+	install.AddPaths([]string{envVars["GEM_PATH"]})
+	return []string{envVars["GEM_HOME"]}
 }
 
 func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) []string {
