@@ -31,7 +31,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "./bin/library",
+  "startCommand": "./bin/binary",
   "variables": {
    "ROCKET_ADDRESS": "0.0.0.0"
   }
@@ -82,10 +82,10 @@
      "cmd": "rustup target add aarch64-unknown-linux-musl"
     },
     {
-     "cmd": "cargo build --release --package library --target aarch64-unknown-linux-musl"
+     "cmd": "cargo build --release --package binary --target aarch64-unknown-linux-musl"
     },
     {
-     "cmd": "cp target/aarch64-unknown-linux-musl/release/library bin"
+     "cmd": "cp target/aarch64-unknown-linux-musl/release/binary bin"
     }
    ],
    "inputs": [
