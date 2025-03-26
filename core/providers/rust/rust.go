@@ -39,15 +39,17 @@ func (p *RustProvider) Initialize(ctx *generate.GenerateContext) error {
 func (p *RustProvider) Plan(ctx *generate.GenerateContext) error {
 	miseStep := ctx.GetMiseStepBuilder()
 	p.InstallMisePackages(ctx, miseStep)
+	if p.shouldUseMusl(ctx) {
+		miseStep.AddSupportingAptPackage("musl-tools")
+	}
 
 	build := ctx.NewCommandStep("build")
-	build.AddInput(plan.NewStepInput(miseStep.Name()))
+	build.AddInputs([]plan.Input{
+		plan.NewStepInput(miseStep.Name()),
+	})
 	p.Build(ctx, build)
 
 	maps.Copy(ctx.Deploy.Variables, p.GetRustEnvVars(ctx))
-	if p.shouldUseMusl(ctx) {
-		ctx.Deploy.AptPackages = append(ctx.Deploy.AptPackages, "musl-tools")
-	}
 	ctx.Deploy.Inputs = []plan.Input{
 		ctx.DefaultRuntimeInput(),
 		plan.NewStepInput(miseStep.Name(), plan.InputOptions{
