@@ -95,13 +95,13 @@
      "cmd": "mkdir -p bin"
     },
     {
-     "cmd": "rustup target add aarch64-unknown-linux-musl"
+     "cmd": "rustup target add x86_64-unknown-linux-musl"
     },
     {
-     "cmd": "cargo build --release --package binary --target aarch64-unknown-linux-musl"
+     "cmd": "cargo build --release --package binary --target x86_64-unknown-linux-musl"
     },
     {
-     "cmd": "cp target/aarch64-unknown-linux-musl/release/binary bin"
+     "cmd": "cp target/x86_64-unknown-linux-musl/release/binary bin"
     }
    ],
    "inputs": [

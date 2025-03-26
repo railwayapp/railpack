@@ -99,19 +99,19 @@
      "cmd": "mkdir -p bin"
     },
     {
-     "cmd": "rustup target add aarch64-unknown-linux-musl"
+     "cmd": "rustup target add x86_64-unknown-linux-musl"
     },
     {
-     "cmd": "cargo build --release --target aarch64-unknown-linux-musl"
+     "cmd": "cargo build --release --target x86_64-unknown-linux-musl"
     },
     {
-     "cmd": "cp target/aarch64-unknown-linux-musl/release/rust-multiple-bins bin"
+     "cmd": "cp target/x86_64-unknown-linux-musl/release/rust-multiple-bins bin"
     },
     {
-     "cmd": "cp target/aarch64-unknown-linux-musl/release/bin1 bin"
+     "cmd": "cp target/x86_64-unknown-linux-musl/release/bin1 bin"
     },
     {
-     "cmd": "cp target/aarch64-unknown-linux-musl/release/bin2 bin"
+     "cmd": "cp target/x86_64-unknown-linux-musl/release/bin2 bin"
     }
    ],
    "inputs": [
