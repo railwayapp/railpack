@@ -3,6 +3,7 @@ package rust
 import (
 	"fmt"
 	"maps"
+	"os/exec"
 	"regexp"
 	"runtime"
 	"slices"
@@ -103,7 +104,6 @@ func (p *RustProvider) getStartBin(ctx *generate.GenerateContext) string {
 		return ""
 	}
 
-	fmt.Println("WTF", bins)
 	var bin string
 
 	if len(bins) == 1 {
@@ -137,7 +137,7 @@ func (p *RustProvider) getTarget(ctx *generate.GenerateContext) string {
 	}
 
 	if p.shouldUseMusl(ctx) {
-		return fmt.Sprintf("%s-unknown-linux-musl", getRustArch())
+		return getRustTarget()
 	}
 
 	return ""
@@ -483,34 +483,25 @@ func (p *RustProvider) findBinaryInWorkspace(ctx *generate.GenerateContext, work
 	return "", nil
 }
 
-// RustArch returns the architecture string in Rust's format
-func getRustArch() string {
-	switch runtime.GOARCH {
-	case "amd64":
-		return "x86_64"
-	case "386":
-		return "i686"
-	case "arm64":
-		return "aarch64"
-	case "arm":
-		return "arm"
-	case "ppc64":
-		return "powerpc64"
-	case "ppc64le":
-		return "powerpc64le"
-	case "mips", "mipsle":
-		return "mips"
-	case "mips64", "mips64le":
-		return "mips64"
-	case "s390x":
-		return "s390x"
-	case "riscv64":
-		return "riscv64gc"
-	case "wasm":
-		return "wasm32"
-	default:
-		return runtime.GOARCH
+func getRustTarget() string {
+	cmd := exec.Command("uname", "-m")
+	output, err := cmd.Output()
+	if err == nil {
+		arch := strings.TrimSpace(string(output))
+		if arch == "x86_64" {
+			return "x86_64-unknown-linux-musl"
+		} else if arch == "aarch64" || arch == "arm64" {
+			return "aarch64-unknown-linux-musl"
+		}
 	}
+
+	if runtime.GOARCH == "amd64" {
+		return "x86_64-unknown-linux-musl"
+	} else if runtime.GOARCH == "arm64" {
+		return "aarch64-unknown-linux-musl"
+	}
+
+	return "x86_64-unknown-linux-musl"
 }
 
 // parseCargoTOML parses a Cargo.toml file
@@ -525,13 +516,13 @@ func parseCargoTOML(ctx *generate.GenerateContext) (*CargoTOML, error) {
 
 // See https://doc.rust-lang.org/cargo/reference/manifest.html
 type CargoTOML struct {
-	Package           PackageInfo            `toml:"package"`
-	Dependencies      map[string]interface{} `toml:"dependencies,omitempty"`
-	DevDependencies   map[string]interface{} `toml:"dev-dependencies,omitempty"`
-	BuildDependencies map[string]interface{} `toml:"build-dependencies,omitempty"`
-	Lib               LibConfig              `toml:"lib,omitempty"`
-	Bin               []BinConfig            `toml:"bin,omitempty"`
-	Workspace         WorkspaceConfig        `toml:"workspace,omitempty"`
+	Package           PackageInfo     `toml:"package"`
+	Dependencies      map[string]any  `toml:"dependencies,omitempty"`
+	DevDependencies   map[string]any  `toml:"dev-dependencies,omitempty"`
+	BuildDependencies map[string]any  `toml:"build-dependencies,omitempty"`
+	Lib               LibConfig       `toml:"lib,omitempty"`
+	Bin               []BinConfig     `toml:"bin,omitempty"`
+	Workspace         WorkspaceConfig `toml:"workspace,omitempty"`
 }
 
 type PackageInfo struct {
