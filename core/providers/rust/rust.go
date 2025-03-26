@@ -177,7 +177,6 @@ func (p *RustProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 	} else {
 		bins, err := p.getBins(ctx)
 		if err != nil {
-			fmt.Println("Uhmmm error", err)
 			return
 		}
 
@@ -389,7 +388,6 @@ func (p *RustProvider) resolveCargoWorkspace(ctx *generate.GenerateContext) stri
 		}
 	}
 
-	fmt.Println("Uhmmm error", err)
 	return ""
 }
 
@@ -520,7 +518,7 @@ func getRustTarget() string {
 // parseCargoTOML parses a Cargo.toml file
 func parseCargoTOML(ctx *generate.GenerateContext) (*CargoTOML, error) {
 	var cargoToml *CargoTOML
-	if err := ctx.App.ReadTOML("cargo.toml", &cargoToml); err != nil {
+	if err := ctx.App.ReadTOML("Cargo.toml", &cargoToml); err != nil {
 		return nil, err
 	}
 
