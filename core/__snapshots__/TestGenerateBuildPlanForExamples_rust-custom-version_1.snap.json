@@ -7,6 +7,10 @@
   "cargo_registry": {
    "directory": "/root/.cargo/registry",
    "type": "shared"
+  },
+  "cargo_target": {
+   "directory": "target",
+   "type": "shared"
   }
  },
  "deploy": {
