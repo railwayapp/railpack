@@ -75,7 +75,6 @@ func (p *RustProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	target := p.getTarget(ctx)
 
 	if target != "" {
-		// Target is present, use slim image
 		workspace := p.resolveCargoWorkspace(ctx)
 
 		if workspace != "" {
@@ -85,7 +84,6 @@ func (p *RustProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 		return p.getStartBin(ctx)
 	}
 
-	// Target is not present, regular image
 	workspace := p.resolveCargoWorkspace(ctx)
 
 	if workspace != "" {
@@ -110,17 +108,11 @@ func (p *RustProvider) getStartBin(ctx *generate.GenerateContext) string {
 	if len(bins) == 1 {
 		bin = bins[0]
 	} else if envBinName, _ := ctx.Env.GetConfigVariable("RUST_BIN"); envBinName != "" {
-		found := false
 		for _, b := range bins {
 			if b == envBinName {
 				bin = b
-				found = true
 				break
 			}
-		}
-
-		if !found {
-			return ""
 		}
 	} else {
 		cargoToml, err := parseCargoTOML(ctx)
@@ -130,7 +122,7 @@ func (p *RustProvider) getStartBin(ctx *generate.GenerateContext) string {
 	}
 
 	if bin == "" {
-		return ""
+		return bin
 	}
 
 	binSuffix := p.getBinSuffix(ctx)
@@ -223,12 +215,18 @@ func (p *RustProvider) getBins(ctx *generate.GenerateContext) ([]string, error) 
 			return nil, err
 		}
 
-		for _, bin := range findBins {
-			if bin == "" {
-				return nil, fmt.Errorf("could not get file name for bin")
+		for _, binPath := range findBins {
+			if binPath == "" {
+				continue
 			}
 
-			parts := strings.Split(bin, ".")
+			binPathParts := strings.Split(binPath, "/")
+			if len(binPathParts) == 0 {
+				continue
+			}
+
+			filename := binPathParts[len(binPathParts)-1]
+			parts := strings.Split(filename, ".")
 			if len(parts) <= 1 {
 				continue
 			}
