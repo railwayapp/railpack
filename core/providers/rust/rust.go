@@ -99,7 +99,7 @@ func (p *RustProvider) getStartBin(ctx *generate.GenerateContext) string {
 		return ""
 	}
 
-	if bins == nil || len(bins) == 0 {
+	if len(bins) == 0 {
 		return ""
 	}
 
