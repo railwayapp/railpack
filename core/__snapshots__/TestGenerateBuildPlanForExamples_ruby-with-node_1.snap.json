@@ -1,0 +1,269 @@
+{
+ "caches": {
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  },
+  "node-modules": {
+   "directory": "/app/node_modules/.cache",
+   "type": "shared"
+  },
+  "npm-install": {
+   "directory": "/root/.npm",
+   "type": "shared"
+  }
+ },
+ "deploy": {
+  "inputs": [
+   {
+    "step": "packages:runtime"
+   },
+   {
+    "include": [
+     "/mise/shims",
+     "/mise/installs",
+     "/usr/local/bin/mise",
+     "/etc/mise/config.toml",
+     "/root/.local/state/mise"
+    ],
+    "step": "packages:mise"
+   },
+   {
+    "include": [
+     "/usr/local/bundle"
+    ],
+    "step": "install"
+   },
+   {
+    "include": [
+     "/app"
+    ],
+    "step": "build"
+   },
+   {
+    "exclude": [
+     "node_modules",
+     ".yarn"
+    ],
+    "include": [
+     "."
+    ],
+    "step": "build:node"
+   },
+   {
+    "include": [
+     "/app/node_modules"
+    ],
+    "step": "prune:node"
+   }
+  ],
+  "startCommand": "ruby app.rb",
+  "variables": {
+   "BUNDLE_GEMFILE": "/app/Gemfile",
+   "GEM_HOME": "/usr/local/bundle",
+   "GEM_PATH": "/usr/local/bundle",
+   "MALLOC_ARENA_MAX": "2"
+  }
+ },
+ "steps": [
+  {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libyaml-dev'",
+     "customName": "install apt packages: libyaml-dev"
+    },
+    {
+     "path": "/mise/shims"
+    },
+    {
+     "customName": "create mise config",
+     "name": "mise.toml",
+     "path": "/etc/mise/config.toml"
+    },
+    {
+     "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
+     "customName": "install mise packages: node, ruby"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:mise",
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_SHIMS_DIR": "/mise/shims"
+   }
+  },
+  {
+   "commands": [
+    {
+     "cmd": "gem install -N bundler:2.3.7"
+    },
+    {
+     "dest": "Gemfile",
+     "src": "Gemfile"
+    },
+    {
+     "dest": "Gemfile.lock",
+     "src": "Gemfile.lock"
+    },
+    {
+     "cmd": "bundle install"
+    },
+    {
+     "path": "/usr/local/bundle"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install",
+   "variables": {
+    "BUNDLE_GEMFILE": "/app/Gemfile",
+    "GEM_HOME": "/usr/local/bundle",
+    "GEM_PATH": "/usr/local/bundle",
+    "MALLOC_ARENA_MAX": "2"
+   }
+  },
+  {
+   "caches": [
+    "npm-install"
+   ],
+   "commands": [
+    {
+     "path": "/app/node_modules/.bin"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
+    },
+    {
+     "dest": "package-lock.json",
+     "src": "package-lock.json"
+    },
+    {
+     "cmd": "npm ci"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install:node",
+   "variables": {
+    "CI": "true",
+    "NODE_ENV": "production",
+    "NPM_CONFIG_FUND": "false",
+    "NPM_CONFIG_PRODUCTION": "false",
+    "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+   }
+  },
+  {
+   "caches": [
+    "npm-install"
+   ],
+   "commands": [
+    {
+     "cmd": "npm prune --omit=dev"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "install:node"
+    }
+   ],
+   "name": "prune:node",
+   "variables": {
+    "NPM_CONFIG_PRODUCTION": "true"
+   }
+  },
+  {
+   "caches": [
+    "node-modules"
+   ],
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    }
+   ],
+   "inputs": [
+    {
+     "step": "install"
+    },
+    {
+     "include": [
+      ".",
+      "/mise/shims",
+      "/mise/installs",
+      "/usr/local/bin/mise",
+      "/etc/mise/config.toml",
+      "/root/.local/state/mise"
+     ],
+     "step": "install:node"
+    }
+   ],
+   "name": "build:node",
+   "secrets": [
+    "*"
+   ]
+  },
+  {
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    }
+   ],
+   "inputs": [
+    {
+     "step": "install"
+    }
+   ],
+   "name": "build",
+   "variables": {
+    "BUNDLE_GEMFILE": "/app/Gemfile",
+    "GEM_HOME": "/usr/local/bundle",
+    "GEM_PATH": "/usr/local/bundle",
+    "MALLOC_ARENA_MAX": "2"
+   }
+  },
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libyaml-dev'",
+     "customName": "install apt packages: libyaml-dev"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+    }
+   ],
+   "name": "packages:runtime"
+  }
+ ]
+}

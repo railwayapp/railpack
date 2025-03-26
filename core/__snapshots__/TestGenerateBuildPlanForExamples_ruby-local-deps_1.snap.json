@@ -1,0 +1,165 @@
+{
+ "caches": {
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  }
+ },
+ "deploy": {
+  "inputs": [
+   {
+    "step": "packages:runtime"
+   },
+   {
+    "include": [
+     "/mise/shims",
+     "/mise/installs",
+     "/usr/local/bin/mise",
+     "/etc/mise/config.toml",
+     "/root/.local/state/mise"
+    ],
+    "step": "packages:mise"
+   },
+   {
+    "include": [
+     "/usr/local/bundle"
+    ],
+    "step": "install"
+   },
+   {
+    "include": [
+     "/app"
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "bundle exec ruby app.rb",
+  "variables": {
+   "BUNDLE_GEMFILE": "/app/Gemfile",
+   "GEM_HOME": "/usr/local/bundle",
+   "GEM_PATH": "/usr/local/bundle",
+   "MALLOC_ARENA_MAX": "2"
+  }
+ },
+ "steps": [
+  {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libyaml-dev'",
+     "customName": "install apt packages: libyaml-dev"
+    },
+    {
+     "path": "/mise/shims"
+    },
+    {
+     "customName": "create mise config",
+     "name": "mise.toml",
+     "path": "/etc/mise/config.toml"
+    },
+    {
+     "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
+     "customName": "install mise packages: ruby"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:mise",
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_SHIMS_DIR": "/mise/shims"
+   }
+  },
+  {
+   "commands": [
+    {
+     "cmd": "gem install -N bundler:2.3.7"
+    },
+    {
+     "dest": "Gemfile",
+     "src": "Gemfile"
+    },
+    {
+     "dest": "Gemfile.lock",
+     "src": "Gemfile.lock"
+    },
+    {
+     "dest": "libs/local",
+     "src": "libs/local"
+    },
+    {
+     "cmd": "bundle install"
+    },
+    {
+     "path": "/usr/local/bundle"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install",
+   "variables": {
+    "BUNDLE_GEMFILE": "/app/Gemfile",
+    "GEM_HOME": "/usr/local/bundle",
+    "GEM_PATH": "/usr/local/bundle",
+    "MALLOC_ARENA_MAX": "2"
+   }
+  },
+  {
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    }
+   ],
+   "inputs": [
+    {
+     "step": "install"
+    }
+   ],
+   "name": "build",
+   "variables": {
+    "BUNDLE_GEMFILE": "/app/Gemfile",
+    "GEM_HOME": "/usr/local/bundle",
+    "GEM_PATH": "/usr/local/bundle",
+    "MALLOC_ARENA_MAX": "2"
+   }
+  },
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libyaml-dev'",
+     "customName": "install apt packages: libyaml-dev"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+    }
+   ],
+   "name": "packages:runtime"
+  }
+ ]
+}

@@ -256,7 +256,7 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			miseStep.Version(node, envVersion, varName)
 		}
 
-		if p.packageJson.Engines != nil && p.packageJson.Engines["node"] != "" {
+		if p.packageJson != nil && p.packageJson.Engines != nil && p.packageJson.Engines["node"] != "" {
 			miseStep.Version(node, p.packageJson.Engines["node"], "package.json > engines > node")
 		}
 
@@ -318,7 +318,7 @@ func (p *NodeProvider) hasDependency(dependency string) bool {
 }
 
 func (p *NodeProvider) usesCorepack() bool {
-	return p.packageJson.PackageManager != nil && p.packageManager != PackageManagerBun
+	return p.packageJson != nil && p.packageJson.PackageManager != nil && p.packageManager != PackageManagerBun
 }
 
 func (p *NodeProvider) usesPuppeteer() bool {
@@ -434,9 +434,11 @@ func (p *NodeProvider) requiresBun(ctx *generate.GenerateContext) bool {
 		return true
 	}
 
-	for _, script := range p.packageJson.Scripts {
-		if strings.Contains(script, "bun") {
-			return true
+	if p.packageJson != nil {
+		for _, script := range p.packageJson.Scripts {
+			if strings.Contains(script, "bun") {
+				return true
+			}
 		}
 	}
 
