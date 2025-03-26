@@ -151,70 +151,46 @@ func (p *RustProvider) getTarget(ctx *generate.GenerateContext) string {
 func (p *RustProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
 	ctx.Caches.AddCache("cargo_registry", CARGO_REGISTRY_CACHE)
 	ctx.Caches.AddCache("cargo_git", CARGO_GIT_CACHE)
-
 	build.AddCommands([]plan.Command{
 		plan.NewCopyCommand("."),
 		plan.NewExecCommand("mkdir -p bin"),
 	})
 
 	buildCmd := "cargo build --release"
-
 	binSuffix := p.getBinSuffix(ctx)
 	target := p.getTarget(ctx)
+	targetArg := ""
+	targetPath := ""
 
 	if target != "" {
+		targetArg = fmt.Sprintf(" --target %s", target)
+		targetPath = fmt.Sprintf("%s/", target)
 		build.AddCommands([]plan.Command{
 			plan.NewExecCommand(fmt.Sprintf("rustup target add %s", target)),
 		})
+	}
 
-		workspace := p.resolveCargoWorkspace(ctx)
+	workspace := p.resolveCargoWorkspace(ctx)
 
-		if workspace != "" {
-			buildCmd = fmt.Sprintf("%s --package %s --target %s", buildCmd, workspace, target)
-			build.AddCommands([]plan.Command{
-				plan.NewExecCommand(buildCmd),
-				plan.NewExecCommand(fmt.Sprintf("cp target/%s/release/%s%s bin", target, workspace, binSuffix)),
-			})
-		} else {
-			bins, err := p.getBins(ctx)
-			if err != nil {
-				return
-			}
-
-			if len(bins) > 0 {
-				build.AddCommand(plan.NewExecCommand(fmt.Sprintf("%s --target %s", buildCmd, target)))
-				for _, bin := range bins {
-					build.AddCommand(plan.NewExecCommand(fmt.Sprintf("cp target/%s/release/%s%s bin", target, bin, binSuffix)))
-				}
-			}
+	if workspace != "" {
+		buildCmd = fmt.Sprintf("%s --package %s%s", buildCmd, workspace, targetArg)
+		build.AddCommands([]plan.Command{
+			plan.NewExecCommand(buildCmd),
+			plan.NewExecCommand(fmt.Sprintf("cp target/%srelease/%s%s bin", targetPath, workspace, binSuffix)),
+		})
+	} else {
+		bins, err := p.getBins(ctx)
+		if err != nil {
+			return
 		}
 
-		return
-	} else {
-		workspace := p.resolveCargoWorkspace(ctx)
-
-		if workspace != "" {
-			buildCmd = fmt.Sprintf("%s --package %s", buildCmd, workspace)
-			build.AddCommands([]plan.Command{
-				plan.NewExecCommand(buildCmd),
-				plan.NewExecCommand(fmt.Sprintf("cp target/release/%s%s bin", workspace, binSuffix)),
-			})
-		} else {
-			bins, err := p.getBins(ctx)
-			if err != nil {
-				return
-			}
-
-			if len(bins) > 0 {
-				build.AddCommand(plan.NewExecCommand(buildCmd))
-
-				for _, bin := range bins {
-					build.AddCommand(plan.NewExecCommand(fmt.Sprintf("cp target/release/%s%s bin", bin, binSuffix)))
-				}
+		if len(bins) > 0 {
+			build.AddCommand(plan.NewExecCommand(fmt.Sprintf("%s%s", buildCmd, targetArg)))
+			for _, bin := range bins {
+				build.AddCommand(plan.NewExecCommand(fmt.Sprintf("cp target/%srelease/%s%s bin", targetPath, bin, binSuffix)))
 			}
 		}
 	}
-
 	appName := p.getAppName(ctx)
 	if appName != "" {
 		// Cache target directory
