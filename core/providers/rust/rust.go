@@ -103,6 +103,7 @@ func (p *RustProvider) getStartBin(ctx *generate.GenerateContext) string {
 		return ""
 	}
 
+	fmt.Println("WTF", bins)
 	var bin string
 
 	if len(bins) == 1 {
