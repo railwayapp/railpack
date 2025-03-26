@@ -93,6 +93,46 @@
    "commands": [
     {
      "dest": ".",
+     "src": "Cargo.toml*"
+    },
+    {
+     "dest": ".",
+     "src": "Cargo.lock*"
+    },
+    {
+     "cmd": "rustup target add x86_64-unknown-linux-musl"
+    },
+    {
+     "cmd": "mkdir -p src"
+    },
+    {
+     "cmd": "sh -c 'echo \"fn main() { }\" \u003e /app/src/main.rs \u0026\u0026 if grep -q \"\\[lib\\]\" Cargo.toml; then echo \"fn main() { }\" \u003e /app/src/lib.rs; fi'",
+     "customName": "echo \"fn main() { }\" \u003e /app/src/main.rs \u0026\u0026 if grep -q \"\\[lib\\]\" Cargo.toml; then echo \"fn main() { }\" \u003e /app/src/lib.rs; fi"
+    },
+    {
+     "cmd": "cat /app/src/main.rs"
+    },
+    {
+     "cmd": "cargo build --release --target x86_64-unknown-linux-musl"
+    },
+    {
+     "cmd": "rm -rf src target/x86_64-unknown-linux-musl/release/rust-custom-version*"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install",
+   "secrets": [
+    "*"
+   ]
+  },
+  {
+   "commands": [
+    {
+     "dest": ".",
      "src": "."
     },
     {
@@ -111,6 +151,12 @@
    "inputs": [
     {
      "step": "packages:mise"
+    },
+    {
+     "exclude": [
+      "/app/"
+     ],
+     "step": "install"
     }
    ],
    "name": "build",

@@ -77,6 +77,43 @@
    "commands": [
     {
      "dest": ".",
+     "src": "Cargo.toml*"
+    },
+    {
+     "dest": ".",
+     "src": "Cargo.lock*"
+    },
+    {
+     "cmd": "mkdir -p src"
+    },
+    {
+     "cmd": "sh -c 'echo \"fn main() { }\" \u003e /app/src/main.rs \u0026\u0026 if grep -q \"\\[lib\\]\" Cargo.toml; then echo \"fn main() { }\" \u003e /app/src/lib.rs; fi'",
+     "customName": "echo \"fn main() { }\" \u003e /app/src/main.rs \u0026\u0026 if grep -q \"\\[lib\\]\" Cargo.toml; then echo \"fn main() { }\" \u003e /app/src/lib.rs; fi"
+    },
+    {
+     "cmd": "cat /app/src/main.rs"
+    },
+    {
+     "cmd": "cargo build --release"
+    },
+    {
+     "cmd": "rm -rf src target/release/rust-custom-toolchain*"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install",
+   "secrets": [
+    "*"
+   ]
+  },
+  {
+   "commands": [
+    {
+     "dest": ".",
      "src": "."
     },
     {
@@ -92,6 +129,12 @@
    "inputs": [
     {
      "step": "packages:mise"
+    },
+    {
+     "exclude": [
+      "/app/"
+     ],
+     "step": "install"
     }
    ],
    "name": "build",

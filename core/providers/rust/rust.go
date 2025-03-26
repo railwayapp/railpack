@@ -45,9 +45,18 @@ func (p *RustProvider) Plan(ctx *generate.GenerateContext) error {
 		miseStep.AddSupportingAptPackage("musl-tools")
 	}
 
+	install := ctx.NewCommandStep("install")
+	install.AddInputs([]plan.Input{
+		plan.NewStepInput(miseStep.Name()),
+	})
+	p.Install(ctx, install)
+
 	build := ctx.NewCommandStep("build")
 	build.AddInputs([]plan.Input{
 		plan.NewStepInput(miseStep.Name()),
+		plan.NewStepInput(install.Name(), plan.InputOptions{
+			Exclude: []string{"/app/"},
+		}),
 	})
 	p.Build(ctx, build)
 
@@ -144,9 +153,43 @@ func (p *RustProvider) getTarget(ctx *generate.GenerateContext) string {
 	return ""
 }
 
-func (p *RustProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
+func (p *RustProvider) Install(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
 	ctx.Caches.AddCache("cargo_registry", CARGO_REGISTRY_CACHE)
 	ctx.Caches.AddCache("cargo_git", CARGO_GIT_CACHE)
+	install.AddCommands([]plan.Command{
+		plan.NewCopyCommand("Cargo.toml*", "."),
+		plan.NewCopyCommand("Cargo.lock*", "."),
+	})
+
+	buildCmd := "cargo build --release"
+	dummyCmd := `echo "fn main() { }" > /app/src/main.rs && if grep -q "\[lib\]" Cargo.toml; then echo "fn main() { }" > /app/src/lib.rs; fi`
+	target := p.getTarget(ctx)
+	targetArg := ""
+	targetPath := ""
+
+	if target != "" {
+		targetArg = fmt.Sprintf(" --target %s", target)
+		targetPath = fmt.Sprintf("%s/", target)
+		install.AddCommands([]plan.Command{
+			plan.NewExecCommand(fmt.Sprintf("rustup target add %s", target)),
+		})
+	}
+
+	// Don't do anything if we're in a workspace for now
+	if workspace := p.resolveCargoWorkspace(ctx); workspace != "" {
+		return
+	}
+
+	install.AddCommands([]plan.Command{
+		plan.NewExecCommand(`mkdir -p src`),
+		plan.NewExecShellCommand(dummyCmd),
+		plan.NewExecCommand(`cat /app/src/main.rs`),
+		plan.NewExecCommand(fmt.Sprintf("%s%s", buildCmd, targetArg)),
+		plan.NewExecCommand(fmt.Sprintf("rm -rf src target/%srelease/%s*", targetPath, p.getAppName(ctx))),
+	})
+}
+
+func (p *RustProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
 	build.AddCommands([]plan.Command{
 		plan.NewCopyCommand("."),
 		plan.NewExecCommand("mkdir -p bin"),
