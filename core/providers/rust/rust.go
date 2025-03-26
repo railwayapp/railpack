@@ -330,7 +330,7 @@ func (p *RustProvider) shouldUseMusl(ctx *generate.GenerateContext) bool {
 		return false
 	}
 
-	if p.usesOpenSSL(ctx) {
+	if p.usesOpenssl(ctx) {
 		return false
 	}
 
@@ -344,12 +344,12 @@ func (p *RustProvider) shouldMakeWasm32Wasi(ctx *generate.GenerateContext) bool 
 	return len(matches) > 0
 }
 
-func (p *RustProvider) usesOpenSSL(ctx *generate.GenerateContext) bool {
+func (p *RustProvider) usesOpenssl(ctx *generate.GenerateContext) bool {
 	app := ctx.App
 	// Check Cargo.toml
 	cargoToml, err := parseCargoTOML(ctx)
 	if err == nil {
-		// Check all dependency maps for "openssl"
+		// Check for "openssl" in any of the dependency maps
 		if _, ok := cargoToml.Dependencies["openssl"]; ok {
 			return true
 		}
@@ -373,11 +373,14 @@ func (p *RustProvider) usesOpenSSL(ctx *generate.GenerateContext) bool {
 }
 
 func (p *RustProvider) resolveCargoWorkspace(ctx *generate.GenerateContext) string {
+	// First check for environment variable override
 	if name, _ := ctx.Env.GetConfigVariable("CARGO_WORKSPACE"); name != "" {
 		return name
 	}
 
-	if cargoToml, err := parseCargoTOML(ctx); err == nil && cargoToml.Workspace.Members != nil {
+	// Then check for workspace in Cargo.toml
+	cargoToml, err := parseCargoTOML(ctx)
+	if err == nil && cargoToml != nil && cargoToml.Workspace.Members != nil {
 		if binary, err := p.findBinaryInWorkspace(ctx, cargoToml.Workspace); err == nil && binary != "" {
 			return binary
 		}
@@ -394,15 +397,37 @@ func (p *RustProvider) findBinaryInWorkspace(ctx *generate.GenerateContext, work
 			return "", err
 		}
 
-		if manifest.Package.Name != "" {
-			if len(manifest.Bin) > 0 || manifest.Lib.Name == "" {
-				return manifest.Package.Name, nil
-			}
+		if manifest.Package.Name == "" {
+			return "", nil
+		}
+
+		// Check for src/main.rs which definitely indicates a binary
+		hasMainRs := ctx.App.HasMatch(fmt.Sprintf("%s/src/main.rs", member))
+		if hasMainRs {
+			return manifest.Package.Name, nil
+		}
+
+		// Check for binaries in src/bin/
+		hasBinDir := ctx.App.HasMatch(fmt.Sprintf("%s/src/bin", member))
+		if hasBinDir {
+			return manifest.Package.Name, nil
+		}
+
+		// Check for bin entries in the manifest
+		if len(manifest.Bin) > 0 {
+			return manifest.Package.Name, nil
+		}
+
+		// If no lib.rs exists, it might be a binary
+		hasLibRs := ctx.App.HasMatch(fmt.Sprintf("%s/src/lib.rs", member))
+		if !hasLibRs {
+			return manifest.Package.Name, nil
 		}
 
 		return "", nil
 	}
 
+	// First check default members that aren't excluded
 	for _, defaultMember := range workspace.DefaultMembers {
 		if slices.Contains(workspace.ExcludeMembers, defaultMember) {
 			continue
@@ -428,6 +453,7 @@ func (p *RustProvider) findBinaryInWorkspace(ctx *generate.GenerateContext, work
 		}
 	}
 
+	// Then check all members that aren't excluded
 	for _, member := range workspace.Members {
 		if slices.Contains(workspace.ExcludeMembers, member) {
 			continue
@@ -498,16 +524,13 @@ func parseCargoTOML(ctx *generate.GenerateContext) (*CargoTOML, error) {
 
 // See https://doc.rust-lang.org/cargo/reference/manifest.html
 type CargoTOML struct {
-	Package           PackageInfo           `toml:"package"`
-	Dependencies      map[string]string     `toml:"dependencies,omitempty"`
-	DevDependencies   map[string]string     `toml:"dev-dependencies,omitempty"`
-	BuildDependencies map[string]string     `toml:"build-dependencies,omitempty"`
-	DependencyTables  map[string]Dependency `toml:"-"`
-	Lib               LibConfig             `toml:"lib,omitempty"`
-	Bin               []BinConfig           `toml:"bin,omitempty"`
-	Features          map[string][]string   `toml:"features,omitempty"`
-	Profile           map[string]Profile    `toml:"profile,omitempty"`
-	Workspace         WorkspaceConfig       `toml:"workspace,omitempty"`
+	Package           PackageInfo            `toml:"package"`
+	Dependencies      map[string]interface{} `toml:"dependencies,omitempty"`
+	DevDependencies   map[string]interface{} `toml:"dev-dependencies,omitempty"`
+	BuildDependencies map[string]interface{} `toml:"build-dependencies,omitempty"`
+	Lib               LibConfig              `toml:"lib,omitempty"`
+	Bin               []BinConfig            `toml:"bin,omitempty"`
+	Workspace         WorkspaceConfig        `toml:"workspace,omitempty"`
 }
 
 type PackageInfo struct {
