@@ -1,0 +1,103 @@
+{
+ "caches": {
+  "cargo_git": {
+   "directory": "/root/.cargo/git",
+   "type": "shared"
+  },
+  "cargo_registry": {
+   "directory": "/root/.cargo/registry",
+   "type": "shared"
+  },
+  "cargo_target": {
+   "directory": "target",
+   "type": "shared"
+  }
+ },
+ "deploy": {
+  "inputs": [
+   {
+    "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+   },
+   {
+    "include": [
+     "/mise/shims",
+     "/mise/installs",
+     "/usr/local/bin/mise",
+     "/etc/mise/config.toml",
+     "/root/.local/state/mise"
+    ],
+    "step": "packages:mise"
+   },
+   {
+    "include": [
+     "/app/bin"
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "./bin/rust-custom-toolchain",
+  "variables": {
+   "ROCKET_ADDRESS": "0.0.0.0"
+  }
+ },
+ "steps": [
+  {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "commands": [
+    {
+     "path": "/mise/shims"
+    },
+    {
+     "customName": "create mise config",
+     "name": "mise.toml",
+     "path": "/etc/mise/config.toml"
+    },
+    {
+     "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
+     "customName": "install mise packages: rust"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:mise",
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_SHIMS_DIR": "/mise/shims"
+   }
+  },
+  {
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    },
+    {
+     "cmd": "mkdir -p bin"
+    },
+    {
+     "cmd": "cargo build --release"
+    },
+    {
+     "cmd": "cp target/release/rust-custom-toolchain bin"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ]
+  }
+ ]
+}

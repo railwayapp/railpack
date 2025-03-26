@@ -2,7 +2,9 @@ package rust
 
 import (
 	"fmt"
+	"maps"
 	"regexp"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -42,13 +44,17 @@ func (p *RustProvider) Plan(ctx *generate.GenerateContext) error {
 	build.AddInput(plan.NewStepInput(miseStep.Name()))
 	p.Build(ctx, build)
 
+	maps.Copy(ctx.Deploy.Variables, p.GetRustEnvVars(ctx))
+	if p.shouldUseMusl(ctx) {
+		ctx.Deploy.AptPackages = append(ctx.Deploy.AptPackages, "musl-tools")
+	}
 	ctx.Deploy.Inputs = []plan.Input{
 		ctx.DefaultRuntimeInput(),
 		plan.NewStepInput(miseStep.Name(), plan.InputOptions{
 			Include: miseStep.GetOutputPaths(),
 		}),
 		plan.NewStepInput(build.Name(), plan.InputOptions{
-			Include: []string{"."},
+			Include: []string{"/app/bin"},
 		}),
 	}
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
@@ -64,6 +70,81 @@ func (p *RustProvider) StartCommandHelp() string {
 }
 
 func (p *RustProvider) GetStartCommand(ctx *generate.GenerateContext) string {
+	target := p.getTarget(ctx)
+
+	if target != "" {
+		// Target is present, use slim image
+		workspace := p.resolveCargoWorkspace(ctx)
+
+		if workspace != "" {
+			return fmt.Sprintf("./bin/%s", workspace)
+		}
+
+		return p.getStartBin(ctx)
+	}
+
+	// Target is not present, regular image
+	workspace := p.resolveCargoWorkspace(ctx)
+
+	if workspace != "" {
+		return fmt.Sprintf("./bin/%s", workspace)
+	}
+
+	return p.getStartBin(ctx)
+}
+
+func (p *RustProvider) getStartBin(ctx *generate.GenerateContext) string {
+	bins, err := p.getBins(ctx)
+	if err != nil {
+		return ""
+	}
+
+	if bins == nil || len(bins) == 0 {
+		return ""
+	}
+
+	var bin string
+
+	if len(bins) == 1 {
+		bin = bins[0]
+	} else if envBinName, _ := ctx.Env.GetConfigVariable("RUST_BIN"); envBinName != "" {
+		found := false
+		for _, b := range bins {
+			if b == envBinName {
+				bin = b
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return ""
+		}
+	} else {
+		cargoToml, err := parseCargoTOML(ctx)
+		if err == nil && cargoToml.Package.DefaultRun != "" {
+			bin = cargoToml.Package.DefaultRun
+		}
+	}
+
+	if bin == "" {
+		return ""
+	}
+
+	binSuffix := p.getBinSuffix(ctx)
+	return fmt.Sprintf("./bin/%s%s", bin, binSuffix)
+}
+
+func (p *RustProvider) getTarget(ctx *generate.GenerateContext) string {
+	// Target may be defined in .config/cargo.toml
+	if p.shouldMakeWasm32Wasi(ctx) {
+		return "wasm32-wasi"
+	}
+
+	if p.shouldUseMusl(ctx) {
+		return fmt.Sprintf("%s-unknown-linux-musl", getRustArch())
+	}
+
 	return ""
 }
 
@@ -71,11 +152,138 @@ func (p *RustProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 	ctx.Caches.AddCache("cargo_registry", CARGO_REGISTRY_CACHE)
 	ctx.Caches.AddCache("cargo_git", CARGO_GIT_CACHE)
 
-	buildCmd := "cargo build --release"
 	build.AddCommands([]plan.Command{
 		plan.NewCopyCommand("."),
-		plan.NewExecCommand(buildCmd),
+		plan.NewExecCommand("mkdir -p bin"),
 	})
+
+	buildCmd := "cargo build --release"
+
+	binSuffix := p.getBinSuffix(ctx)
+	target := p.getTarget(ctx)
+
+	if target != "" {
+		build.AddCommands([]plan.Command{
+			plan.NewExecCommand(fmt.Sprintf("rustup target add %s", target)),
+		})
+
+		workspace := p.resolveCargoWorkspace(ctx)
+
+		if workspace != "" {
+			buildCmd = fmt.Sprintf("%s --package %s --target %s", buildCmd, workspace, target)
+			build.AddCommands([]plan.Command{
+				plan.NewExecCommand(buildCmd),
+				plan.NewExecCommand(fmt.Sprintf("cp target/%s/release/%s%s bin", target, workspace, binSuffix)),
+			})
+		} else {
+			bins, err := p.getBins(ctx)
+			if err != nil {
+				return
+			}
+
+			if len(bins) > 0 {
+				build.AddCommand(plan.NewExecCommand(fmt.Sprintf("%s --target %s", buildCmd, target)))
+				for _, bin := range bins {
+					build.AddCommand(plan.NewExecCommand(fmt.Sprintf("cp target/%s/release/%s%s bin", target, bin, binSuffix)))
+				}
+			}
+		}
+
+		return
+	} else {
+		workspace := p.resolveCargoWorkspace(ctx)
+
+		if workspace != "" {
+			buildCmd = fmt.Sprintf("%s --package %s", buildCmd, workspace)
+			build.AddCommands([]plan.Command{
+				plan.NewExecCommand(buildCmd),
+				plan.NewExecCommand(fmt.Sprintf("cp target/release/%s%s bin", workspace, binSuffix)),
+			})
+		} else {
+			bins, err := p.getBins(ctx)
+			if err != nil {
+				return
+			}
+
+			if len(bins) > 0 {
+				build.AddCommand(plan.NewExecCommand(buildCmd))
+
+				for _, bin := range bins {
+					build.AddCommand(plan.NewExecCommand(fmt.Sprintf("cp target/release/%s%s bin", bin, binSuffix)))
+				}
+			}
+		}
+	}
+
+	appName := p.getAppName(ctx)
+	if appName != "" {
+		// Cache target directory
+		ctx.Caches.AddCache("cargo_target", CARGO_TARGET_CACHE)
+	}
+}
+
+func (p *RustProvider) getBinSuffix(ctx *generate.GenerateContext) string {
+	if p.shouldMakeWasm32Wasi(ctx) {
+		return ".wasm"
+	}
+	return ""
+}
+
+func (p *RustProvider) getBins(ctx *generate.GenerateContext) ([]string, error) {
+	var bins []string
+
+	name := p.getAppName(ctx)
+	if name != "" {
+		if ctx.App.HasMatch("src/main.rs") {
+			bins = append(bins, name)
+		}
+	}
+
+	if ctx.App.HasMatch("src/bin") {
+		findBins, err := ctx.App.FindFiles("src/bin/*")
+		if err != nil {
+			return nil, err
+		}
+
+		for _, bin := range findBins {
+			if bin == "" {
+				return nil, fmt.Errorf("could not get file name for bin")
+			}
+
+			parts := strings.Split(bin, ".")
+			if len(parts) <= 1 {
+				continue
+			}
+
+			binName := strings.Join(parts[:len(parts)-1], ".")
+			bins = append(bins, binName)
+		}
+	}
+
+	if len(bins) == 0 {
+		return nil, nil
+	}
+
+	return bins, nil
+}
+
+func (p *RustProvider) getAppName(ctx *generate.GenerateContext) string {
+	tomlFile, err := parseCargoTOML(ctx)
+	if err != nil {
+		return ""
+	}
+
+	if tomlFile.Package.Name != "" {
+		return tomlFile.Package.Name
+	}
+
+	return ""
+}
+
+func (p *RustProvider) GetRustEnvVars(ctx *generate.GenerateContext) map[string]string {
+	return map[string]string{
+		"ROCKET_ADDRESS": "0.0.0.0", // Allows Rocket apps to accept non-local connections
+	}
 }
 
 func (p *RustProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
@@ -108,18 +316,11 @@ func (p *RustProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		miseStep.Version(rust, envVersion, varName)
 	}
 
-	// Try several common filenames
 	for _, filename := range []string{"rust-version.txt", ".rust-version"} {
 		if content, err := ctx.App.ReadFile(filename); err == nil {
 			if version := strings.TrimSpace(utils.ExtractSemverVersion(content)); version != "" {
 				miseStep.Version(rust, version, filename)
 			}
-		}
-	}
-
-	if toolchain, err := parseRustToolchain(ctx); err == nil {
-		if version := utils.ExtractSemverVersion(toolchain.Toolchain.Version); version != "" {
-			miseStep.Version(rust, version, "rust-toolchain.toml")
 		}
 	}
 
@@ -129,6 +330,12 @@ func (p *RustProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			if version := utils.ExtractSemverVersion(cargoToml.Package.RustVersion); version != "" {
 				miseStep.Version(rust, version, "Cargo.toml")
 			}
+		}
+	}
+
+	if toolchain, err := parseRustToolchain(ctx); err == nil {
+		if version := utils.ExtractSemverVersion(toolchain.Toolchain.Version); version != "" {
+			miseStep.Version(rust, version, "rust-toolchain.toml")
 		}
 	}
 }
@@ -273,6 +480,36 @@ func (p *RustProvider) findBinaryInWorkspace(ctx *generate.GenerateContext, work
 	return "", nil
 }
 
+// RustArch returns the architecture string in Rust's format
+func getRustArch() string {
+	switch runtime.GOARCH {
+	case "amd64":
+		return "x86_64"
+	case "386":
+		return "i686"
+	case "arm64":
+		return "aarch64"
+	case "arm":
+		return "arm"
+	case "ppc64":
+		return "powerpc64"
+	case "ppc64le":
+		return "powerpc64le"
+	case "mips", "mipsle":
+		return "mips"
+	case "mips64", "mips64le":
+		return "mips64"
+	case "s390x":
+		return "s390x"
+	case "riscv64":
+		return "riscv64gc"
+	case "wasm":
+		return "wasm32"
+	default:
+		return runtime.GOARCH
+	}
+}
+
 // parseCargoTOML parses a Cargo.toml file
 func parseCargoTOML(ctx *generate.GenerateContext) (*CargoTOML, error) {
 	var cargoToml *CargoTOML
@@ -314,6 +551,7 @@ type PackageInfo struct {
 	Exclude       []string `toml:"exclude,omitempty"`
 	Include       []string `toml:"include,omitempty"`
 	Publish       bool     `toml:"publish,omitempty"`
+	DefaultRun    string   `toml:"default-run,omitempty"`
 }
 
 type Dependency struct {
