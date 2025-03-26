@@ -61,6 +61,14 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("error creating env: %w", err)
 	}
+	// Make the build platform available to the build plan
+	if env.Variables["TARGETPLATFORM"] == "" {
+		platform, err := getPlatform(cmd.String("platform"))
+		if err != nil {
+			return nil, nil, nil, cli.Exit(err, 1)
+		}
+		env.Variables["TARGETPLATFORM"] = platform.String()
+	}
 
 	previousVersions := utils.ParsePackageWithVersion(cmd.StringSlice("previous"))
 

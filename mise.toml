@@ -24,7 +24,7 @@ run = "go test -short ./..."
 run = "go test -v ./integration_tests"
 
 [tasks.test-update-snapshots]
-run = "UPDATE_SNAPS=true TARGETPLATFORM=linux/amd64 go test -short ./..."
+run = "UPDATE_SNAPS=true go test -short ./..."
 
 [tasks.check]
 run = """

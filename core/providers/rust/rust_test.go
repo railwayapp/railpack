@@ -30,6 +30,7 @@ func TestGolang(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := testingUtils.CreateGenerateContext(t, tt.path)
+			ctx.Env.Variables["TARGETPLATFORM"] = "linux/amd64"
 			provider := RustProvider{}
 			detected, err := provider.Detect(ctx)
 			require.NoError(t, err)

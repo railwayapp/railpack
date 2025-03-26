@@ -3,7 +3,6 @@ package rust
 import (
 	"fmt"
 	"maps"
-	"os"
 	"os/exec"
 	"regexp"
 	"runtime"
@@ -147,7 +146,7 @@ func (p *RustProvider) getTarget(ctx *generate.GenerateContext) string {
 	}
 
 	if p.shouldUseMusl(ctx) {
-		return getRustTarget()
+		return getRustTarget(ctx)
 	}
 
 	return ""
@@ -527,8 +526,8 @@ func (p *RustProvider) findBinaryInWorkspace(ctx *generate.GenerateContext, work
 	return "", nil
 }
 
-func getRustTarget() string {
-	targetPlatform := os.Getenv("TARGETPLATFORM")
+func getRustTarget(ctx *generate.GenerateContext) string {
+	targetPlatform := ctx.Env.Variables["TARGETPLATFORM"]
 	if targetPlatform != "" {
 		switch targetPlatform {
 		case "linux/amd64":
