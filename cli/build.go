@@ -49,6 +49,12 @@ var BuildCommand = &cli.Command{
 		},
 	}, commonPlanFlags()...),
 	Action: func(ctx context.Context, cmd *cli.Command) error {
+		platform, err := getPlatform(cmd.String("platform"))
+		if err != nil {
+			return cli.Exit(err, 1)
+		}
+		os.Setenv("TARGETPLATFORM", platform.String())
+
 		buildResult, app, env, err := GenerateBuildResultForCommand(cmd)
 		if err != nil {
 			return cli.Exit(err, 1)
@@ -76,11 +82,6 @@ var BuildCommand = &cli.Command{
 		}
 
 		secretsHash := getSecretsHash(env)
-
-		platform, err := getPlatform(cmd.String("platform"))
-		if err != nil {
-			return cli.Exit(err, 1)
-		}
 
 		err = buildkit.BuildWithBuildkitClient(app.Source, buildResult.Plan, buildkit.BuildWithBuildkitClientOptions{
 			ImageName:    cmd.String("name"),

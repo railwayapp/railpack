@@ -3,6 +3,7 @@ package rust
 import (
 	"fmt"
 	"maps"
+	"os"
 	"os/exec"
 	"regexp"
 	"runtime"
@@ -484,6 +485,16 @@ func (p *RustProvider) findBinaryInWorkspace(ctx *generate.GenerateContext, work
 }
 
 func getRustTarget() string {
+	targetPlatform := os.Getenv("TARGETPLATFORM")
+	if targetPlatform != "" {
+		switch targetPlatform {
+		case "linux/amd64":
+			return "x86_64-unknown-linux-musl"
+		case "linux/arm64":
+			return "aarch64-unknown-linux-musl"
+		}
+	}
+
 	cmd := exec.Command("uname", "-m")
 	output, err := cmd.Output()
 	if err == nil {
