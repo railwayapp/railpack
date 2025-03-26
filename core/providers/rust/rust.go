@@ -177,6 +177,7 @@ func (p *RustProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 	} else {
 		bins, err := p.getBins(ctx)
 		if err != nil {
+			fmt.Println("Uhmmm error", err)
 			return
 		}
 
@@ -388,6 +389,7 @@ func (p *RustProvider) resolveCargoWorkspace(ctx *generate.GenerateContext) stri
 		}
 	}
 
+	fmt.Println("Uhmmm error", err)
 	return ""
 }
 
