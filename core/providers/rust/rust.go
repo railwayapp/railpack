@@ -62,9 +62,6 @@ func (p *RustProvider) Plan(ctx *generate.GenerateContext) error {
 	maps.Copy(ctx.Deploy.Variables, p.GetRustEnvVars(ctx))
 	ctx.Deploy.Inputs = []plan.Input{
 		ctx.DefaultRuntimeInput(),
-		plan.NewStepInput(miseStep.Name(), plan.InputOptions{
-			Include: miseStep.GetOutputPaths(),
-		}),
 		plan.NewStepInput(build.Name(), plan.InputOptions{
 			Include: []string{"/app/bin"},
 		}),
