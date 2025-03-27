@@ -83,6 +83,9 @@
      "src": "global.json*"
     },
     {
+     "cmd": "mkdir -p /root/.nuget/packages"
+    },
+    {
      "cmd": "dotnet restore"
     }
    ],
