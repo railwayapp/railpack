@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGolang(t *testing.T) {
+func TestRust(t *testing.T) {
 	tests := []struct {
 		name        string
 		path        string
