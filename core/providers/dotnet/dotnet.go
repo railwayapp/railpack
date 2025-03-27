@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	DEFAULT_DOTNET_VERSION = "9.0.202"
-	DOTNET_ROOT            = "/usr/share/dotnet"
+	DEFAULT_DOTNET_VERSION   = "9.0.202"
+	DOTNET_ROOT              = "/usr/share/dotnet"
+	DOTNET_DEPENDENCIES_ROOT = "/root/.nuget/packages"
 )
 
 type DotnetProvider struct {
@@ -39,10 +40,13 @@ func (p *DotnetProvider) Plan(ctx *generate.GenerateContext) error {
 
 	install := ctx.NewCommandStep("install")
 	install.AddInput(plan.NewStepInput(miseStep.Name()))
-	p.Build(ctx, install)
+	p.Install(ctx, install)
 
 	build := ctx.NewCommandStep("build")
-	build.AddInput(plan.NewStepInput(install.Name()))
+	build.AddInput(plan.NewStepInput(miseStep.Name()))
+	build.AddInput(plan.NewStepInput(install.Name(), plan.InputOptions{
+		Include: []string{"obj/"},
+	}))
 	p.Build(ctx, build)
 
 	ctx.Deploy.Inputs = []plan.Input{
@@ -51,7 +55,7 @@ func (p *DotnetProvider) Plan(ctx *generate.GenerateContext) error {
 			Include: miseStep.GetOutputPaths(),
 		}),
 		plan.NewStepInput(build.Name(), plan.InputOptions{
-			Include: []string{".", DOTNET_ROOT},
+			Include: []string{"out"},
 		}),
 	}
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
@@ -67,12 +71,23 @@ func (p *DotnetProvider) StartCommandHelp() string {
 }
 
 func (p *DotnetProvider) GetStartCommand(ctx *generate.GenerateContext) string {
-	return `./out`
+	projFiles, err := ctx.App.FindFiles("*.csproj")
+	if err != nil || len(projFiles) == 0 {
+		return ""
+	}
+	projFile := projFiles[0]
+	projName := strings.TrimSuffix(projFile, ".csproj")
+	return fmt.Sprintf("./out/%s", projName)
 }
 
 func (p *DotnetProvider) Install(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
 	maps.Copy(install.Variables, p.GetEnvVars(ctx))
-	install.AddCommand(plan.NewExecCommand(`dotnet restore`))
+	install.AddCommands([]plan.Command{
+		plan.NewCopyCommand("nuget.config*"),
+		plan.NewCopyCommand("*.csproj"),
+		plan.NewCopyCommand("global.json*"),
+		plan.NewExecCommand(`dotnet restore`),
+	})
 }
 
 func (p *DotnetProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
