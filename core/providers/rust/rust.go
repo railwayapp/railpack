@@ -3,9 +3,7 @@ package rust
 import (
 	"fmt"
 	"maps"
-	"os/exec"
 	"regexp"
-	"runtime"
 	"slices"
 	"strings"
 
@@ -40,9 +38,6 @@ func (p *RustProvider) Initialize(ctx *generate.GenerateContext) error {
 func (p *RustProvider) Plan(ctx *generate.GenerateContext) error {
 	miseStep := ctx.GetMiseStepBuilder()
 	p.InstallMisePackages(ctx, miseStep)
-	if p.shouldUseMusl(ctx) {
-		miseStep.AddSupportingAptPackage("musl-tools")
-	}
 
 	install := ctx.NewCommandStep("install")
 	install.AddInputs([]plan.Input{
@@ -73,25 +68,21 @@ func (p *RustProvider) Plan(ctx *generate.GenerateContext) error {
 
 func (p *RustProvider) StartCommandHelp() string {
 	return "To start your Rust application, Railpack will look for:\n\n" +
-		"1. A main.ts, main.js, main.mjs, or main.mts file in your project root\n\n" +
-		"2. If no main file is found, it will use the first .ts, .js, .mjs, or .mts file found in your project\n\n" +
-		"The selected file will be run with `rust run --allow-all`"
+		"1. A Cargo.toml file in your project root\n\n" +
+		"Your application will be compiled to a binary and started using `./bin/<binary>`"
 }
 
 func (p *RustProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	target := p.getTarget(ctx)
+	workspace := p.resolveCargoWorkspace(ctx)
 
 	if target != "" {
-		workspace := p.resolveCargoWorkspace(ctx)
-
 		if workspace != "" {
 			return fmt.Sprintf("./bin/%s", workspace)
 		}
 
 		return p.getStartBin(ctx)
 	}
-
-	workspace := p.resolveCargoWorkspace(ctx)
 
 	if workspace != "" {
 		return fmt.Sprintf("./bin/%s", workspace)
@@ -121,6 +112,9 @@ func (p *RustProvider) getStartBin(ctx *generate.GenerateContext) string {
 				break
 			}
 		}
+		if bin == "" {
+			ctx.Logger.LogWarn("RUST_BIN environment variable set to '%s', but no matching binary found in Cargo.toml", envBinName)
+		}
 	} else {
 		cargoToml, err := parseCargoTOML(ctx)
 		if err == nil && cargoToml.Package.DefaultRun != "" {
@@ -142,16 +136,12 @@ func (p *RustProvider) getTarget(ctx *generate.GenerateContext) string {
 		return "wasm32-wasi"
 	}
 
-	if p.shouldUseMusl(ctx) {
-		return getRustTarget(ctx)
-	}
-
 	return ""
 }
 
 func (p *RustProvider) Install(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
-	ctx.Caches.AddCache("cargo_registry", CARGO_REGISTRY_CACHE)
-	ctx.Caches.AddCache("cargo_git", CARGO_GIT_CACHE)
+	install.AddCache(ctx.Caches.AddCache("cargo_registry", CARGO_REGISTRY_CACHE))
+	install.AddCache(ctx.Caches.AddCache("cargo_git", CARGO_GIT_CACHE))
 	install.AddCommands([]plan.Command{
 		plan.NewCopyCommand("Cargo.toml*", "."),
 		plan.NewCopyCommand("Cargo.lock*", "."),
@@ -178,7 +168,7 @@ func (p *RustProvider) Install(ctx *generate.GenerateContext, install *generate.
 
 	install.AddCommands([]plan.Command{
 		plan.NewExecCommand(`mkdir -p src`),
-		plan.NewExecShellCommand(dummyCmd),
+		plan.NewExecShellCommand(dummyCmd, plan.ExecOptions{CustomName: "compiling dependencies"}),
 		plan.NewExecCommand(`cat /app/src/main.rs`),
 		plan.NewExecCommand(fmt.Sprintf("%s%s", buildCmd, targetArg)),
 		plan.NewExecCommand(fmt.Sprintf("rm -rf src target/%srelease/%s*", targetPath, p.getAppName(ctx))),
@@ -226,10 +216,10 @@ func (p *RustProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 			}
 		}
 	}
+
 	appName := p.getAppName(ctx)
 	if appName != "" {
-		// Cache target directory
-		ctx.Caches.AddCache("cargo_target", CARGO_TARGET_CACHE)
+		build.AddCache(ctx.Caches.AddCache("cargo_target", CARGO_TARGET_CACHE))
 	}
 }
 
@@ -357,60 +347,11 @@ func (p *RustProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	}
 }
 
-func (p *RustProvider) shouldUseMusl(ctx *generate.GenerateContext) bool {
-	if p.shouldMakeWasm32Wasi(ctx) {
-		return false
-	}
-
-	if ctx.Env.IsConfigVariableTruthy("NO_MUSL") {
-		return false
-	}
-
-	toolchainFile, _ := parseRustToolchain(ctx)
-	if toolchainFile != nil {
-		return false
-	}
-
-	if p.usesOpenssl(ctx) {
-		return false
-	}
-
-	return true
-}
-
 var wasmRegex = regexp.MustCompile(`target\s*=\s*"wasm32-wasi"`)
 
 func (p *RustProvider) shouldMakeWasm32Wasi(ctx *generate.GenerateContext) bool {
 	matches := ctx.App.FindFilesWithContent(".cargo/config.toml", wasmRegex)
 	return len(matches) > 0
-}
-
-func (p *RustProvider) usesOpenssl(ctx *generate.GenerateContext) bool {
-	app := ctx.App
-	// Check Cargo.toml
-	cargoToml, err := parseCargoTOML(ctx)
-	if err == nil {
-		// Check for "openssl" in any of the dependency maps
-		if _, ok := cargoToml.Dependencies["openssl"]; ok {
-			return true
-		}
-		if _, ok := cargoToml.DevDependencies["openssl"]; ok {
-			return true
-		}
-		if _, ok := cargoToml.BuildDependencies["openssl"]; ok {
-			return true
-		}
-	}
-
-	// Check Cargo.lock
-	if app.HasMatch("Cargo.lock") {
-		content, err := app.ReadFile("Cargo.lock")
-		if err == nil && strings.Contains(content, "openssl") {
-			return true
-		}
-	}
-
-	return false
 }
 
 func (p *RustProvider) resolveCargoWorkspace(ctx *generate.GenerateContext) string {
@@ -521,37 +462,6 @@ func (p *RustProvider) findBinaryInWorkspace(ctx *generate.GenerateContext, work
 	}
 
 	return "", nil
-}
-
-func getRustTarget(ctx *generate.GenerateContext) string {
-	targetPlatform := ctx.Env.Variables["TARGETPLATFORM"]
-	if targetPlatform != "" {
-		switch targetPlatform {
-		case "linux/amd64":
-			return "x86_64-unknown-linux-musl"
-		case "linux/arm64":
-			return "aarch64-unknown-linux-musl"
-		}
-	}
-
-	cmd := exec.Command("uname", "-m")
-	output, err := cmd.Output()
-	if err == nil {
-		arch := strings.TrimSpace(string(output))
-		if arch == "x86_64" {
-			return "x86_64-unknown-linux-musl"
-		} else if arch == "aarch64" || arch == "arm64" {
-			return "aarch64-unknown-linux-musl"
-		}
-	}
-
-	if runtime.GOARCH == "amd64" {
-		return "x86_64-unknown-linux-musl"
-	} else if runtime.GOARCH == "arm64" {
-		return "aarch64-unknown-linux-musl"
-	}
-
-	return "x86_64-unknown-linux-musl"
 }
 
 // parseCargoTOML parses a Cargo.toml file

@@ -3,7 +3,6 @@ package core
 import (
 	"os"
 	"path/filepath"
-	"slices"
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -39,13 +38,8 @@ func TestGenerateBuildPlanForExamples(t *testing.T) {
 			require.NoError(t, err)
 
 			env := app.NewEnvironment(nil)
-			// Pin the target platform to avoid flaky tests
-			env.Variables["TARGETPLATFORM"] = "linux/amd64"
 			buildResult := GenerateBuildPlan(userApp, env, &GenerateBuildPlanOptions{})
-			// Remove the TARGETPLATFORM secret since it's not needed for the snapshot
-			buildResult.Plan.Secrets = slices.DeleteFunc(buildResult.Plan.Secrets, func(s string) bool {
-				return s == "TARGETPLATFORM"
-			})
+
 			if !buildResult.Success {
 				t.Fatalf("failed to generate build plan for %s: %s", entry.Name(), buildResult.Logs)
 			}
