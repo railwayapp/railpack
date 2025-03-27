@@ -90,6 +90,7 @@ func (p *DotnetProvider) Install(ctx *generate.GenerateContext, install *generat
 		plan.NewCopyCommand("nuget.config*"),
 		plan.NewCopyCommand("*.csproj"),
 		plan.NewCopyCommand("global.json*"),
+		plan.NewExecCommand(fmt.Sprintf("mkdir -p %s", DOTNET_DEPENDENCIES_ROOT)),
 		plan.NewExecCommand(`dotnet restore`),
 	})
 }
@@ -98,7 +99,7 @@ func (p *DotnetProvider) Build(ctx *generate.GenerateContext, build *generate.Co
 	maps.Copy(build.Variables, p.GetEnvVars(ctx))
 	build.AddCommands([]plan.Command{
 		plan.NewCopyCommand("."),
-		plan.NewExecCommand(fmt.Sprintf("dotnet publish --no-restore -c Release -o out")),
+		plan.NewExecCommand("dotnet publish --no-restore -c Release -o out"),
 	})
 }
 
