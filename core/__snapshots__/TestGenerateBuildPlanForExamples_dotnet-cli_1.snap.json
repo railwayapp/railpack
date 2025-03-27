@@ -1,0 +1,157 @@
+{
+ "caches": {
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  }
+ },
+ "deploy": {
+  "inputs": [
+   {
+    "step": "packages:runtime"
+   },
+   {
+    "include": [
+     "/mise/installs/dotnet/6.0"
+    ],
+    "step": "packages:mise"
+   },
+   {
+    "include": [
+     "out"
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "./out/csharp-cli",
+  "variables": {
+   "ASPNETCORE_ENVIRONMENT": "production",
+   "ASPNETCORE_URLS": "http://0.0.0.0:3000",
+   "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+   "DOTNET_ROOT": "/mise/installs/dotnet/6.0"
+  }
+ },
+ "steps": [
+  {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "commands": [
+    {
+     "path": "/mise/shims"
+    },
+    {
+     "customName": "create mise config",
+     "name": "mise.toml",
+     "path": "/etc/mise/config.toml"
+    },
+    {
+     "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
+     "customName": "install mise packages: dotnet"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:mise",
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_SHIMS_DIR": "/mise/shims"
+   }
+  },
+  {
+   "commands": [
+    {
+     "dest": "nuget.config*",
+     "src": "nuget.config*"
+    },
+    {
+     "dest": "*.csproj",
+     "src": "*.csproj"
+    },
+    {
+     "dest": "global.json*",
+     "src": "global.json*"
+    },
+    {
+     "cmd": "dotnet restore"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install",
+   "secrets": [
+    "*"
+   ],
+   "variables": {
+    "ASPNETCORE_ENVIRONMENT": "production",
+    "ASPNETCORE_URLS": "http://0.0.0.0:3000",
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+    "DOTNET_ROOT": "/mise/installs/dotnet/6.0"
+   }
+  },
+  {
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    },
+    {
+     "cmd": "dotnet publish --no-restore -c Release -o out"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    },
+    {
+     "include": [
+      "obj/",
+      "/root/.nuget/packages"
+     ],
+     "step": "install"
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ],
+   "variables": {
+    "ASPNETCORE_ENVIRONMENT": "production",
+    "ASPNETCORE_URLS": "http://0.0.0.0:3000",
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
+    "DOTNET_ROOT": "/mise/installs/dotnet/6.0"
+   }
+  },
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libicu-dev'",
+     "customName": "install apt packages: libicu-dev"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+    }
+   ],
+   "name": "packages:runtime"
+  }
+ ]
+}

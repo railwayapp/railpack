@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"maps"
+	"path"
 	"regexp"
 	"strings"
 
@@ -14,8 +15,8 @@ import (
 )
 
 const (
-	DEFAULT_DOTNET_VERSION   = "9.0.202"
-	DOTNET_ROOT              = "/usr/share/dotnet"
+	DEFAULT_DOTNET_VERSION   = "6.0.428"
+	DOTNET_ROOT              = "/mise/installs/dotnet"
 	DOTNET_DEPENDENCIES_ROOT = "/root/.nuget/packages"
 )
 
@@ -45,21 +46,24 @@ func (p *DotnetProvider) Plan(ctx *generate.GenerateContext) error {
 	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewStepInput(miseStep.Name()))
 	build.AddInput(plan.NewStepInput(install.Name(), plan.InputOptions{
-		Include: []string{"obj/"},
+		Include: []string{"obj/", DOTNET_DEPENDENCIES_ROOT},
 	}))
 	p.Build(ctx, build)
 
+	envVars := p.GetEnvVars(ctx)
 	ctx.Deploy.Inputs = []plan.Input{
-		ctx.DefaultRuntimeInput(),
+		// Required for internationalization
+		ctx.DefaultRuntimeInputWithPackages([]string{"libicu-dev"}),
 		plan.NewStepInput(miseStep.Name(), plan.InputOptions{
-			Include: miseStep.GetOutputPaths(),
+			// Need to include the dotnet runtime for the binary to run
+			Include: []string{envVars["DOTNET_ROOT"]},
 		}),
 		plan.NewStepInput(build.Name(), plan.InputOptions{
 			Include: []string{"out"},
 		}),
 	}
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
-	maps.Copy(ctx.Deploy.Variables, p.GetEnvVars(ctx))
+	maps.Copy(ctx.Deploy.Variables, envVars)
 
 	return nil
 }
@@ -99,11 +103,12 @@ func (p *DotnetProvider) Build(ctx *generate.GenerateContext, build *generate.Co
 }
 
 func (p *DotnetProvider) GetEnvVars(ctx *generate.GenerateContext) map[string]string {
+	version := p.getDotnetVersion(ctx)
 	return map[string]string{
 		"ASPNETCORE_ENVIRONMENT":      "production",
 		"ASPNETCORE_URLS":             "http://0.0.0.0:3000",
 		"DOTNET_CLI_TELEMETRY_OPTOUT": "1",
-		"DOTNET_ROOT":                 DOTNET_ROOT,
+		"DOTNET_ROOT":                 path.Join(DOTNET_ROOT, version),
 	}
 }
 
@@ -148,12 +153,10 @@ func (p *DotnetProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 			version := utils.ExtractSemverVersion(global.SDK.Version)
 			semver, err := utils.ParseSemver(version)
 
-			if err == nil && semver.Major >= 5 {
-				fuzzyVersion := fmt.Sprintf("%d.%d", semver.Major, semver.Minor)
-				if semver.Patch > 0 {
-					fuzzyVersion = fmt.Sprintf("%s.%d", fuzzyVersion, semver.Patch)
-				}
-				miseStep.Version(dotnet, fuzzyVersion, "global.json")
+			// The global.json file needs to be respected, unlike csproj which can be fuzzy
+			if err == nil {
+				version := fmt.Sprintf("%d.%d.%d", semver.Major, semver.Minor, semver.Patch)
+				miseStep.Version(dotnet, version, "global.json")
 			}
 		}
 	}
@@ -161,6 +164,15 @@ func (p *DotnetProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	if envVersion, varName := ctx.Env.GetConfigVariable("DOTNET_VERSION"); envVersion != "" {
 		miseStep.Version(dotnet, envVersion, varName)
 	}
+}
+
+func (p *DotnetProvider) getDotnetVersion(ctx *generate.GenerateContext) string {
+	miseStepBuilder := ctx.GetMiseStepBuilder()
+	pkg := miseStepBuilder.Resolver.Get("dotnet")
+	if pkg != nil && pkg.Version != "" {
+		return pkg.Version
+	}
+	return DEFAULT_DOTNET_VERSION
 }
 
 type Project struct {
