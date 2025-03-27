@@ -81,6 +81,7 @@ export default defineConfig({
             { label: "Ruby", link: "/languages/ruby" },
             { label: "Rust", link: "/languages/rust" },
             { label: "Node", link: "/languages/node" },
+            { label: "Dotnet", link: "/languages/dotnet" },
             { label: "Staticfile", link: "/languages/staticfile" },
             { label: "Shell Scripts", link: "/languages/shell" },
           ],
