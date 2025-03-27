@@ -1,13 +1,5 @@
 {
  "caches": {
-  "apt": {
-   "directory": "/var/cache/apt",
-   "type": "locked"
-  },
-  "apt-lists": {
-   "directory": "/var/lib/apt/lists",
-   "type": "locked"
-  },
   "cargo_git": {
    "directory": "/root/.cargo/git",
    "type": "shared"
@@ -28,16 +20,6 @@
    },
    {
     "include": [
-     "/mise/shims",
-     "/mise/installs",
-     "/usr/local/bin/mise",
-     "/etc/mise/config.toml",
-     "/root/.local/state/mise"
-    ],
-    "step": "packages:mise"
-   },
-   {
-    "include": [
      "/app/bin"
     ],
     "step": "build"
@@ -53,15 +35,7 @@
    "assets": {
     "mise.toml": "[mise.toml]"
    },
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
    "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y musl-tools'",
-     "customName": "install apt packages: musl-tools"
-    },
     {
      "path": "/mise/shims"
     },
@@ -90,6 +64,10 @@
    }
   },
   {
+   "caches": [
+    "cargo_registry",
+    "cargo_git"
+   ],
    "commands": [
     {
      "dest": ".",
@@ -100,23 +78,20 @@
      "src": "Cargo.lock*"
     },
     {
-     "cmd": "rustup target add x86_64-unknown-linux-musl"
-    },
-    {
      "cmd": "mkdir -p src"
     },
     {
      "cmd": "sh -c 'echo \"fn main() { }\" \u003e /app/src/main.rs \u0026\u0026 if grep -q \"\\[lib\\]\" Cargo.toml; then echo \"fn main() { }\" \u003e /app/src/lib.rs; fi'",
-     "customName": "echo \"fn main() { }\" \u003e /app/src/main.rs \u0026\u0026 if grep -q \"\\[lib\\]\" Cargo.toml; then echo \"fn main() { }\" \u003e /app/src/lib.rs; fi"
+     "customName": "compiling dependencies"
     },
     {
      "cmd": "cat /app/src/main.rs"
     },
     {
-     "cmd": "cargo build --release --target x86_64-unknown-linux-musl"
+     "cmd": "cargo build --release"
     },
     {
-     "cmd": "rm -rf src target/x86_64-unknown-linux-musl/release/rust-multiple-bins*"
+     "cmd": "rm -rf src target/release/rust-multiple-bins*"
     }
    ],
    "inputs": [
@@ -130,6 +105,9 @@
    ]
   },
   {
+   "caches": [
+    "cargo_target"
+   ],
    "commands": [
     {
      "dest": ".",
@@ -139,19 +117,16 @@
      "cmd": "mkdir -p bin"
     },
     {
-     "cmd": "rustup target add x86_64-unknown-linux-musl"
+     "cmd": "cargo build --release"
     },
     {
-     "cmd": "cargo build --release --target x86_64-unknown-linux-musl"
+     "cmd": "cp target/release/rust-multiple-bins bin"
     },
     {
-     "cmd": "cp target/x86_64-unknown-linux-musl/release/rust-multiple-bins bin"
+     "cmd": "cp target/release/bin1 bin"
     },
     {
-     "cmd": "cp target/x86_64-unknown-linux-musl/release/bin1 bin"
-    },
-    {
-     "cmd": "cp target/x86_64-unknown-linux-musl/release/bin2 bin"
+     "cmd": "cp target/release/bin2 bin"
     }
    ],
    "inputs": [

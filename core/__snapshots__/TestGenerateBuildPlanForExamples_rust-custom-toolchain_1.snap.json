@@ -20,16 +20,6 @@
    },
    {
     "include": [
-     "/mise/shims",
-     "/mise/installs",
-     "/usr/local/bin/mise",
-     "/etc/mise/config.toml",
-     "/root/.local/state/mise"
-    ],
-    "step": "packages:mise"
-   },
-   {
-    "include": [
      "/app/bin"
     ],
     "step": "build"
@@ -74,6 +64,10 @@
    }
   },
   {
+   "caches": [
+    "cargo_registry",
+    "cargo_git"
+   ],
    "commands": [
     {
      "dest": ".",
@@ -88,7 +82,7 @@
     },
     {
      "cmd": "sh -c 'echo \"fn main() { }\" \u003e /app/src/main.rs \u0026\u0026 if grep -q \"\\[lib\\]\" Cargo.toml; then echo \"fn main() { }\" \u003e /app/src/lib.rs; fi'",
-     "customName": "echo \"fn main() { }\" \u003e /app/src/main.rs \u0026\u0026 if grep -q \"\\[lib\\]\" Cargo.toml; then echo \"fn main() { }\" \u003e /app/src/lib.rs; fi"
+     "customName": "compiling dependencies"
     },
     {
      "cmd": "cat /app/src/main.rs"
@@ -111,6 +105,9 @@
    ]
   },
   {
+   "caches": [
+    "cargo_target"
+   ],
    "commands": [
     {
      "dest": ".",

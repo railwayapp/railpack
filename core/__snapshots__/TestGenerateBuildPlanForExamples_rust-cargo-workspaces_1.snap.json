@@ -1,13 +1,5 @@
 {
  "caches": {
-  "apt": {
-   "directory": "/var/cache/apt",
-   "type": "locked"
-  },
-  "apt-lists": {
-   "directory": "/var/lib/apt/lists",
-   "type": "locked"
-  },
   "cargo_git": {
    "directory": "/root/.cargo/git",
    "type": "shared"
@@ -21,16 +13,6 @@
   "inputs": [
    {
     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
-   },
-   {
-    "include": [
-     "/mise/shims",
-     "/mise/installs",
-     "/usr/local/bin/mise",
-     "/etc/mise/config.toml",
-     "/root/.local/state/mise"
-    ],
-    "step": "packages:mise"
    },
    {
     "include": [
@@ -49,15 +31,7 @@
    "assets": {
     "mise.toml": "[mise.toml]"
    },
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
    "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y musl-tools'",
-     "customName": "install apt packages: musl-tools"
-    },
     {
      "path": "/mise/shims"
     },
@@ -86,6 +60,10 @@
    }
   },
   {
+   "caches": [
+    "cargo_registry",
+    "cargo_git"
+   ],
    "commands": [
     {
      "dest": ".",
@@ -94,9 +72,6 @@
     {
      "dest": ".",
      "src": "Cargo.lock*"
-    },
-    {
-     "cmd": "rustup target add x86_64-unknown-linux-musl"
     }
    ],
    "inputs": [
@@ -119,13 +94,10 @@
      "cmd": "mkdir -p bin"
     },
     {
-     "cmd": "rustup target add x86_64-unknown-linux-musl"
+     "cmd": "cargo build --release --package binary"
     },
     {
-     "cmd": "cargo build --release --package binary --target x86_64-unknown-linux-musl"
-    },
-    {
-     "cmd": "cp target/x86_64-unknown-linux-musl/release/binary bin"
+     "cmd": "cp target/release/binary bin"
     }
    ],
    "inputs": [
