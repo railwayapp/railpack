@@ -82,7 +82,7 @@
     },
     {
      "cmd": "sh -c 'echo \"fn main() { }\" \u003e /app/src/main.rs \u0026\u0026 if grep -q \"\\[lib\\]\" Cargo.toml; then echo \"fn main() { }\" \u003e /app/src/lib.rs; fi'",
-     "customName": "compiling dependencies"
+     "customName": "compile dependencies"
     },
     {
      "cmd": "cat /app/src/main.rs"
