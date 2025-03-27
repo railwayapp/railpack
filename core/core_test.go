@@ -38,7 +38,6 @@ func TestGenerateBuildPlanForExamples(t *testing.T) {
 			require.NoError(t, err)
 
 			env := app.NewEnvironment(nil)
-
 			buildResult := GenerateBuildPlan(userApp, env, &GenerateBuildPlanOptions{})
 
 			if !buildResult.Success {

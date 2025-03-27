@@ -1,0 +1,4 @@
+[toolchain]
+channel = "nightly-2024-08-12"
+version = "1.59.0"
+profile = "minimal"
