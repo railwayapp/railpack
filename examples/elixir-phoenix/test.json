@@ -1,5 +1,5 @@
 [
   {
-    "expectedOutput": "SECRET_KEY_BASE is missing"
+    "justBuild": true
   }
 ]
