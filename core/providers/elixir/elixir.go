@@ -158,9 +158,8 @@ func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	}
 
 	versionParts := strings.Split(elixirVersion, "-otp-")
-	otpVersion := DEFAULT_ERLANG_VERSION
 	if len(versionParts) > 1 {
-		otpVersion = versionParts[1]
+		otpVersion := versionParts[1]
 		otpSemverVersion := utils.ExtractSemverVersion(otpVersion)
 		if _, err := utils.ParseSemver(otpSemverVersion); err == nil {
 			miseStep.Version(erlang, otpSemverVersion, "resolved compatible OTP version")
