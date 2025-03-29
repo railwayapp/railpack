@@ -20,24 +20,18 @@ func (p *TestProvider) Plan(ctx *GenerateContext) error {
 	nodeRef := mise.Default("node", "18")
 	mise.Version(nodeRef, "18", "test")
 
-	// apt
-	aptStep := ctx.NewAptStepBuilder("test")
-	aptStep.AddInput(plan.NewStepInput(mise.Name()))
-	aptStep.AddAptPackage("git")
-	aptStep.AddAptPackage("neofetch")
-
 	// commands
 	installStep := ctx.NewCommandStep("install")
 	installStep.AddCommand(plan.NewExecCommand("npm install", plan.ExecOptions{}))
-	installStep.AddInput(plan.NewStepInput(aptStep.Name()))
+	installStep.AddInput(mise.GetLayer())
 	installStep.Secrets = []string{}
 
 	buildStep := ctx.NewCommandStep("build")
 	buildStep.AddCommand(plan.NewExecCommand("npm run build", plan.ExecOptions{}))
-	buildStep.AddInput(plan.NewStepInput(installStep.Name()))
+	buildStep.AddInput(plan.NewStepLayer(installStep.Name()))
 
-	ctx.Deploy.Inputs = []plan.Input{
-		plan.NewStepInput(buildStep.Name()),
+	ctx.Deploy.DeployInputs = []plan.Layer{
+		plan.NewStepLayer(buildStep.Name()),
 	}
 
 	return nil

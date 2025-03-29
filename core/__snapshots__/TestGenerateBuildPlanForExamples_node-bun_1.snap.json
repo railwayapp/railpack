@@ -18,10 +18,10 @@
   }
  },
  "deploy": {
+  "base": {
+   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+  },
   "inputs": [
-   {
-    "image": "ghcr.io/railwayapp/railpack-runtime:latest"
-   },
    {
     "include": [
      "/mise/shims",
@@ -61,9 +61,6 @@
  },
  "steps": [
   {
-   "assets": {
-    "mise.toml": "[mise.toml]"
-   },
    "caches": [
     "apt",
     "apt-lists"
@@ -72,7 +69,20 @@
     {
      "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y nodejs'",
      "customName": "install apt packages: nodejs"
-    },
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:apt:build"
+  },
+  {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "commands": [
     {
      "path": "/mise/shims"
     },
@@ -88,7 +98,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+     "step": "packages:apt:build"
     }
    ],
    "name": "packages:mise",
@@ -133,14 +143,6 @@
     "NPM_CONFIG_PRODUCTION": "false",
     "NPM_CONFIG_UPDATE_NOTIFIER": "false"
    }
-  },
-  {
-   "inputs": [
-    {
-     "step": "install"
-    }
-   ],
-   "name": "prune"
   },
   {
    "caches": [

@@ -3,7 +3,7 @@
     "expectedOutput": "Kernel"
   },
   {
-    "expectedOutput": "hello",
+    "expectedOutput": "custom start",
     "configFile": "railpack.other.json"
   },
   {

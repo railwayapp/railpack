@@ -108,7 +108,8 @@ func (g *BuildGraph) GenerateLLB() (*BuildGraphOutput, error) {
 	}
 
 	// Process deploy state
-	deployState := g.GetFullStateFromInputs(g.Plan.Deploy.Inputs)
+	deployInputs := append([]plan.Layer{g.Plan.Deploy.Base}, g.Plan.Deploy.Inputs...)
+	deployState := g.GetFullStateFromLayers(deployInputs)
 
 	graphEnv := NewGraphEnvironment()
 	for _, input := range g.Plan.Deploy.Inputs {
@@ -198,7 +199,7 @@ func (g *BuildGraph) convertNodeToLLB(node *StepNode) (*llb.State, error) {
 // Adds the input environment to the base state of the node
 // This includes things like the environment variables and accumulated paths
 func (g *BuildGraph) getNodeStartingState(node *StepNode) (llb.State, error) {
-	state := g.GetFullStateFromInputs(node.Step.Inputs).Dir("/app")
+	state := g.GetFullStateFromLayers(node.Step.Inputs).Dir("/app")
 
 	envVars := make(map[string]string)
 
