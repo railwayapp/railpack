@@ -207,10 +207,6 @@ func (p *NodeProvider) addCaches(ctx *generate.GenerateContext, build *generate.
 	if p.isVite(ctx) {
 		build.AddCache(p.getViteCache(ctx))
 	}
-
-	if p.isNuxt() {
-		build.AddCache(ctx.Caches.AddCache("nuxt", ".nuxt"))
-	}
 }
 
 func (p *NodeProvider) shouldPrune(ctx *generate.GenerateContext) bool {
