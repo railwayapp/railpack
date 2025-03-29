@@ -88,7 +88,7 @@ func TestMiseGetAllVersions(t *testing.T) {
 			name:     "node all versions",
 			runtime:  "node",
 			version:  "18.20",
-			versions: []string{"18.20.0", "18.20.1", "18.20.2", "18.20.3", "18.20.4", "18.20.5", "18.20.6", "18.20.7"},
+			versions: []string{"18.20.0", "18.20.1", "18.20.2", "18.20.3", "18.20.4", "18.20.5", "18.20.6", "18.20.7", "18.20.8"},
 		},
 		{
 			name:     "bun all versions",
