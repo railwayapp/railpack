@@ -192,6 +192,7 @@ var miseConfigFiles = []string{
 	"mise.toml",
 	".tool-versions",
 	".python-version",
+	".node-version",
 	".nvmrc",
 }
 

@@ -265,6 +265,10 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 
 			miseStep.Version(node, string(nvmrc), ".nvmrc")
 		}
+
+		if nodeVersionFile, err := ctx.App.ReadFile(".node-version"); err == nil {
+			miseStep.Version(node, string(nodeVersionFile), ".node-version")
+		}
 	}
 
 	// Bun
