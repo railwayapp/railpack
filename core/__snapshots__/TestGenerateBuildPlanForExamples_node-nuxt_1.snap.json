@@ -7,10 +7,6 @@
   "npm-install": {
    "directory": "/root/.npm",
    "type": "shared"
-  },
-  "nuxt": {
-   "directory": ".nuxt",
-   "type": "shared"
   }
  },
  "deploy": {
@@ -128,8 +124,7 @@
   },
   {
    "caches": [
-    "node-modules",
-    "nuxt"
+    "node-modules"
    ],
    "commands": [
     {
