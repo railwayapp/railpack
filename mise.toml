@@ -1,3 +1,16 @@
+[env]
+BUILDKIT_HOST = "docker-container://buildkit"
+
+[tasks.setup]
+run = [
+  "mise install",
+  "docker run --rm --privileged -d --name buildkit moby/buildkit || true",
+  "mise run tidy",
+]
+
+[tasks.cli]
+run = "go run cmd/cli/main.go"
+
 [tasks.build]
 run = "go build -o bin/cli cmd/cli/main.go"
 
@@ -36,3 +49,7 @@ go = "1.23.4"
 golangci-lint = "1.63.4"
 bun = "1.2"
 node = "22"
+"go:github.com/wagoodman/dive" = "latest"
+
+[settings]
+experimental = true

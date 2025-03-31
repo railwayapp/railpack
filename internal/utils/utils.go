@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -107,4 +109,48 @@ func ExtractSemverVersion(version string) string {
 		return matches[1]
 	}
 	return ""
+}
+
+// ParseSemver parses a semantic version string and returns a Semver struct.
+func ParseSemver(version string) (*Semver, error) {
+	// Remove potential prefixes like "v" or "ruby-"
+	version = strings.TrimPrefix(version, "v")
+
+	// Split by dots
+	parts := strings.Split(version, ".")
+	if len(parts) < 3 {
+		return nil, fmt.Errorf("invalid semver: %s", version)
+	}
+
+	// Parse major version
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("invalid major version: %s", parts[0])
+	}
+
+	// Parse minor version
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid minor version: %s", parts[1])
+	}
+
+	// Parse patch version - take care of potential suffixes like "-alpha", "-beta", etc.
+	patchStr := parts[2]
+	patchParts := strings.Split(patchStr, "-")
+	patch, err := strconv.Atoi(patchParts[0])
+	if err != nil {
+		return nil, fmt.Errorf("invalid patch version: %s", patchParts[0])
+	}
+
+	return &Semver{
+		Major: major,
+		Minor: minor,
+		Patch: patch,
+	}, nil
+}
+
+type Semver struct {
+	Major int
+	Minor int
+	Patch int
 }

@@ -131,7 +131,7 @@ Including:
 - Astro: Caches `.astro/cache`
 - Nuxt:
   - Start command defaults to `node .output/server/index.mjs`
-  - Caches `.nuxt`
+  - Caches `node_modules/.cache`
 
 As well as a default cache for node modules:
 

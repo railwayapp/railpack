@@ -82,6 +82,8 @@ export default defineConfig({
             { label: "Java", link: "/languages/java" },
             { label: "Python", link: "/languages/python" },
             { label: "Deno", link: "/languages/deno" },
+            { label: "Ruby", link: "/languages/ruby" },
+            { label: "Rust", link: "/languages/rust" },
             { label: "Node", link: "/languages/node" },
             { label: "Staticfile", link: "/languages/staticfile" },
             { label: "Shell Scripts", link: "/languages/shell" },

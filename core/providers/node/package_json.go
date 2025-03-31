@@ -2,6 +2,8 @@ package node
 
 import (
 	"encoding/json"
+	"maps"
+	"strings"
 )
 
 type WorkspacesConfig struct {
@@ -49,6 +51,20 @@ func (p *PackageJson) hasDependency(dependency string) bool {
 
 	if p.DevDependencies != nil {
 		if _, ok := p.DevDependencies[dependency]; ok {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (p *PackageJson) hasLocalDependency() bool {
+	allDeps := make(map[string]string)
+	maps.Copy(allDeps, p.Dependencies)
+	maps.Copy(allDeps, p.DevDependencies)
+
+	for _, dependency := range allDeps {
+		if strings.HasPrefix(dependency, "file:") {
 			return true
 		}
 	}

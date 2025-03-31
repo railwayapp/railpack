@@ -46,10 +46,11 @@ func (p PackageManager) installDependencies(ctx *generate.GenerateContext, packa
 	hasPreInstall := packageJson.Scripts != nil && packageJson.Scripts["preinstall"] != ""
 	hasPostInstall := packageJson.Scripts != nil && packageJson.Scripts["postinstall"] != ""
 	hasPrepare := packageJson.Scripts != nil && packageJson.Scripts["prepare"] != ""
+	usesLocalFile := p.usesLocalFile(ctx)
 
 	// If there are any pre/post install scripts, we need the entire app to be copied
 	// This is to handle things like patch-package
-	if hasPreInstall || hasPostInstall || hasPrepare {
+	if hasPreInstall || hasPostInstall || hasPrepare || usesLocalFile {
 		install.AddCommands([]plan.Command{
 			plan.NewCopyCommand(".", "."),
 		})
@@ -238,6 +239,28 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 			packages.Version(bun, version, "package.json > packageManager")
 		}
 	}
+}
+
+// usesLocalFile returns true if the package.json has a local dependency (e.g. file:./path/to/package)
+func (p PackageManager) usesLocalFile(ctx *generate.GenerateContext) bool {
+	files, err := ctx.App.FindFiles("**/package.json")
+	if err != nil {
+		return false
+	}
+
+	for _, file := range files {
+		packageJson := &PackageJson{}
+		err := ctx.App.ReadJSON(file, packageJson)
+		if err != nil {
+			continue
+		}
+
+		if packageJson.hasLocalDependency() {
+			return true
+		}
+	}
+
+	return false
 }
 
 // parsePackageManagerField parses the packageManager field from package.json
