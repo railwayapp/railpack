@@ -107,10 +107,10 @@
      "path": "/root/.local/bin"
     },
     {
-     "cmd": "pipx install pipenv"
+     "path": "/app/.venv/bin"
     },
     {
-     "path": "/app/.venv/bin"
+     "cmd": "pipx install pipenv"
     },
     {
      "dest": "Pipfile",

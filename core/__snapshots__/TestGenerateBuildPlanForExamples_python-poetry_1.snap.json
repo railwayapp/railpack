@@ -122,10 +122,6 @@
     },
     {
      "cmd": "poetry install --no-interaction --no-ansi --only main --no-root"
-    },
-    {
-     "dest": ".",
-     "src": "."
     }
    ],
    "inputs": [

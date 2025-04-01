@@ -107,20 +107,21 @@
      "path": "/root/.local/bin"
     },
     {
+     "path": "/app/.venv/bin"
+    },
+    {
      "cmd": "pipx install pdm"
     },
     {
-     "dest": ".",
-     "src": "."
+     "dest": "pyproject.toml",
+     "src": "pyproject.toml"
     },
     {
-     "cmd": "python --version"
+     "dest": "pdm.lock",
+     "src": "pdm.lock"
     },
     {
      "cmd": "pdm install --check --prod --no-editable"
-    },
-    {
-     "path": "/app/.venv/bin"
     }
    ],
    "inputs": [
