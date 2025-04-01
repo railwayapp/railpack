@@ -114,7 +114,7 @@ func (p *PythonProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 }
 
 func (p *PythonProvider) getMainPythonFile(ctx *generate.GenerateContext) string {
-	for _, file := range []string{"main.py", "app.py", "bot.py"} {
+	for _, file := range []string{"main.py", "app.py", "bot.py", "hello.py", "server.py"} {
 		if ctx.App.HasMatch(file) {
 			return file
 		}
@@ -141,13 +141,16 @@ func (p *PythonProvider) InstallUv(ctx *generate.GenerateContext, install *gener
 		"UV_PYTHON_DOWNLOADS": "never",
 		"VIRTUAL_ENV":         VENV_PATH,
 	})
+
 	install.AddEnvVars(p.GetPythonEnvVars(ctx))
+
 	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
-		plan.NewExecCommand("pipx install uv"),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
-		plan.NewCopyCommand("pyproject.toml"),
-		plan.NewCopyCommand("uv.lock"),
+		plan.NewExecCommand("pipx install uv"),
+	})
+	p.copyInstallFiles(ctx, install)
+	install.AddCommands([]plan.Command{
 		plan.NewExecCommand("uv sync --locked --no-dev --no-install-project"),
 		plan.NewCopyCommand("."),
 		plan.NewExecCommand("uv sync --locked --no-dev --no-editable"),
@@ -168,8 +171,8 @@ func (p *PythonProvider) InstallPipenv(ctx *generate.GenerateContext, install *g
 
 	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
-		plan.NewExecCommand("pipx install pipenv"),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
+		plan.NewExecCommand("pipx install pipenv"),
 	})
 
 	if ctx.App.HasMatch("Pipfile.lock") {
@@ -198,11 +201,12 @@ func (p *PythonProvider) InstallPDM(ctx *generate.GenerateContext, install *gene
 
 	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
-		plan.NewExecCommand("pipx install pdm"),
-		plan.NewCopyCommand("."),
-		plan.NewExecCommand("python --version"),
-		plan.NewExecCommand("pdm install --check --prod --no-editable"),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
+		plan.NewExecCommand("pipx install pdm"),
+	})
+	p.copyInstallFiles(ctx, install)
+	install.AddCommands([]plan.Command{
+		plan.NewExecCommand("pdm install --check --prod --no-editable"),
 	})
 
 	return []string{VENV_PATH}
@@ -221,10 +225,10 @@ func (p *PythonProvider) InstallPoetry(ctx *generate.GenerateContext, install *g
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewExecCommand("pipx install poetry"),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
-		plan.NewCopyCommand("pyproject.toml"),
-		plan.NewCopyCommand("poetry.lock"),
+	})
+	p.copyInstallFiles(ctx, install)
+	install.AddCommands([]plan.Command{
 		plan.NewExecCommand("poetry install --no-interaction --no-ansi --only main --no-root"),
-		plan.NewCopyCommand("."),
 	})
 
 	return []string{VENV_PATH}
@@ -234,16 +238,19 @@ func (p *PythonProvider) InstallPip(ctx *generate.GenerateContext, install *gene
 	ctx.Logger.LogInfo("Using pip")
 
 	install.AddCache(ctx.Caches.AddCache("pip", PIP_CACHE_DIR))
+	install.AddEnvVars(p.GetPythonEnvVars(ctx))
+	install.AddEnvVars(map[string]string{
+		"PIP_CACHE_DIR": PIP_CACHE_DIR,
+		"VIRTUAL_ENV":   VENV_PATH,
+	})
+
 	install.AddCommands([]plan.Command{
 		plan.NewExecCommand(fmt.Sprintf("python -m venv %s", VENV_PATH)),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
-		plan.NewCopyCommand("requirements.txt"),
-		plan.NewExecCommand("pip install -r requirements.txt"),
 	})
-	maps.Copy(install.Variables, p.GetPythonEnvVars(ctx))
-	maps.Copy(install.Variables, map[string]string{
-		"PIP_CACHE_DIR": PIP_CACHE_DIR,
-		"VIRTUAL_ENV":   VENV_PATH,
+	p.copyInstallFiles(ctx, install)
+	install.AddCommands([]plan.Command{
+		plan.NewExecCommand("pip install -r requirements.txt"),
 	})
 
 	return []string{VENV_PATH}
@@ -314,6 +321,42 @@ func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[str
 		"PIP_DISABLE_PIP_VERSION_CHECK": "1",
 		"PIP_DEFAULT_TIMEOUT":           "100",
 	}
+}
+
+func (p *PythonProvider) copyInstallFiles(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
+	if p.installNeedsAllFiles(ctx) {
+		install.AddCommand(plan.NewCopyCommand("."))
+		return
+	}
+
+	patterns := []string{
+		"requirements.txt",
+		"pyproject.toml",
+		"Pipfile",
+		"poetry.lock",
+		"uv.lock",
+		"pdm.lock",
+	}
+
+	for _, pattern := range patterns {
+		if files, err := ctx.App.FindFiles(pattern); err == nil {
+			for _, file := range files {
+				install.AddCommand(plan.NewCopyCommand(file))
+			}
+		}
+	}
+}
+
+func (p *PythonProvider) installNeedsAllFiles(ctx *generate.GenerateContext) bool {
+	if requirementsContent, err := ctx.App.ReadFile("requirements.txt"); err == nil {
+		return strings.Contains(requirementsContent, "file://")
+	}
+
+	if pyprojectContent, err := ctx.App.ReadFile("pyproject.toml"); err == nil {
+		return strings.Contains(pyprojectContent, "file://") || strings.Contains(pyprojectContent, "path = ")
+	}
+
+	return false
 }
 
 func (p *PythonProvider) usesPostgres(ctx *generate.GenerateContext) bool {
