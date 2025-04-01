@@ -85,6 +85,7 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 	maps.Copy(ctx.Deploy.Variables, p.GetRubyEnvVars(ctx))
+	p.AddRuntimeDeps(ctx)
 
 	ctx.Deploy.AddInputs([]plan.Layer{
 		plan.NewStepLayer(miseStep.Name(), plan.Filter{
@@ -192,7 +193,7 @@ func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 	return outputs
 }
 
-func (p *RubyProvider) GetImageWithRuntimeDeps(ctx *generate.GenerateContext) {
+func (p *RubyProvider) AddRuntimeDeps(ctx *generate.GenerateContext) {
 	packages := []string{"libyaml-dev"}
 
 	if p.usesPostgres(ctx) {
