@@ -37,7 +37,7 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 	p.InstallMisePackages(ctx, miseStep)
 
 	install := ctx.NewCommandStep("install")
-	install.AddInput(plan.NewStepInput(miseStep.Name()))
+	install.AddInput(plan.NewStepLayer(miseStep.Name()))
 	installOutputs := p.Install(ctx, install)
 	p.addMetadata(ctx)
 
@@ -62,52 +62,52 @@ func (p *RubyProvider) Plan(ctx *generate.GenerateContext) error {
 
 		nodeProvider.InstallMisePackages(ctx, miseStep)
 		installNode := ctx.NewCommandStep("install:node")
-		installNode.AddInput(plan.NewStepInput(miseStep.Name()))
+		installNode.AddInput(plan.NewStepLayer(miseStep.Name()))
 		nodeProvider.InstallNodeDeps(ctx, installNode)
 
 		pruneNode = ctx.NewCommandStep("prune:node")
-		pruneNode.AddInput(plan.NewStepInput(installNode.Name()))
+		pruneNode.AddInput(plan.NewStepLayer(installNode.Name()))
 		nodeProvider.PruneNodeDeps(ctx, pruneNode)
 
 		buildNode = ctx.NewCommandStep("build:node")
-		buildNode.Inputs = []plan.Input{
-			plan.NewStepInput(install.Name()),
-			plan.NewStepInput(installNode.Name(), plan.InputOptions{
+		buildNode.AddInputs([]plan.Layer{
+			plan.NewStepLayer(install.Name()),
+			plan.NewStepLayer(installNode.Name(), plan.Filter{
 				Include: append([]string{"."}, miseStep.GetOutputPaths()...),
 			}),
-		}
+		})
 		nodeProvider.Build(ctx, buildNode)
 	}
 
 	build := ctx.NewCommandStep("build")
-	build.AddInput(plan.NewStepInput(install.Name()))
+	build.AddInput(plan.NewStepLayer(install.Name()))
 	buildOutputs := p.Build(ctx, build)
 
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 	maps.Copy(ctx.Deploy.Variables, p.GetRubyEnvVars(ctx))
 
-	ctx.Deploy.Inputs = []plan.Input{
-		p.GetImageWithRuntimeDeps(ctx),
-		plan.NewStepInput(miseStep.Name(), plan.InputOptions{
+	ctx.Deploy.AddInputs([]plan.Layer{
+		plan.NewStepLayer(miseStep.Name(), plan.Filter{
 			Include: miseStep.GetOutputPaths(),
 		}),
-		plan.NewStepInput(install.Name(), plan.InputOptions{
+		plan.NewStepLayer(install.Name(), plan.Filter{
 			Include: installOutputs,
 		}),
-		plan.NewStepInput(build.Name(), plan.InputOptions{
+		plan.NewStepLayer(build.Name(), plan.Filter{
 			Include: buildOutputs,
 		}),
-	}
+	})
+
 	if buildNode != nil && pruneNode != nil {
-		ctx.Deploy.Inputs = append(ctx.Deploy.Inputs,
-			plan.NewStepInput(buildNode.Name(), plan.InputOptions{
+		ctx.Deploy.AddInputs([]plan.Layer{
+			plan.NewStepLayer(pruneNode.Name(), plan.Filter{
+				Include: []string{"/app/node_modules"},
+			}),
+			plan.NewStepLayer(buildNode.Name(), plan.Filter{
 				Include: []string{"."},
 				Exclude: []string{"node_modules", ".yarn"},
 			}),
-			plan.NewStepInput(pruneNode.Name(), plan.InputOptions{
-				Include: []string{"/app/node_modules"},
-			}),
-		)
+		})
 	}
 
 	return nil
@@ -192,7 +192,7 @@ func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 	return outputs
 }
 
-func (p *RubyProvider) GetImageWithRuntimeDeps(ctx *generate.GenerateContext) plan.Input {
+func (p *RubyProvider) GetImageWithRuntimeDeps(ctx *generate.GenerateContext) {
 	packages := []string{"libyaml-dev"}
 
 	if p.usesPostgres(ctx) {
@@ -215,7 +215,7 @@ func (p *RubyProvider) GetImageWithRuntimeDeps(ctx *generate.GenerateContext) pl
 		packages = append(packages, "libicu-dev", "libxml2-dev", "libxslt-dev")
 	}
 
-	return ctx.DefaultRuntimeInputWithPackages(packages)
+	ctx.Deploy.AddAptPackages(packages)
 }
 
 func (p *RubyProvider) GetBuilderDeps(ctx *generate.GenerateContext) *generate.MiseStepBuilder {
