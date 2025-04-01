@@ -14,6 +14,8 @@ const (
 	PackageManagerBun   PackageManager = "bun"
 	PackageManagerYarn1 PackageManager = "yarn1"
 	PackageManagerYarn2 PackageManager = "yarn2"
+
+	DEFAULT_PNPM_VERSION = "9"
 )
 
 func (p PackageManager) Name() string {
@@ -189,7 +191,7 @@ func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []
 func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext, packageJson *PackageJson, packages *generate.MiseStepBuilder) {
 	// Pnpm
 	if p == PackageManagerPnpm {
-		pnpm := packages.Default("pnpm", "latest")
+		pnpm := packages.Default("pnpm", DEFAULT_PNPM_VERSION)
 
 		lockfile, err := ctx.App.ReadFile("pnpm-lock.yaml")
 		if err == nil {
