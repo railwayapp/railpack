@@ -217,8 +217,9 @@ func (p *PythonProvider) InstallPoetry(ctx *generate.GenerateContext, install *g
 
 	install.AddEnvVars(p.GetPythonEnvVars(ctx))
 	install.AddEnvVars(map[string]string{
-		"VIRTUAL_ENV":             VENV_PATH,
-		"POETRY_VIRTUALENVS_PATH": VENV_PATH,
+		"VIRTUAL_ENV":                   VENV_PATH,
+		"POETRY_VIRTUALENVS_PATH":       VENV_PATH,
+		"POETRY_VIRTUALENVS_IN_PROJECT": "true",
 	})
 
 	install.AddCommands([]plan.Command{
