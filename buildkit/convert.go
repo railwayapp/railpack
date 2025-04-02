@@ -67,7 +67,7 @@ func ConvertPlanToLLB(plan *p.BuildPlan, opts ConvertPlanOptions) (*llb.State, *
 		Config: specs.ImageConfig{
 			Env:        imageEnv,
 			WorkingDir: WorkingDir,
-			Entrypoint: []string{"/bin/sh", "-c"},
+			Entrypoint: []string{"/bin/bash", "-c"},
 			Cmd:        []string{startCommand},
 		},
 	}
