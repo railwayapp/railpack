@@ -105,10 +105,6 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 		buildIncludeDirs = append(buildIncludeDirs, COREPACK_HOME)
 	}
 
-	if p.packageManager == PackageManagerYarn2 {
-		buildIncludeDirs = append(buildIncludeDirs, p.packageManager.getYarn2GlobalFolder(ctx))
-	}
-
 	runtimeAptPackages := []string{}
 	if p.usesPuppeteer() {
 		ctx.Logger.LogInfo("Installing puppeteer dependencies")

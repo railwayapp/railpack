@@ -27,7 +27,8 @@
    {
     "include": [
      "/app/.yarn",
-     "/root/.yarn"
+     "/root/.yarn",
+     "/app/node_modules"
     ],
     "step": "build"
    },
@@ -38,7 +39,8 @@
     ],
     "include": [
      "/root/.cache",
-     "."
+     ".",
+     "/opt/corepack"
     ],
     "step": "build"
    }
@@ -82,6 +84,7 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_COREPACK": "true",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
@@ -92,6 +95,14 @@
    "commands": [
     {
      "path": "/app/node_modules/.bin"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
+    },
+    {
+     "cmd": "sh -c 'npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate'",
+     "customName": "npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate"
     },
     {
      "dest": "package.json",
@@ -121,6 +132,7 @@
    "name": "install",
    "variables": {
     "CI": "true",
+    "COREPACK_HOME": "/opt/corepack",
     "NODE_ENV": "production",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",
