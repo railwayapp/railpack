@@ -118,9 +118,6 @@ func ParseSemver(version string) (*Semver, error) {
 
 	// Split by dots
 	parts := strings.Split(version, ".")
-	if len(parts) < 3 {
-		return nil, fmt.Errorf("invalid semver: %s", version)
-	}
 
 	// Parse major version
 	major, err := strconv.Atoi(parts[0])
@@ -128,18 +125,26 @@ func ParseSemver(version string) (*Semver, error) {
 		return nil, fmt.Errorf("invalid major version: %s", parts[0])
 	}
 
-	// Parse minor version
-	minor, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return nil, fmt.Errorf("invalid minor version: %s", parts[1])
+	minor := 0
+	patch := 0
+	if len(parts) > 1 {
+		// Parse minor version
+		minorVer, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return nil, fmt.Errorf("invalid minor version: %s", parts[1])
+		}
+		minor = minorVer
 	}
 
-	// Parse patch version - take care of potential suffixes like "-alpha", "-beta", etc.
-	patchStr := parts[2]
-	patchParts := strings.Split(patchStr, "-")
-	patch, err := strconv.Atoi(patchParts[0])
-	if err != nil {
-		return nil, fmt.Errorf("invalid patch version: %s", patchParts[0])
+	if len(parts) > 2 {
+		// Parse patch version - take care of potential suffixes like "-alpha", "-beta", etc.
+		patchStr := parts[2]
+		patchParts := strings.Split(patchStr, "-")
+		patchVer, err := strconv.Atoi(patchParts[0])
+		if err != nil {
+			return nil, fmt.Errorf("invalid patch version: %s", patchParts[0])
+		}
+		patch = patchVer
 	}
 
 	return &Semver{
