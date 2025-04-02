@@ -113,10 +113,6 @@
      "src": "yarn.lock"
     },
     {
-     "dest": ".yarn",
-     "src": ".yarn"
-    },
-    {
      "dest": ".yarnrc.yml",
      "src": ".yarnrc.yml"
     },
