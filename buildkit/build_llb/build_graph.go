@@ -247,14 +247,15 @@ func (g *BuildGraph) convertExecCommandToLLB(node *StepNode, cmd plan.ExecComman
 		opts = append(opts, llb.WithCustomName(cmd.CustomName))
 	}
 
-	if len(node.Step.Secrets) > 0 {
-		// These options mount all secrets as environments variables
-		secretOpts := []llb.RunOption{}
-		for _, secret := range g.Plan.Secrets {
-			secretOpts = append(secretOpts, llb.AddSecret(secret, llb.SecretID(secret), llb.SecretAsEnv(true), llb.SecretAsEnvName(secret)))
-		}
-		opts = append(opts, secretOpts...)
+	// These options mount all secrets as environments variables
+	// We want to add all secrets to all commands, even if they are not specified in the step
+	secretOpts := []llb.RunOption{}
+	for _, secret := range g.Plan.Secrets {
+		secretOpts = append(secretOpts, llb.AddSecret(secret, llb.SecretID(secret), llb.SecretAsEnv(true), llb.SecretAsEnvName(secret)))
+	}
+	opts = append(opts, secretOpts...)
 
+	if len(node.Step.Secrets) > 0 {
 		if g.secretsFile != nil {
 			// These options mount the secrets hash file to the FS so that we can invalidate the cache if the secrets change
 			secretInvalidationMountOpts := g.getSecretInvalidationMountOptions(node, secretOpts)

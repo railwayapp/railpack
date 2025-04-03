@@ -45,8 +45,11 @@ Environment variables can be set in two ways:
 ## Secrets
 
 The names of all secrets that should be used during the build are added to the
-top of the build plan. Each step that needs access to secrets must include them
-in its `secrets` field.
+top of the build plan, and each step's `secrets` array specifies which secrets
+should invalidate that step's layer cache when their values change. While all
+secrets are available to every command as environment variables, only the ones
+listed in a step's `secrets` array will trigger a cache invalidation if
+modified.
 
 Under the hood, Railpack uses [BuildKit secrets
 mounts](https://docs.docker.com/build/building/secrets/) to supply an exec
