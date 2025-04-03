@@ -3,6 +3,7 @@ package providers
 import (
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/providers/deno"
+	"github.com/railwayapp/railpack/core/providers/dotnet"
 	"github.com/railwayapp/railpack/core/providers/golang"
 	"github.com/railwayapp/railpack/core/providers/java"
 	"github.com/railwayapp/railpack/core/providers/node"
@@ -32,6 +33,7 @@ func GetLanguageProviders() []Provider {
 		&ruby.RubyProvider{},
 		&python.PythonProvider{},
 		&deno.DenoProvider{},
+		&dotnet.DotnetProvider{},
 		&node.NodeProvider{},
 		&staticfile.StaticfileProvider{},
 		&shell.ShellProvider{},
