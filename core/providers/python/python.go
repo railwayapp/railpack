@@ -304,8 +304,8 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(python, utils.ExtractSemverVersion(string(runtimeFile)), "runtime.txt")
 	}
 
-	if pipfileVersion := parseVersionFromPipfile(ctx); pipfileVersion != "" {
-		miseStep.Version(python, pipfileVersion, "Pipfile")
+	if pipfileVersion, pipfileVarName := parseVersionFromPipfile(ctx); pipfileVersion != "" {
+		miseStep.Version(python, pipfileVersion, fmt.Sprintf("Pipfile > %s", pipfileVarName))
 	}
 
 	if p.hasPoetry(ctx) || p.hasUv(ctx) || p.hasPdm(ctx) || p.hasPipfile(ctx) {
@@ -403,20 +403,24 @@ func (p *PythonProvider) usesDep(ctx *generate.GenerateContext, dep string) bool
 	return false
 }
 
-var pipfileVersionRegex = regexp.MustCompile(`(python_version|python_full_version)\s*=\s*['"]([0-9.]*)"?`)
+var pipfileFullVersionRegex = regexp.MustCompile(`python_full_version\s*=\s*['"]([0-9.]*)"?`)
+var pipfileShortVersionRegex = regexp.MustCompile(`python_version\s*=\s*['"]([0-9.]*)"?`)
 
-func parseVersionFromPipfile(ctx *generate.GenerateContext) string {
+func parseVersionFromPipfile(ctx *generate.GenerateContext) (string, string) {
 	pipfile, err := ctx.App.ReadFile("Pipfile")
 	if err != nil {
-		return ""
+		return "", ""
 	}
 
-	matches := pipfileVersionRegex.FindStringSubmatch(string(pipfile))
-
-	if len(matches) > 2 {
-		return matches[2]
+	if matches := pipfileFullVersionRegex.FindStringSubmatch(string(pipfile)); len(matches) > 1 {
+		return matches[1], "python_full_version"
 	}
-	return ""
+
+	if matches := pipfileShortVersionRegex.FindStringSubmatch(string(pipfile)); len(matches) > 1 {
+		return matches[1], "python_version"
+	}
+
+	return "", ""
 }
 
 func (p *PythonProvider) hasRequirements(ctx *generate.GenerateContext) bool {
