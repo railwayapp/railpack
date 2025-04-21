@@ -7,17 +7,13 @@
   "npm-install": {
    "directory": "/root/.npm",
    "type": "shared"
-  },
-  "nuxt": {
-   "directory": ".nuxt",
-   "type": "shared"
   }
  },
  "deploy": {
+  "base": {
+   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+  },
   "inputs": [
-   {
-    "image": "ghcr.io/railwayapp/railpack-runtime:latest"
-   },
    {
     "include": [
      "/mise/shims",
@@ -119,17 +115,8 @@
    }
   },
   {
-   "inputs": [
-    {
-     "step": "install"
-    }
-   ],
-   "name": "prune"
-  },
-  {
    "caches": [
-    "node-modules",
-    "nuxt"
+    "node-modules"
    ],
    "commands": [
     {

@@ -6,11 +6,9 @@
   }
  },
  "deploy": {
-  "inputs": [
-   {
-    "step": "build"
-   }
-  ],
+  "base": {
+   "step": "build"
+  },
   "startCommand": "/start-container.sh"
  },
  "steps": [
@@ -124,17 +122,6 @@
     }
    ],
    "name": "build",
-   "secrets": [
-    "*"
-   ]
-  },
-  {
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
-    }
-   ],
-   "name": "packages:mise",
    "secrets": [
     "*"
    ]

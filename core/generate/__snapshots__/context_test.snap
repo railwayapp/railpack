@@ -1,19 +1,18 @@
 
 [TestGenerateContext - 1]
 {
- "caches": {
-  "apt": {
-   "directory": "/var/cache/apt",
-   "type": "locked"
-  },
-  "apt-lists": {
-   "directory": "/var/lib/apt/lists",
-   "type": "locked"
-  }
- },
  "deploy": {
+  "base": {
+   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+  },
   "inputs": [
    {
+    "step": "build"
+   },
+   {
+    "include": [
+     "."
+    ],
     "step": "build"
    }
   ],
@@ -60,24 +59,6 @@
    }
   },
   {
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
-   "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y git neofetch'",
-     "customName": "install apt packages: git neofetch"
-    }
-   ],
-   "inputs": [
-    {
-     "step": "packages:mise"
-    }
-   ],
-   "name": "packages:test"
-  },
-  {
    "commands": [
     {
      "cmd": "npm install"
@@ -85,7 +66,14 @@
    ],
    "inputs": [
     {
-     "step": "packages:test"
+     "include": [
+      "/mise/shims",
+      "/mise/installs",
+      "/usr/local/bin/mise",
+      "/etc/mise/config.toml",
+      "/root/.local/state/mise"
+     ],
+     "step": "packages:mise"
     }
    ],
    "name": "install"

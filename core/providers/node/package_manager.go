@@ -14,6 +14,8 @@ const (
 	PackageManagerBun   PackageManager = "bun"
 	PackageManagerYarn1 PackageManager = "yarn1"
 	PackageManagerYarn2 PackageManager = "yarn2"
+
+	DEFAULT_PNPM_VERSION = "9"
 )
 
 func (p PackageManager) Name() string {
@@ -65,7 +67,7 @@ func (p PackageManager) installDependencies(ctx *generate.GenerateContext, packa
 		}
 	}
 
-	p.InstallDeps(ctx, install)
+	p.installDeps(ctx, install)
 }
 
 // GetCache returns the cache for the package manager
@@ -86,7 +88,7 @@ func (p PackageManager) GetInstallCache(ctx *generate.GenerateContext) string {
 	}
 }
 
-func (p PackageManager) InstallDeps(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
+func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
 	install.AddCache(p.GetInstallCache(ctx))
 
 	switch p {
@@ -129,7 +131,11 @@ func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate
 func (p PackageManager) GetInstallFolder(ctx *generate.GenerateContext) []string {
 	switch p {
 	case PackageManagerYarn2:
-		return []string{"/app/.yarn", p.getYarn2GlobalFolder(ctx)}
+		installFolders := []string{"/app/.yarn", p.getYarn2GlobalFolder(ctx)}
+		if p.getYarn2NodeLinker(ctx) == "node-modules" {
+			installFolders = append(installFolders, "/app/node_modules")
+		}
+		return installFolders
 	default:
 		return []string{"/app/node_modules"}
 	}
@@ -189,7 +195,7 @@ func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []
 func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext, packageJson *PackageJson, packages *generate.MiseStepBuilder) {
 	// Pnpm
 	if p == PackageManagerPnpm {
-		pnpm := packages.Default("pnpm", "latest")
+		pnpm := packages.Default("pnpm", DEFAULT_PNPM_VERSION)
 
 		lockfile, err := ctx.App.ReadFile("pnpm-lock.yaml")
 		if err == nil {
@@ -282,14 +288,31 @@ func (p PackageManager) parsePackageManagerField(packageJson *PackageJson) (stri
 }
 
 type YarnRc struct {
-	GlobalFolder string `json:"globalFolder"`
+	GlobalFolder string `yaml:"globalFolder"`
+	NodeLinker   string `yaml:"nodeLinker"`
+}
+
+func (p PackageManager) getYarnRc(ctx *generate.GenerateContext) YarnRc {
+	var yarnRc YarnRc
+	if err := ctx.App.ReadYAML(".yarnrc.yml", &yarnRc); err == nil {
+		return yarnRc
+	}
+	return YarnRc{}
 }
 
 func (p PackageManager) getYarn2GlobalFolder(ctx *generate.GenerateContext) string {
-	var yarnRc YarnRc
-	if err := ctx.App.ReadYAML(".yarnrc.yml", &yarnRc); err == nil && yarnRc.GlobalFolder != "" {
+	yarnRc := p.getYarnRc(ctx)
+	if yarnRc.GlobalFolder != "" {
 		return yarnRc.GlobalFolder
 	}
 
 	return "/root/.yarn"
+}
+
+func (p PackageManager) getYarn2NodeLinker(ctx *generate.GenerateContext) string {
+	yarnRc := p.getYarnRc(ctx)
+	if yarnRc.NodeLinker != "" {
+		return yarnRc.NodeLinker
+	}
+	return "pnp"
 }

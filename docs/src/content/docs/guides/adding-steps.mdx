@@ -1,0 +1,104 @@
+---
+title: Adding Steps
+description: Learn how to add additional steps to your build
+---
+
+You can easily customize the install and build commands with [environment
+variables](/config/environment-variables). However, sometimes you can also add
+additional steps to your build. This is useful if you want to optimize cache
+hits or don't want to affect the automatically generated provider commands.
+
+## Adding a Step
+
+To add a step, you can use the `steps` field in your configuration file.
+
+```json
+{
+  "$schema": "https://schema.railpack.com",
+  "steps": {
+    "new-step": {
+      "commands": ["echo 'Hello, world!'"]
+    },
+  }
+}
+```
+
+The default `inputs` for a new step is:
+
+```json
+"inputs": [
+  { "step": "packages:mise" }
+]
+```
+
+This means that the commands will run in the build image with access to Mise and
+build apt packages.
+
+If you want to run after a specific provider-generated step, you can specify the
+inputs. For example, this will run the `new-step` after the `build` step.
+
+```json
+{
+  "$schema": "https://schema.railpack.com",
+  "steps": {
+    "new-step": {
+      "inputs": [
+        { "step": "build" }
+      ],
+      "commands": ["echo 'Hello, world!'"]
+    },
+  }
+}
+```
+
+## Including the step output in the final image
+
+By default, the entire `/app` directory is included in the final image. You can
+customize this by specifying a `deployOutputs` field. For example, this will
+include the `dist` directory in the final image.
+
+```json
+{
+  "$schema": "https://schema.railpack.com",
+  "steps": {
+    "new-step": {
+      "commands": ["echo 'Hello, world!'"],
+      "deployOutputs": [
+        "dist"
+      ]
+    },
+  }
+}
+```
+
+_Note: `deployOutputs` is syntactic sugar for adding this layer to the
+`deploy.inputs` field. The above example is equivalent to._
+
+```json
+{
+  "$schema": "https://schema.railpack.com",
+  "steps": {
+    "new-step": {
+      "commands": ["echo 'Hello, world!'"],
+      "deployOutputs": []
+    },
+  },
+  "deploy": {
+    "inputs": [
+      { "step": "new-step", "include": ["dist"] }
+    ]
+  }
+}
+```
+
+Setting the `deployOutputs` to an empty array will mean that no files from the
+step are included in the final image and therefore no commands will be executed.
+
+## Running commands that affect the runtime image
+
+This is possible, but not recommended at the moment. Is is instead recommended to use
+- `deploy.aptPackages` to install packages that are needed at runtime
+- Copy specific files from a step into the runtime image with `deployOutputs`
+
+_Does this not work? Let us know on [Discord](https://discord.gg/railway) or
+[GitHub](https://github.com/railwayapp/railpack/issues)._

@@ -10,10 +10,10 @@
   }
  },
  "deploy": {
+  "base": {
+   "step": "packages:apt:runtime"
+  },
   "inputs": [
-   {
-    "step": "packages:runtime"
-   },
    {
     "include": [
      "/mise/shims",
@@ -47,9 +47,6 @@
  },
  "steps": [
   {
-   "assets": {
-    "mise.toml": "[mise.toml]"
-   },
    "caches": [
     "apt",
     "apt-lists"
@@ -58,7 +55,20 @@
     {
      "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libyaml-dev'",
      "customName": "install apt packages: libyaml-dev"
-    },
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:apt:build"
+  },
+  {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "commands": [
     {
      "path": "/mise/shims"
     },
@@ -74,7 +84,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+     "step": "packages:apt:build"
     }
    ],
    "name": "packages:mise",
@@ -155,7 +165,7 @@
      "image": "ghcr.io/railwayapp/railpack-runtime:latest"
     }
    ],
-   "name": "packages:runtime"
+   "name": "packages:apt:runtime"
   }
  ]
 }

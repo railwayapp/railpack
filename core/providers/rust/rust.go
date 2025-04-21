@@ -19,8 +19,7 @@ const (
 	CARGO_TARGET_CACHE   = "target"
 )
 
-type RustProvider struct {
-}
+type RustProvider struct{}
 
 func (p *RustProvider) Name() string {
 	return "rust"
@@ -40,27 +39,26 @@ func (p *RustProvider) Plan(ctx *generate.GenerateContext) error {
 	p.InstallMisePackages(ctx, miseStep)
 
 	install := ctx.NewCommandStep("install")
-	install.AddInputs([]plan.Input{
-		plan.NewStepInput(miseStep.Name()),
+	install.AddInputs([]plan.Layer{
+		plan.NewStepLayer(miseStep.Name()),
 	})
 	p.Install(ctx, install)
 
 	build := ctx.NewCommandStep("build")
-	build.AddInputs([]plan.Input{
-		plan.NewStepInput(miseStep.Name()),
-		plan.NewStepInput(install.Name(), plan.InputOptions{
+	build.AddInputs([]plan.Layer{
+		plan.NewStepLayer(miseStep.Name()),
+		plan.NewStepLayer(install.Name(), plan.Filter{
 			Exclude: []string{"/app/"},
 		}),
 	})
 	p.Build(ctx, build)
 
 	maps.Copy(ctx.Deploy.Variables, p.GetRustEnvVars(ctx))
-	ctx.Deploy.Inputs = []plan.Input{
-		ctx.DefaultRuntimeInput(),
-		plan.NewStepInput(build.Name(), plan.InputOptions{
+	ctx.Deploy.AddInputs([]plan.Layer{
+		plan.NewStepLayer(build.Name(), plan.Filter{
 			Include: []string{"/app/bin"},
 		}),
-	}
+	})
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 
 	return nil

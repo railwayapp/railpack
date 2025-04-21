@@ -8,7 +8,7 @@ import (
 
 type Step struct {
 	Name      string            `json:"name,omitempty" jsonschema:"description=The name of the step"`
-	Inputs    []Input           `json:"inputs,omitempty" jsonschema:"description=The inputs for this step"`
+	Inputs    []Layer           `json:"inputs,omitempty" jsonschema:"description=The inputs for this step"`
 	Commands  []Command         `json:"commands,omitempty" jsonschema:"description=The commands to run in this step"`
 	Secrets   []string          `json:"secrets,omitempty" jsonschema:"description=The secrets that this step uses"`
 	Assets    map[string]string `json:"assets,omitempty" jsonschema:"description=The assets available to this step. The key is the name of the asset that is referenced in a file command"`

@@ -27,7 +27,17 @@ The Bun version is determined in the following order:
 - Set via the `RAILPACK_BUN_VERSION` environment variable
 - Defaults to `latest`
 
-If Bun is used, Node will not be installed.
+If Bun is used as the package manager, Node.js will still be installed in the
+following cases:
+
+- If you define a `packageManager` field in your `package.json` (for Corepack
+  support)
+- If any script in your `package.json` contains `node`
+- If you're using Astro
+
+When Node.js isn't required in the final image but is needed during installation
+(for native modules), a basic Node.js version will be installed from apt
+packages.
 
 ## Runtime Variables
 
@@ -82,8 +92,8 @@ Railpack detects your package manager based on lock files:
 
 ### Install
 
-Railpack will only include the necessary files to install dependencies in order to
-improve cache hit rates. This includes the `package.json` and relevant lock
+Railpack will only include the necessary files to install dependencies in order
+to improve cache hit rates. This includes the `package.json` and relevant lock
 files, but there are also a few additional framework specific files that are
 included if they exist in your app. This behaviour is disabled if a `preinstall`
 or `postinstall` script is detected in the `package.json` file.
@@ -131,7 +141,7 @@ Including:
 - Astro: Caches `.astro/cache`
 - Nuxt:
   - Start command defaults to `node .output/server/index.mjs`
-  - Caches `.nuxt`
+  - Caches `node_modules/.cache`
 
 As well as a default cache for node modules:
 

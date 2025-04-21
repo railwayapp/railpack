@@ -30,7 +30,7 @@ func ValidatePlan(plan *plan.BuildPlan, app *app.App, logger *logger.Logger, opt
 		}
 	}
 
-	return validateInputs(plan.Deploy.Inputs, "deploy", logger)
+	return validateDeployLayers(plan, logger)
 }
 
 // validateCommands checks if the plan has at least one command
@@ -73,9 +73,9 @@ func validateStartCommand(plan *plan.BuildPlan, logger *logger.Logger, provider 
 // 1. the step has at least one input
 // 2. the first input is an image or step input
 // 3. the first input does not have any includes or excludes
-func validateInputs(inputs []plan.Input, stepName string, logger *logger.Logger) bool {
+func validateInputs(inputs []plan.Layer, stepName string, logger *logger.Logger) bool {
 	if len(inputs) == 0 {
-		logger.LogError("step %s has no inputs", stepName)
+		logger.LogError("step `%s` has no inputs", stepName)
 		return false
 	}
 
@@ -89,6 +89,15 @@ func validateInputs(inputs []plan.Input, stepName string, logger *logger.Logger)
 	// and does not have any include or exclude
 	if len(firstInput.Include) > 0 || len(firstInput.Exclude) > 0 {
 		logger.LogError("the first input of %s cannot have any includes or excludes.\n\n%s", stepName, firstInput.String())
+		return false
+	}
+
+	return true
+}
+
+func validateDeployLayers(plan *plan.BuildPlan, logger *logger.Logger) bool {
+	if plan.Deploy.Base.Image == "" && plan.Deploy.Base.Step == "" {
+		logger.LogError("deploy.base is required")
 		return false
 	}
 
