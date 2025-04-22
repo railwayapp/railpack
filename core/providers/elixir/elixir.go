@@ -40,25 +40,24 @@ func (p *ElixirProvider) Plan(ctx *generate.GenerateContext) error {
 	p.InstallMisePackages(ctx, miseStep)
 
 	install := ctx.NewCommandStep("install")
-	install.AddInput(plan.NewStepInput(miseStep.Name()))
+	install.AddInput(plan.NewStepLayer(miseStep.Name()))
 	installOutputPaths := p.Install(ctx, install)
 	maps.Copy(install.Variables, p.GetEnvVars(ctx))
 
 	build := ctx.NewCommandStep("build")
-	build.AddInput(plan.NewStepInput(miseStep.Name()))
-	build.AddInput(plan.NewStepInput(install.Name(), plan.InputOptions{
+	build.AddInput(plan.NewStepLayer(miseStep.Name()))
+	build.AddInput(plan.NewStepLayer(install.Name(), plan.Filter{
 		Include: installOutputPaths,
 	}))
 	maps.Copy(build.Variables, p.GetEnvVars(ctx))
 	buildOutputPaths := p.Build(ctx, build)
 
 	maps.Copy(ctx.Deploy.Variables, p.GetEnvVars(ctx))
-	ctx.Deploy.Inputs = []plan.Input{
-		ctx.DefaultRuntimeInput(),
-		plan.NewStepInput(build.Name(), plan.InputOptions{
+	ctx.Deploy.AddInputs([]plan.Layer{
+		plan.NewStepLayer(build.Name(), plan.Filter{
 			Include: buildOutputPaths,
 		}),
-	}
+	})
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 
 	return nil
@@ -212,7 +211,7 @@ func getCompatibleErlangVersion(elixirVersion string) string {
 	case "1.5":
 		return "20"
 	case "1.6":
-		return "2`"
+		return "21"
 	case "1.7", "1.8", "1.9":
 		return "22"
 	case "1.10":

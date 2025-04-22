@@ -1,9 +1,9 @@
 {
  "deploy": {
+  "base": {
+   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+  },
   "inputs": [
-   {
-    "image": "ghcr.io/railwayapp/railpack-runtime:latest"
-   },
    {
     "include": [
      "_build/prod/rel"
