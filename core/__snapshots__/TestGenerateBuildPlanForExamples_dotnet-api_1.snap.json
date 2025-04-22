@@ -10,10 +10,10 @@
   }
  },
  "deploy": {
+  "base": {
+   "step": "packages:apt:runtime"
+  },
   "inputs": [
-   {
-    "step": "packages:runtime"
-   },
    {
     "include": [
      "/mise/installs/dotnet/6.0.428"
@@ -154,7 +154,7 @@
      "image": "ghcr.io/railwayapp/railpack-runtime:latest"
     }
    ],
-   "name": "packages:runtime"
+   "name": "packages:apt:runtime"
   }
  ]
 }

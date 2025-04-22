@@ -40,28 +40,28 @@ func (p *DotnetProvider) Plan(ctx *generate.GenerateContext) error {
 	p.InstallMisePackages(ctx, miseStep)
 
 	install := ctx.NewCommandStep("install")
-	install.AddInput(plan.NewStepInput(miseStep.Name()))
+	install.AddInput(plan.NewStepLayer(miseStep.Name()))
 	p.Install(ctx, install)
 
 	build := ctx.NewCommandStep("build")
-	build.AddInput(plan.NewStepInput(miseStep.Name()))
-	build.AddInput(plan.NewStepInput(install.Name(), plan.InputOptions{
+	build.AddInput(plan.NewStepLayer(miseStep.Name()))
+	build.AddInput(plan.NewStepLayer(install.Name(), plan.Filter{
 		Include: []string{"obj/", DOTNET_DEPENDENCIES_ROOT},
 	}))
 	p.Build(ctx, build)
 
 	envVars := p.GetEnvVars(ctx)
-	ctx.Deploy.Inputs = []plan.Input{
-		// Required for internationalization
-		ctx.DefaultRuntimeInputWithPackages([]string{"libicu-dev"}),
-		plan.NewStepInput(miseStep.Name(), plan.InputOptions{
+	// Required for internationalization
+	ctx.Deploy.AddAptPackages([]string{"libicu-dev"})
+	ctx.Deploy.AddInputs([]plan.Layer{
+		plan.NewStepLayer(miseStep.Name(), plan.Filter{
 			// Need to include the dotnet runtime for the binary to run
 			Include: []string{envVars["DOTNET_ROOT"]},
 		}),
-		plan.NewStepInput(build.Name(), plan.InputOptions{
+		plan.NewStepLayer(build.Name(), plan.Filter{
 			Include: []string{"out"},
 		}),
-	}
+	})
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 	maps.Copy(ctx.Deploy.Variables, envVars)
 
