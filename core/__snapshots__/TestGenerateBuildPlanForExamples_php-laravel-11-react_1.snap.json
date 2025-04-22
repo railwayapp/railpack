@@ -26,30 +26,61 @@
   }
  },
  "deploy": {
+  "base": {
+   "step": "install:composer"
+  },
   "inputs": [
-   {
-    "step": "install:composer"
-   },
-   {
-    "exclude": [
-     "node_modules",
-     "vendor"
-    ],
-    "include": [
-     "."
-    ],
-    "step": "build"
-   },
    {
     "include": [
      "/app/node_modules"
     ],
     "step": "prune:node"
+   },
+   {
+    "exclude": [
+     "node_modules"
+    ],
+    "include": [
+     "."
+    ],
+    "step": "build"
    }
   ],
   "startCommand": "/start-container.sh"
  },
  "steps": [
+  {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "commands": [
+    {
+     "path": "/mise/shims"
+    },
+    {
+     "customName": "create mise config",
+     "name": "mise.toml",
+     "path": "/etc/mise/config.toml"
+    },
+    {
+     "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
+     "customName": "install mise packages: node"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:mise",
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_SHIMS_DIR": "/mise/shims"
+   }
+  },
   {
    "commands": [
     {
@@ -162,38 +193,6 @@
    "variables": {
     "COMPOSER_CACHE_DIR": "/opt/cache/composer",
     "COMPOSER_FUND": "0"
-   }
-  },
-  {
-   "assets": {
-    "mise.toml": "[mise.toml]"
-   },
-   "commands": [
-    {
-     "path": "/mise/shims"
-    },
-    {
-     "customName": "create mise config",
-     "name": "mise.toml",
-     "path": "/etc/mise/config.toml"
-    },
-    {
-     "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
-     "customName": "install mise packages: node"
-    }
-   ],
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
-    }
-   ],
-   "name": "packages:mise",
-   "variables": {
-    "MISE_CACHE_DIR": "/mise/cache",
-    "MISE_CONFIG_DIR": "/mise",
-    "MISE_DATA_DIR": "/mise",
-    "MISE_INSTALLS_DIR": "/mise/installs",
-    "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
   {

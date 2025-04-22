@@ -35,26 +35,27 @@ A config file looks something like this:
 }
 ```
 
-## Inputs
+## Layers
 
-Inputs define where a step gets its filesystem from. They can be:
+Layers define where a step gets its filesystem from. They can be:
 
 - Another step's output
 - A Docker image
 - Local files
 
-The first input must not have any include or exclude options as it is the base
-filesystem.
+The first input layer for a step is the base file system and cannot include any
+filter.
 
-Inputs are used both for steps and for the deploy section. For example, the
-inputs of a Node build might looks like this:
+Layers are used both for steps and for the deploy section. The deploy section
+explicitly has a `base` layer defined that is used as the base file system for
+the final image. For example, the layers of a Node build might look like this:
 
 ```json
 "deploy": {
+  "base": {
+    "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+  },
   "inputs": [
-    {
-      "image": "ghcr.io/railwayapp/railpack-runtime:latest"
-    },
     {
       "step": "packages:mise",
       "include": [
@@ -66,18 +67,14 @@ inputs of a Node build might looks like this:
     {
       "step": "build",
       "include": ["."]
-    },
-    {
-      "local": true,
-      "include": ["."]
     }
   ]
 }
 ```
 
-### Step Input
+### Step Layer
 
-Use another step's output as input:
+Use another step's output as a layer:
 
 ```json
 {
@@ -87,9 +84,9 @@ Use another step's output as input:
 }
 ```
 
-### Image Input
+### Image Layer
 
-Use a Docker image as input:
+Use a Docker image as a layer:
 
 ```json
 {
@@ -98,9 +95,9 @@ Use a Docker image as input:
 }
 ```
 
-### Local Input
+### Local Layer
 
-Use local files as input:
+Use local files as a layer:
 
 ```json
 {
@@ -109,15 +106,14 @@ Use local files as input:
 }
 ```
 
-### Input Options
+### Layer Filters
 
-All input types support these options:
+All layer types support these options:
 
 | Field     | Description                                             |
 | :-------- | :------------------------------------------------------ |
 | `include` | Files or directories to include                         |
 | `exclude` | Files or directories to exclude                         |
-| `spread`  | Whether to spread the input into the current filesystem |
 
 ## Array Extending
 
@@ -215,14 +211,15 @@ For example:
 
 Each step in the build process can have:
 
-| Field       | Description                                                             |
-| :---------- | :---------------------------------------------------------------------- |
-| `inputs`    | List of inputs for this step (from other steps, images, or local files) |
-| `commands`  | List of commands to run in this step                                    |
-| `secrets`   | List of secrets that this step uses                                     |
-| `assets`    | Mapping of name to file contents referenced in file commands            |
-| `variables` | Mapping of name to variable values referenced in variable commands      |
-| `caches`    | List of cache IDs available to all commands in this step                |
+| Field          | Description                                                             |
+| :------------- | :---------------------------------------------------------------------- |
+| `inputs`       | List of layers for this step (from other steps, images, or local files) |
+| `commands`     | List of commands to run in this step                                    |
+| `secrets`      | List of secrets that this step uses                                     |
+| `assets`       | Mapping of name to file contents referenced in file commands            |
+| `variables`    | Mapping of name to variable values referenced in variable commands      |
+| `caches`       | List of cache IDs available to all commands in this step                |
+| `deployOutputs`| List of filters that specify which parts of this step should be included in the final image |
 
 ## Commands
 
@@ -303,10 +300,11 @@ The deploy section configures how the container runs:
 
 | Field          | Description                                                             |
 | :------------- | :---------------------------------------------------------------------- |
+| `base`         | The base layer for the deploy step (typically a runtime image)          |
 | `startCommand` | The command to run when the container starts                            |
 | `variables`    | Environment variables available to the start command                    |
 | `paths`        | Paths to prepend to the $PATH environment variable                      |
-| `inputs`       | List of inputs for the deploy step (from steps, images, or local files) |
+| `inputs`       | List of layers for the deploy step (from steps, images, or local files) |
 | `aptPackages`  | List of Apt packages to install in the final image                      |
 
 ## Schema

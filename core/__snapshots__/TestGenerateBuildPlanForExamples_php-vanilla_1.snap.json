@@ -1,10 +1,8 @@
 {
  "deploy": {
-  "inputs": [
-   {
-    "step": "build"
-   }
-  ],
+  "base": {
+   "step": "build"
+  },
   "startCommand": "/start-container.sh"
  },
  "steps": [
@@ -17,7 +15,7 @@
    ],
    "inputs": [
     {
-     "image": "dunglas/frankenphp:php8.4.5-bookworm"
+     "image": "dunglas/frankenphp:php8.4.6-bookworm"
     }
    ],
    "name": "packages:image"
@@ -101,17 +99,6 @@
     }
    ],
    "name": "build",
-   "secrets": [
-    "*"
-   ]
-  },
-  {
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
-    }
-   ],
-   "name": "packages:mise",
    "secrets": [
     "*"
    ]

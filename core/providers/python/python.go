@@ -42,7 +42,7 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 	p.InstallMisePackages(ctx, ctx.GetMiseStepBuilder())
 
 	install := ctx.NewCommandStep("install")
-	install.AddInput(plan.NewStepInput(p.GetBuilderDeps(ctx).Name()))
+	install.AddInput(plan.NewStepLayer(p.GetBuilderDeps(ctx).Name()))
 
 	install.Secrets = []string{}
 	install.UseSecretsWithPrefixes([]string{"PYTHON", "PIP", "PIPX", "UV", "PDM", "POETRY"})
@@ -64,27 +64,26 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 	p.addMetadata(ctx)
 
 	build := ctx.NewCommandStep("build")
-	build.AddInput(plan.NewStepInput(install.Name()))
+	build.AddInput(plan.NewStepLayer(install.Name()))
 	build.AddCommand(plan.NewCopyCommand("."))
 
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 	maps.Copy(ctx.Deploy.Variables, p.GetPythonEnvVars(ctx))
 
-	installArtifacts := plan.NewStepInput(build.Name(), plan.InputOptions{
+	installArtifacts := plan.NewStepLayer(build.Name(), plan.Filter{
 		Include: installOutputs,
 	})
 
-	ctx.Deploy.Inputs = []plan.Input{
-		plan.NewStepInput(p.GetImageWithRuntimeDeps(ctx).Name()),
-		plan.NewStepInput(ctx.GetMiseStepBuilder().Name(), plan.InputOptions{
-			Include: ctx.GetMiseStepBuilder().GetOutputPaths(),
-		}),
+	p.AddRuntimeDeps(ctx)
+
+	ctx.Deploy.AddInputs([]plan.Layer{
+		ctx.GetMiseStepBuilder().GetLayer(),
 		installArtifacts,
-		plan.NewStepInput(build.Name(), plan.InputOptions{
+		plan.NewStepLayer(build.Name(), plan.Filter{
 			Include: []string{"."},
 			Exclude: []string{strings.TrimPrefix(VENV_PATH, "/app/")},
 		}),
-	}
+	})
 
 	return nil
 }
@@ -115,7 +114,7 @@ func (p *PythonProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 }
 
 func (p *PythonProvider) getMainPythonFile(ctx *generate.GenerateContext) string {
-	for _, file := range []string{"main.py", "app.py", "bot.py"} {
+	for _, file := range []string{"main.py", "app.py", "bot.py", "hello.py", "server.py"} {
 		if ctx.App.HasMatch(file) {
 			return file
 		}
@@ -142,13 +141,16 @@ func (p *PythonProvider) InstallUv(ctx *generate.GenerateContext, install *gener
 		"UV_PYTHON_DOWNLOADS": "never",
 		"VIRTUAL_ENV":         VENV_PATH,
 	})
+
 	install.AddEnvVars(p.GetPythonEnvVars(ctx))
+
 	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
-		plan.NewExecCommand("pipx install uv"),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
-		plan.NewCopyCommand("pyproject.toml"),
-		plan.NewCopyCommand("uv.lock"),
+		plan.NewExecCommand("pipx install uv"),
+	})
+	p.copyInstallFiles(ctx, install)
+	install.AddCommands([]plan.Command{
 		plan.NewExecCommand("uv sync --locked --no-dev --no-install-project"),
 		plan.NewCopyCommand("."),
 		plan.NewExecCommand("uv sync --locked --no-dev --no-editable"),
@@ -169,8 +171,8 @@ func (p *PythonProvider) InstallPipenv(ctx *generate.GenerateContext, install *g
 
 	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
-		plan.NewExecCommand("pipx install pipenv"),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
+		plan.NewExecCommand("pipx install pipenv"),
 	})
 
 	if ctx.App.HasMatch("Pipfile.lock") {
@@ -199,11 +201,12 @@ func (p *PythonProvider) InstallPDM(ctx *generate.GenerateContext, install *gene
 
 	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
-		plan.NewExecCommand("pipx install pdm"),
-		plan.NewCopyCommand("."),
-		plan.NewExecCommand("python --version"),
-		plan.NewExecCommand("pdm install --check --prod --no-editable"),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
+		plan.NewExecCommand("pipx install pdm"),
+	})
+	p.copyInstallFiles(ctx, install)
+	install.AddCommands([]plan.Command{
+		plan.NewExecCommand("pdm install --check --prod --no-editable"),
 	})
 
 	return []string{VENV_PATH}
@@ -214,18 +217,19 @@ func (p *PythonProvider) InstallPoetry(ctx *generate.GenerateContext, install *g
 
 	install.AddEnvVars(p.GetPythonEnvVars(ctx))
 	install.AddEnvVars(map[string]string{
-		"VIRTUAL_ENV":             VENV_PATH,
-		"POETRY_VIRTUALENVS_PATH": VENV_PATH,
+		"VIRTUAL_ENV":                   VENV_PATH,
+		"POETRY_VIRTUALENVS_PATH":       VENV_PATH,
+		"POETRY_VIRTUALENVS_IN_PROJECT": "true",
 	})
 
 	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewExecCommand("pipx install poetry"),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
-		plan.NewCopyCommand("pyproject.toml"),
-		plan.NewCopyCommand("poetry.lock"),
+	})
+	p.copyInstallFiles(ctx, install)
+	install.AddCommands([]plan.Command{
 		plan.NewExecCommand("poetry install --no-interaction --no-ansi --only main --no-root"),
-		plan.NewCopyCommand("."),
 	})
 
 	return []string{VENV_PATH}
@@ -235,43 +239,39 @@ func (p *PythonProvider) InstallPip(ctx *generate.GenerateContext, install *gene
 	ctx.Logger.LogInfo("Using pip")
 
 	install.AddCache(ctx.Caches.AddCache("pip", PIP_CACHE_DIR))
+	install.AddEnvVars(p.GetPythonEnvVars(ctx))
+	install.AddEnvVars(map[string]string{
+		"PIP_CACHE_DIR": PIP_CACHE_DIR,
+		"VIRTUAL_ENV":   VENV_PATH,
+	})
+
 	install.AddCommands([]plan.Command{
 		plan.NewExecCommand(fmt.Sprintf("python -m venv %s", VENV_PATH)),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
-		plan.NewCopyCommand("requirements.txt"),
-		plan.NewExecCommand("pip install -r requirements.txt"),
 	})
-	maps.Copy(install.Variables, p.GetPythonEnvVars(ctx))
-	maps.Copy(install.Variables, map[string]string{
-		"PIP_CACHE_DIR": PIP_CACHE_DIR,
-		"VIRTUAL_ENV":   VENV_PATH,
+	p.copyInstallFiles(ctx, install)
+	install.AddCommands([]plan.Command{
+		plan.NewExecCommand("pip install -r requirements.txt"),
 	})
 
 	return []string{VENV_PATH}
 }
 
-func (p *PythonProvider) GetImageWithRuntimeDeps(ctx *generate.GenerateContext) *generate.AptStepBuilder {
-	aptStep := ctx.NewAptStepBuilder("python-runtime-deps")
-	aptStep.Inputs = []plan.Input{
-		ctx.DefaultRuntimeInput(),
-	}
-
+func (p *PythonProvider) AddRuntimeDeps(ctx *generate.GenerateContext) {
 	for dep, requiredPkgs := range pythonRuntimeDepRequirements {
 		if p.usesDep(ctx, dep) {
 			ctx.Logger.LogInfo("Installing apt packages for %s", dep)
-			aptStep.Packages = append(aptStep.Packages, requiredPkgs...)
+			ctx.Deploy.AddAptPackages(requiredPkgs)
 		}
 	}
 
 	if p.usesPostgres(ctx) {
-		aptStep.Packages = append(aptStep.Packages, "libpq5")
+		ctx.Deploy.AddAptPackages([]string{"libpq5"})
 	}
 
 	if p.usesMysql(ctx) {
-		aptStep.Packages = append(aptStep.Packages, "default-mysql-client")
+		ctx.Deploy.AddAptPackages([]string{"default-mysql-client"})
 	}
-
-	return aptStep
 }
 
 func (p *PythonProvider) GetBuilderDeps(ctx *generate.GenerateContext) *generate.MiseStepBuilder {
@@ -304,8 +304,8 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(python, utils.ExtractSemverVersion(string(runtimeFile)), "runtime.txt")
 	}
 
-	if pipfileVersion := parseVersionFromPipfile(ctx); pipfileVersion != "" {
-		miseStep.Version(python, pipfileVersion, "Pipfile")
+	if pipfileVersion, pipfileVarName := parseVersionFromPipfile(ctx); pipfileVersion != "" {
+		miseStep.Version(python, pipfileVersion, fmt.Sprintf("Pipfile > %s", pipfileVarName))
 	}
 
 	if p.hasPoetry(ctx) || p.hasUv(ctx) || p.hasPdm(ctx) || p.hasPipfile(ctx) {
@@ -322,6 +322,42 @@ func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[str
 		"PIP_DISABLE_PIP_VERSION_CHECK": "1",
 		"PIP_DEFAULT_TIMEOUT":           "100",
 	}
+}
+
+func (p *PythonProvider) copyInstallFiles(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
+	if p.installNeedsAllFiles(ctx) {
+		install.AddCommand(plan.NewCopyCommand("."))
+		return
+	}
+
+	patterns := []string{
+		"requirements.txt",
+		"pyproject.toml",
+		"Pipfile",
+		"poetry.lock",
+		"uv.lock",
+		"pdm.lock",
+	}
+
+	for _, pattern := range patterns {
+		if files, err := ctx.App.FindFiles(pattern); err == nil {
+			for _, file := range files {
+				install.AddCommand(plan.NewCopyCommand(file))
+			}
+		}
+	}
+}
+
+func (p *PythonProvider) installNeedsAllFiles(ctx *generate.GenerateContext) bool {
+	if requirementsContent, err := ctx.App.ReadFile("requirements.txt"); err == nil {
+		return strings.Contains(requirementsContent, "file://")
+	}
+
+	if pyprojectContent, err := ctx.App.ReadFile("pyproject.toml"); err == nil {
+		return strings.Contains(pyprojectContent, "file://") || strings.Contains(pyprojectContent, "path = ")
+	}
+
+	return false
 }
 
 func (p *PythonProvider) usesPostgres(ctx *generate.GenerateContext) bool {
@@ -367,20 +403,24 @@ func (p *PythonProvider) usesDep(ctx *generate.GenerateContext, dep string) bool
 	return false
 }
 
-var pipfileVersionRegex = regexp.MustCompile(`(python_version|python_full_version)\s*=\s*['"]([0-9.]*)"?`)
+var pipfileFullVersionRegex = regexp.MustCompile(`python_full_version\s*=\s*['"]([0-9.]*)"?`)
+var pipfileShortVersionRegex = regexp.MustCompile(`python_version\s*=\s*['"]([0-9.]*)"?`)
 
-func parseVersionFromPipfile(ctx *generate.GenerateContext) string {
+func parseVersionFromPipfile(ctx *generate.GenerateContext) (string, string) {
 	pipfile, err := ctx.App.ReadFile("Pipfile")
 	if err != nil {
-		return ""
+		return "", ""
 	}
 
-	matches := pipfileVersionRegex.FindStringSubmatch(string(pipfile))
-
-	if len(matches) > 2 {
-		return matches[2]
+	if matches := pipfileFullVersionRegex.FindStringSubmatch(string(pipfile)); len(matches) > 1 {
+		return matches[1], "python_full_version"
 	}
-	return ""
+
+	if matches := pipfileShortVersionRegex.FindStringSubmatch(string(pipfile)); len(matches) > 1 {
+		return matches[1], "python_version"
+	}
+
+	return "", ""
 }
 
 func (p *PythonProvider) hasRequirements(ctx *generate.GenerateContext) bool {

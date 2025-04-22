@@ -53,22 +53,19 @@ func (p *StaticfileProvider) Plan(ctx *generate.GenerateContext) error {
 	miseStep.Default("caddy", "latest")
 
 	setup := ctx.NewCommandStep("setup")
-	setup.AddInput(plan.NewStepInput(miseStep.Name()))
+	setup.AddInput(plan.NewStepLayer(miseStep.Name()))
 	err := p.Setup(ctx, setup)
 	if err != nil {
 		return err
 	}
 
-	ctx.Deploy.Inputs = []plan.Input{
-		ctx.DefaultRuntimeInput(),
-		plan.NewStepInput(miseStep.Name(), plan.InputOptions{
-			Include: miseStep.GetOutputPaths(),
-		}),
-		plan.NewStepInput(setup.Name(), plan.InputOptions{
+	ctx.Deploy.AddInputs([]plan.Layer{
+		miseStep.GetLayer(),
+		plan.NewStepLayer(setup.Name(), plan.Filter{
 			Include: []string{"."},
 		}),
-		plan.NewLocalInput("."),
-	}
+		plan.NewLocalLayer("."),
+	})
 
 	ctx.Deploy.StartCmd = p.CaddyStartCommand(ctx)
 

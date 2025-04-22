@@ -1,9 +1,9 @@
 {
  "deploy": {
+  "base": {
+   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+  },
   "inputs": [
-   {
-    "image": "ghcr.io/railwayapp/railpack-runtime:latest"
-   },
    {
     "include": [
      "/mise/shims",
@@ -17,7 +17,7 @@
    {
     "include": [
      ".",
-     "/root/.cache/deno"
+     "/root/.cache"
     ],
     "step": "build"
    }

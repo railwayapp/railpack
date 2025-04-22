@@ -10,10 +10,10 @@
   }
  },
  "deploy": {
+  "base": {
+   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+  },
   "inputs": [
-   {
-    "step": "packages:python-runtime-deps"
-   },
    {
     "include": [
      "/mise/shims",
@@ -52,9 +52,6 @@
  },
  "steps": [
   {
-   "assets": {
-    "mise.toml": "[mise.toml]"
-   },
    "caches": [
     "apt",
     "apt-lists"
@@ -63,7 +60,20 @@
     {
      "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y python3-dev'",
      "customName": "install apt packages: python3-dev"
-    },
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:apt:build"
+  },
+  {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "commands": [
     {
      "path": "/mise/shims"
     },
@@ -79,7 +89,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+     "step": "packages:apt:build"
     }
    ],
    "name": "packages:mise",
@@ -97,10 +107,10 @@
      "path": "/root/.local/bin"
     },
     {
-     "cmd": "pipx install pipenv"
+     "path": "/app/.venv/bin"
     },
     {
-     "path": "/app/.venv/bin"
+     "cmd": "pipx install pipenv"
     },
     {
      "dest": "Pipfile",
@@ -148,24 +158,6 @@
    "secrets": [
     "*"
    ]
-  },
-  {
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
-   "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y '",
-     "customName": "install apt packages: "
-    }
-   ],
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
-    }
-   ],
-   "name": "packages:python-runtime-deps"
   }
  ]
 }

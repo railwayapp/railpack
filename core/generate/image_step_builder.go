@@ -49,15 +49,14 @@ func (b *ImageStepBuilder) Name() string {
 	return b.DisplayName
 }
 
-func (b *ImageStepBuilder) Build(options *BuildStepOptions) (*plan.Step, error) {
+func (b *ImageStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) error {
 	image := b.ResolveStepImage(options)
 
 	step := plan.NewStep(b.DisplayName)
-	step.Inputs = []plan.Input{
-		plan.NewImageInput(image),
-	}
-
 	step.Secrets = []string{}
+	step.Inputs = []plan.Layer{
+		plan.NewImageLayer(image),
+	}
 
 	if len(b.AptPackages) > 0 {
 		step.Commands = []plan.Command{
@@ -65,5 +64,7 @@ func (b *ImageStepBuilder) Build(options *BuildStepOptions) (*plan.Step, error) 
 		}
 	}
 
-	return step, nil
+	p.Steps = append(p.Steps, *step)
+
+	return nil
 }
