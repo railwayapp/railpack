@@ -46,11 +46,9 @@ func TestParseSemver(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:        "too few parts",
-			version:     "1.2",
-			want:        nil,
-			wantErr:     true,
-			errorPrefix: "invalid semver",
+			name:    "two parts",
+			version: "1.2",
+			want:    &Semver{Major: 1, Minor: 2, Patch: 0},
 		},
 		{
 			name:        "invalid major",
@@ -78,7 +76,7 @@ func TestParseSemver(t *testing.T) {
 			version:     "1-23",
 			want:        nil,
 			wantErr:     true,
-			errorPrefix: "invalid semver",
+			errorPrefix: "invalid major version",
 		},
 	}
 

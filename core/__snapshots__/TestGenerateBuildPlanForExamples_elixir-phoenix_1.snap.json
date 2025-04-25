@@ -1,0 +1,164 @@
+{
+ "deploy": {
+  "base": {
+   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+  },
+  "inputs": [
+   {
+    "include": [
+     "_build/prod/rel"
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "/app/_build/prod/rel/hello/bin/hello start",
+  "variables": {
+   "ELIXIR_ERL_OPTIONS": "+fnu",
+   "LANG": "en_US.UTF-8",
+   "LANGUAGE": "en_US:en",
+   "LC_ALL": "en_US.UTF-8",
+   "MIX_ENV": "prod"
+  }
+ },
+ "steps": [
+  {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "commands": [
+    {
+     "path": "/mise/shims"
+    },
+    {
+     "customName": "create mise config",
+     "name": "mise.toml",
+     "path": "/etc/mise/config.toml"
+    },
+    {
+     "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
+     "customName": "install mise packages: elixir, erlang"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:mise",
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_SHIMS_DIR": "/mise/shims"
+   }
+  },
+  {
+   "commands": [
+    {
+     "cmd": "mix local.hex --force"
+    },
+    {
+     "cmd": "mix local.rebar --force"
+    },
+    {
+     "dest": "mix.exs",
+     "src": "mix.exs"
+    },
+    {
+     "dest": "mix.lock",
+     "src": "mix.lock"
+    },
+    {
+     "cmd": "mix deps.get --only prod"
+    },
+    {
+     "cmd": "mkdir -p config"
+    },
+    {
+     "dest": "config/",
+     "src": "config/config.exs*"
+    },
+    {
+     "dest": "config/",
+     "src": "config/prod.exs*"
+    },
+    {
+     "cmd": "mix deps.compile"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install",
+   "secrets": [
+    "*"
+   ],
+   "variables": {
+    "ELIXIR_ERL_OPTIONS": "+fnu",
+    "LANG": "en_US.UTF-8",
+    "LANGUAGE": "en_US:en",
+    "LC_ALL": "en_US.UTF-8",
+    "MIX_ENV": "prod"
+   }
+  },
+  {
+   "commands": [
+    {
+     "dest": ".",
+     "src": "priv*"
+    },
+    {
+     "dest": ".",
+     "src": "lib*"
+    },
+    {
+     "dest": ".",
+     "src": "assets*"
+    },
+    {
+     "cmd": "mix assets.deploy"
+    },
+    {
+     "cmd": "mix compile"
+    },
+    {
+     "dest": "config/",
+     "src": "config/runtime.exs*"
+    },
+    {
+     "cmd": "mix release"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    },
+    {
+     "include": [
+      "deps",
+      "_build",
+      "config",
+      "mix.exs",
+      "mix.lock",
+      "/root/.mix"
+     ],
+     "step": "install"
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ],
+   "variables": {
+    "ELIXIR_ERL_OPTIONS": "+fnu",
+    "LANG": "en_US.UTF-8",
+    "LANGUAGE": "en_US:en",
+    "LC_ALL": "en_US.UTF-8",
+    "MIX_ENV": "prod"
+   }
+  }
+ ]
+}
