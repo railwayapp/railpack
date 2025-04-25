@@ -88,13 +88,16 @@ func convertWorkspacePattern(pattern string) string {
 	// npm/pnpm uses packages/* or packages/** for glob patterns
 	// - packages/* -> packages/*/package.json (single level)
 	// - packages/** -> packages/**/package.json (recursive)
-	if pattern[len(pattern)-2:] == "/*" {
+	if len(pattern) >= 2 && pattern[len(pattern)-2:] == "/*" {
 		// Single level pattern (packages/*)
 		return pattern[:len(pattern)-1] + "*/package.json"
-	} else if pattern[len(pattern)-3:] == "/**" {
+	}
+
+	if len(pattern) >= 3 && pattern[len(pattern)-3:] == "/**" {
 		// Recursive pattern (packages/**)
 		return pattern[:len(pattern)-2] + "**/package.json"
 	}
+
 	// Direct path or other pattern, just append package.json
 	return filepath.Join(pattern, "package.json")
 }

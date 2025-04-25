@@ -82,6 +82,26 @@ func TestConvertWorkspacePattern(t *testing.T) {
 			pattern:  "packages/foo/package.json",
 			expected: "packages/foo/package.json/package.json",
 		},
+		{
+			name:     "very short pattern",
+			pattern:  "db",
+			expected: "db/package.json",
+		},
+		{
+			name:     "single character pattern",
+			pattern:  "a",
+			expected: "a/package.json",
+		},
+		{
+			name:     "empty pattern",
+			pattern:  "",
+			expected: "package.json",
+		},
+		{
+			name:     "pattern ending with slash",
+			pattern:  "apps/",
+			expected: "apps/package.json",
+		},
 	}
 
 	for _, tt := range tests {
