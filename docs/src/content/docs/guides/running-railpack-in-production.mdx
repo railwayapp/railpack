@@ -48,7 +48,7 @@ enabled. Pass the path to the build plan file with the `-f` flag (it does not
 need to be in the same directory as the app being built).
 
 ```sh
-docker buildx \
+docker buildx build \
   --build-arg BUILDKIT_SYNTAX="ghcr.io/railwayapp/railpack:railpack-frontend" \
   -f /path/to/railpack-plan.json \
   /path/to/app/to/build
