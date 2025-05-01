@@ -86,6 +86,9 @@ func (p *ElixirProvider) Install(ctx *generate.GenerateContext, install *generat
 		plan.NewCopyCommand("config/prod.exs*", "config/"),
 		plan.NewExecCommand("mix deps.compile"),
 	})
+	if matches := ctx.App.FindFilesWithContent("mix.exs", regexp.MustCompile(`assets\.setup`)); len(matches) > 0 {
+		install.AddCommand(plan.NewExecCommand("mix assets.setup"))
+	}
 	return []string{"deps", "_build", "config", "mix.exs", "mix.lock", MIX_ROOT}
 }
 

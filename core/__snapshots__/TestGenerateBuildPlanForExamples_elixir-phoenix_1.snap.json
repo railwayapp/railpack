@@ -85,6 +85,9 @@
     },
     {
      "cmd": "mix deps.compile"
+    },
+    {
+     "cmd": "mix assets.setup"
     }
    ],
    "inputs": [
