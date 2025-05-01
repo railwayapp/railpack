@@ -115,22 +115,21 @@ var elixirVersionRegex = regexp.MustCompile(`(elixir:[\s].*[> ])([\w|\.]*)`)
 func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	elixir := miseStep.Default("elixir", DEFAULT_ELIXIR_VERSION)
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("ELIXIR_VERSION"); envVersion != "" {
-		miseStep.Version(elixir, envVersion, varName)
+	if mixExs, err := ctx.App.ReadFile("mix.exs"); err == nil {
+		if match := elixirVersionRegex.FindStringSubmatch(mixExs); len(match) > 2 {
+			version := utils.ExtractSemverVersion(match[2])
+			if version != "" {
+				miseStep.Version(elixir, version, "mix.exs")
+			}
+		}
 	}
 
 	if versionFile, err := ctx.App.ReadFile(".elixir-version"); err == nil {
 		miseStep.Version(elixir, strings.TrimSpace(string(versionFile)), ".elixir-version")
 	}
 
-	if mixExs, err := ctx.App.ReadFile("mix.exs"); err == nil {
-		if match := elixirVersionRegex.FindStringSubmatch(mixExs); len(match) > 2 {
-			version := utils.ExtractSemverVersion(match[2])
-			if version != "" {
-				fmt.Println("mix.exs", version)
-				miseStep.Version(elixir, version, "mix.exs")
-			}
-		}
+	if envVersion, varName := ctx.Env.GetConfigVariable("ELIXIR_VERSION"); envVersion != "" {
+		miseStep.Version(elixir, envVersion, varName)
 	}
 
 	pkgs, err := miseStep.Resolver.ResolvePackages()
@@ -148,14 +147,6 @@ func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(erlang, compatibleErlangVersion, "default compatible OTP version")
 	}
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("ERLANG_VERSION"); envVersion != "" {
-		miseStep.Version(erlang, envVersion, varName)
-	}
-
-	if versionFile, err := ctx.App.ReadFile(".erlang-version"); err == nil {
-		miseStep.Version(erlang, strings.TrimSpace(string(versionFile)), ".erlang-version")
-	}
-
 	versionParts := strings.Split(elixirVersion, "-otp-")
 	if len(versionParts) > 1 {
 		otpVersion := versionParts[1]
@@ -163,6 +154,14 @@ func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		if _, err := utils.ParseSemver(otpSemverVersion); err == nil {
 			miseStep.Version(erlang, otpSemverVersion, "resolved compatible OTP version")
 		}
+	}
+
+	if versionFile, err := ctx.App.ReadFile(".erlang-version"); err == nil {
+		miseStep.Version(erlang, strings.TrimSpace(string(versionFile)), ".erlang-version")
+	}
+
+	if envVersion, varName := ctx.Env.GetConfigVariable("ERLANG_VERSION"); envVersion != "" {
+		miseStep.Version(erlang, envVersion, varName)
 	}
 }
 
