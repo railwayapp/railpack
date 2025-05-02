@@ -52,6 +52,18 @@ func (p *ElixirProvider) Plan(ctx *generate.GenerateContext) error {
 	maps.Copy(build.Variables, p.GetEnvVars(ctx))
 	buildOutputPaths := p.Build(ctx, build)
 
+	if miseStep.Resolver.Get("node") != nil {
+		nodeModules := ctx.NewCommandStep("node_modules")
+		nodeModules.AddInput(plan.NewStepLayer(miseStep.Name()))
+		nodeModules.AddCache(ctx.Caches.AddCache("npm-install", "/root/.npm"))
+		maps.Copy(nodeModules.Variables, p.GetEnvVars(ctx))
+		nodeModulesOutputPaths := p.NodeModules(ctx, nodeModules)
+
+		build.AddInput(plan.NewStepLayer(nodeModules.Name(), plan.Filter{
+			Include: nodeModulesOutputPaths,
+		}))
+	}
+
 	maps.Copy(ctx.Deploy.Variables, p.GetEnvVars(ctx))
 	ctx.Deploy.AddInputs([]plan.Layer{
 		plan.NewStepLayer(build.Name(), plan.Filter{
@@ -110,6 +122,21 @@ func (p *ElixirProvider) Build(ctx *generate.GenerateContext, build *generate.Co
 	return []string{"_build/prod/rel"}
 }
 
+func (p *ElixirProvider) NodeModules(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) []string {
+	build.AddCommands([]plan.Command{
+		plan.NewExecCommand("mkdir -p assets"),
+		plan.NewCopyCommand("assets/package*.json", "assets/"),
+	})
+
+	if ctx.App.HasMatch("assets/package-lock.json") {
+		build.AddCommand(plan.NewExecCommand("npm ci --prefix assets"))
+	} else {
+		build.AddCommand(plan.NewExecCommand("npm install --prefix assets"))
+	}
+
+	return []string{"assets"}
+}
+
 var elixirVersionRegex = regexp.MustCompile(`(elixir:[\s].*[> ])([\w|\.]*)`)
 
 func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
@@ -164,15 +191,24 @@ func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 			miseStep.Version(erlang, otpSemverVersion, "resolved compatible OTP version")
 		}
 	}
+
+	if ctx.App.HasMatch("assets/package.json") {
+		miseStep.Default("node", "latest")
+	}
 }
 
 func (p *ElixirProvider) GetEnvVars(ctx *generate.GenerateContext) map[string]string {
 	return map[string]string{
-		"LANG":               "en_US.UTF-8",
-		"LANGUAGE":           "en_US:en",
-		"LC_ALL":             "en_US.UTF-8",
-		"ELIXIR_ERL_OPTIONS": "+fnu",
-		"MIX_ENV":            "prod",
+		"LANG":                       "en_US.UTF-8",
+		"LANGUAGE":                   "en_US:en",
+		"LC_ALL":                     "en_US.UTF-8",
+		"ELIXIR_ERL_OPTIONS":         "+fnu",
+		"MIX_ENV":                    "prod",
+		"NODE_ENV":                   "production",
+		"NPM_CONFIG_PRODUCTION":      "false",
+		"NPM_CONFIG_UPDATE_NOTIFIER": "false",
+		"NPM_CONFIG_FUND":            "false",
+		"CI":                         "true",
 	}
 }
 
