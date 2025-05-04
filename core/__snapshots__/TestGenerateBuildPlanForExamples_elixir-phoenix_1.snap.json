@@ -129,6 +129,10 @@
      "src": "config/runtime.exs*"
     },
     {
+     "dest": ".",
+     "src": "rel*"
+    },
+    {
      "cmd": "mix release"
     }
    ],

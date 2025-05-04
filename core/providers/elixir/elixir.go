@@ -104,6 +104,7 @@ func (p *ElixirProvider) Build(ctx *generate.GenerateContext, build *generate.Co
 	build.AddCommands([]plan.Command{
 		plan.NewExecCommand("mix compile"),
 		plan.NewCopyCommand("config/runtime.exs*", "config/"),
+		plan.NewCopyCommand("rel*", "."),
 		plan.NewExecCommand("mix release"),
 	})
 
