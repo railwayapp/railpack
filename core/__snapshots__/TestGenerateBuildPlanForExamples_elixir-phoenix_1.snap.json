@@ -90,6 +90,9 @@
     },
     {
      "cmd": "mix deps.compile"
+    },
+    {
+     "cmd": "mix assets.setup"
     }
    ],
    "inputs": [
@@ -137,6 +140,10 @@
     {
      "dest": "config/",
      "src": "config/runtime.exs*"
+    },
+    {
+     "dest": ".",
+     "src": "rel*"
     },
     {
      "cmd": "mix release"
