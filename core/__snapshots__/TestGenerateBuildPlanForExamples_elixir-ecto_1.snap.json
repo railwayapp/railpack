@@ -13,16 +13,11 @@
   ],
   "startCommand": "/app/_build/prod/rel/friends/bin/friends start",
   "variables": {
-   "CI": "true",
    "ELIXIR_ERL_OPTIONS": "+fnu",
    "LANG": "en_US.UTF-8",
    "LANGUAGE": "en_US:en",
    "LC_ALL": "en_US.UTF-8",
-   "MIX_ENV": "prod",
-   "NODE_ENV": "production",
-   "NPM_CONFIG_FUND": "false",
-   "NPM_CONFIG_PRODUCTION": "false",
-   "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+   "MIX_ENV": "prod"
   }
  },
  "steps": [
@@ -102,16 +97,11 @@
     "*"
    ],
    "variables": {
-    "CI": "true",
     "ELIXIR_ERL_OPTIONS": "+fnu",
     "LANG": "en_US.UTF-8",
     "LANGUAGE": "en_US:en",
     "LC_ALL": "en_US.UTF-8",
-    "MIX_ENV": "prod",
-    "NODE_ENV": "production",
-    "NPM_CONFIG_FUND": "false",
-    "NPM_CONFIG_PRODUCTION": "false",
-    "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+    "MIX_ENV": "prod"
    }
   },
   {
@@ -164,16 +154,11 @@
     "*"
    ],
    "variables": {
-    "CI": "true",
     "ELIXIR_ERL_OPTIONS": "+fnu",
     "LANG": "en_US.UTF-8",
     "LANGUAGE": "en_US:en",
     "LC_ALL": "en_US.UTF-8",
-    "MIX_ENV": "prod",
-    "NODE_ENV": "production",
-    "NPM_CONFIG_FUND": "false",
-    "NPM_CONFIG_PRODUCTION": "false",
-    "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+    "MIX_ENV": "prod"
    }
   }
  ]

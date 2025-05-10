@@ -7,8 +7,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	"github.com/railwayapp/railpack/core/providers/node"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -52,18 +54,6 @@ func (p *ElixirProvider) Plan(ctx *generate.GenerateContext) error {
 	maps.Copy(build.Variables, p.GetEnvVars(ctx))
 	buildOutputPaths := p.Build(ctx, build)
 
-	if miseStep.Resolver.Get("node") != nil {
-		nodeModules := ctx.NewCommandStep("node_modules")
-		nodeModules.AddInput(plan.NewStepLayer(miseStep.Name()))
-		nodeModules.AddCache(ctx.Caches.AddCache("npm-install", "/root/.npm"))
-		maps.Copy(nodeModules.Variables, p.GetEnvVars(ctx))
-		nodeModulesOutputPaths := p.NodeModules(ctx, nodeModules)
-
-		build.AddInput(plan.NewStepLayer(nodeModules.Name(), plan.Filter{
-			Include: nodeModulesOutputPaths,
-		}))
-	}
-
 	maps.Copy(ctx.Deploy.Variables, p.GetEnvVars(ctx))
 	ctx.Deploy.AddInputs([]plan.Layer{
 		plan.NewStepLayer(build.Name(), plan.Filter{
@@ -71,6 +61,44 @@ func (p *ElixirProvider) Plan(ctx *generate.GenerateContext) error {
 		}),
 	})
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
+
+	// Node (if necessary)
+	if app, err := app.NewApp(ctx.App.Source + "/assets"); err == nil {
+		// All providers assume they're running in the application root
+		// but Phoenix puts it in the assets folder, so we have to lie to the provider
+		ctx.App = app
+		nodeProvider := node.NodeProvider{}
+		isNode, err := nodeProvider.Detect(ctx)
+		if err != nil {
+			return err
+		}
+		if isNode {
+			err := nodeProvider.Initialize(ctx)
+			if err != nil {
+				return err
+			}
+
+			nodeProvider.InstallMisePackages(ctx, miseStep)
+
+			installNode := ctx.NewCommandStep("install:node")
+			installNode.AddInput(plan.NewStepLayer(miseStep.Name()))
+			nodeProvider.InstallNodeDeps(ctx, installNode)
+
+			// Again, the provider thinks it's in the root folder, but is actually in assets
+			// So we have to modify all copy commands
+			for idx, cmd := range installNode.Commands {
+				if copyCmd, ok := cmd.(plan.CopyCommand); ok {
+					copyCmd.Src = "assets/" + copyCmd.Src
+					installNode.Commands[idx] = copyCmd
+				}
+			}
+
+			// esbuild knows how to load node_modules from the root, so we don't have to copy it to the assets folder
+			build.AddInput(plan.NewStepLayer(installNode.Name(), plan.Filter{
+				Include: []string{"node_modules"},
+			}))
+		}
+	}
 
 	return nil
 }
@@ -124,21 +152,6 @@ func (p *ElixirProvider) Build(ctx *generate.GenerateContext, build *generate.Co
 	})
 
 	return []string{"_build/prod/rel"}
-}
-
-func (p *ElixirProvider) NodeModules(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) []string {
-	build.AddCommands([]plan.Command{
-		plan.NewExecCommand("mkdir -p assets"),
-		plan.NewCopyCommand("assets/package*.json", "assets/"),
-	})
-
-	if ctx.App.HasMatch("assets/package-lock.json") {
-		build.AddCommand(plan.NewExecCommand("npm ci --prefix assets"))
-	} else {
-		build.AddCommand(plan.NewExecCommand("npm install --prefix assets"))
-	}
-
-	return []string{"assets"}
 }
 
 var elixirVersionRegex = regexp.MustCompile(`(elixir:[\s].*[> ])([\w|\.]*)`)
@@ -195,24 +208,15 @@ func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 			miseStep.Version(erlang, otpSemverVersion, "resolved compatible OTP version")
 		}
 	}
-
-	if ctx.App.HasMatch("assets/package.json") {
-		miseStep.Default("node", "latest")
-	}
 }
 
 func (p *ElixirProvider) GetEnvVars(ctx *generate.GenerateContext) map[string]string {
 	return map[string]string{
-		"LANG":                       "en_US.UTF-8",
-		"LANGUAGE":                   "en_US:en",
-		"LC_ALL":                     "en_US.UTF-8",
-		"ELIXIR_ERL_OPTIONS":         "+fnu",
-		"MIX_ENV":                    "prod",
-		"NODE_ENV":                   "production",
-		"NPM_CONFIG_PRODUCTION":      "false",
-		"NPM_CONFIG_UPDATE_NOTIFIER": "false",
-		"NPM_CONFIG_FUND":            "false",
-		"CI":                         "true",
+		"LANG":               "en_US.UTF-8",
+		"LANGUAGE":           "en_US:en",
+		"LC_ALL":             "en_US.UTF-8",
+		"ELIXIR_ERL_OPTIONS": "+fnu",
+		"MIX_ENV":            "prod",
 	}
 }
 
