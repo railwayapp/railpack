@@ -63,41 +63,8 @@ func (p *ElixirProvider) Plan(ctx *generate.GenerateContext) error {
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 
 	// Node (if necessary)
-	if app, err := app.NewApp(ctx.App.Source + "/assets"); err == nil {
-		// All providers assume they're running in the application root
-		// but Phoenix puts it in the assets folder, so we have to lie to the provider
-		ctx.App = app
-		nodeProvider := node.NodeProvider{}
-		isNode, err := nodeProvider.Detect(ctx)
-		if err != nil {
-			return err
-		}
-		if isNode {
-			err := nodeProvider.Initialize(ctx)
-			if err != nil {
-				return err
-			}
-
-			nodeProvider.InstallMisePackages(ctx, miseStep)
-
-			installNode := ctx.NewCommandStep("install:node")
-			installNode.AddInput(plan.NewStepLayer(miseStep.Name()))
-			nodeProvider.InstallNodeDeps(ctx, installNode)
-
-			// Again, the provider thinks it's in the root folder, but is actually in assets
-			// So we have to modify all copy commands
-			for idx, cmd := range installNode.Commands {
-				if copyCmd, ok := cmd.(plan.CopyCommand); ok {
-					copyCmd.Src = "assets/" + copyCmd.Src
-					installNode.Commands[idx] = copyCmd
-				}
-			}
-
-			// esbuild knows how to load node_modules from the root, so we don't have to copy it to the assets folder
-			build.AddInput(plan.NewStepLayer(installNode.Name(), plan.Filter{
-				Include: []string{"node_modules"},
-			}))
-		}
+	if err := p.InstallNode(ctx, build); err != nil {
+		return err
 	}
 
 	return nil
@@ -130,6 +97,55 @@ func (p *ElixirProvider) Install(ctx *generate.GenerateContext, install *generat
 		install.AddCommand(plan.NewExecCommand("mix assets.setup"))
 	}
 	return []string{"deps", "_build", "config", "mix.exs", "mix.lock", MIX_ROOT}
+}
+
+func (p *ElixirProvider) InstallNode(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) error {
+	// All providers assume they're running in the application root
+	// but Phoenix puts it in the assets folder, so we have to lie to the provider
+	assetsApp, err := app.NewApp(ctx.App.Source + "/assets")
+	if err != nil {
+		// If the assets folder doesn't exist, then it isn't an error, we just don't need to install Node
+		return nil
+	}
+	defer func(originalApp *app.App) { ctx.App = originalApp }(ctx.App)
+	ctx.App = assetsApp
+
+	nodeProvider := node.NodeProvider{}
+	isNode, err := nodeProvider.Detect(ctx)
+	if err != nil {
+		return err
+	}
+	if !isNode {
+		return nil
+	}
+
+	err = nodeProvider.Initialize(ctx)
+	if err != nil {
+		return err
+	}
+
+	miseStep := ctx.GetMiseStepBuilder()
+	nodeProvider.InstallMisePackages(ctx, miseStep)
+
+	installNode := ctx.NewCommandStep("install:node")
+	installNode.AddInput(plan.NewStepLayer(miseStep.Name()))
+	nodeProvider.InstallNodeDeps(ctx, installNode)
+
+	// Again, the provider thinks it's in the root folder, but is actually in assets
+	// So we have to modify all copy commands
+	for idx, cmd := range installNode.Commands {
+		if copyCmd, ok := cmd.(plan.CopyCommand); ok {
+			copyCmd.Src = "assets/" + copyCmd.Src
+			installNode.Commands[idx] = copyCmd
+		}
+	}
+
+	// esbuild knows how to load node_modules from the root, so we don't have to copy it to the assets folder
+	build.AddInput(plan.NewStepLayer(installNode.Name(), plan.Filter{
+		Include: []string{"node_modules"},
+	}))
+
+	return nil
 }
 
 func (p *ElixirProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) []string {
