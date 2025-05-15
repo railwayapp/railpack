@@ -96,9 +96,6 @@
     }
    ],
    "name": "install",
-   "secrets": [
-    "*"
-   ],
    "variables": {
     "ELIXIR_ERL_OPTIONS": "+fnu",
     "LANG": "en_US.UTF-8",
