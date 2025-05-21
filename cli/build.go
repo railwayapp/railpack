@@ -61,12 +61,12 @@ var BuildCommand = &cli.Command{
 			return nil
 		}
 
-		serializedPlan, err := json.MarshalIndent(buildResult.Plan, "", "  ")
-		if err != nil {
-			return cli.Exit(err, 1)
-		}
-
 		if cmd.Bool("show-plan") {
+			serializedPlan, err := json.MarshalIndent(buildResult.Plan, "", "  ")
+			if err != nil {
+				return cli.Exit(err, 1)
+			}
+
 			fmt.Println(string(serializedPlan))
 		}
 
@@ -91,6 +91,7 @@ var BuildCommand = &cli.Command{
 			SecretsHash:  secretsHash,
 			Secrets:      env.Variables,
 			Platform:     platform,
+			GitHubToken:  os.Getenv("GITHUB_TOKEN"),
 		})
 		if err != nil {
 			return cli.Exit(err, 1)

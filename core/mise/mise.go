@@ -20,8 +20,9 @@ const (
 )
 
 type Mise struct {
-	binaryPath string
-	cacheDir   string
+	binaryPath  string
+	cacheDir    string
+	githubToken string
 }
 
 const (
@@ -34,9 +35,12 @@ func New(cacheDir string) (*Mise, error) {
 		return nil, fmt.Errorf("failed to ensure mise is installed: %w", err)
 	}
 
+	githubToken := os.Getenv("GITHUB_TOKEN")
+
 	return &Mise{
-		binaryPath: binaryPath,
-		cacheDir:   cacheDir,
+		binaryPath:  binaryPath,
+		cacheDir:    cacheDir,
+		githubToken: githubToken,
 	}, nil
 }
 
@@ -113,6 +117,10 @@ func (m *Mise) runCmd(args ...string) (string, error) {
 		"MISE_FETCH_REMOTE_VERSIONS_TIMEOUT=120s",
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
 	)
+
+	if m.githubToken != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("GITHUB_TOKEN=%s", m.githubToken))
+	}
 
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to run mise command '%s': %w\n%s\n\n%s",

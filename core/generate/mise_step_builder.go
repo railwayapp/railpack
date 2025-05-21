@@ -14,6 +14,7 @@ import (
 
 const (
 	MisePackageStepName = "packages:mise"
+	MiseInstallCommand  = "sh -c 'mise trust -a && mise install'"
 )
 
 type MiseStepBuilder struct {
@@ -174,7 +175,7 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			plan.NewFileCommand("/etc/mise/config.toml", "mise.toml", plan.FileOptions{
 				CustomName: "create mise config",
 			}),
-			plan.NewExecCommand("sh -c 'mise trust -a && mise install'", plan.ExecOptions{
+			plan.NewExecCommand(MiseInstallCommand, plan.ExecOptions{
 				CustomName: "install mise packages: " + strings.Join(pkgNames, ", "),
 			}),
 		})

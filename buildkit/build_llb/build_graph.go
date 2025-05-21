@@ -12,6 +12,7 @@ import (
 	"github.com/moby/buildkit/util/system"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/railwayapp/railpack/buildkit/graph"
+	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 )
 
@@ -22,6 +23,7 @@ type BuildGraph struct {
 	Platform   *specs.Platform
 	LocalState *llb.State
 
+	githubToken     string
 	secretsFile     *llb.State
 	usedSecretsBase *llb.State
 }
@@ -31,7 +33,7 @@ type BuildGraphOutput struct {
 	GraphEnv BuildEnvironment
 }
 
-func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *BuildKitCacheStore, secretsHash string, platform *specs.Platform) (*BuildGraph, error) {
+func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *BuildKitCacheStore, secretsHash string, platform *specs.Platform, githubToken string) (*BuildGraph, error) {
 	var secretsFile *llb.State
 	if secretsHash != "" {
 		st := llb.Scratch().File(llb.Mkfile("/secrets-hash", 0644, []byte(secretsHash)), llb.WithCustomName("[railpack] secrets hash"))
@@ -46,6 +48,7 @@ func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *Buil
 		Platform:   platform,
 		LocalState: localState,
 
+		githubToken:     githubToken,
 		secretsFile:     secretsFile,
 		usedSecretsBase: &usedSecretsBase,
 	}
@@ -271,7 +274,14 @@ func (g *BuildGraph) convertExecCommandToLLB(node *StepNode, cmd plan.ExecComman
 		opts = append(opts, cacheOpts...)
 	}
 
+	// If we have a GitHub token AND we are installing mise packages, we want to pass the GitHub token
+	// It is important to validate the command so that we don't pass the token to other commands
+	if g.githubToken != "" && cmd.Cmd == generate.MiseInstallCommand {
+		opts = append(opts, llb.AddEnv("GITHUB_TOKEN", g.githubToken))
+	}
+
 	s := state.Run(opts...).Root()
+
 	return s, nil
 }
 

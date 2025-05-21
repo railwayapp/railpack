@@ -15,9 +15,18 @@ import (
 
 type ConvertPlanOptions struct {
 	BuildPlatform BuildPlatform
-	SecretsHash   string
-	CacheKey      string
-	SessionID     string
+
+	// Hash of all the secrets values that can be used to invalidate the layer cache when a secret changes
+	SecretsHash string
+
+	// Unique value prepended to all cache mount keys
+	CacheKey string
+
+	// BuildKit session ID
+	SessionID string
+
+	// Token used to make authenticated API requests to GitHub to increase rate limits
+	GitHubToken string
 }
 
 const (
@@ -35,7 +44,7 @@ func ConvertPlanToLLB(plan *p.BuildPlan, opts ConvertPlanOptions) (*llb.State, *
 	)
 
 	cacheStore := build_llb.NewBuildKitCacheStore(opts.CacheKey)
-	graph, err := build_llb.NewBuildGraph(plan, &localState, cacheStore, opts.SecretsHash, &platform)
+	graph, err := build_llb.NewBuildGraph(plan, &localState, cacheStore, opts.SecretsHash, &platform, opts.GitHubToken)
 	if err != nil {
 		return nil, nil, err
 	}
