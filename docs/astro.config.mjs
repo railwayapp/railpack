@@ -38,14 +38,6 @@ export default defineConfig({
         {
           label: "Guides",
           items: [
-            // {
-            //   label: "Building with CLI and BuildKit",
-            //   link: "/guides/building-with-cli",
-            // },
-            // {
-            //   label: "Building with a Custom Frontend",
-            //   link: "/guides/custom-frontend",
-            // },
             {
               label: "Installing Additional Packages",
               link: "/guides/installing-packages",
@@ -92,7 +84,10 @@ export default defineConfig({
         },
         {
           label: "Reference",
-          items: [{ label: "CLI Commands", link: "/reference/cli" }],
+          items: [
+            { label: "CLI Commands", link: "/reference/cli" },
+            { label: "BuildKit Frontend", link: "/reference/frontend" },
+          ],
         },
         {
           label: "Architecture",
