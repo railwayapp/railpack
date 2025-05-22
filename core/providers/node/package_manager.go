@@ -44,11 +44,20 @@ func (p PackageManager) RunScriptCommand(cmd string) string {
 	return "node " + cmd
 }
 
-func (p PackageManager) installDependencies(ctx *generate.GenerateContext, packageJson *PackageJson, install *generate.CommandStepBuilder) {
-	hasPreInstall := packageJson.Scripts != nil && packageJson.Scripts["preinstall"] != ""
-	hasPostInstall := packageJson.Scripts != nil && packageJson.Scripts["postinstall"] != ""
-	hasPrepare := packageJson.Scripts != nil && packageJson.Scripts["prepare"] != ""
-	usesLocalFile := p.usesLocalFile(ctx)
+func (p PackageManager) installDependencies(ctx *generate.GenerateContext, workspace *Workspace, install *generate.CommandStepBuilder) {
+	packageJsons := workspace.AllPackageJson()
+
+	hasPreInstall := false
+	hasPostInstall := false
+	hasPrepare := false
+	usesLocalFile := false
+
+	for _, packageJson := range packageJsons {
+		hasPreInstall = hasPreInstall || (packageJson.Scripts != nil && packageJson.Scripts["preinstall"] != "")
+		hasPostInstall = hasPostInstall || (packageJson.Scripts != nil && packageJson.Scripts["postinstall"] != "")
+		hasPrepare = hasPrepare || (packageJson.Scripts != nil && packageJson.Scripts["prepare"] != "")
+		usesLocalFile = usesLocalFile || p.usesLocalFile(ctx)
+	}
 
 	// If there are any pre/post install scripts, we need the entire app to be copied
 	// This is to handle things like patch-package

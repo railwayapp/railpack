@@ -139,3 +139,13 @@ func (w *Workspace) HasDependency(dependency string) bool {
 
 	return false
 }
+
+func (w *Workspace) AllPackageJson() []*PackageJson {
+	packageJsons := []*PackageJson{w.PackageJson}
+
+	for _, pkg := range w.Packages {
+		packageJsons = append(packageJsons, pkg.PackageJson)
+	}
+
+	return packageJsons
+}

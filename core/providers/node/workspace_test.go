@@ -111,3 +111,38 @@ func TestConvertWorkspacePattern(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkspaceAllPackageJson(t *testing.T) {
+	tests := []struct {
+		name        string
+		path        string
+		numExpected int
+	}{
+		{
+			name:        "npm workspaces",
+			path:        "../../../examples/node-npm-workspaces",
+			numExpected: 3,
+		},
+		{
+			name:        "pnpm workspaces",
+			path:        "../../../examples/node-pnpm-workspaces",
+			numExpected: 3,
+		},
+		{
+			name:        "no workspaces",
+			path:        "../../../examples/node-npm",
+			numExpected: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := testingUtils.CreateGenerateContext(t, tt.path)
+			workspace, err := NewWorkspace(ctx.App)
+			require.NoError(t, err)
+
+			all := workspace.AllPackageJson()
+			require.Equal(t, tt.numExpected, len(all))
+		})
+	}
+}

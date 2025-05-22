@@ -232,7 +232,7 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 		})
 	}
 
-	p.packageManager.installDependencies(ctx, p.packageJson, install)
+	p.packageManager.installDependencies(ctx, p.workspace, install)
 }
 
 func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
