@@ -9,7 +9,7 @@
    "type": "shared"
   },
   "vite": {
-   "directory": "node_modules/.vite",
+   "directory": "/app/node_modules/.vite",
    "type": "shared"
   }
  },

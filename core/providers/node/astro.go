@@ -11,11 +11,22 @@ const (
 	DefaultAstroOutputDirectory = "dist"
 )
 
-func (p *NodeProvider) isAstro(ctx *generate.GenerateContext) bool {
-	hasAstroConfig := ctx.App.HasMatch("astro.config.mjs") || ctx.App.HasMatch("astro.config.ts")
-	hasAstroBuildCommand := strings.Contains(strings.ToLower(p.packageJson.GetScript("build")), "astro build")
+func (p *NodeProvider) isAstroPackage(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+	astroConfigMjs := "astro.config.mjs"
+	astroConfigTs := "astro.config.ts"
+	if pkg.Path != "" {
+		astroConfigMjs = pkg.Path + "/astro.config.mjs"
+		astroConfigTs = pkg.Path + "/astro.config.ts"
+	}
+
+	hasAstroConfig := ctx.App.HasMatch(astroConfigMjs) || ctx.App.HasMatch(astroConfigTs)
+	hasAstroBuildCommand := strings.Contains(strings.ToLower(pkg.PackageJson.GetScript("build")), "astro build")
 
 	return hasAstroConfig && hasAstroBuildCommand
+}
+
+func (p *NodeProvider) isAstro(ctx *generate.GenerateContext) bool {
+	return p.isAstroPackage(p.workspace.Root, ctx)
 }
 
 func (p *NodeProvider) isAstroSPA(ctx *generate.GenerateContext) bool {
@@ -68,8 +79,4 @@ func (p *NodeProvider) getAstroEnvVars() map[string]string {
 	}
 
 	return envVars
-}
-
-func (p *NodeProvider) getAstroCache(ctx *generate.GenerateContext) string {
-	return ctx.Caches.AddCache("astro", "node_modules/.astro")
 }

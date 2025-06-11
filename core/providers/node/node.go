@@ -180,27 +180,42 @@ func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 	p.addCaches(ctx, build)
 }
 
+func (p *NodeProvider) addFrameworkCaches(ctx *generate.GenerateContext, build *generate.CommandStepBuilder, frameworkName string, frameworkCheck func(*WorkspacePackage, *generate.GenerateContext) bool, cacheSubPath string) {
+	if packages, err := p.getPackagesWithFramework(ctx, frameworkCheck); err == nil {
+		for _, pkg := range packages {
+			var cacheName string
+			if pkg.Path == "" {
+				cacheName = frameworkName
+			} else {
+				cacheName = fmt.Sprintf("%s-%s", frameworkName, strings.ReplaceAll(strings.TrimSuffix(pkg.Path, "/"), "/", "-"))
+			}
+			cacheDir := path.Join("/app", pkg.Path, cacheSubPath)
+			build.AddCache(ctx.Caches.AddCache(cacheName, cacheDir))
+		}
+	}
+}
+
 func (p *NodeProvider) addCaches(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
 	build.AddCache(ctx.Caches.AddCache("node-modules", "/app/node_modules/.cache"))
 
-	if nextApps, err := p.getNextApps(ctx); err == nil {
-		for _, nextApp := range nextApps {
-			nextCacheDir := path.Join("/app", nextApp, ".next/cache")
-			build.AddCache(ctx.Caches.AddCache(fmt.Sprintf("next-%s", nextApp), nextCacheDir))
+	p.addFrameworkCaches(ctx, build, "next", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+		if pkg.PackageJson.HasScript("build") {
+			return strings.Contains(pkg.PackageJson.Scripts["build"], "next build")
 		}
-	}
+		return false
+	}, ".next/cache")
 
-	if p.isRemix() {
-		build.AddCache(ctx.Caches.AddCache("remix", ".cache"))
-	}
+	p.addFrameworkCaches(ctx, build, "remix", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+		return pkg.PackageJson.hasDependency("@remix-run/node")
+	}, ".cache")
 
-	if p.isAstro(ctx) {
-		build.AddCache(p.getAstroCache(ctx))
-	}
+	p.addFrameworkCaches(ctx, build, "vite", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+		return p.isVitePackage(pkg, ctx)
+	}, "node_modules/.vite")
 
-	if p.isVite(ctx) {
-		build.AddCache(p.getViteCache(ctx))
-	}
+	p.addFrameworkCaches(ctx, build, "astro", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+		return p.isAstroPackage(pkg, ctx)
+	}, "node_modules/.astro")
 }
 
 func (p *NodeProvider) shouldPrune(ctx *generate.GenerateContext) bool {
@@ -370,43 +385,24 @@ func (p *NodeProvider) SetNodeMetadata(ctx *generate.GenerateContext) {
 	ctx.Metadata.SetBool("nodeUsesCorepack", p.usesCorepack())
 }
 
-func (p *NodeProvider) getNextApps(ctx *generate.GenerateContext) ([]string, error) {
-	nextPaths, err := p.filterPackageJson(ctx, func(packageJson *PackageJson) bool {
-		if packageJson.HasScript("build") {
-			return strings.Contains(packageJson.Scripts["build"], "next build")
-		}
+func (p *NodeProvider) getPackagesWithFramework(ctx *generate.GenerateContext, frameworkCheck func(*WorkspacePackage, *generate.GenerateContext) bool) ([]*WorkspacePackage, error) {
+	packages := []*WorkspacePackage{}
 
-		return false
-	})
-	if err != nil {
-		return nil, err
+	// Check root package first
+	if p.workspace != nil && frameworkCheck(p.workspace.Root, ctx) {
+		packages = append(packages, p.workspace.Root)
 	}
 
-	return nextPaths, nil
-}
-
-func (p *NodeProvider) filterPackageJson(ctx *generate.GenerateContext, filterFunc func(packageJson *PackageJson) bool) ([]string, error) {
-	filteredPaths := []string{}
-
-	files, err := ctx.App.FindFiles("**/package.json")
-	if err != nil {
-		return filteredPaths, err
-	}
-
-	for _, file := range files {
-		var packageJson PackageJson
-		err := ctx.App.ReadJSON(file, &packageJson)
-		if err != nil {
-			return filteredPaths, err
-		}
-
-		if filterFunc(&packageJson) {
-			dirPath := strings.TrimSuffix(file, "package.json")
-			filteredPaths = append(filteredPaths, dirPath)
+	// Check workspace packages
+	if p.workspace != nil {
+		for _, pkg := range p.workspace.Packages {
+			if frameworkCheck(pkg, ctx) {
+				packages = append(packages, pkg)
+			}
 		}
 	}
 
-	return filteredPaths, nil
+	return packages, nil
 }
 
 func (p *NodeProvider) requiresNode(ctx *generate.GenerateContext) bool {

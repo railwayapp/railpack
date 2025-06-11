@@ -1,8 +1,10 @@
 package node
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/railwayapp/railpack/core/generate"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -139,7 +141,7 @@ func TestGetNextApps(t *testing.T) {
 		{
 			name: "turbo with 2 next apps",
 			path: "../../../examples/node-turborepo",
-			want: []string{"apps/docs/", "apps/web/"},
+			want: []string{"apps/docs", "apps/web"},
 		},
 	}
 
@@ -150,8 +152,18 @@ func TestGetNextApps(t *testing.T) {
 			err := provider.Initialize(ctx)
 			require.NoError(t, err)
 
-			nextApps, err := provider.getNextApps(ctx)
+			nextPackages, err := provider.getPackagesWithFramework(ctx, func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+				if pkg.PackageJson.HasScript("build") {
+					return strings.Contains(pkg.PackageJson.Scripts["build"], "next build")
+				}
+				return false
+			})
 			require.NoError(t, err)
+
+			nextApps := make([]string, len(nextPackages))
+			for i, pkg := range nextPackages {
+				nextApps[i] = pkg.Path
+			}
 			require.Equal(t, tt.want, nextApps)
 		})
 	}

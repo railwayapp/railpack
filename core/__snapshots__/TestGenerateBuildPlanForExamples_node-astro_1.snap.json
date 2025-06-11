@@ -1,7 +1,7 @@
 {
  "caches": {
   "astro": {
-   "directory": "node_modules/.astro",
+   "directory": "/app/node_modules/.astro",
    "type": "shared"
   },
   "node-modules": {

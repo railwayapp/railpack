@@ -8,9 +8,8 @@ import (
 )
 
 type Workspace struct {
-	Root        *PackageJson
-	Packages    []*WorkspacePackage
-	PackageJson *PackageJson
+	Root     *WorkspacePackage
+	Packages []*WorkspacePackage
 }
 
 type WorkspacePackage struct {
@@ -30,20 +29,22 @@ func NewWorkspace(app *app.App) (*Workspace, error) {
 	}
 
 	workspace := &Workspace{
-		Root:        packageJson,
-		Packages:    []*WorkspacePackage{},
-		PackageJson: packageJson,
+		Root: &WorkspacePackage{
+			Path:        "",
+			PackageJson: packageJson,
+		},
+		Packages: []*WorkspacePackage{},
 	}
 
 	// Try to read PNPM workspace config first
 	if app.HasMatch("pnpm-workspace.yaml") {
 		var pnpmWorkspace PnpmWorkspace
 		if err := app.ReadYAML("pnpm-workspace.yaml", &pnpmWorkspace); err == nil && len(pnpmWorkspace.Packages) > 0 {
-			packageJson.Workspaces = pnpmWorkspace.Packages
+			workspace.Root.PackageJson.Workspaces = pnpmWorkspace.Packages
 		}
 	}
 
-	if len(packageJson.Workspaces) > 0 {
+	if len(workspace.Root.PackageJson.Workspaces) > 0 {
 		if err := workspace.findWorkspacePackages(app); err != nil {
 			return nil, err
 		}
@@ -54,7 +55,7 @@ func NewWorkspace(app *app.App) (*Workspace, error) {
 
 // findWorkspacePackages finds all packages in the workspace using the workspace patterns
 func (w *Workspace) findWorkspacePackages(app *app.App) error {
-	for _, pattern := range w.Root.Workspaces {
+	for _, pattern := range w.Root.PackageJson.Workspaces {
 		// For each workspace pattern, we need to:
 		// 1. Find all package.json files in that pattern
 		// 2. Read each package.json file
@@ -113,7 +114,7 @@ func readPackageJson(app *app.App, path string) (*PackageJson, error) {
 
 // HasWorkspaces returns true if this is a workspace root
 func (w *Workspace) HasWorkspaces() bool {
-	return len(w.Root.Workspaces) > 0
+	return len(w.Root.PackageJson.Workspaces) > 0
 }
 
 // GetPackage returns a workspace package by path
@@ -127,7 +128,7 @@ func (w *Workspace) GetPackage(path string) *WorkspacePackage {
 }
 
 func (w *Workspace) HasDependency(dependency string) bool {
-	if w.PackageJson.hasDependency(dependency) {
+	if w.Root.PackageJson.hasDependency(dependency) {
 		return true
 	}
 
@@ -141,7 +142,7 @@ func (w *Workspace) HasDependency(dependency string) bool {
 }
 
 func (w *Workspace) AllPackageJson() []*PackageJson {
-	packageJsons := []*PackageJson{w.PackageJson}
+	packageJsons := []*PackageJson{w.Root.PackageJson}
 
 	for _, pkg := range w.Packages {
 		packageJsons = append(packageJsons, pkg.PackageJson)
