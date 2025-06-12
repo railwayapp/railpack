@@ -68,6 +68,7 @@ export default defineConfig({
               label: "Environment Variables",
               link: "/config/environment-variables",
             },
+            { label: "Procfile", link: "/config/procfile" },
           ],
         },
         {

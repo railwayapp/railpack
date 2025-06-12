@@ -38,3 +38,7 @@ with support for Node, Python, Go, PHP, and more.
 
 - Be sure to run `mise run check` when you're done making code changes
 - Don't run tests manually unless instructed to do so
+
+# File Conventions
+
+- Markdown files in @docs/src/content/docs/ should be limited to 80 columns
