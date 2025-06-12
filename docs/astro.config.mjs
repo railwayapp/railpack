@@ -1,7 +1,7 @@
 // @ts-check
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
-import tailwind from "@astrojs/tailwind";
+import tailwindcss from "@tailwindcss/vite";
 
 // https://astro.build/config
 export default defineConfig({
@@ -13,9 +13,13 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "Railpack Docs",
-      social: {
-        github: "https://github.com/railwayapp/railpack",
-      },
+      social: [
+        {
+          icon: "github",
+          label: "GitHub",
+          href: "https://github.com/railwayapp/railpack",
+        },
+      ],
       editLink: {
         baseUrl: "https://github.com/railwayapp/railpack/edit/main/docs/",
       },
@@ -112,10 +116,9 @@ export default defineConfig({
         },
       ],
     }),
-
-    tailwind({
-      // Disable the default base styles:
-      applyBaseStyles: false,
-    }),
   ],
+
+  vite: {
+    plugins: [tailwindcss()],
+  },
 });

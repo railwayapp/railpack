@@ -1,6 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@layer base, starlight, theme, components, utilities;
+
+@import "@astrojs/starlight-tailwind";
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+
+  --color-accent-200: #d1bef0;
+  --color-accent-600: #863ccf;
+  --color-accent-900: #3d205e;
+  --color-accent-950: #2b1a40;
+  --color-gray-100: #f7f5f9;
+  --color-gray-200: #efecf3;
+  --color-gray-300: #c4c0c8;
+  --color-gray-400: #8f8897;
+  --color-gray-500: #5b5563;
+  --color-gray-700: #3b3542;
+  --color-gray-800: #2a2430;
+  --color-gray-900: #1a171d;
+}
 
 @view-transition {
   navigation: auto;
@@ -9,10 +29,6 @@
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
-}
-
-code {
-  white-space: nowrap;
 }
 
 /* NAV BAR STYLES */
@@ -91,7 +107,7 @@ site-search button[data-open-modal] {
   }
 
   .large {
-    @apply px-3 text-sm text-gray-400 dark:text-gray-500;
+    @apply px-3 text-sm text-gray-400 dark:text-gray-400;
 
     @media (min-width: 50rem) {
       font-size: var(--sl-text-sm);
@@ -173,6 +189,10 @@ site-search button[data-open-modal] {
       span {
         @apply text-base text-gray-900 dark:text-gray-100 font-normal;
       }
+    }
+
+    &:hover {
+      @apply border-gray-300 dark:border-gray-700;
     }
   }
 }
