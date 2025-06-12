@@ -37,4 +37,4 @@ with support for Node, Python, Go, PHP, and more.
 # Workflow
 
 - Be sure to run `mise run check` when you're done making code changes
-- Prefer running focused tests over the full test suite for performance
+- Don't run tests manually unless instructed to do so

@@ -9,12 +9,13 @@ import (
 
 func TestGolang(t *testing.T) {
 	tests := []struct {
-		name       string
-		path       string
-		detected   bool
-		hasGoMod   bool
-		goVersion  string
-		cgoEnabled bool
+		name         string
+		path         string
+		detected     bool
+		hasGoMod     bool
+		hasWorkspace bool
+		goVersion    string
+		cgoEnabled   bool
 	}{
 		{
 			name:      "go mod",
@@ -29,6 +30,14 @@ func TestGolang(t *testing.T) {
 			detected:  true,
 			hasGoMod:  true,
 			goVersion: "1.18",
+		},
+		{
+			name:         "go workspaces",
+			path:         "../../../examples/go-workspaces",
+			detected:     true,
+			hasGoMod:     false,
+			hasWorkspace: true,
+			goVersion:    "1.23",
 		},
 		{
 			name:     "node",
@@ -53,11 +62,17 @@ func TestGolang(t *testing.T) {
 				require.NoError(t, err)
 
 				require.Equal(t, tt.hasGoMod, provider.isGoMod(ctx))
+				require.Equal(t, tt.hasWorkspace, provider.isGoWorkspace(ctx))
 				require.Equal(t, tt.cgoEnabled, provider.hasCGOEnabled(ctx))
 
 				if tt.goVersion != "" {
 					goVersion := ctx.Resolver.Get("go")
 					require.Equal(t, tt.goVersion, goVersion.Version)
+				}
+
+				if tt.hasWorkspace {
+					packages := provider.GoWorkspacePackages(ctx)
+					require.Greater(t, len(packages), 0, "workspace should have at least one package")
 				}
 			}
 		})
