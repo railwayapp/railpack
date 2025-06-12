@@ -2,9 +2,12 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import tailwindcss from "@tailwindcss/vite";
+import starlightLlmsTxt from "starlight-llms-txt";
 
 // https://astro.build/config
 export default defineConfig({
+  site: "https://railpack.com",
+
   prefetch: {
     prefetchAll: true,
     defaultStrategy: "hover",
@@ -29,6 +32,62 @@ export default defineConfig({
 
         "@fontsource/inter/400.css",
         "@fontsource/inter/600.css",
+      ],
+      plugins: [
+        starlightLlmsTxt({
+          projectName: "Railpack",
+          description:
+            "Zero-config application builder that automatically analyzes your code and turns it into a container image. Built on BuildKit with support for Node, Python, Go, PHP, and more.",
+          details:
+            "Railpack provides a seamless way to build container images from your source code without complex configuration. It automatically detects your project type and generates appropriate build steps.",
+          customSets: [
+            {
+              label: "Languages Reference",
+              description:
+                "Language-specific documentation for all supported platforms",
+              paths: ["languages/**"],
+            },
+            {
+              label: "Architecture",
+              description:
+                "Technical details about Railpack's internal architecture",
+              paths: ["architecture/**"],
+            },
+            {
+              label: "Guides",
+              description: "Step-by-step guides for common tasks",
+              paths: ["guides/**"],
+            },
+            {
+              label: "Configuration",
+              description: "Configuration options and environment variables",
+              paths: ["config/**"],
+            },
+            {
+              label: "Reference",
+              description: "CLI commands and BuildKit frontend reference",
+              paths: ["reference/**"],
+            },
+          ],
+          optionalLinks: [
+            {
+              label: "Railpack GitHub Repository",
+              url: "https://github.com/railwayapp/railpack",
+              description: "Source code and issue tracking for Railpack",
+            },
+            {
+              label: "Railway",
+              url: "https://railway.com",
+              description: "Cloud platform that created Railpack",
+            },
+            {
+              label: "Railway Railpack Guide",
+              url: "https://docs.railway.com/guides/build-configuration#railpack",
+              description: "How to use Railpack on Railway platform",
+            },
+          ],
+          promote: ["index*", "getting-started*", "installation*", "config/**"],
+        }),
       ],
       sidebar: [
         {
