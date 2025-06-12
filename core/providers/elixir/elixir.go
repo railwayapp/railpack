@@ -44,6 +44,7 @@ func (p *ElixirProvider) Plan(ctx *generate.GenerateContext) error {
 	install := ctx.NewCommandStep("install")
 	install.AddInput(plan.NewStepLayer(miseStep.Name()))
 	install.Secrets = []string{}
+	install.UseSecretsWithPrefixes([]string{"MIX", "ERL", "ELIXIR", "OTP"})
 	installOutputPaths := p.Install(ctx, install)
 	maps.Copy(install.Variables, p.GetEnvVars(ctx))
 
