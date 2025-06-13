@@ -1,4 +1,4 @@
 psycopg2-binary==2.9.10
 pdf2image==1.0.0
 pydub==0.25.1
-# pycairo==1.27.0
+pycairo==1.27.0
