@@ -260,7 +260,7 @@ func (p *PythonProvider) InstallPip(ctx *generate.GenerateContext, install *gene
 func (p *PythonProvider) AddRuntimeDeps(ctx *generate.GenerateContext) {
 	for dep, requiredPkgs := range pythonRuntimeDepRequirements {
 		if p.usesDep(ctx, dep) {
-			ctx.Logger.LogInfo("Installing apt packages for %s", dep)
+			ctx.Logger.LogInfo("Installing runtime apt packages for %s", dep)
 			ctx.Deploy.AddAptPackages(requiredPkgs)
 		}
 	}
@@ -277,6 +277,13 @@ func (p *PythonProvider) AddRuntimeDeps(ctx *generate.GenerateContext) {
 func (p *PythonProvider) GetBuilderDeps(ctx *generate.GenerateContext) *generate.MiseStepBuilder {
 	miseStep := ctx.GetMiseStepBuilder()
 	miseStep.SupportingAptPackages = append(miseStep.SupportingAptPackages, "python3-dev")
+
+	for dep, requiredPkgs := range pythonBuildDepRequirements {
+		if p.usesDep(ctx, dep) {
+			ctx.Logger.LogInfo("Installing build apt packages for %s", dep)
+			miseStep.SupportingAptPackages = append(miseStep.SupportingAptPackages, requiredPkgs...)
+		}
+	}
 
 	if p.usesPostgres(ctx) {
 		miseStep.SupportingAptPackages = append(miseStep.SupportingAptPackages, "libpq-dev")
@@ -470,7 +477,13 @@ func (p *PythonProvider) getRuntime(ctx *generate.GenerateContext) string {
 }
 
 // Mapping of python dependencies to required apt packages
+
+var pythonBuildDepRequirements = map[string][]string{
+	"pycairo": {"libcairo2-dev"},
+}
+
 var pythonRuntimeDepRequirements = map[string][]string{
+	"pycairo":   {"libcairo2"},
 	"pdf2image": {"poppler-utils"},
 	"pydub":     {"ffmpeg"},
 	"pymovie":   {"ffmpeg", "qt5-qmake", "qtbase5-dev", "qtbase5-dev-tools", "qttools5-dev-tools", "libqt5core5a", "python3-pyqt5"},
