@@ -220,6 +220,9 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 		name, version := p.parsePackageManagerField(packageJson)
 		if name == "pnpm" && version != "" {
 			packages.Version(pnpm, version, "package.json > packageManager")
+
+			// We want to skip installing with Mise and just install with corepack instead
+			packages.SkipMiseInstall(pnpm)
 		}
 	}
 

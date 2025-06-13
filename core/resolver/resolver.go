@@ -19,10 +19,16 @@ type Resolver struct {
 }
 
 type RequestedPackage struct {
-	Name               string
-	Version            string
-	Source             string
+	Name    string
+	Version string
+	Source  string
+
+	// If set, the resolver will use this function to determine if a version is available
 	IsVersionAvailable func(version string) bool
+
+	// If true, the package will not be installed with mise
+	// but the version will still be resolved and displayed in the output
+	SkipMiseInstall bool
 }
 
 type ResolvedPackage struct {
@@ -140,4 +146,8 @@ func (r *Resolver) SetPreviousVersion(name, version string) {
 
 func (r *Resolver) SetVersionAvailable(ref PackageRef, isVersionAvailable func(version string) bool) {
 	r.packages[ref.Name].IsVersionAvailable = isVersionAvailable
+}
+
+func (r *Resolver) SetSkipMiseInstall(ref PackageRef, skipMiseInstall bool) {
+	r.packages[ref.Name].SkipMiseInstall = skipMiseInstall
 }

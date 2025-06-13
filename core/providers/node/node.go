@@ -239,7 +239,7 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 		install.AddVariables(map[string]string{
 			"COREPACK_HOME": COREPACK_HOME,
 		})
-		ctx.Logger.LogInfo("Using Corepack")
+		ctx.Logger.LogInfo("Installing %s with Corepack", p.packageManager)
 
 		install.AddCommands([]plan.Command{
 			plan.NewCopyCommand("package.json"),

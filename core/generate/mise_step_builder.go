@@ -80,6 +80,10 @@ func (b *MiseStepBuilder) Version(name resolver.PackageRef, version string, sour
 	b.Resolver.Version(name, version, source)
 }
 
+func (b *MiseStepBuilder) SkipMiseInstall(name resolver.PackageRef) {
+	b.Resolver.SetSkipMiseInstall(name, true)
+}
+
 func (b *MiseStepBuilder) Name() string {
 	return b.DisplayName
 }
@@ -153,7 +157,8 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 		packagesToInstall := make(map[string]string)
 		for _, pkg := range b.MisePackages {
 			resolved, ok := options.ResolvedPackages[pkg.Name]
-			if ok && resolved.ResolvedVersion != nil {
+
+			if ok && resolved.ResolvedVersion != nil && !b.Resolver.Get(pkg.Name).SkipMiseInstall {
 				packagesToInstall[pkg.Name] = *resolved.ResolvedVersion
 			}
 		}
