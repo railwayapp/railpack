@@ -458,6 +458,8 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 		return "nuxt"
 	} else if p.isRemix() {
 		return "remix"
+	} else if p.isTanstackStart() {
+		return "tanstack-start"
 	} else if p.isVite(ctx) {
 		return "vite"
 	} else if p.packageManager == PackageManagerBun {
@@ -477,4 +479,8 @@ func (p *NodeProvider) isNuxt() bool {
 
 func (p *NodeProvider) isRemix() bool {
 	return p.hasDependency("@remix-run/node")
+}
+
+func (p *NodeProvider) isTanstackStart() bool {
+	return p.hasDependency("@tanstack/react-start")
 }

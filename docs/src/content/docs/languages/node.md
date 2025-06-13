@@ -137,7 +137,7 @@ Including:
 
 - Next.js: Caches `.next/cache` for each Next.js app in the workspace
 - Remix: Caches `.cache`
-- Vite: Caches `.vite/cache`
+- Vite (and Tanstack Start): Caches `.vite/cache`
 - Astro: Caches `.astro/cache`
 - Nuxt:
   - Start command defaults to `node .output/server/index.mjs`
