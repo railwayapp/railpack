@@ -10,7 +10,7 @@ Railpack builds and deploys Java (including Spring Boot) applications built with
 Your project will be detected as a Java application if any of these conditions are
 met:
 
-- A `build.gradle` file exists in the root directory
+- A `gradlew` (Gradle wrapper) file exists in the root directory (to create this, if you don't have one, run `gradle wrapper`)
 - A `pom.{xml,atom,clj,groovy,rb,scala,yaml,yml}` file exists in the root directory
 
 ## Versions
