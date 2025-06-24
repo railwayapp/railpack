@@ -73,7 +73,7 @@ func (p *PackageJson) hasLocalDependency() bool {
 }
 
 func (p *PackageJson) GetPackageManagerInfo() (string, string) {
-	if p.PackageManager == nil {
+	if p == nil || p.PackageManager == nil {
 		return "", ""
 	}
 

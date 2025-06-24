@@ -59,16 +59,7 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 
 	p.SetNodeMetadata(ctx)
 
-	if p.packageJson != nil && p.packageJson.PackageManager != nil {
-		pmName, pmVersion := p.packageJson.GetPackageManagerInfo()
-		if pmName != "" && pmVersion != "" {
-			ctx.Logger.LogInfo("Using %s@%s package manager", pmName, pmVersion)
-		} else {
-			ctx.Logger.LogInfo("Using %s package manager", p.packageManager)
-		}
-	} else {
-		ctx.Logger.LogInfo("Using %s package manager", p.packageManager)
-	}
+	ctx.Logger.LogInfo("Using %s package manager", p.packageManager)
 
 	if p.workspace != nil && len(p.workspace.Packages) > 0 {
 		ctx.Logger.LogInfo("Found workspace with %d packages", len(p.workspace.Packages))
@@ -245,10 +236,11 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 	install.AddPaths([]string{"/app/node_modules/.bin"})
 
 	if p.usesCorepack() {
+		pmName, pmVersion := p.packageJson.GetPackageManagerInfo()
 		install.AddVariables(map[string]string{
 			"COREPACK_HOME": COREPACK_HOME,
 		})
-		ctx.Logger.LogInfo("Installing %s with Corepack", p.packageManager)
+		ctx.Logger.LogInfo("Installing %s@%s with Corepack", pmName, pmVersion)
 
 		install.AddCommands([]plan.Command{
 			plan.NewCopyCommand("package.json"),

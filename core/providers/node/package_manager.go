@@ -13,7 +13,7 @@ const (
 	PackageManagerPnpm      PackageManager = "pnpm"
 	PackageManagerBun       PackageManager = "bun"
 	PackageManagerYarn1     PackageManager = "yarn1"
-	PackageManagerYarnBerry PackageManager = "yarn2"
+	PackageManagerYarnBerry PackageManager = "yarnberry"
 
 	DEFAULT_PNPM_VERSION = "9"
 )
@@ -142,8 +142,9 @@ func (p PackageManager) pruneYarnBerry(ctx *generate.GenerateContext, prune *gen
 	if packageJson, err := p.getPackageJsonFromContext(ctx); err == nil {
 		_, version := packageJson.GetPackageManagerInfo()
 		if version != "" && strings.HasPrefix(version, "3.") {
-			// Yarn 3 doesn't have workspaces focus command, use install with mode
-			prune.AddCommand(plan.NewExecCommand("yarn install --production"))
+			// Yarn 3 doesn't have workspaces focus command, use install and warn instead
+			ctx.Logger.LogWarn("Yarn 3 doesn't have workspaces focus command, using install instead")
+			prune.AddCommand(plan.NewExecCommand("yarn install --check-cache"))
 			return
 		}
 	}
@@ -169,8 +170,8 @@ func (p PackageManager) getPackageJsonFromContext(ctx *generate.GenerateContext)
 func (p PackageManager) GetInstallFolder(ctx *generate.GenerateContext) []string {
 	switch p {
 	case PackageManagerYarnBerry:
-		installFolders := []string{"/app/.yarn", p.getYarn2GlobalFolder(ctx)}
-		if p.getYarn2NodeLinker(ctx) == "node-modules" {
+		installFolders := []string{"/app/.yarn", p.getYarnBerryGlobalFolder(ctx)}
+		if p.getYarnBerryNodeLinker(ctx) == "node-modules" {
 			installFolders = append(installFolders, "/app/node_modules")
 		}
 		return installFolders
@@ -231,6 +232,8 @@ func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []
 
 // GetPackageManagerPackages installs specific versions of package managers by analyzing the users code
 func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext, packageJson *PackageJson, packages *generate.MiseStepBuilder) {
+	pmName, pmVersion := packageJson.GetPackageManagerInfo()
+
 	// Pnpm
 	if p == PackageManagerPnpm {
 		pnpm := packages.Default("pnpm", DEFAULT_PNPM_VERSION)
@@ -246,9 +249,8 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 			}
 		}
 
-		name, version := packageJson.GetPackageManagerInfo()
-		if name == "pnpm" && version != "" {
-			packages.Version(pnpm, version, "package.json > packageManager")
+		if pmName == "pnpm" && pmVersion != "" {
+			packages.Version(pnpm, pmVersion, "package.json > packageManager")
 
 			// We want to skip installing with Mise and just install with corepack instead
 			packages.SkipMiseInstall(pnpm)
@@ -265,10 +267,11 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 			packages.Default("yarn", "2")
 		}
 
-		name, version := packageJson.GetPackageManagerInfo()
-		if name == "yarn" && version != "" {
-			majorVersion := strings.Split(version, ".")[0]
-			packages.Version(packages.Default("yarn", majorVersion), version, "package.json > packageManager")
+		if pmName == "yarn" && pmVersion != "" {
+			majorVersion := strings.Split(pmVersion, ".")[0]
+			yarn := packages.Default("yarn", majorVersion)
+			packages.Version(yarn, pmVersion, "package.json > packageManager")
+			packages.SkipMiseInstall(yarn)
 		}
 	}
 
@@ -276,9 +279,8 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 	if p == PackageManagerBun {
 		bun := packages.Default("bun", "latest")
 
-		name, version := packageJson.GetPackageManagerInfo()
-		if name == "bun" && version != "" {
-			packages.Version(bun, version, "package.json > packageManager")
+		if pmName == "bun" && pmVersion != "" {
+			packages.Version(bun, pmVersion, "package.json > packageManager")
 		}
 	}
 }
@@ -318,7 +320,7 @@ func (p PackageManager) getYarnRc(ctx *generate.GenerateContext) YarnRc {
 	return YarnRc{}
 }
 
-func (p PackageManager) getYarn2GlobalFolder(ctx *generate.GenerateContext) string {
+func (p PackageManager) getYarnBerryGlobalFolder(ctx *generate.GenerateContext) string {
 	yarnRc := p.getYarnRc(ctx)
 	if yarnRc.GlobalFolder != "" {
 		return yarnRc.GlobalFolder
@@ -327,7 +329,7 @@ func (p PackageManager) getYarn2GlobalFolder(ctx *generate.GenerateContext) stri
 	return "/root/.yarn"
 }
 
-func (p PackageManager) getYarn2NodeLinker(ctx *generate.GenerateContext) string {
+func (p PackageManager) getYarnBerryNodeLinker(ctx *generate.GenerateContext) string {
 	yarnRc := p.getYarnRc(ctx)
 	if yarnRc.NodeLinker != "" {
 		return yarnRc.NodeLinker
