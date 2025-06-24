@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	PackageManagerNpm   PackageManager = "npm"
-	PackageManagerPnpm  PackageManager = "pnpm"
-	PackageManagerBun   PackageManager = "bun"
-	PackageManagerYarn1 PackageManager = "yarn1"
-	PackageManagerYarn2 PackageManager = "yarn2"
+	PackageManagerNpm       PackageManager = "npm"
+	PackageManagerPnpm      PackageManager = "pnpm"
+	PackageManagerBun       PackageManager = "bun"
+	PackageManagerYarn1     PackageManager = "yarn1"
+	PackageManagerYarnBerry PackageManager = "yarn2"
 
 	DEFAULT_PNPM_VERSION = "9"
 )
@@ -26,7 +26,7 @@ func (p PackageManager) Name() string {
 		return "pnpm"
 	case PackageManagerBun:
 		return "bun"
-	case PackageManagerYarn1, PackageManagerYarn2:
+	case PackageManagerYarn1, PackageManagerYarnBerry:
 		return "yarn"
 	default:
 		return ""
@@ -90,7 +90,7 @@ func (p PackageManager) GetInstallCache(ctx *generate.GenerateContext) string {
 		return ctx.Caches.AddCache("bun-install", "/root/.bun/install/cache")
 	case PackageManagerYarn1:
 		return ctx.Caches.AddCacheWithType("yarn-install", "/usr/local/share/.cache/yarn", plan.CacheTypeLocked)
-	case PackageManagerYarn2:
+	case PackageManagerYarnBerry:
 		return ctx.Caches.AddCache("yarn-install", "/app/.yarn/cache")
 	default:
 		return ""
@@ -114,7 +114,7 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 		install.AddCommand(plan.NewExecCommand("bun install --frozen-lockfile"))
 	case PackageManagerYarn1:
 		install.AddCommand(plan.NewExecCommand("yarn install --frozen-lockfile"))
-	case PackageManagerYarn2:
+	case PackageManagerYarnBerry:
 		install.AddCommand(plan.NewExecCommand("yarn install --check-cache"))
 	}
 }
@@ -132,14 +132,14 @@ func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate
 		prune.AddCommand(plan.NewExecShellCommand("rm -rf node_modules && bun install --production"))
 	case PackageManagerYarn1:
 		prune.AddCommand(plan.NewExecCommand("yarn install --production=true"))
-	case PackageManagerYarn2:
+	case PackageManagerYarnBerry:
 		prune.AddCommand(plan.NewExecCommand("yarn workspaces focus --production --all"))
 	}
 }
 
 func (p PackageManager) GetInstallFolder(ctx *generate.GenerateContext) []string {
 	switch p {
-	case PackageManagerYarn2:
+	case PackageManagerYarnBerry:
 		installFolders := []string{"/app/.yarn", p.getYarn2GlobalFolder(ctx)}
 		if p.getYarn2NodeLinker(ctx) == "node-modules" {
 			installFolders = append(installFolders, "/app/node_modules")
@@ -217,7 +217,7 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 			}
 		}
 
-		name, version := p.parsePackageManagerField(packageJson)
+		name, version := packageJson.GetPackageManagerInfo()
 		if name == "pnpm" && version != "" {
 			packages.Version(pnpm, version, "package.json > packageManager")
 
@@ -227,7 +227,7 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 	}
 
 	// Yarn
-	if p == PackageManagerYarn1 || p == PackageManagerYarn2 {
+	if p == PackageManagerYarn1 || p == PackageManagerYarnBerry {
 		if p == PackageManagerYarn1 {
 			packages.Default("yarn", "1")
 			packages.AddSupportingAptPackage("tar")
@@ -236,15 +236,10 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 			packages.Default("yarn", "2")
 		}
 
-		name, version := p.parsePackageManagerField(packageJson)
+		name, version := packageJson.GetPackageManagerInfo()
 		if name == "yarn" && version != "" {
 			majorVersion := strings.Split(version, ".")[0]
-
-			// Only apply version if it matches the expected yarn version
-			if (majorVersion == "1" && p == PackageManagerYarn1) ||
-				(majorVersion != "1" && p == PackageManagerYarn2) {
-				packages.Version(packages.Default("yarn", majorVersion), version, "package.json > packageManager")
-			}
+			packages.Version(packages.Default("yarn", majorVersion), version, "package.json > packageManager")
 		}
 	}
 
@@ -252,7 +247,7 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 	if p == PackageManagerBun {
 		bun := packages.Default("bun", "latest")
 
-		name, version := p.parsePackageManagerField(packageJson)
+		name, version := packageJson.GetPackageManagerInfo()
 		if name == "bun" && version != "" {
 			packages.Version(bun, version, "package.json > packageManager")
 		}
@@ -279,24 +274,6 @@ func (p PackageManager) usesLocalFile(ctx *generate.GenerateContext) bool {
 	}
 
 	return false
-}
-
-// parsePackageManagerField parses the packageManager field from package.json
-// and returns the name and version as a tuple
-func (p PackageManager) parsePackageManagerField(packageJson *PackageJson) (string, string) {
-	if packageJson.PackageManager != nil {
-		pmString := *packageJson.PackageManager
-
-		// Parse packageManager field which is in format "name@version" or "name@version+sha224.hash"
-		parts := strings.Split(pmString, "@")
-		if len(parts) == 2 {
-			// Split version on '+' to remove SHA hash if present
-			versionParts := strings.Split(parts[1], "+")
-			return parts[0], versionParts[0]
-		}
-	}
-
-	return "", ""
 }
 
 type YarnRc struct {
