@@ -144,13 +144,10 @@ func (p *PythonProvider) InstallUv(ctx *generate.GenerateContext, install *gener
 
 	install.AddEnvVars(p.GetPythonEnvVars(ctx))
 
+	p.copyInstallFiles(ctx, install)
 	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
-		plan.NewExecCommand("pipx install uv"),
-	})
-	p.copyInstallFiles(ctx, install)
-	install.AddCommands([]plan.Command{
 		plan.NewExecCommand("uv sync --locked --no-dev --no-install-project"),
 		plan.NewCopyCommand("."),
 		plan.NewExecCommand("uv sync --locked --no-dev --no-editable"),
@@ -172,7 +169,6 @@ func (p *PythonProvider) InstallPipenv(ctx *generate.GenerateContext, install *g
 	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
-		plan.NewExecCommand("pipx install pipenv"),
 	})
 
 	if ctx.App.HasMatch("Pipfile.lock") {
@@ -199,13 +195,10 @@ func (p *PythonProvider) InstallPDM(ctx *generate.GenerateContext, install *gene
 		"PDM_CHECK_UPDATE": "false",
 	})
 
+	p.copyInstallFiles(ctx, install)
 	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
-		plan.NewExecCommand("pipx install pdm"),
-	})
-	p.copyInstallFiles(ctx, install)
-	install.AddCommands([]plan.Command{
 		plan.NewExecCommand("pdm install --check --prod --no-editable"),
 	})
 
@@ -222,13 +215,10 @@ func (p *PythonProvider) InstallPoetry(ctx *generate.GenerateContext, install *g
 		"POETRY_VIRTUALENVS_IN_PROJECT": "true",
 	})
 
-	install.AddCommands([]plan.Command{
-		plan.NewPathCommand(LOCAL_BIN_PATH),
-		plan.NewExecCommand("pipx install poetry"),
-		plan.NewPathCommand(VENV_PATH + "/bin"),
-	})
 	p.copyInstallFiles(ctx, install)
 	install.AddCommands([]plan.Command{
+		plan.NewPathCommand(LOCAL_BIN_PATH),
+		plan.NewPathCommand(VENV_PATH + "/bin"),
 		plan.NewExecCommand("poetry install --no-interaction --no-ansi --only main --no-root"),
 	})
 
@@ -318,6 +308,23 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	if p.hasPoetry(ctx) || p.hasUv(ctx) || p.hasPdm(ctx) || p.hasPipfile(ctx) {
 		miseStep.Default("pipx", "latest")
 	}
+
+	if p.hasPoetry(ctx) {
+		miseStep.Default("pipx:poetry", "latest")
+	}
+
+	if p.hasPdm(ctx) {
+		miseStep.Default("pipx:pdm", "latest")
+	}
+
+	if p.hasUv(ctx) {
+		miseStep.Default("pipx:uv", "latest")
+	}
+
+	if p.hasPipfile(ctx) {
+		miseStep.Default("pipx:pipenv", "latest")
+	}
+
 }
 
 func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[string]string {
