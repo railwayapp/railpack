@@ -59,7 +59,16 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 
 	p.SetNodeMetadata(ctx)
 
-	ctx.Logger.LogInfo("Using %s package manager", p.packageManager)
+	if p.packageJson != nil && p.packageJson.PackageManager != nil {
+		pmName, pmVersion := p.packageJson.GetPackageManagerInfo()
+		if pmName != "" && pmVersion != "" {
+			ctx.Logger.LogInfo("Using %s@%s package manager", pmName, pmVersion)
+		} else {
+			ctx.Logger.LogInfo("Using %s package manager", p.packageManager)
+		}
+	} else {
+		ctx.Logger.LogInfo("Using %s package manager", p.packageManager)
+	}
 
 	if p.workspace != nil && len(p.workspace.Packages) > 0 {
 		ctx.Logger.LogInfo("Found workspace with %d packages", len(p.workspace.Packages))
@@ -337,12 +346,30 @@ func (p *NodeProvider) usesPuppeteer() bool {
 func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
 	packageManager := PackageManagerNpm
 
+	// Check packageManager field first
+	if packageJson, err := p.GetPackageJson(app); err == nil && packageJson.PackageManager != nil {
+		pmName, pmVersion := packageJson.GetPackageManagerInfo()
+		if pmName == "yarn" && pmVersion != "" {
+			majorVersion := strings.Split(pmVersion, ".")[0]
+			if majorVersion == "1" {
+				return PackageManagerYarn1
+			} else {
+				return PackageManagerYarnBerry
+			}
+		} else if pmName == "pnpm" {
+			return PackageManagerPnpm
+		} else if pmName == "bun" {
+			return PackageManagerBun
+		}
+	}
+
+	// Fall back to file-based detection
 	if app.HasMatch("pnpm-lock.yaml") {
 		packageManager = PackageManagerPnpm
 	} else if app.HasMatch("bun.lockb") || app.HasMatch("bun.lock") {
 		packageManager = PackageManagerBun
 	} else if app.HasMatch(".yarnrc.yml") || app.HasMatch(".yarnrc.yaml") {
-		packageManager = PackageManagerYarn2
+		packageManager = PackageManagerYarnBerry
 	} else if app.HasMatch("yarn.lock") {
 		packageManager = PackageManagerYarn1
 	}
