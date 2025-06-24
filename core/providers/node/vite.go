@@ -27,7 +27,7 @@ func (p *NodeProvider) isVitePackage(pkg *WorkspacePackage, ctx *generate.Genera
 		return false
 	}
 
-	return hasViteConfig || hasViteBuildCommand
+	return hasViteConfig && hasViteBuildCommand
 }
 
 func (p *NodeProvider) isVite(ctx *generate.GenerateContext) bool {
