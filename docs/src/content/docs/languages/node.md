@@ -82,13 +82,19 @@ Railpack determines the start command in the following order:
 
 ### Package Managers
 
-Railpack detects your package manager based on lock files:
+Railpack detects your package manager in the following order:
 
-- `pnpm-lock.yaml` for pnpm
-- `bun.lockb` or `bun.lock` for Bun
-- `.yarnrc.yml` or `.yarnrc.yaml` for Yarn 2
-- `yarn.lock` for Yarn 1
-- Defaults to npm if no lock file is found
+1. **packageManager field**: Reads the `packageManager` field from
+   `package.json`
+2. **Lock files**: Falls back to detecting based on lock files:
+   - `pnpm-lock.yaml` for pnpm
+   - `bun.lockb` or `bun.lock` for Bun
+   - `.yarnrc.yml` or `.yarnrc.yaml` for Yarn Berry (2+)
+   - `yarn.lock` for Yarn 1
+   - Defaults to npm if no lock file is found
+
+When the `packageManager` field is present, Railpack will use Corepack to
+install the specified package manager version.
 
 ### Install
 
