@@ -1,0 +1,19 @@
+{
+  "name": "node-yarn-3",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "cowsay": "^1.6.0",
+    "dayjs": "^1.11.13"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.3",
+    "typescript": "^5.8.3"
+  },
+  "packageManager": "yarn@4.9.2"
+}

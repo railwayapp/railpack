@@ -72,6 +72,21 @@ func (p *PackageJson) hasLocalDependency() bool {
 	return false
 }
 
+func (p *PackageJson) GetPackageManagerInfo() (string, string) {
+	if p.PackageManager == nil {
+		return "", ""
+	}
+
+	pmString := *p.PackageManager
+	parts := strings.Split(pmString, "@")
+	if len(parts) == 2 {
+		versionParts := strings.Split(parts[1], "+")
+		return parts[0], versionParts[0]
+	}
+
+	return "", ""
+}
+
 func (p *PackageJson) UnmarshalJSON(data []byte) error {
 	type WorkspacesObject struct {
 		Packages []string `json:"packages"`
