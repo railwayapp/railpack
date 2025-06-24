@@ -133,8 +133,37 @@ func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate
 	case PackageManagerYarn1:
 		prune.AddCommand(plan.NewExecCommand("yarn install --production=true"))
 	case PackageManagerYarnBerry:
-		prune.AddCommand(plan.NewExecCommand("yarn workspaces focus --production --all"))
+		p.pruneYarnBerry(ctx, prune)
 	}
+}
+
+func (p PackageManager) pruneYarnBerry(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
+	// Check if we can determine the Yarn version from packageManager field
+	if packageJson, err := p.getPackageJsonFromContext(ctx); err == nil {
+		_, version := packageJson.GetPackageManagerInfo()
+		if version != "" && strings.HasPrefix(version, "3.") {
+			// Yarn 3 doesn't have workspaces focus command, use install with mode
+			prune.AddCommand(plan.NewExecCommand("yarn install --production"))
+			return
+		}
+	}
+
+	// Yarn 2 and 4+ support workspaces focus (also fallback for unknown versions)
+	prune.AddCommand(plan.NewExecCommand("yarn workspaces focus --production --all"))
+}
+
+func (p PackageManager) getPackageJsonFromContext(ctx *generate.GenerateContext) (*PackageJson, error) {
+	packageJson := NewPackageJson()
+	if !ctx.App.HasMatch("package.json") {
+		return packageJson, nil
+	}
+
+	err := ctx.App.ReadJSON("package.json", packageJson)
+	if err != nil {
+		return nil, err
+	}
+
+	return packageJson, nil
 }
 
 func (p PackageManager) GetInstallFolder(ctx *generate.GenerateContext) []string {
