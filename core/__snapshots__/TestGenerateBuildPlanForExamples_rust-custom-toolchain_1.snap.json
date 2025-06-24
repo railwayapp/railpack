@@ -19,8 +19,11 @@
   },
   "inputs": [
    {
+    "exclude": [
+     "target"
+    ],
     "include": [
-     "/app/bin"
+     "."
     ],
     "step": "build"
    }
