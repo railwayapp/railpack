@@ -16,6 +16,8 @@ import (
 	"github.com/railwayapp/railpack/core/plan"
 )
 
+const githubTokenEnvVar = "GITHUB_TOKEN"
+
 type BuildGraph struct {
 	graph      *graph.Graph
 	CacheStore *BuildKitCacheStore
@@ -274,10 +276,10 @@ func (g *BuildGraph) convertExecCommandToLLB(node *StepNode, cmd plan.ExecComman
 		opts = append(opts, cacheOpts...)
 	}
 
-	// If we have a GitHub token AND we are installing mise packages, we want to pass the GitHub token
-	// It is important to validate the command so that we don't pass the token to other commands
-	if g.githubToken != "" && cmd.Cmd == generate.MiseInstallCommand {
-		opts = append(opts, llb.AddEnv("GITHUB_TOKEN", g.githubToken))
+	// Add GitHub token if applicable
+	githubTokenOpts := g.addGitHubTokenToMiseInstall(cmd)
+	if githubTokenOpts != nil {
+		opts = append(opts, githubTokenOpts...)
 	}
 
 	s := state.Run(opts...).Root()
@@ -405,4 +407,35 @@ func (g *BuildGraph) getCacheMountOptions(cacheKeys []string) ([]llb.RunOption, 
 		}
 	}
 	return opts, nil
+}
+
+// addGitHubTokenToMiseInstall conditionally adds the GitHub token as an environment variable
+// It only adds the token if:
+// 1. A GitHub token is provided
+// 2. The command is a mise install command (exact match or starts with "mise install")
+// 3. GITHUB_TOKEN is not already in the plan's secrets
+func (g *BuildGraph) addGitHubTokenToMiseInstall(cmd plan.ExecCommand) []llb.RunOption {
+	fmt.Printf("CMD: %s\n", cmd.Cmd)
+
+	// Check if we have a GitHub token and are installing mise packages
+	if g.githubToken == "" || !isMiseInstallCommand(cmd.Cmd) {
+		return nil
+	}
+
+	// Check if GITHUB_TOKEN is already in the secrets
+	if slices.Contains(g.Plan.Secrets, githubTokenEnvVar) {
+		return nil
+	}
+
+	return []llb.RunOption{llb.AddEnv(githubTokenEnvVar, g.githubToken)}
+}
+
+// isMiseInstallCommand checks if the command is a mise install command
+func isMiseInstallCommand(cmd string) bool {
+	// Check for exact match with the constant
+	if cmd == generate.MiseInstallCommand {
+		return true
+	}
+	// Check if command starts with "mise install"
+	return strings.HasPrefix(cmd, "mise install")
 }
