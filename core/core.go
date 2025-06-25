@@ -64,17 +64,27 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 	}
 
 	// Figure out what providers to use
-	providerToUse, detectedProviderName := getProviders(ctx, config)
-	ctx.Metadata.Set("providers", detectedProviderName)
+	providersToUse, detectedProviderNames := getProviders(ctx, config)
+	ctx.Metadata.Set("providers", strings.Join(detectedProviderNames, ","))
 
 	// TODO: We should indicate if we have packages specified in the config
 	// so that providers can determine if they should include mise in the final image (e.g. for shell script)
 
-	if providerToUse != nil {
-		err = providerToUse.Plan(ctx)
+	for i := len(providersToUse) - 1; i >= 0; i-- {
+		provider := providersToUse[i]
+
+		if i < len(providersToUse)-1 {
+			ctx.EnterSubContext(provider.Name())
+		}
+
+		err = provider.Plan(ctx)
 		if err != nil {
 			logger.LogError("%s", err.Error())
 			return &BuildResult{Success: false, Logs: logger.Logs}
+		}
+
+		if i < len(providersToUse)-1 {
+			ctx.ExitSubContext()
 		}
 	}
 
@@ -91,9 +101,14 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		return &BuildResult{Success: false, Logs: logger.Logs}
 	}
 
+	var firstProvider providers.Provider
+	if len(providersToUse) > 0 {
+		firstProvider = providersToUse[0]
+	}
+
 	if !ValidatePlan(buildPlan, app, logger, &ValidatePlanOptions{
 		ErrorMissingStartCommand: options.ErrorMissingStartCommand,
-		ProviderToUse:            providerToUse,
+		ProviderToUse:            firstProvider,
 	}) {
 		return &BuildResult{Success: false, Logs: logger.Logs}
 	}
@@ -103,7 +118,7 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		Plan:              buildPlan,
 		ResolvedPackages:  resolvedPackages,
 		Metadata:          ctx.Metadata.Properties,
-		DetectedProviders: []string{detectedProviderName},
+		DetectedProviders: detectedProviderNames,
 		Logs:              logger.Logs,
 		Success:           true,
 	}
@@ -227,13 +242,13 @@ func GenerateConfigFromOptions(options *GenerateBuildPlanOptions) *c.Config {
 	return config
 }
 
-func getProviders(ctx *generate.GenerateContext, config *c.Config) (providers.Provider, string) {
+func getProviders(ctx *generate.GenerateContext, config *c.Config) ([]providers.Provider, []string) {
 	allProviders := providers.GetLanguageProviders()
 
-	var providerToUse providers.Provider
-	var detectedProvider string
+	var providersToUse []providers.Provider
+	var detectedProviders []string
 
-	// Even if there are providers manually specified, we want to detect to see what type of app this is
+	// Detect all matching providers
 	for _, provider := range allProviders {
 		matched, err := provider.Detect(ctx)
 		if err != nil {
@@ -242,9 +257,9 @@ func getProviders(ctx *generate.GenerateContext, config *c.Config) (providers.Pr
 		}
 
 		if matched {
-			detectedProvider = provider.Name()
+			detectedProviders = append(detectedProviders, provider.Name())
 
-			// If there are no providers manually specified in the config,
+			// If there are no providers manually specified in the config, initialize and use detected providers
 			if config.Provider == nil {
 				if err := provider.Initialize(ctx); err != nil {
 					ctx.Logger.LogWarn("Failed to initialize provider `%s`: %s", provider.Name(), err.Error())
@@ -253,10 +268,8 @@ func getProviders(ctx *generate.GenerateContext, config *c.Config) (providers.Pr
 
 				ctx.Logger.LogInfo("Detected %s", utils.CapitalizeFirst(provider.Name()))
 
-				providerToUse = provider
+				providersToUse = append(providersToUse, provider)
 			}
-
-			break
 		}
 	}
 
@@ -265,17 +278,17 @@ func getProviders(ctx *generate.GenerateContext, config *c.Config) (providers.Pr
 
 		if provider == nil {
 			ctx.Logger.LogWarn("Provider `%s` not found", *config.Provider)
-			return providerToUse, detectedProvider
+			return providersToUse, detectedProviders
 		}
 
 		if err := provider.Initialize(ctx); err != nil {
 			ctx.Logger.LogWarn("Failed to initialize provider `%s`: %s", *config.Provider, err.Error())
-			return providerToUse, detectedProvider
+			return providersToUse, detectedProviders
 		}
 
 		ctx.Logger.LogInfo("Using provider %s from config", utils.CapitalizeFirst(*config.Provider))
-		providerToUse = provider
+		providersToUse = []providers.Provider{provider}
 	}
 
-	return providerToUse, detectedProvider
+	return providersToUse, detectedProviders
 }
