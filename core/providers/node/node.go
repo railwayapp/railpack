@@ -459,6 +459,7 @@ func packageJsonRequiresBun(packageJson *PackageJson) bool {
 	return false
 }
 
+// requiresBun checks if bun should be installed and available for the build and final image
 func (p *NodeProvider) requiresBun(ctx *generate.GenerateContext) bool {
 	if p.packageManager == PackageManagerBun {
 		return true
