@@ -21,6 +21,11 @@ const (
 	COREPACK_HOME = "/opt/corepack"
 )
 
+var (
+	// bunCommandRegex matches "bun" or "bunx" as a command (not part of another word)
+	bunCommandRegex = regexp.MustCompile(`(^|\s|;|&|&&|\||\|\|)bunx?\s`)
+)
+
 type NodeProvider struct {
 	packageJson    *PackageJson
 	packageManager PackageManager
@@ -445,11 +450,8 @@ func packageJsonRequiresBun(packageJson *PackageJson) bool {
 		return false
 	}
 
-	// Regex to match "bun" or "bunx" as a command (not part of another word)
-	bunRegex := regexp.MustCompile(`(^|\s|;|&|&&|\||\|\|)bunx?\s`)
-
 	for _, script := range packageJson.Scripts {
-		if bunRegex.MatchString(script) {
+		if bunCommandRegex.MatchString(script) {
 			return true
 		}
 	}
@@ -466,12 +468,8 @@ func (p *NodeProvider) requiresBun(ctx *generate.GenerateContext) bool {
 		return true
 	}
 
-	if ctx.Config.Deploy != nil {
-		// Regex to match "bun" or "bunx" as a command (not part of another word)
-		bunRegex := regexp.MustCompile(`(^|\s|;|&|&&|\||\|\|)bunx?\s`)
-		if bunRegex.MatchString(ctx.Config.Deploy.StartCmd) {
-			return true
-		}
+	if ctx.Config.Deploy != nil && bunCommandRegex.MatchString(ctx.Config.Deploy.StartCmd) {
+		return true
 	}
 
 	return false
