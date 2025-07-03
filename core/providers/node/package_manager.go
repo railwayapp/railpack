@@ -136,7 +136,7 @@ func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate
 		// Prune is not supported in Bun. https://github.com/oven-sh/bun/issues/3605
 		prune.AddCommand(plan.NewExecShellCommand("rm -rf node_modules && bun install --production --ignore-scripts"))
 	case PackageManagerYarn1:
-		prune.AddCommand(plan.NewExecCommand("yarn install --production=true --ignore-scripts"))
+		prune.AddCommand(plan.NewExecCommand("yarn install --production=true"))
 	case PackageManagerYarnBerry:
 		p.pruneYarnBerry(ctx, prune)
 	}
