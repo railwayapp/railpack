@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"maps"
 	"regexp"
+	"sort"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/providers/node"
@@ -245,8 +247,28 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		miseStep.Version(ruby, utils.ExtractSemverVersion(string(versionFile)), ".ruby-version")
 	}
 
-	if gemfileVersion := parseVersionFromGemfile(ctx); gemfileVersion != "" {
-		miseStep.Version(ruby, gemfileVersion, "Gemfile")
+	if constraint := extractRubyConstraintFromGemfile(ctx); constraint != "" {
+		allVersions, err := miseStep.Resolver.GetMise().GetAllVersions("ruby", "")
+		if err == nil && len(allVersions) > 0 {
+			constraintObj, err := semver.NewConstraint(constraint)
+			if err == nil {
+				var matchingVersions []*semver.Version
+				for _, vstr := range allVersions {
+					if strings.Contains(vstr, "-dev") || strings.Contains(vstr, "-preview") ||
+						strings.Contains(vstr, "-rc") || strings.Contains(vstr, "dev") {
+						continue
+					}
+					v, err := semver.NewVersion(vstr)
+					if err == nil && constraintObj.Check(v) {
+						matchingVersions = append(matchingVersions, v)
+					}
+				}
+				if len(matchingVersions) > 0 {
+					sort.Sort(sort.Reverse(semver.Collection(matchingVersions)))
+					miseStep.Version(ruby, matchingVersions[0].String(), "Gemfile")
+				}
+			}
+		}
 	}
 
 	miseStep.AddSupportingAptPackage("libyaml-dev")
@@ -318,34 +340,8 @@ func (p *RubyProvider) addMetadata(ctx *generate.GenerateContext) {
 }
 
 var (
-	gemfileVersionRegex     = regexp.MustCompile(`ruby (?:'|")(.*)(?:'|")[^>]"`)
-	gemfileLockVersionRegex = regexp.MustCompile(`ruby ((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))[^>]`)
+	gemfileVersionRegex = regexp.MustCompile(`ruby\s+(?:'|")([^'"]+)(?:'|")`)
 )
-
-func parseVersionFromGemfile(ctx *generate.GenerateContext) string {
-	gemfile, err := ctx.App.ReadFile("Gemfile")
-	if err != nil {
-		return ""
-	}
-
-	matches := gemfileVersionRegex.FindStringSubmatch(string(gemfile))
-
-	if len(matches) > 2 {
-		return matches[2]
-	}
-
-	gemfileLock, err := ctx.App.ReadFile("Gemfile.lock")
-	if err != nil {
-		return ""
-	}
-
-	matches = gemfileLockVersionRegex.FindStringSubmatch(string(gemfileLock))
-	if len(matches) > 1 {
-		return matches[1]
-	}
-
-	return ""
-}
 
 func parseBundlerVersionFromGemfile(ctx *generate.GenerateContext) string {
 	gemfileLock, err := ctx.App.ReadFile("Gemfile.lock")
@@ -390,4 +386,16 @@ func parseLocalPathsFromGemfile(ctx *generate.GenerateContext) []string {
 	}
 
 	return paths
+}
+
+func extractRubyConstraintFromGemfile(ctx *generate.GenerateContext) string {
+	gemfile, err := ctx.App.ReadFile("Gemfile")
+	if err != nil {
+		return ""
+	}
+	matches := gemfileVersionRegex.FindStringSubmatch(string(gemfile))
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
 }
