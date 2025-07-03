@@ -59,6 +59,11 @@ func TestRubyVersionDetection_Examples(t *testing.T) {
 			path:   "../../../examples/ruby-no-version",
 			expect: "3.4.4",
 		},
+		{
+			desc:   "Gemfile with single version constraint (ruby-single-version)",
+			path:   "../../../examples/ruby-single-version",
+			expect: "3.4.2",
+		},
 	}
 
 	for _, c := range cases {
