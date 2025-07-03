@@ -129,12 +129,12 @@ func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate
 
 	switch p {
 	case PackageManagerNpm:
-		prune.AddCommand(plan.NewExecCommand("npm prune --omit=dev"))
+		prune.AddCommand(plan.NewExecCommand("npm prune --omit=dev --ignore-scripts"))
 	case PackageManagerPnpm:
-		prune.AddCommand(plan.NewExecCommand("pnpm prune --prod"))
+		prune.AddCommand(plan.NewExecCommand("pnpm prune --prod --ignore-scripts"))
 	case PackageManagerBun:
 		// Prune is not supported in Bun. https://github.com/oven-sh/bun/issues/3605
-		prune.AddCommand(plan.NewExecShellCommand("rm -rf node_modules && bun install --production"))
+		prune.AddCommand(plan.NewExecShellCommand("rm -rf node_modules && bun install --production --ignore-scripts"))
 	case PackageManagerYarn1:
 		prune.AddCommand(plan.NewExecCommand("yarn install --production=true"))
 	case PackageManagerYarnBerry:
@@ -155,6 +155,7 @@ func (p PackageManager) pruneYarnBerry(ctx *generate.GenerateContext, prune *gen
 	}
 
 	// Yarn 2 and 4+ support workspaces focus (also fallback for unknown versions)
+	// Note: yarn workspaces focus doesn't support --ignore-scripts flag
 	prune.AddCommand(plan.NewExecCommand("yarn workspaces focus --production --all"))
 }
 
