@@ -73,7 +73,7 @@ Example workspace structure:
 To build a specific module:
 
 ```bash
-RAILPACK_GO_WORKSPACE_MODULE=api railpack build
+RAILPACK_GO_WORKSPACE_MODULE=api
 ```
 
 ### CGO Support
