@@ -241,6 +241,11 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 	install.UseSecretsWithPrefixes([]string{"NODE", "NPM", "BUN", "PNPM", "YARN", "CI"})
 	install.AddPaths([]string{"/app/node_modules/.bin"})
 
+	if ctx.App.HasMatch("node_modules") {
+		ctx.Logger.LogWarn("node_modules directory found in project root, this is likely a mistake")
+		ctx.Logger.LogWarn("It is recommended to add node_modules to the .gitignore file")
+	}
+
 	if p.usesCorepack() {
 		pmName, pmVersion := p.packageJson.GetPackageManagerInfo()
 		install.AddVariables(map[string]string{
