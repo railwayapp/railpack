@@ -127,6 +127,11 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
 	prune.AddCache(p.GetInstallCache(ctx))
 
+	if pruneCmd, _ := ctx.Env.GetConfigVariable("NODE_PRUNE_CMD"); pruneCmd != "" {
+		prune.AddCommand(plan.NewExecCommand(pruneCmd))
+		return
+	}
+
 	switch p {
 	case PackageManagerNpm:
 		prune.AddCommand(plan.NewExecCommand("npm prune --omit=dev --ignore-scripts"))
