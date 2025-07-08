@@ -193,7 +193,7 @@
    ],
    "commands": [
     {
-     "cmd": "npm prune --omit=dev --ignore-scripts"
+     "cmd": "npm prune --omit=dev"
     }
    ],
    "inputs": [
