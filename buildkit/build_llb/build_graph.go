@@ -377,8 +377,7 @@ func (g *BuildGraph) getSecretInvalidationMountOptions(node *StepNode, secretOpt
 			// Run the hash command to generate the used secrets hash
 			Run(append([]llb.RunOption{
 				llb.Shlex(hashCommand),
-				llb.WithCustomName("[railpack] hash used secrets"),
-			},
+				llb.WithCustomName("[railpack] hash used secrets")},
 				secretOpts...)...).Root()
 
 		usedSecretsHash := llb.Scratch().File(
