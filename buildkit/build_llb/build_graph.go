@@ -378,8 +378,6 @@ func (g *BuildGraph) getSecretInvalidationMountOptions(node *StepNode, secretOpt
 			Run(append([]llb.RunOption{
 				llb.Shlex(hashCommand),
 				llb.WithCustomName("[railpack] hash used secrets"),
-				// Add the secrets as environment variables
-				llb.AddEnv(githubTokenEnvVar, g.githubToken),
 			},
 				secretOpts...)...).Root()
 
