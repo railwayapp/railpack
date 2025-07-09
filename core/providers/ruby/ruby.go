@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"maps"
 	"regexp"
-	"sort"
 	"strings"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/providers/node"
@@ -248,27 +246,11 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	}
 
 	if constraint := extractRubyConstraintFromGemfile(ctx); constraint != "" {
-		allVersions, err := miseStep.Resolver.GetMise().GetAllVersions("ruby", "")
-		if err == nil && len(allVersions) > 0 {
-			constraintObj, err := semver.NewConstraint(constraint)
-			if err == nil {
-				var matchingVersions []*semver.Version
-				for _, vstr := range allVersions {
-					if strings.Contains(vstr, "-dev") || strings.Contains(vstr, "-preview") ||
-						strings.Contains(vstr, "-rc") || strings.Contains(vstr, "dev") {
-						continue
-					}
-					v, err := semver.NewVersion(vstr)
-					if err == nil && constraintObj.Check(v) {
-						matchingVersions = append(matchingVersions, v)
-					}
-				}
-				if len(matchingVersions) > 0 {
-					sort.Sort(sort.Reverse(semver.Collection(matchingVersions)))
-					miseStep.Version(ruby, matchingVersions[0].String(), "Gemfile")
-				}
-			}
-		}
+		miseStep.Resolver.SetVersionAvailable(ruby, func(version string) bool {
+			return !(strings.Contains(version, "-dev") || strings.Contains(version, "-preview") ||
+				strings.Contains(version, "-rc") || strings.Contains(version, "dev"))
+		})
+		miseStep.Version(ruby, constraint, "Gemfile")
 	}
 
 	miseStep.AddSupportingAptPackage("libyaml-dev")
