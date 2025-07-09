@@ -386,7 +386,6 @@ func (g *BuildGraph) getSecretInvalidationMountOptions(node *StepNode, secretOpt
 
 		// Mount the used secrets file so that the layer is invalidated when these secrets change
 		opts = append(opts, llb.AddMount("/used-secrets-hash", usedSecretsHash))
-
 	}
 
 	return opts
