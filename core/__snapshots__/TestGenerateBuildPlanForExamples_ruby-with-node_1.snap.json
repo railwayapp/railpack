@@ -77,8 +77,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libyaml-dev'",
-     "customName": "install apt packages: libyaml-dev"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y cargo libyaml-dev rustc'",
+     "customName": "install apt packages: cargo libyaml-dev rustc"
     }
    ],
    "inputs": [
