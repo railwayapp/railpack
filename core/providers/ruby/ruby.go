@@ -246,10 +246,7 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	}
 
 	if constraint := extractRubyConstraintFromGemfile(ctx); constraint != "" {
-		miseStep.Resolver.SetVersionAvailable(ruby, func(version string) bool {
-			return !(strings.Contains(version, "-dev") || strings.Contains(version, "-preview") ||
-				strings.Contains(version, "-rc") || strings.Contains(version, "dev"))
-		})
+		miseStep.Resolver.SetVersionAvailable(ruby, isStableRubyVersion)
 		miseStep.Version(ruby, constraint, "Gemfile")
 	}
 
@@ -262,6 +259,11 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		miseStep.AddSupportingAptPackage("rustc")
 		miseStep.AddSupportingAptPackage("cargo")
 	}
+}
+
+func isStableRubyVersion(version string) bool {
+	return !(strings.Contains(version, "-dev") || strings.Contains(version, "-preview") ||
+		strings.Contains(version, "-rc") || strings.Contains(version, "dev"))
 }
 
 func (p *RubyProvider) getRubyVersion(ctx *generate.GenerateContext) string {
