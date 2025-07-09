@@ -37,7 +37,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "ruby app.rb",
+  "startCommand": "bundle exec rackup config.ru -p ${PORT:-3000}",
   "variables": {
    "BUNDLE_GEMFILE": "/app/Gemfile",
    "GEM_HOME": "/usr/local/bundle",
@@ -99,7 +99,7 @@
   {
    "commands": [
     {
-     "cmd": "gem install -N bundler:2.3.7"
+     "cmd": "gem install -N bundler:2.4.22"
     },
     {
      "dest": "Gemfile",
