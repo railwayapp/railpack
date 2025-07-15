@@ -40,7 +40,7 @@ func (p *JavaProvider) Plan(ctx *generate.GenerateContext) error {
 			build.AddCommand(plan.NewExecCommand("chmod +x gradlew"))
 		}
 
-		build.AddCommand(plan.NewExecCommand("./gradlew clean build -x check -x test"))
+		build.AddCommand(plan.NewExecCommand("./gradlew clean build -x check -x test -Pproduction"))
 		build.AddCache(p.gradleCache(ctx))
 	} else {
 		ctx.Logger.LogInfo("Using Maven")
@@ -52,7 +52,7 @@ func (p *JavaProvider) Plan(ctx *generate.GenerateContext) error {
 			build.AddCommand(plan.NewExecCommand("chmod +x mvnw"))
 		}
 
-		build.AddCommand(plan.NewExecCommand(fmt.Sprintf("%s -DoutputFile=target/mvn-dependency-list.log -B -DskipTests clean dependency:list install", p.getMavenExe(ctx))))
+		build.AddCommand(plan.NewExecCommand(fmt.Sprintf("%s -DoutputFile=target/mvn-dependency-list.log -B -DskipTests clean dependency:list install -Pproduction", p.getMavenExe(ctx))))
 		build.AddCache(p.mavenCache(ctx))
 	}
 
