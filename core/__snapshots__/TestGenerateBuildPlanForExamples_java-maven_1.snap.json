@@ -72,7 +72,7 @@
      "src": "."
     },
     {
-     "cmd": "mvn -DoutputFile=target/mvn-dependency-list.log -B -DskipTests clean dependency:list install"
+     "cmd": "mvn -DoutputFile=target/mvn-dependency-list.log -B -DskipTests clean dependency:list install -Pproduction"
     }
    ],
    "inputs": [

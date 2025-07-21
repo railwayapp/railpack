@@ -72,7 +72,7 @@
      "src": "."
     },
     {
-     "cmd": "./gradlew clean build -x check -x test"
+     "cmd": "./gradlew clean build -x check -x test -Pproduction"
     }
    ],
    "inputs": [
