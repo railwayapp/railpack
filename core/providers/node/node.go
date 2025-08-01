@@ -320,6 +320,10 @@ func (p *NodeProvider) GetNodeEnvVars(ctx *generate.GenerateContext) map[string]
 		"NPM_CONFIG_UPDATE_NOTIFIER": "false",
 		"NPM_CONFIG_FUND":            "false",
 		"CI":                         "true",
+
+		// Don't verify the asset because recently released versions don't have a public key to verify against
+		// https://github.com/railwayapp/railpack/issues/207
+		"MISE_NODE_VERIFY": "false",
 	}
 
 	if p.packageManager == PackageManagerYarn1 {
