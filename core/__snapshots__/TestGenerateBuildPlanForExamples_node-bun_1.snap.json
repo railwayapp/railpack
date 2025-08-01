@@ -53,7 +53,6 @@
   "startCommand": "bun index.ts",
   "variables": {
    "CI": "true",
-   "MISE_NODE_VERIFY": "false",
    "NODE_ENV": "production",
    "NPM_CONFIG_FUND": "false",
    "NPM_CONFIG_PRODUCTION": "false",
@@ -139,7 +138,6 @@
    "name": "install",
    "variables": {
     "CI": "true",
-    "MISE_NODE_VERIFY": "false",
     "NODE_ENV": "production",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",

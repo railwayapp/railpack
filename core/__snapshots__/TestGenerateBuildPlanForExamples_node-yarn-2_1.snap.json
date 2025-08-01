@@ -46,7 +46,6 @@
   "startCommand": "yarn run start",
   "variables": {
    "CI": "true",
-   "MISE_NODE_VERIFY": "false",
    "NODE_ENV": "production",
    "NPM_CONFIG_FUND": "false",
    "NPM_CONFIG_PRODUCTION": "false",
@@ -83,6 +82,7 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_VERIFY": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
@@ -122,7 +122,6 @@
    "name": "install",
    "variables": {
     "CI": "true",
-    "MISE_NODE_VERIFY": "false",
     "NODE_ENV": "production",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",
