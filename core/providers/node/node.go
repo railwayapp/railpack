@@ -288,10 +288,6 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		if nodeVersionFile, err := ctx.App.ReadFile(".node-version"); err == nil {
 			miseStep.Version(node, string(nodeVersionFile), ".node-version")
 		}
-
-		// Don't verify the asset because recently released versions don't have a public key to verify against
-		// https://github.com/railwayapp/railpack/issues/207
-		miseStep.Variables["MISE_NODE_VERIFY"] = "false"
 	}
 
 	// Bun
