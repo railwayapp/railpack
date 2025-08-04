@@ -37,7 +37,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "bundle exec ruby app.rb",
+  "startCommand": "bundle exec rackup config.ru -p ${PORT:-3000}",
   "variables": {
    "BUNDLE_GEMFILE": "/app/Gemfile",
    "GEM_HOME": "/usr/local/bundle",
@@ -93,14 +93,13 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
-    "MISE_NODE_VERIFY": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
   {
    "commands": [
     {
-     "cmd": "gem install -N bundler:2.3.7"
+     "cmd": "gem install -N bundler:2.4.22"
     },
     {
      "dest": "Gemfile",
@@ -109,10 +108,6 @@
     {
      "dest": "Gemfile.lock",
      "src": "Gemfile.lock"
-    },
-    {
-     "dest": "libs/local",
-     "src": "libs/local"
     },
     {
      "cmd": "bundle install"
