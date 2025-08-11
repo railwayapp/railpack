@@ -1,0 +1,16 @@
+{
+  "name": "node-yarn-1",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "cowsay": "^1.6.0",
+    "dayjs": "^1.11.13"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "typescript": "^5.8.2"
+  },
+  "packageManager": "yarn@1.22.22"
+}

@@ -1,0 +1,187 @@
+{
+ "caches": {
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  },
+  "node-modules": {
+   "directory": "/app/node_modules/.cache",
+   "type": "shared"
+  },
+  "yarn-install": {
+   "directory": "/usr/local/share/.cache/yarn",
+   "type": "locked"
+  }
+ },
+ "deploy": {
+  "base": {
+   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+  },
+  "inputs": [
+   {
+    "include": [
+     "/mise/shims",
+     "/mise/installs",
+     "/usr/local/bin/mise",
+     "/etc/mise/config.toml",
+     "/root/.local/state/mise"
+    ],
+    "step": "packages:mise"
+   },
+   {
+    "include": [
+     "/app/node_modules"
+    ],
+    "step": "build"
+   },
+   {
+    "exclude": [
+     "node_modules",
+     ".yarn"
+    ],
+    "include": [
+     "/root/.cache",
+     ".",
+     "/opt/corepack"
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "yarn run start",
+  "variables": {
+   "CI": "true",
+   "MISE_YARN_SKIP_GPG": "true",
+   "NODE_ENV": "production",
+   "NPM_CONFIG_FUND": "false",
+   "NPM_CONFIG_PRODUCTION": "false",
+   "NPM_CONFIG_UPDATE_NOTIFIER": "false",
+   "YARN_PRODUCTION": "false"
+  }
+ },
+ "steps": [
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y gpg tar'",
+     "customName": "install apt packages: gpg tar"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:apt:build"
+  },
+  {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "commands": [
+    {
+     "path": "/mise/shims"
+    },
+    {
+     "customName": "create mise config",
+     "name": "mise.toml",
+     "path": "/etc/mise/config.toml"
+    },
+    {
+     "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
+     "customName": "install mise packages: node"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:apt:build"
+    }
+   ],
+   "name": "packages:mise",
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_COREPACK": "true",
+    "MISE_NODE_VERIFY": "false",
+    "MISE_SHIMS_DIR": "/mise/shims"
+   }
+  },
+  {
+   "caches": [
+    "yarn-install"
+   ],
+   "commands": [
+    {
+     "path": "/app/node_modules/.bin"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
+    },
+    {
+     "cmd": "sh -c 'npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate'",
+     "customName": "npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
+    },
+    {
+     "dest": "yarn.lock",
+     "src": "yarn.lock"
+    },
+    {
+     "cmd": "yarn install --frozen-lockfile"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install",
+   "variables": {
+    "CI": "true",
+    "COREPACK_HOME": "/opt/corepack",
+    "MISE_YARN_SKIP_GPG": "true",
+    "NODE_ENV": "production",
+    "NPM_CONFIG_FUND": "false",
+    "NPM_CONFIG_PRODUCTION": "false",
+    "NPM_CONFIG_UPDATE_NOTIFIER": "false",
+    "YARN_PRODUCTION": "false"
+   }
+  },
+  {
+   "caches": [
+    "node-modules"
+   ],
+   "commands": [
+    {
+     "dest": ".",
+     "src": "."
+    },
+    {
+     "cmd": "yarn run build"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "install"
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ]
+  }
+ ]
+}
