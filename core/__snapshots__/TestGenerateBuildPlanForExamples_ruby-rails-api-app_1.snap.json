@@ -43,6 +43,7 @@
    "BUNDLE_GEMFILE": "/app/Gemfile",
    "GEM_HOME": "/usr/local/bundle",
    "GEM_PATH": "/usr/local/bundle",
+   "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so",
    "MALLOC_ARENA_MAX": "2"
   }
  },
@@ -54,8 +55,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libyaml-dev'",
-     "customName": "install apt packages: libyaml-dev"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libjemalloc-dev libyaml-dev'",
+     "customName": "install apt packages: libjemalloc-dev libyaml-dev"
     }
    ],
    "inputs": [
@@ -131,6 +132,7 @@
     "BUNDLE_GEMFILE": "/app/Gemfile",
     "GEM_HOME": "/usr/local/bundle",
     "GEM_PATH": "/usr/local/bundle",
+    "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so",
     "MALLOC_ARENA_MAX": "2"
    }
   },
@@ -154,6 +156,7 @@
     "BUNDLE_GEMFILE": "/app/Gemfile",
     "GEM_HOME": "/usr/local/bundle",
     "GEM_PATH": "/usr/local/bundle",
+    "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so",
     "MALLOC_ARENA_MAX": "2"
    }
   },
@@ -164,8 +167,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libyaml-dev'",
-     "customName": "install apt packages: libyaml-dev"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libjemalloc-dev libyaml-dev'",
+     "customName": "install apt packages: libjemalloc-dev libyaml-dev"
     }
    ],
    "inputs": [

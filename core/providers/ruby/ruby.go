@@ -194,7 +194,7 @@ func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 }
 
 func (p *RubyProvider) AddRuntimeDeps(ctx *generate.GenerateContext) {
-	packages := []string{"libyaml-dev"}
+	packages := []string{"libyaml-dev", "libjemalloc-dev"}
 
 	if p.usesPostgres(ctx) {
 		packages = append(packages, "libpq-dev")
@@ -250,6 +250,7 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	}
 
 	miseStep.AddSupportingAptPackage("libyaml-dev")
+	miseStep.AddSupportingAptPackage("libjemalloc-dev")
 	version := p.getRubyVersion(ctx)
 	version = utils.ExtractSemverVersion(version)
 	semver, err := utils.ParseSemver(version)
@@ -275,6 +276,7 @@ func (p *RubyProvider) GetRubyEnvVars(ctx *generate.GenerateContext) map[string]
 		"GEM_PATH":         "/usr/local/bundle",
 		"GEM_HOME":         "/usr/local/bundle",
 		"MALLOC_ARENA_MAX": "2",
+		"LD_PRELOAD":       "/usr/lib/x86_64-linux-gnu/libjemalloc.so",
 	}
 }
 
