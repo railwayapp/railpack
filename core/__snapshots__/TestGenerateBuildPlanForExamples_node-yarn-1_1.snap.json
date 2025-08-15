@@ -54,7 +54,6 @@
   "startCommand": "yarn run start",
   "variables": {
    "CI": "true",
-   "MISE_YARN_SKIP_GPG": "true",
    "NODE_ENV": "production",
    "NPM_CONFIG_FUND": "false",
    "NPM_CONFIG_PRODUCTION": "false",
@@ -152,7 +151,6 @@
    "variables": {
     "CI": "true",
     "COREPACK_HOME": "/opt/corepack",
-    "MISE_YARN_SKIP_GPG": "true",
     "NODE_ENV": "production",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",

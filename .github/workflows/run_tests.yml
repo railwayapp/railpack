@@ -65,6 +65,9 @@ jobs:
         run: go mod download
 
       - name: Run test for ${{ matrix.example }}
+        env:
+          # without the GITHUB_TOKEN, mise will 403 us
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Add cache import/export flags to the test command
           go test -v ./integration_tests \
