@@ -62,12 +62,17 @@ var BuildCommand = &cli.Command{
 		}
 
 		if cmd.Bool("show-plan") {
-			serializedPlan, err := json.MarshalIndent(buildResult.Plan, "", "  ")
+			planMap, err := addSchemaToPlanMap(buildResult.Plan)
 			if err != nil {
 				return cli.Exit(err, 1)
 			}
 
-			fmt.Println(string(serializedPlan))
+			serializedPlan, err := json.MarshalIndent(planMap, "", "  ")
+			if err != nil {
+				return cli.Exit(err, 1)
+			}
+
+			fmt.Println(serializedPlan)
 		}
 
 		err = validateSecrets(buildResult.Plan, env)
@@ -84,7 +89,6 @@ var BuildCommand = &cli.Command{
 
 		err = buildkit.BuildWithBuildkitClient(app.Source, buildResult.Plan, buildkit.BuildWithBuildkitClientOptions{
 			ImageName:    cmd.String("name"),
-			DumpLLB:      cmd.Bool("llb"),
 			OutputDir:    cmd.String("output"),
 			ProgressMode: cmd.String("progress"),
 			CacheKey:     cmd.String("cache-key"),

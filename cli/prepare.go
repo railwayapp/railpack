@@ -43,7 +43,12 @@ var PrepareCommand = &cli.Command{
 
 		// Save plan if requested
 		if planOut := cmd.String("plan-out"); planOut != "" {
-			if err := writeJSONFile(planOut, buildResult.Plan, "Build plan written to %s"); err != nil {
+			// Include $schema in the plan JSON for editor support
+			planMap, err := addSchemaToPlanMap(buildResult.Plan)
+			if err != nil {
+				return cli.Exit(err, 1)
+			}
+			if err := writeJSONFile(planOut, planMap, "Build plan written to %s"); err != nil {
 				return cli.Exit(err, 1)
 			}
 		}

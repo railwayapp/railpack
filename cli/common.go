@@ -1,11 +1,14 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core"
 	a "github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/core/config"
+	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/internal/utils"
 	"github.com/urfave/cli/v3"
 )
@@ -76,4 +79,20 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 	buildResult := core.GenerateBuildPlan(app, env, generateOptions)
 
 	return buildResult, app, env, nil
+}
+
+func addSchemaToPlanMap(p *plan.BuildPlan) (map[string]any, error) {
+	if p == nil {
+		return map[string]any{"$schema": config.SchemaUrl}, nil
+	}
+	planBytes, err := json.Marshal(p)
+	if err != nil {
+		return nil, err
+	}
+	var planMap map[string]any
+	if err := json.Unmarshal(planBytes, &planMap); err != nil {
+		return nil, err
+	}
+	planMap["$schema"] = config.SchemaUrl
+	return planMap, nil
 }
