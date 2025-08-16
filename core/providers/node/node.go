@@ -491,6 +491,8 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 			return "cra"
 		} else if p.isAngular(ctx) {
 			return "angular"
+		} else if p.isReactRouter(ctx) {
+			return "react-router"
 		}
 
 		return "static"
@@ -504,6 +506,8 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 		return "tanstack-start"
 	} else if p.isVite(ctx) {
 		return "vite"
+	} else if p.isReactRouter(ctx) {
+		return "react-router"
 	} else if p.packageManager == PackageManagerBun {
 		return "bun"
 	}
