@@ -9,14 +9,15 @@ import (
 
 func TestVite(t *testing.T) {
 	tests := []struct {
-		name      string
-		path      string
-		isSPA     bool
-		isVite    bool
-		isAstro   bool
-		isCRA     bool
-		isAngular bool
-		outputDir string
+		name          string
+		path          string
+		isSPA         bool
+		isVite        bool
+		isAstro       bool
+		isCRA         bool
+		isAngular     bool
+		isReactRouter bool
+		outputDir     string
 	}{
 		{
 			name:      "vite-react",
@@ -72,6 +73,14 @@ func TestVite(t *testing.T) {
 			isSPA:     false,
 			outputDir: "",
 		},
+		{
+			name:          "react-router",
+			path:          "../../../examples/node-vite-react-router-spa",
+			isSPA:         true,
+			isVite:        true,
+			isReactRouter: true,
+			outputDir:     "build/client/",
+		},
 	}
 
 	for _, tt := range tests {
@@ -95,6 +104,9 @@ func TestVite(t *testing.T) {
 
 			isAstro := provider.isAstro(ctx)
 			require.Equal(t, tt.isAstro, isAstro)
+
+			isReactRouter := provider.isReactRouter(ctx)
+			require.Equal(t, tt.isReactRouter, isReactRouter)
 
 			if tt.isSPA {
 				require.Equal(t, tt.outputDir, provider.getOutputDirectory(ctx))
