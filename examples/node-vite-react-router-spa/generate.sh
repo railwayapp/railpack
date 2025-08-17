@@ -1,3 +1,6 @@
+#!/usr/bin/env zsh
+
+cd "${0:A:h}"
 # Description: autogen this repo from the latest version of the RR template
 
 pnpx create-react-router@latest . --yes --overwrite --no-git-init
