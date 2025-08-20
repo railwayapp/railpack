@@ -159,7 +159,6 @@ func GenerateConfigFromFile(app *app.App, env *app.Environment, options *Generat
 	return config, nil
 }
 
-// GenerateConfigFromEnvironment generates a config from the environment
 func GenerateConfigFromEnvironment(env *app.Environment) *c.Config {
 	config := c.EmptyConfig()
 
