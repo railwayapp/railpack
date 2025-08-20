@@ -47,6 +47,11 @@ var BuildCommand = &cli.Command{
 			Name:  "cache-key",
 			Usage: "Unique id to prefix to cache keys",
 		},
+		&cli.BoolFlag{
+			Name:   "dump-llb",
+			Hidden: true,
+			Value:  false,
+		},
 	}, commonPlanFlags()...),
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		buildResult, app, env, err := GenerateBuildResultForCommand(cmd)
@@ -71,7 +76,6 @@ var BuildCommand = &cli.Command{
 			if err != nil {
 				return cli.Exit(err, 1)
 			}
-
 			fmt.Println(serializedPlan)
 		}
 
@@ -89,7 +93,7 @@ var BuildCommand = &cli.Command{
 
 		err = buildkit.BuildWithBuildkitClient(app.Source, buildResult.Plan, buildkit.BuildWithBuildkitClientOptions{
 			ImageName:    cmd.String("name"),
-			DumpLLB:      cmd.Bool("llb"),
+			DumpLLB:      cmd.Bool("dump-llb"),
 			OutputDir:    cmd.String("output"),
 			ProgressMode: cmd.String("progress"),
 			CacheKey:     cmd.String("cache-key"),
