@@ -1,8 +1,16 @@
 {
  "deploy": {
   "base": {
-   "step": "setup"
+   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
   },
+  "inputs": [
+   {
+    "include": [
+     "."
+    ],
+    "step": "build"
+   }
+  ],
   "startCommand": "sh start.sh"
  },
  "steps": [
@@ -21,7 +29,7 @@
      "image": "ghcr.io/railwayapp/railpack-runtime:latest"
     }
    ],
-   "name": "setup",
+   "name": "build",
    "secrets": [
     "*"
    ]

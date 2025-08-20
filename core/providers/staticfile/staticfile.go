@@ -1,4 +1,5 @@
-// all logic is distinct from the SPA functionality used by the node providers
+// this provider is distinct from the SPA functionality used by node providers
+// it is meant to simply serve static files over HTTP
 
 package staticfile
 

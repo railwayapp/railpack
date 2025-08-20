@@ -18,13 +18,7 @@
     "include": [
      "."
     ],
-    "step": "setup"
-   },
-   {
-    "include": [
-     "."
-    ],
-    "local": true
+    "step": "build"
    }
   ],
   "startCommand": "caddy run --config Caddyfile --adapter caddyfile 2\u003e\u00261"
@@ -69,6 +63,10 @@
    },
    "commands": [
     {
+     "dest": ".",
+     "src": "."
+    },
+    {
      "name": "Caddyfile",
      "path": "Caddyfile"
     },
@@ -81,7 +79,7 @@
      "step": "packages:mise"
     }
    ],
-   "name": "setup",
+   "name": "build",
    "secrets": [
     "*"
    ]
