@@ -7,7 +7,6 @@
     "configFile": "railpack.other.json"
   },
   {
-    "expectedOutput": "Hello via Bun",
     "configFile": "railpack.invalid.json",
     "shouldFail": true
   },
