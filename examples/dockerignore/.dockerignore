@@ -1,0 +1,38 @@
+# this dockerignore is very paranoid, intentionally.
+
+# test hidden folders and
+.vscode
+
+# top-level, hidden folder
+/.copier
+
+# hidden file
+.env-specific
+
+# test glob on hidden files (.env-specific) with a trailing glob
+.env*
+
+# should ignore all __pycache__ folders, but not any file named __pycache__
+# I've intentionally named a file __pycache__ to test this behavior
+__pycache__/
+
+# test root-level folder
+/test
+
+# dockerignore excludes hidden files with a single glob (/tmp/.should-hide)
+/tmp/*
+
+# leading glob
+*.log
+
+# non-hidden filename, anywhere
+Justfile
+
+# root-level file glob (app/TODO should be included)
+/TODO*
+
+# root-level file exclusion (app/README.md should be included)
+/README.md
+
+# should hide docker-compose{-2}.yml files
+docker-compose*.yml
