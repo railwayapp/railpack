@@ -148,9 +148,10 @@ func GenerateConfigFromFile(app *app.App, env *app.Environment, options *Generat
 		return config, nil
 	}
 
+	// if a JSON file was provided, we should hard fail if we cannot parse it
 	if err := app.ReadJSON(configFileName, config); err != nil {
 		logger.LogWarn("Failed to read config file `%s`\nUse the following schema to validate your config file: %s\n", configFileName, c.SchemaUrl)
-		return config, nil
+		return nil, err
 	}
 
 	logger.LogInfo("Using config file `%s`", configFileName)
