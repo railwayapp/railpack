@@ -41,8 +41,11 @@ func (p *ShellProvider) Plan(ctx *generate.GenerateContext) error {
 		},
 	)
 
-	ctx.Deploy.Base = plan.NewStepLayer(build.Name())
-	ctx.Deploy.AddInputs([]plan.Layer{ctx.GetMiseStepBuilder().GetLayer()})
+	ctx.Deploy.AddInputs([]plan.Layer{
+		plan.NewStepLayer(build.Name(), plan.Filter{
+			Include: []string{"."},
+		}),
+	})
 
 	return nil
 }
