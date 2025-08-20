@@ -19,10 +19,19 @@ Install and use all versions of tools needed for Railpack
 mise run setup
 ```
 
-List all the commands available
+Use the `cli` task to run the railpack CLI (this is like `railpack --help`)
 
 ```bash
 mise run cli --help
+```
+
+If you want to compile a development build of railpack to use elsewhere on your machine:
+
+```bash
+mise run build
+
+# add the railpack repo `bin/` directory to your path to use the newly-compiled railpack on your machine
+export PATH="$PWD/bin:$PATH"
 ```
 
 ## Building directly with Buildkit
