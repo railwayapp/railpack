@@ -1,0 +1,6 @@
+{
+  "steps": {
+    "commands": ["npm install"]
+  },
+  "invalid": json syntax here
+}
