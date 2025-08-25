@@ -155,6 +155,8 @@ func (p *ElixirProvider) Build(ctx *generate.GenerateContext, build *generate.Co
 		plan.NewCopyCommand("priv*", "."),
 		plan.NewCopyCommand("lib*", "."),
 		plan.NewCopyCommand("assets*", "."),
+		plan.NewCopyCommand("config/runtime.exs*", "config/"),
+		plan.NewExecCommand("mix compile"),
 	})
 	if matches := ctx.App.FindFilesWithContent("mix.exs", regexp.MustCompile(`assets\.deploy`)); len(matches) > 0 {
 		build.AddCommand(plan.NewExecCommand("mix assets.deploy"))
@@ -163,8 +165,6 @@ func (p *ElixirProvider) Build(ctx *generate.GenerateContext, build *generate.Co
 		build.AddCommand(plan.NewExecCommand("mix ecto.deploy"))
 	}
 	build.AddCommands([]plan.Command{
-		plan.NewExecCommand("mix compile"),
-		plan.NewCopyCommand("config/runtime.exs*", "config/"),
 		plan.NewCopyCommand("rel*", "."),
 		plan.NewExecCommand("mix release"),
 	})
