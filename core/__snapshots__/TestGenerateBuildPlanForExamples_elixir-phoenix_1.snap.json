@@ -120,14 +120,14 @@
      "src": "assets*"
     },
     {
-     "cmd": "mix assets.deploy"
+     "dest": "config/",
+     "src": "config/runtime.exs*"
     },
     {
      "cmd": "mix compile"
     },
     {
-     "dest": "config/",
-     "src": "config/runtime.exs*"
+     "cmd": "mix assets.deploy"
     },
     {
      "dest": ".",
