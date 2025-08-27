@@ -28,6 +28,8 @@ type GenerateBuildPlanOptions struct {
 	PreviousVersions         map[string]string
 	ConfigFilePath           string
 	ErrorMissingStartCommand bool
+	WorkspaceRoot            string
+	WorkspacePath            string
 }
 
 type BuildResult struct {
@@ -54,6 +56,28 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 	if err != nil {
 		logger.LogError("%s", err.Error())
 		return &BuildResult{Success: false, Logs: logger.Logs}
+	}
+
+	// Set workspace context
+	ctx.WorkspaceRoot = options.WorkspaceRoot
+	ctx.WorkspacePath = options.WorkspacePath
+
+	if options.WorkspacePath != "" {
+		ctx.Metadata.Set("workspace", options.WorkspacePath)
+		ctx.Metadata.Set("workspaceRoot", options.WorkspaceRoot)
+
+		// Try to detect monorepo type and available workspaces
+		if monorepoInfo := detectMonorepoInfo(app, options.WorkspaceRoot); monorepoInfo != nil {
+			if monorepoInfo.Type != "" {
+				ctx.Metadata.Set("monorepoType", monorepoInfo.Type)
+			}
+			if monorepoInfo.BuildSystem != "" {
+				ctx.Metadata.Set("buildSystem", monorepoInfo.BuildSystem)
+			}
+			if len(monorepoInfo.Workspaces) > 0 {
+				ctx.Metadata.Set("availableWorkspaces", strings.Join(monorepoInfo.Workspaces, ", "))
+			}
+		}
 	}
 
 	// Set the preivous versions
@@ -277,4 +301,146 @@ func getProviders(ctx *generate.GenerateContext, config *c.Config) (providers.Pr
 	}
 
 	return providerToUse, detectedProvider
+}
+
+type MonorepoInfo struct {
+	Type        string
+	BuildSystem string
+	Workspaces  []string
+}
+
+func detectMonorepoInfo(appCtx *app.App, rootPath string) *MonorepoInfo {
+	// Create an app context for the root if we're in a workspace
+	rootApp := appCtx
+	if rootPath != "" && rootPath != "." {
+		var err error
+		rootApp, err = app.NewApp(rootPath)
+		if err != nil {
+			return nil
+		}
+	}
+
+	info := &MonorepoInfo{}
+
+	// Detect Node.js workspaces
+	if rootApp.HasMatch("pnpm-workspace.yaml") {
+		info.Type = "pnpm"
+		detectNodeWorkspaces(rootApp, info)
+	} else if rootApp.HasMatch("package.json") {
+		packageJsonContent, err := rootApp.ReadFile("package.json")
+		if err == nil {
+			if strings.Contains(string(packageJsonContent), `"workspaces"`) {
+				if rootApp.HasMatch("yarn.lock") {
+					info.Type = "yarn"
+				} else {
+					info.Type = "npm"
+				}
+				detectNodeWorkspaces(rootApp, info)
+			}
+		}
+	}
+
+	// Detect build systems
+	if rootApp.HasMatch("turbo.json") {
+		info.BuildSystem = "turborepo"
+	} else if rootApp.HasMatch("nx.json") {
+		info.BuildSystem = "nx"
+	} else if rootApp.HasMatch("lerna.json") {
+		info.BuildSystem = "lerna"
+	} else if rootApp.HasMatch("rush.json") {
+		info.BuildSystem = "rush"
+	}
+
+	// Detect Go workspaces
+	if rootApp.HasMatch("go.work") {
+		info.Type = "go"
+		detectGoWorkspaces(rootApp, info)
+	}
+
+	// Detect Rust workspaces
+	if rootApp.HasMatch("Cargo.toml") {
+		cargoContent, err := rootApp.ReadFile("Cargo.toml")
+		if err == nil && strings.Contains(string(cargoContent), "[workspace]") {
+			info.Type = "cargo"
+			detectRustWorkspaces(rootApp, info)
+		}
+	}
+
+	return info
+}
+
+func detectNodeWorkspaces(rootApp *app.App, info *MonorepoInfo) {
+	// Try to use existing workspace detection logic
+	patterns := []string{}
+
+	// Check pnpm-workspace.yaml
+	if rootApp.HasMatch("pnpm-workspace.yaml") {
+		type PnpmWorkspace struct {
+			Packages []string `yaml:"packages"`
+		}
+		var pnpmWorkspace PnpmWorkspace
+		if err := rootApp.ReadYAML("pnpm-workspace.yaml", &pnpmWorkspace); err == nil {
+			patterns = pnpmWorkspace.Packages
+		}
+	} else if rootApp.HasMatch("package.json") {
+		// Check package.json workspaces field
+		type PackageJson struct {
+			Workspaces []string `json:"workspaces"`
+		}
+		var packageJson PackageJson
+		if err := rootApp.ReadJSON("package.json", &packageJson); err == nil {
+			patterns = packageJson.Workspaces
+		}
+	}
+
+	// Find workspace packages
+	for _, pattern := range patterns {
+		// Convert workspace patterns to find package.json files
+		var searchPattern string
+		if strings.HasSuffix(pattern, "/*") {
+			searchPattern = pattern[:len(pattern)-1] + "*/package.json"
+		} else if strings.HasSuffix(pattern, "/**") {
+			searchPattern = pattern[:len(pattern)-2] + "**/package.json"
+		} else {
+			searchPattern = pattern + "/package.json"
+		}
+
+		matches, err := rootApp.FindFiles(searchPattern)
+		if err != nil {
+			continue
+		}
+
+		for _, match := range matches {
+			dir := strings.TrimSuffix(match, "/package.json")
+			info.Workspaces = append(info.Workspaces, dir)
+		}
+	}
+}
+
+func detectGoWorkspaces(rootApp *app.App, info *MonorepoInfo) {
+	// Find all go.mod files
+	matches, err := rootApp.FindFiles("**/go.mod")
+	if err != nil {
+		return
+	}
+	for _, match := range matches {
+		dir := strings.TrimSuffix(match, "/go.mod")
+		if dir != "." && dir != "" {
+			info.Workspaces = append(info.Workspaces, dir)
+		}
+	}
+}
+
+func detectRustWorkspaces(rootApp *app.App, info *MonorepoInfo) {
+	// Find all Cargo.toml files that are workspace members
+	matches, err := rootApp.FindFiles("**/Cargo.toml")
+	if err != nil {
+		return
+	}
+	for _, match := range matches {
+		if match != "Cargo.toml" { // Skip root
+			dir := strings.TrimSuffix(match, "/Cargo.toml")
+			info.Workspaces = append(info.Workspaces, dir)
+		}
+	}
 }

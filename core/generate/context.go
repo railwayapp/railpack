@@ -46,6 +46,10 @@ type GenerateContext struct {
 	MiseStepBuilder *MiseStepBuilder
 
 	Logger *logger.Logger
+
+	// Workspace context for monorepo support
+	WorkspaceRoot string
+	WorkspacePath string
 }
 
 type Command interface {

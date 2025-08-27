@@ -51,9 +51,17 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 		return nil, nil, nil, cli.Exit("directory argument is required", 1)
 	}
 
+	workspace := cmd.String("workspace")
+
+	// Always use the root directory for the app context
+	// The workspace path will be handled by the providers
 	app, err := a.NewApp(directory)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("error creating app: %w", err)
+	}
+
+	if workspace != "" {
+		log.Debugf("Using workspace: %s", workspace)
 	}
 
 	log.Debugf("Building %s", app.Source)
@@ -74,6 +82,8 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 		PreviousVersions:         previousVersions,
 		ConfigFilePath:           cmd.String("config-file"),
 		ErrorMissingStartCommand: cmd.Bool("error-missing-start"),
+		WorkspaceRoot:            directory,
+		WorkspacePath:            workspace,
 	}
 
 	buildResult := core.GenerateBuildPlan(app, env, generateOptions)

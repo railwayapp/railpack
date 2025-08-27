@@ -1,0 +1,152 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "caches": {
+    "node-modules": {
+      "directory": "/app/node_modules/.cache",
+      "type": "shared"
+    },
+    "npm-install": {
+      "directory": "/root/.npm",
+      "type": "shared"
+    }
+  },
+  "deploy": {
+    "base": {
+      "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+    },
+    "inputs": [
+      {
+        "include": [
+          "/mise/shims",
+          "/mise/installs",
+          "/usr/local/bin/mise",
+          "/etc/mise/config.toml",
+          "/root/.local/state/mise"
+        ],
+        "step": "packages:mise"
+      },
+      {
+        "include": [
+          "/app/node_modules"
+        ],
+        "step": "build"
+      },
+      {
+        "exclude": [
+          "node_modules",
+          ".yarn"
+        ],
+        "include": [
+          "/root/.cache",
+          "."
+        ],
+        "step": "build"
+      }
+    ],
+    "startCommand": "node index.js",
+    "variables": {
+      "CI": "true",
+      "NODE_ENV": "production",
+      "NPM_CONFIG_FUND": "false",
+      "NPM_CONFIG_PRODUCTION": "false",
+      "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+    }
+  },
+  "steps": [
+    {
+      "assets": {
+        "mise.toml": "[tools]\n  [tools.node]\n    version = \"22.18.0\"\n"
+      },
+      "commands": [
+        {
+          "path": "/mise/shims"
+        },
+        {
+          "customName": "create mise config",
+          "name": "mise.toml",
+          "path": "/etc/mise/config.toml"
+        },
+        {
+          "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
+          "customName": "install mise packages: node"
+        }
+      ],
+      "inputs": [
+        {
+          "image": "ghcr.io/railwayapp/railpack-builder:latest"
+        }
+      ],
+      "name": "packages:mise",
+      "variables": {
+        "MISE_CACHE_DIR": "/mise/cache",
+        "MISE_CONFIG_DIR": "/mise",
+        "MISE_DATA_DIR": "/mise",
+        "MISE_INSTALLS_DIR": "/mise/installs",
+        "MISE_NODE_VERIFY": "false",
+        "MISE_SHIMS_DIR": "/mise/shims"
+      }
+    },
+    {
+      "caches": [
+        "npm-install"
+      ],
+      "commands": [
+        {
+          "path": "/app/node_modules/.bin"
+        },
+        {
+          "dest": "package.json",
+          "src": "package.json"
+        },
+        {
+          "dest": "packages/pkg-a/package.json",
+          "src": "packages/pkg-a/package.json"
+        },
+        {
+          "dest": "packages/pkg-b/package.json",
+          "src": "packages/pkg-b/package.json"
+        },
+        {
+          "dest": "package-lock.json",
+          "src": "package-lock.json"
+        },
+        {
+          "cmd": "npm ci"
+        }
+      ],
+      "inputs": [
+        {
+          "step": "packages:mise"
+        }
+      ],
+      "name": "install",
+      "variables": {
+        "CI": "true",
+        "NODE_ENV": "production",
+        "NPM_CONFIG_FUND": "false",
+        "NPM_CONFIG_PRODUCTION": "false",
+        "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+      }
+    },
+    {
+      "caches": [
+        "node-modules"
+      ],
+      "commands": [
+        {
+          "dest": ".",
+          "src": "."
+        }
+      ],
+      "inputs": [
+        {
+          "step": "install"
+        }
+      ],
+      "name": "build",
+      "secrets": [
+        "*"
+      ]
+    }
+  ]
+}

@@ -26,6 +26,11 @@ var PrepareCommand = &cli.Command{
 			Name:  "info-out",
 			Usage: "output file for the JSON serialized build result info",
 		},
+		&cli.StringFlag{
+			Name:    "workspace",
+			Aliases: []string{"w"},
+			Usage:   "specify a workspace directory within a monorepo",
+		},
 	}, commonPlanFlags()...),
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		buildResult, _, _, err := GenerateBuildResultForCommand(cmd)

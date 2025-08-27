@@ -22,6 +22,11 @@ var PlanCommand = &cli.Command{
 			Aliases: []string{"o"},
 			Usage:   "output file name",
 		},
+		&cli.StringFlag{
+			Name:    "workspace",
+			Aliases: []string{"w"},
+			Usage:   "specify a workspace directory within a monorepo",
+		},
 	}, commonPlanFlags()...),
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		buildResult, _, _, err := GenerateBuildResultForCommand(cmd)

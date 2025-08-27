@@ -101,6 +101,7 @@ func (p PackageManager) GetInstallCache(ctx *generate.GenerateContext) string {
 func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
 	install.AddCache(p.GetInstallCache(ctx))
 
+	// App context is always at root now, so we can directly check for lockfiles
 	switch p {
 	case PackageManagerNpm:
 		hasLockfile := ctx.App.HasMatch("package-lock.json")
@@ -112,6 +113,8 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 	case PackageManagerPnpm:
 		hasLockfile := ctx.App.HasMatch("pnpm-lock.yaml")
 		if hasLockfile {
+			// For pnpm, always install from root, even for workspaces
+			// The lockfile is at the root and pnpm will handle workspace dependencies
 			install.AddCommand(plan.NewExecCommand("pnpm install --frozen-lockfile --prefer-offline"))
 		} else {
 			install.AddCommand(plan.NewExecCommand("pnpm install"))

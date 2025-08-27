@@ -30,6 +30,10 @@ type NodeProvider struct {
 	packageJson    *PackageJson
 	packageManager PackageManager
 	workspace      *Workspace
+
+	// For workspace support
+	rootPackageJson *PackageJson
+	workspaceName   string // e.g., "pkg-a" from "packages/pkg-a"
 }
 
 func (p *NodeProvider) Name() string {
@@ -37,19 +41,41 @@ func (p *NodeProvider) Name() string {
 }
 
 func (p *NodeProvider) Initialize(ctx *generate.GenerateContext) error {
-	packageJson, err := p.GetPackageJson(ctx.App)
+	// Load the root package.json (app context is always at root now)
+	rootPackageJson, err := p.GetPackageJson(ctx.App)
 	if err != nil {
 		return err
 	}
-	p.packageJson = packageJson
 
+	// Detect package manager from root
 	p.packageManager = p.getPackageManager(ctx.App)
 
+	// Load workspace info from root
 	workspace, err := NewWorkspace(ctx.App)
 	if err != nil {
 		return err
 	}
 	p.workspace = workspace
+
+	// If we're targeting a specific workspace, load its package.json
+	if ctx.WorkspacePath != "" {
+		// Get workspace name from path (e.g., "pkg-a" from "packages/pkg-a")
+		pathParts := strings.Split(ctx.WorkspacePath, "/")
+		if len(pathParts) > 0 {
+			p.workspaceName = pathParts[len(pathParts)-1]
+		}
+
+		// Load the workspace's package.json
+		workspacePackageJson, err := readPackageJson(ctx.App, ctx.WorkspacePath+"/package.json")
+		if err != nil {
+			return fmt.Errorf("failed to read workspace package.json: %w", err)
+		}
+		p.packageJson = workspacePackageJson
+		p.rootPackageJson = rootPackageJson
+	} else {
+		// Not in a workspace, use root package.json
+		p.packageJson = rootPackageJson
+	}
 
 	return nil
 }
@@ -154,7 +180,32 @@ func (p *NodeProvider) StartCommandHelp() string {
 		"containing the directory of your built static files."
 }
 
+// getWorkspaceCommand returns a workspace-specific command for the package manager
+func (p *NodeProvider) getWorkspaceCommand(ctx *generate.GenerateContext, script string) string {
+	switch p.packageManager {
+	case PackageManagerPnpm:
+		// pnpm --filter <workspace-name> run <script>
+		return fmt.Sprintf("pnpm --filter %s run %s", p.workspaceName, script)
+	case PackageManagerNpm:
+		// npm run <script> --workspace=<workspace-path>
+		return fmt.Sprintf("npm run %s --workspace=%s", script, ctx.WorkspacePath)
+	case PackageManagerYarn1, PackageManagerYarnBerry:
+		// yarn workspace <workspace-name> run <script>
+		return fmt.Sprintf("yarn workspace %s run %s", p.workspaceName, script)
+	default:
+		// Fallback to regular command
+		return p.packageManager.RunCmd(script)
+	}
+}
+
 func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
+	// For workspaces, use workspace-specific commands
+	if ctx.WorkspacePath != "" && p.workspaceName != "" {
+		if start := p.getScripts(p.packageJson, "start"); start != "" {
+			return p.getWorkspaceCommand(ctx, "start")
+		}
+	}
+
 	if start := p.getScripts(p.packageJson, "start"); start != "" {
 		return p.packageManager.RunCmd("start")
 	} else if main := p.packageJson.Main; main != "" {
@@ -174,8 +225,15 @@ func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 
 	_, ok := p.packageJson.Scripts["build"]
 	if ok {
+		var buildCmd string
+		if ctx.WorkspacePath != "" && p.workspaceName != "" {
+			buildCmd = p.getWorkspaceCommand(ctx, "build")
+		} else {
+			buildCmd = p.packageManager.RunCmd("build")
+		}
+
 		build.AddCommands([]plan.Command{
-			plan.NewExecCommand(p.packageManager.RunCmd("build")),
+			plan.NewExecCommand(buildCmd),
 		})
 
 		if p.isNext() {
@@ -273,10 +331,17 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			miseStep.Version(node, envVersion, varName)
 		}
 
-		if p.packageJson != nil && p.packageJson.Engines != nil && p.packageJson.Engines["node"] != "" {
-			miseStep.Version(node, p.packageJson.Engines["node"], "package.json > engines > node")
+		// Use root package.json for Node version when in a workspace
+		pkgJsonToCheck := p.packageJson
+		if p.rootPackageJson != nil {
+			pkgJsonToCheck = p.rootPackageJson
 		}
 
+		if pkgJsonToCheck != nil && pkgJsonToCheck.Engines != nil && pkgJsonToCheck.Engines["node"] != "" {
+			miseStep.Version(node, pkgJsonToCheck.Engines["node"], "package.json > engines > node")
+		}
+
+		// Check for .nvmrc and .node-version (app context is always at root now)
 		if nvmrc, err := ctx.App.ReadFile(".nvmrc"); err == nil {
 			if len(nvmrc) > 0 && nvmrc[0] == 'v' {
 				nvmrc = nvmrc[1:]

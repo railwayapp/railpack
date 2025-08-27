@@ -47,6 +47,11 @@ var BuildCommand = &cli.Command{
 			Name:  "cache-key",
 			Usage: "Unique id to prefix to cache keys",
 		},
+		&cli.StringFlag{
+			Name:    "workspace",
+			Aliases: []string{"w"},
+			Usage:   "specify a workspace directory within a monorepo",
+		},
 		&cli.BoolFlag{
 			Name:   "dump-llb",
 			Hidden: true,
