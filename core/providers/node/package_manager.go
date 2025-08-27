@@ -135,19 +135,12 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 		}
 	case PackageManagerPnpm:
 		hasLockfile := ctx.App.HasMatch("pnpm-lock.yaml")
-		// Get resolved pnpm version to use direct path
-		resolvedPackages, _ := ctx.Resolver.ResolvePackages()
-		pnpmPath := "pnpm"
-		if pnpmPkg, ok := resolvedPackages["pnpm"]; ok && pnpmPkg.ResolvedVersion != nil {
-			// pnpm binary is at /mise/installs/pnpm/VERSION/pnpm
-			pnpmPath = fmt.Sprintf("/mise/installs/pnpm/%s/pnpm", *pnpmPkg.ResolvedVersion)
-		}
 		if hasLockfile {
 			// For pnpm, always install from root, even for workspaces
 			// The lockfile is at the root and pnpm will handle workspace dependencies
-			install.AddCommand(plan.NewExecCommand(fmt.Sprintf("%s install --frozen-lockfile --prefer-offline", pnpmPath)))
+			install.AddCommand(plan.NewExecCommand("pnpm install --frozen-lockfile --prefer-offline"))
 		} else {
-			install.AddCommand(plan.NewExecCommand(fmt.Sprintf("%s install", pnpmPath)))
+			install.AddCommand(plan.NewExecCommand("pnpm install"))
 		}
 	case PackageManagerBun:
 		install.AddCommand(plan.NewExecCommand("bun install --frozen-lockfile"))
@@ -182,14 +175,6 @@ func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate
 }
 
 func (p PackageManager) prunePnpm(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
-	// Get resolved pnpm version to use direct path
-	resolvedPackages, _ := ctx.Resolver.ResolvePackages()
-	pnpmPath := "pnpm"
-	if pnpmPkg, ok := resolvedPackages["pnpm"]; ok && pnpmPkg.ResolvedVersion != nil {
-		// pnpm binary is at /mise/installs/pnpm/VERSION/pnpm
-		pnpmPath = fmt.Sprintf("/mise/installs/pnpm/%s/pnpm", *pnpmPkg.ResolvedVersion)
-	}
-
 	if packageJson, err := p.getPackageJsonFromContext(ctx); err == nil {
 		_, pnpmVersion := packageJson.GetPackageManagerInfo()
 		if pnpmVersion != "" {
@@ -198,13 +183,13 @@ func (p PackageManager) prunePnpm(ctx *generate.GenerateContext, prune *generate
 			// pnpm 8.15.6 added the --ignore-scripts flag to the prune command
 			// https://github.com/pnpm/pnpm/releases/tag/v8.15.6
 			if err == nil && pnpmVersion.Compare(semver.MustParse("8.15.6")) == -1 {
-				prune.AddCommand(plan.NewExecCommand(fmt.Sprintf("%s prune --prod", pnpmPath)))
+				prune.AddCommand(plan.NewExecCommand("pnpm prune --prod"))
 				return
 			}
 		}
 	}
 
-	prune.AddCommand(plan.NewExecCommand(fmt.Sprintf("%s prune --prod --ignore-scripts", pnpmPath)))
+	prune.AddCommand(plan.NewExecCommand("pnpm prune --prod --ignore-scripts"))
 }
 
 func (p PackageManager) pruneYarnBerry(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {

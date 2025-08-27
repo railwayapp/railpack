@@ -94,7 +94,7 @@ func (b *MiseStepBuilder) GetOutputPaths() []string {
 	}
 
 	supportingMiseConfigFiles := b.GetSupportingMiseConfigFiles(b.app.Source)
-	files := []string{"/mise/shims", "/mise/installs", "/usr/local/bin/mise", "/etc/mise/config.toml", "/root/.local/state/mise"}
+	files := []string{"/mise/shims", "/mise/installs", "/usr/local/bin/mise", "/etc/mise/config.toml", "/root/.local/state/mise", "/mise/cache"}
 	files = append(files, supportingMiseConfigFiles...)
 	return files
 }

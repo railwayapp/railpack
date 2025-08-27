@@ -59,17 +59,23 @@ func (p *NodeProvider) Initialize(ctx *generate.GenerateContext) error {
 
 	// If we're targeting a specific workspace, load its package.json
 	if ctx.WorkspacePath != "" {
-		// Get workspace name from path (e.g., "pkg-a" from "packages/pkg-a")
-		pathParts := strings.Split(ctx.WorkspacePath, "/")
-		if len(pathParts) > 0 {
-			p.workspaceName = pathParts[len(pathParts)-1]
-		}
-
 		// Load the workspace's package.json
 		workspacePackageJson, err := readPackageJson(ctx.App, ctx.WorkspacePath+"/package.json")
 		if err != nil {
 			return fmt.Errorf("failed to read workspace package.json: %w", err)
 		}
+
+		// Get workspace name from package.json name field, fallback to folder name
+		if workspacePackageJson.Name != "" {
+			p.workspaceName = workspacePackageJson.Name
+		} else {
+			// Fallback to folder name if package.json doesn't have a name
+			pathParts := strings.Split(ctx.WorkspacePath, "/")
+			if len(pathParts) > 0 {
+				p.workspaceName = pathParts[len(pathParts)-1]
+			}
+		}
+
 		p.packageJson = workspacePackageJson
 		p.rootPackageJson = rootPackageJson
 	} else {
@@ -124,39 +130,7 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 	maps.Copy(ctx.Deploy.Variables, p.GetNodeEnvVars(ctx))
 
-	// Add mise environment variables for runtime
-	// Put actual install paths before shims to bypass shim validation
-	pathPrefix := ""
-	resolvedPackages, _ := ctx.Resolver.ResolvePackages()
-
-	if p.packageManager == PackageManagerPnpm {
-		// Add pnpm binary path directly (pnpm is at /mise/installs/pnpm/VERSION/pnpm)
-		if pnpmPkg, ok := resolvedPackages["pnpm"]; ok && pnpmPkg.ResolvedVersion != nil {
-			pathPrefix = fmt.Sprintf("/mise/installs/pnpm/%s:", *pnpmPkg.ResolvedVersion)
-		}
-	}
-	// Add node binary path
-	nodeVersion := DEFAULT_NODE_VERSION
-	if nodeResolvedPkg, ok := resolvedPackages["node"]; ok && nodeResolvedPkg.ResolvedVersion != nil {
-		nodeVersion = *nodeResolvedPkg.ResolvedVersion
-	}
-	pathPrefix = pathPrefix + fmt.Sprintf("/mise/installs/node/%s/bin:", nodeVersion)
-
-	ctx.Deploy.Variables["PATH"] = pathPrefix + "/mise/shims:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-	ctx.Deploy.Variables["MISE_DATA_DIR"] = "/mise"
-	ctx.Deploy.Variables["MISE_CONFIG_DIR"] = "/etc/mise"
-	ctx.Deploy.Variables["MISE_CACHE_DIR"] = "/mise/cache"
-	ctx.Deploy.Variables["MISE_SHIMS_DIR"] = "/mise/shims"
-	ctx.Deploy.Variables["MISE_INSTALLS_DIR"] = "/mise/installs"
-	ctx.Deploy.Variables["MISE_STATE_DIR"] = "/root/.local/state/mise"
-	ctx.Deploy.Variables["MISE_NODE_VERIFY"] = "false"
-	// Prevent mise from trying to fetch version info or auto-install
-	ctx.Deploy.Variables["MISE_OFFLINE"] = "true"
-	ctx.Deploy.Variables["MISE_YES"] = "true"
-	ctx.Deploy.Variables["MISE_VERBOSE"] = "1" // Enable verbose logging to debug
-	ctx.Deploy.Variables["MISE_LOG_LEVEL"] = "debug"
-	ctx.Deploy.Variables["MISE_EXPERIMENTAL"] = "true"
-	ctx.Deploy.Variables["MISE_AUTO_INSTALL"] = "false"
+	// Don't add any special mise environment variables - let it work normally
 
 	// Custom deploy for SPA's
 	if isSPA {
@@ -218,14 +192,7 @@ func (p *NodeProvider) StartCommandHelp() string {
 func (p *NodeProvider) getWorkspaceCommand(ctx *generate.GenerateContext, script string) string {
 	switch p.packageManager {
 	case PackageManagerPnpm:
-		// Use direct path to pnpm binary to avoid shim
-		resolvedPackages, _ := ctx.Resolver.ResolvePackages()
-		pnpmPath := "pnpm"
-		if pnpmPkg, ok := resolvedPackages["pnpm"]; ok && pnpmPkg.ResolvedVersion != nil {
-			// pnpm binary is at /mise/installs/pnpm/VERSION/pnpm
-			pnpmPath = fmt.Sprintf("/mise/installs/pnpm/%s/pnpm", *pnpmPkg.ResolvedVersion)
-		}
-		return fmt.Sprintf("%s --filter %s run %s", pnpmPath, p.workspaceName, script)
+		return fmt.Sprintf("pnpm --filter %s run %s", p.workspaceName, script)
 	case PackageManagerNpm:
 		// npm run <script> --workspace=<workspace-path>
 		return fmt.Sprintf("npm run %s --workspace=%s", script, ctx.WorkspacePath)
@@ -247,15 +214,6 @@ func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	}
 
 	if start := p.getScripts(p.packageJson, "start"); start != "" {
-		// For pnpm, use direct path to avoid shim
-		if p.packageManager == PackageManagerPnpm {
-			resolvedPackages, _ := ctx.Resolver.ResolvePackages()
-			pnpmPath := "pnpm"
-			if pnpmPkg, ok := resolvedPackages["pnpm"]; ok && pnpmPkg.ResolvedVersion != nil {
-				pnpmPath = fmt.Sprintf("/mise/installs/pnpm/%s/pnpm", *pnpmPkg.ResolvedVersion)
-			}
-			return fmt.Sprintf("%s run start", pnpmPath)
-		}
 		return p.packageManager.RunCmd("start")
 	} else if main := p.packageJson.Main; main != "" {
 		return p.packageManager.RunScriptCommand(main)
@@ -278,17 +236,7 @@ func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 		if ctx.WorkspacePath != "" && p.workspaceName != "" {
 			buildCmd = p.getWorkspaceCommand(ctx, "build")
 		} else {
-			// For pnpm, use direct path to avoid shim
-			if p.packageManager == PackageManagerPnpm {
-				resolvedPackages, _ := ctx.Resolver.ResolvePackages()
-				pnpmPath := "pnpm"
-				if pnpmPkg, ok := resolvedPackages["pnpm"]; ok && pnpmPkg.ResolvedVersion != nil {
-					pnpmPath = fmt.Sprintf("/mise/installs/pnpm/%s/pnpm", *pnpmPkg.ResolvedVersion)
-				}
-				buildCmd = fmt.Sprintf("%s run build", pnpmPath)
-			} else {
-				buildCmd = p.packageManager.RunCmd("build")
-			}
+			buildCmd = p.packageManager.RunCmd("build")
 		}
 
 		build.AddCommands([]plan.Command{
