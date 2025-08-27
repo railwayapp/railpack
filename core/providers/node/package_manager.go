@@ -38,6 +38,29 @@ func (p PackageManager) RunCmd(cmd string) string {
 	return fmt.Sprintf("%s run %s", p.Name(), cmd)
 }
 
+// GetBinaryPath returns the actual binary path for the package manager to avoid mise shim issues
+func (p PackageManager) GetBinaryPath(version string) string {
+	switch p {
+	case PackageManagerPnpm:
+		if version == "" {
+			version = "latest"
+		}
+		return fmt.Sprintf("/mise/installs/pnpm/%s/bin/pnpm", version)
+	case PackageManagerNpm:
+		// npm is typically available through node
+		return "npm"
+	case PackageManagerBun:
+		if version == "" {
+			version = "latest"
+		}
+		return fmt.Sprintf("/mise/installs/bun/%s/bin/bun", version)
+	case PackageManagerYarn1, PackageManagerYarnBerry:
+		return "yarn"
+	default:
+		return p.Name()
+	}
+}
+
 func (p PackageManager) RunScriptCommand(cmd string) string {
 	if p == PackageManagerBun {
 		return "bun " + cmd
@@ -112,12 +135,19 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 		}
 	case PackageManagerPnpm:
 		hasLockfile := ctx.App.HasMatch("pnpm-lock.yaml")
+		// Get resolved pnpm version to use direct path
+		resolvedPackages, _ := ctx.Resolver.ResolvePackages()
+		pnpmPath := "pnpm"
+		if pnpmPkg, ok := resolvedPackages["pnpm"]; ok && pnpmPkg.ResolvedVersion != nil {
+			// pnpm binary is at /mise/installs/pnpm/VERSION/pnpm
+			pnpmPath = fmt.Sprintf("/mise/installs/pnpm/%s/pnpm", *pnpmPkg.ResolvedVersion)
+		}
 		if hasLockfile {
 			// For pnpm, always install from root, even for workspaces
 			// The lockfile is at the root and pnpm will handle workspace dependencies
-			install.AddCommand(plan.NewExecCommand("pnpm install --frozen-lockfile --prefer-offline"))
+			install.AddCommand(plan.NewExecCommand(fmt.Sprintf("%s install --frozen-lockfile --prefer-offline", pnpmPath)))
 		} else {
-			install.AddCommand(plan.NewExecCommand("pnpm install"))
+			install.AddCommand(plan.NewExecCommand(fmt.Sprintf("%s install", pnpmPath)))
 		}
 	case PackageManagerBun:
 		install.AddCommand(plan.NewExecCommand("bun install --frozen-lockfile"))
@@ -152,6 +182,14 @@ func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate
 }
 
 func (p PackageManager) prunePnpm(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
+	// Get resolved pnpm version to use direct path
+	resolvedPackages, _ := ctx.Resolver.ResolvePackages()
+	pnpmPath := "pnpm"
+	if pnpmPkg, ok := resolvedPackages["pnpm"]; ok && pnpmPkg.ResolvedVersion != nil {
+		// pnpm binary is at /mise/installs/pnpm/VERSION/pnpm
+		pnpmPath = fmt.Sprintf("/mise/installs/pnpm/%s/pnpm", *pnpmPkg.ResolvedVersion)
+	}
+
 	if packageJson, err := p.getPackageJsonFromContext(ctx); err == nil {
 		_, pnpmVersion := packageJson.GetPackageManagerInfo()
 		if pnpmVersion != "" {
@@ -160,13 +198,13 @@ func (p PackageManager) prunePnpm(ctx *generate.GenerateContext, prune *generate
 			// pnpm 8.15.6 added the --ignore-scripts flag to the prune command
 			// https://github.com/pnpm/pnpm/releases/tag/v8.15.6
 			if err == nil && pnpmVersion.Compare(semver.MustParse("8.15.6")) == -1 {
-				prune.AddCommand(plan.NewExecCommand("pnpm prune --prod"))
+				prune.AddCommand(plan.NewExecCommand(fmt.Sprintf("%s prune --prod", pnpmPath)))
 				return
 			}
 		}
 	}
 
-	prune.AddCommand(plan.NewExecCommand("pnpm prune --prod --ignore-scripts"))
+	prune.AddCommand(plan.NewExecCommand(fmt.Sprintf("%s prune --prod --ignore-scripts", pnpmPath)))
 }
 
 func (p PackageManager) pruneYarnBerry(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {

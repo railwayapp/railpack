@@ -140,12 +140,18 @@ type MisePackage struct {
 
 // MiseConfig represents the overall mise configuration
 type MiseConfig struct {
-	Tools map[string]MisePackage `toml:"tools"`
+	Tools    map[string]MisePackage `toml:"tools"`
+	Settings map[string]interface{} `toml:"settings,omitempty"`
 }
 
 func GenerateMiseToml(packages map[string]string) (string, error) {
 	config := MiseConfig{
 		Tools: make(map[string]MisePackage),
+		Settings: map[string]interface{}{
+			"experimental":        true,
+			"auto_install":        false,
+			"legacy_version_file": false,
+		},
 	}
 
 	for name, version := range packages {
