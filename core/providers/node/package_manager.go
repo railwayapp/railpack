@@ -38,29 +38,6 @@ func (p PackageManager) RunCmd(cmd string) string {
 	return fmt.Sprintf("%s run %s", p.Name(), cmd)
 }
 
-// GetBinaryPath returns the actual binary path for the package manager to avoid mise shim issues
-func (p PackageManager) GetBinaryPath(version string) string {
-	switch p {
-	case PackageManagerPnpm:
-		if version == "" {
-			version = "latest"
-		}
-		return fmt.Sprintf("/mise/installs/pnpm/%s/bin/pnpm", version)
-	case PackageManagerNpm:
-		// npm is typically available through node
-		return "npm"
-	case PackageManagerBun:
-		if version == "" {
-			version = "latest"
-		}
-		return fmt.Sprintf("/mise/installs/bun/%s/bin/bun", version)
-	case PackageManagerYarn1, PackageManagerYarnBerry:
-		return "yarn"
-	default:
-		return p.Name()
-	}
-}
-
 func (p PackageManager) RunScriptCommand(cmd string) string {
 	if p == PackageManagerBun {
 		return "bun " + cmd
