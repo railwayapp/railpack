@@ -167,7 +167,7 @@
   {
    "commands": [
     {
-     "cmd": "mise install-into caddy@2.10.1 /railpack/caddy"
+     "cmd": "mise install-into caddy@2.10.2 /railpack/caddy"
     },
     {
      "path": "/railpack/caddy"
