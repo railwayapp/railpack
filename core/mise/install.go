@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	miseVersion       = "2025.8.18"
+	miseVersion       = "2025.8.21"
 	githubReleaseBase = "https://github.com/jdx/mise/releases/download"
 )
 
