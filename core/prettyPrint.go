@@ -94,8 +94,10 @@ var (
 )
 
 type PrintOptions struct {
-	Metadata bool
-	Version  string
+	Metadata         bool
+	Version          string
+	GitHubURL        string
+	GitHubAuth       bool
 }
 
 func PrettyPrintBuildResult(buildResult *BuildResult, options ...PrintOptions) {
@@ -111,6 +113,9 @@ func FormatBuildResult(br *BuildResult, options ...PrintOptions) string {
 	var output strings.Builder
 
 	formatHeader(&output, opts.Version)
+	if opts.GitHubURL != "" {
+		formatGitHubInfo(&output, opts.GitHubURL, opts.GitHubAuth)
+	}
 	formatLogs(&output, br.Logs)
 	formatPackages(&output, br.ResolvedPackages)
 	formatSteps(&output, br)
@@ -125,6 +130,14 @@ func formatHeader(output *strings.Builder, version string) {
 	header := fmt.Sprintf("Railpack %s", version)
 	output.WriteString(headerStyle.Render(header))
 	output.WriteString("\n")
+}
+
+func formatGitHubInfo(output *strings.Builder, url string, authenticated bool) {
+	authStatus := "unauthenticated"
+	if authenticated {
+		authStatus = "authenticated"
+	}
+	output.WriteString(fmt.Sprintf("\n  ↳ GitHub: %s (%s)\n", url, authStatus))
 }
 
 func formatLogs(output *strings.Builder, logs []logger.Msg) {

@@ -1,9 +1,13 @@
 package app
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -16,10 +20,44 @@ import (
 )
 
 type App struct {
-	Source string
+	Source       string
+	IsRemote     bool
+	RemoteURL    string
+	GitHubClient *GitHubClient
+}
+
+type GitHubClient struct {
+	Owner  string
+	Repo   string
+	Branch string
+	Token  string
+	Cache  map[string]interface{}
+}
+
+type GitHubTree struct {
+	SHA  string `json:"sha"`
+	Tree []struct {
+		Path string `json:"path"`
+		Mode string `json:"mode"`
+		Type string `json:"type"`
+		Size int    `json:"size"`
+		SHA  string `json:"sha"`
+	} `json:"tree"`
+	Truncated bool `json:"truncated"`
+}
+
+type GitHubContent struct {
+	Type     string `json:"type"`
+	Encoding string `json:"encoding"`
+	Size     int    `json:"size"`
+	Content  string `json:"content"`
 }
 
 func NewApp(path string) (*App, error) {
+	if isGitHubURL(path) {
+		return NewAppFromGitHub(path)
+	}
+
 	var source string
 
 	if filepath.IsAbs(path) {
@@ -47,6 +85,10 @@ func NewApp(path string) (*App, error) {
 
 // findMatches returns a list of paths matching a glob pattern, filtered by isDir
 func (a *App) findMatches(pattern string, isDir bool) ([]string, error) {
+	if a.IsRemote && a.GitHubClient != nil {
+		return a.findMatchesGitHub(pattern, isDir)
+	}
+
 	matches, err := a.findGlob(pattern)
 
 	if err != nil {
@@ -69,6 +111,28 @@ func (a *App) findMatches(pattern string, isDir bool) ([]string, error) {
 	return paths, nil
 }
 
+func (a *App) findMatchesGitHub(pattern string, isDir bool) ([]string, error) {
+	tree, err := a.GitHubClient.getTree()
+	if err != nil {
+		return nil, err
+	}
+
+	var paths []string
+	for _, item := range tree.Tree {
+		matched, err := doublestar.Match(pattern, item.Path)
+		if err != nil {
+			continue
+		}
+
+		if matched {
+			if (item.Type == "tree") == isDir {
+				paths = append(paths, item.Path)
+			}
+		}
+	}
+	return paths, nil
+}
+
 // FindFiles returns a list of file paths matching a glob pattern
 func (a *App) FindFiles(pattern string) ([]string, error) {
 	return a.findMatches(pattern, false)
@@ -81,6 +145,25 @@ func (a *App) FindDirectories(pattern string) ([]string, error) {
 
 // findGlob finds paths matching a glob pattern
 func (a *App) findGlob(pattern string) ([]string, error) {
+	if a.IsRemote && a.GitHubClient != nil {
+		tree, err := a.GitHubClient.getTree()
+		if err != nil {
+			return nil, err
+		}
+
+		var matches []string
+		for _, item := range tree.Tree {
+			matched, err := doublestar.Match(pattern, item.Path)
+			if err != nil {
+				continue
+			}
+			if matched {
+				matches = append(matches, item.Path)
+			}
+		}
+		return matches, nil
+	}
+
 	matches, err := doublestar.Glob(os.DirFS(a.Source), pattern)
 
 	if err != nil {
@@ -128,6 +211,14 @@ func (a *App) FindFilesWithContent(pattern string, regex *regexp.Regexp) []strin
 
 // ReadFile reads the contents of a file
 func (a *App) ReadFile(name string) (string, error) {
+	if a.IsRemote && a.GitHubClient != nil {
+		content, err := a.GitHubClient.getFileContent(name)
+		if err != nil {
+			return "", fmt.Errorf("error reading %s: %w", name, err)
+		}
+		return strings.ReplaceAll(content, "\r\n", "\n"), nil
+	}
+
 	path := filepath.Join(a.Source, name)
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -186,6 +277,20 @@ func (a *App) ReadTOML(name string, v interface{}) error {
 
 // IsFileExecutable checks if a path is an executable file
 func (a *App) IsFileExecutable(name string) bool {
+	if a.IsRemote && a.GitHubClient != nil {
+		tree, err := a.GitHubClient.getTree()
+		if err != nil {
+			return false
+		}
+
+		for _, item := range tree.Tree {
+			if item.Path == name && item.Type == "blob" {
+				return item.Mode == "100755"
+			}
+		}
+		return false
+	}
+
 	path := filepath.Join(a.Source, name)
 	info, err := os.Stat(path)
 	if err != nil {
@@ -216,4 +321,147 @@ func standardizeJSON(b []byte) ([]byte, error) {
 	}
 	ast.Standardize()
 	return ast.Pack(), nil
+}
+
+func isGitHubURL(path string) bool {
+	if strings.HasPrefix(path, "github.com/") ||
+		strings.HasPrefix(path, "https://github.com/") ||
+		strings.HasPrefix(path, "http://github.com/") {
+		return true
+	}
+	return false
+}
+
+func NewAppFromGitHub(githubURL string) (*App, error) {
+	if !strings.HasPrefix(githubURL, "https://") && !strings.HasPrefix(githubURL, "http://") {
+		githubURL = "https://" + githubURL
+	}
+
+	parsedURL, err := url.Parse(githubURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid GitHub URL: %w", err)
+	}
+
+	if parsedURL.Host != "github.com" {
+		return nil, fmt.Errorf("not a GitHub URL: %s", githubURL)
+	}
+
+	pathParts := strings.Split(strings.TrimPrefix(parsedURL.Path, "/"), "/")
+	if len(pathParts) < 2 {
+		return nil, fmt.Errorf("invalid GitHub repository URL format")
+	}
+
+	owner := pathParts[0]
+	repo := strings.TrimSuffix(pathParts[1], ".git")
+	branch := "main"
+
+	if len(pathParts) >= 4 && pathParts[2] == "tree" {
+		branch = pathParts[3]
+	}
+
+	client := &GitHubClient{
+		Owner:  owner,
+		Repo:   repo,
+		Branch: branch,
+		Token:  os.Getenv("GITHUB_TOKEN"),
+		Cache:  make(map[string]interface{}),
+	}
+
+	return &App{
+		Source:       fmt.Sprintf("github.com/%s/%s", owner, repo),
+		IsRemote:     true,
+		RemoteURL:    githubURL,
+		GitHubClient: client,
+	}, nil
+}
+
+func (g *GitHubClient) makeRequest(endpoint string) ([]byte, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/%s", g.Owner, g.Repo, endpoint)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	if g.Token != "" {
+		req.Header.Set("Authorization", "token "+g.Token)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("GitHub API error: %s (status %d)\n%s", url, resp.StatusCode, string(body))
+	}
+
+	return io.ReadAll(resp.Body)
+}
+
+func (g *GitHubClient) getTree() (*GitHubTree, error) {
+	if cached, ok := g.Cache["tree"]; ok {
+		return cached.(*GitHubTree), nil
+	}
+
+	data, err := g.makeRequest(fmt.Sprintf("git/trees/%s?recursive=1", g.Branch))
+	if err != nil {
+		data, err = g.makeRequest("git/trees/master?recursive=1")
+		if err != nil {
+			return nil, fmt.Errorf("failed to get repository tree: %w", err)
+		}
+	}
+
+	var tree GitHubTree
+	if err := json.Unmarshal(data, &tree); err != nil {
+		return nil, err
+	}
+
+	g.Cache["tree"] = &tree
+	return &tree, nil
+}
+
+func (g *GitHubClient) getFileContent(path string) (string, error) {
+	cacheKey := "file:" + path
+	if cached, ok := g.Cache[cacheKey]; ok {
+		return cached.(string), nil
+	}
+
+	data, err := g.makeRequest(fmt.Sprintf("contents/%s?ref=%s", path, g.Branch))
+	if err != nil {
+		if strings.Contains(err.Error(), "404") {
+			data, err = g.makeRequest(fmt.Sprintf("contents/%s?ref=master", path))
+			if err != nil {
+				return "", err
+			}
+		} else {
+			return "", err
+		}
+	}
+
+	var content GitHubContent
+	if err := json.Unmarshal(data, &content); err != nil {
+		return "", err
+	}
+
+	if content.Type != "file" {
+		return "", fmt.Errorf("%s is not a file", path)
+	}
+
+	if content.Encoding == "base64" {
+		decoded, err := base64.StdEncoding.DecodeString(content.Content)
+		if err != nil {
+			return "", err
+		}
+		result := string(decoded)
+		g.Cache[cacheKey] = result
+		return result, nil
+	}
+
+	g.Cache[cacheKey] = content.Content
+	return content.Content, nil
 }

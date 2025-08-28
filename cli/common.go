@@ -48,7 +48,7 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 	directory := cmd.Args().First()
 
 	if directory == "" {
-		return nil, nil, nil, cli.Exit("directory argument is required", 1)
+		return nil, nil, nil, cli.Exit("directory or GitHub URL argument is required", 1)
 	}
 
 	app, err := a.NewApp(directory)

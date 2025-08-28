@@ -15,7 +15,8 @@ var InfoCommand = &cli.Command{
 	Name:                  "info",
 	Aliases:               []string{"i"},
 	Usage:                 "get as much information as possible about an app",
-	ArgsUsage:             "DIRECTORY",
+	ArgsUsage:             "DIRECTORY_OR_GITHUB_URL",
+	Description:           "Scan a local directory or GitHub repository to detect language, frameworks, and generate build information.\nFor GitHub repos, use format: github.com/owner/repo or https://github.com/owner/repo",
 	EnableShellCompletion: true,
 	Flags: append([]cli.Flag{
 		&cli.StringFlag{
@@ -29,19 +30,33 @@ var InfoCommand = &cli.Command{
 		},
 	}, commonPlanFlags()...),
 	Action: func(ctx context.Context, cmd *cli.Command) error {
-		buildResult, _, _, err := GenerateBuildResultForCommand(cmd)
+		buildResult, app, _, err := GenerateBuildResultForCommand(cmd)
 		if err != nil {
 			return cli.Exit(err, 1)
 		}
+		defer func() {
+			if app != nil && app.IsRemote {
+				authStatus := "unauthenticated"
+				if app.GitHubClient != nil && app.GitHubClient.Token != "" {
+					authStatus = "authenticated"
+				}
+				log.Infof("Scanned GitHub repo: %s (%s)", app.RemoteURL, authStatus)
+			}
+		}()
 
 		format := cmd.String("format")
 
 		var buildResultString string
 		if format == "pretty" {
-			buildResultString = core.FormatBuildResult(buildResult, core.PrintOptions{
+			opts := core.PrintOptions{
 				Metadata: true,
 				Version:  Version,
-			})
+			}
+			if app != nil && app.IsRemote {
+				opts.GitHubURL = app.RemoteURL
+				opts.GitHubAuth = app.GitHubClient != nil && app.GitHubClient.Token != ""
+			}
+			buildResultString = core.FormatBuildResult(buildResult, opts)
 		} else {
 			serializedResult, err := json.MarshalIndent(buildResult, "", "  ")
 			if err != nil {

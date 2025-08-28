@@ -69,6 +69,13 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 
 	if p.workspace != nil && len(p.workspace.Packages) > 0 {
 		ctx.Logger.LogInfo("Found workspace with %d packages", len(p.workspace.Packages))
+		for _, pkg := range p.workspace.Packages {
+			pkgName := pkg.PackageJson.Name
+			if pkgName == "" {
+				pkgName = "(unnamed)"
+			}
+			ctx.Logger.LogInfo("  - %s at %s", pkgName, pkg.Path)
+		}
 	}
 
 	isSPA := p.isSPA(ctx)
