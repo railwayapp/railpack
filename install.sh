@@ -117,7 +117,7 @@ download() {
   fi
 
   $cmd && return 0 || rc=$?
-  
+
   error "Command failed (exit code $rc): ${BLUE}${cmd}${NO_COLOR}"
   printf "\n" >&2
   info "This is likely due to railpack not yet supporting your configuration."
@@ -310,7 +310,7 @@ is_build_available() {
 UNINSTALL=0
 HELP=0
 
-DEFAULT_VERSION=$(curl -s "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest" | grep -o '"tag_name": "v.*"' | cut -d'"' -f4 | cut -c2-)
+DEFAULT_VERSION=$(curl --fail --silent --show-error ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest" | grep -o '"tag_name": "v.*"' | cut -d'"' -f4 | cut -c2-)
 
 # defaults
 if [ -z "${RAILPACK_VERSION-}" ]; then
@@ -466,12 +466,12 @@ install "${EXT}"
 printf "$GREEN"
 cat <<'EOF'
 
-   ____       _ _                  _    
+   ____       _ _                  _
   |  _ \ __ _(_) |_ __   __ _  ___| | __
   | |_) / _` | | | '_ \ / _` |/ __| |/ /
-  |  _ < (_| | | | |_) | (_| | (__|   < 
+  |  _ < (_| | | | |_) | (_| | (__|   <
   |_| \_\__,_|_|_| .__/ \__,_|\___|_|\_\
-                  |_|                     
+                  |_|
 
   Railpack is now installed!
   Run 'railpack --help' to get started
