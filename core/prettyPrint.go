@@ -94,10 +94,10 @@ var (
 )
 
 type PrintOptions struct {
-	Metadata         bool
-	Version          string
-	GitHubURL        string
-	GitHubAuth       bool
+	Metadata   bool
+	Version    string
+	GitHubURL  string
+	GitHubAuth bool
 }
 
 func PrettyPrintBuildResult(buildResult *BuildResult, options ...PrintOptions) {
