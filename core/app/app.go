@@ -90,6 +90,14 @@ func (a *App) findGlob(pattern string) ([]string, error) {
 	return matches, nil
 }
 
+// Check if a relative file exists in the app's source directory
+func (a *App) HasFile(path string) bool {
+	fullPath := filepath.Join(a.Source, path)
+
+	_, err := os.Stat(fullPath)
+	return !os.IsNotExist(err)
+}
+
 // HasMatch checks if a path matching a glob exists (files or directories)
 func (a *App) HasMatch(pattern string) bool {
 	files, err := a.FindFiles(pattern)
