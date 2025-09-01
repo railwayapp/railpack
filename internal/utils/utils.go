@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/tailscale/hujson"
 )
 
 func RemoveDuplicates[T comparable](sliceList []T) []T {
@@ -158,4 +160,14 @@ type Semver struct {
 	Major int
 	Minor int
 	Patch int
+}
+
+// convert hujson/extended JSON into standardized json
+func StandardizeJSON(b []byte) ([]byte, error) {
+	ast, err := hujson.Parse(b)
+	if err != nil {
+		return b, err
+	}
+	ast.Standardize()
+	return ast.Pack(), nil
 }
