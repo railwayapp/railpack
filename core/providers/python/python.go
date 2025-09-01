@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/internal/utils"
@@ -47,12 +48,17 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 	install.Secrets = []string{}
 	install.UseSecretsWithPrefixes([]string{"PYTHON", "PIP", "PIPX", "UV", "PDM", "POETRY"})
 
+	build := ctx.NewCommandStep("build")
 	installOutputs := []string{}
 
 	if p.hasRequirements(ctx) {
 		installOutputs = p.InstallPip(ctx, install)
 	} else if p.hasPyproject(ctx) && p.hasUv(ctx) {
 		installOutputs = p.InstallUv(ctx, install)
+		build.AddCommands([]plan.Command{
+			// the project is not installed during the install phase, because it requires the project source
+			plan.NewExecCommand("uv sync --locked --no-dev --no-editable"),
+		})
 	} else if p.hasPyproject(ctx) && p.hasPoetry(ctx) {
 		installOutputs = p.InstallPoetry(ctx, install)
 	} else if p.hasPyproject(ctx) && p.hasPdm(ctx) {
@@ -63,7 +69,6 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 
 	p.addMetadata(ctx)
 
-	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewStepLayer(install.Name()))
 	build.AddInput(plan.NewLocalLayer())
 
@@ -148,9 +153,10 @@ func (p *PythonProvider) InstallUv(ctx *generate.GenerateContext, install *gener
 	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
-		plan.NewExecCommand("uv sync --locked --no-dev --no-install-project --no-install-workspace"),
-		plan.NewCopyCommand("."),
-		plan.NewExecCommand("uv sync --locked --no-dev --no-editable"),
+		// if we exclude workspace packages, uv.lock will fail the frozen test and the user will get an error
+		// to avoid this, we (a) detect if workspace packages are required (b) if they aren't, we don't include project
+		// source in order to optimize layer caching (c) install project in the build phase.
+		plan.NewExecCommand("uv sync --locked --no-dev --no-install-project"),
 	})
 
 	return []string{VENV_PATH}
@@ -369,8 +375,26 @@ func (p *PythonProvider) installNeedsAllFiles(ctx *generate.GenerateContext) boo
 		return strings.Contains(requirementsContent, "file://")
 	}
 
+	// inspect pyproject.toml for local path references or uv workspace usage
 	if pyprojectContent, err := ctx.App.ReadFile("pyproject.toml"); err == nil {
-		return strings.Contains(pyprojectContent, "file://") || strings.Contains(pyprojectContent, "path = ")
+		if strings.Contains(pyprojectContent, "file://") || strings.Contains(pyprojectContent, "path = ") {
+			return true
+		}
+	}
+
+	// TODO just having a `uv.tool.workspace` key doesn't necessarily mean you are listing a workspace item as a dependency
+	// parse TOML using existing helper to check for tool.uv.workspace key
+	var pyproject map[string]any
+	if err := ctx.App.ReadTOML("pyproject.toml", &pyproject); err == nil {
+		if tool, ok := pyproject["tool"].(map[string]any); ok {
+			if uv, ok := tool["uv"].(map[string]any); ok {
+				if _, exists := uv["workspace"]; exists {
+					return true
+				}
+			}
+		}
+	} else {
+		log.Infof("Failed to read pyproject.toml: %v", err)
 	}
 
 	return false
