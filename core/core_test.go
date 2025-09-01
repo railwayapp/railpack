@@ -111,5 +111,5 @@ func TestGenerateConfigFromFile_AbsolutePath(t *testing.T) {
 	require.NoError(t, genErr, "expected no error for absolute config path")
 	require.NotNil(t, cfg, "config should not be nil")
 	// Basic sanity check: provider should be carried through from example config
-	require.Equal(t, "node", cfg.Provider)
+	require.Equal(t, "node", *cfg.Provider)
 }
