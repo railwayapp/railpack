@@ -1,7 +1,8 @@
 import workspace_package
 
 def main():
-    print("Hello from python-uv-workspace!")
+    # test.json doesn't like newlines
+    print("Hello from python-uv-workspace!", end="")
     workspace_package.main()
 
 

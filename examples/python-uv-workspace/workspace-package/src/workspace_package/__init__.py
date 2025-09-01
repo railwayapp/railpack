@@ -1,2 +1,2 @@
 def main() -> None:
-    print("Hello from workspace-package!")
+    print("Hello from workspace-package!", end="")
