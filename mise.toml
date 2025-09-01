@@ -1,5 +1,6 @@
 [env]
 BUILDKIT_HOST = "docker-container://buildkit"
+_.path = './bin'
 
 [tasks.setup]
 run = [
