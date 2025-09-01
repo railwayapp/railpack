@@ -136,9 +136,6 @@
     {
      "dest": ".",
      "src": "."
-    },
-    {
-     "cmd": "yarn run build"
     }
    ],
    "inputs": [
