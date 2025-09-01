@@ -1,0 +1,19 @@
+version = 1
+revision = 3
+requires-python = ">=3.13"
+
+[manifest]
+members = [
+    "python-uv-workspace",
+    "workspace-package",
+]
+
+[[package]]
+name = "python-uv-workspace"
+version = "0.1.0"
+source = { virtual = "." }
+
+[[package]]
+name = "workspace-package"
+version = "0.1.0"
+source = { editable = "workspace-package" }

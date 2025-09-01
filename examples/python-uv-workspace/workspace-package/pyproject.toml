@@ -1,0 +1,17 @@
+[project]
+name = "workspace-package"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Michael Bianco", email = "mike@mikebian.co" }
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[project.scripts]
+workspace-package = "workspace_package:main"
+
+[build-system]
+requires = ["uv_build>=0.8.11,<0.9.0"]
+build-backend = "uv_build"

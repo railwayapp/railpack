@@ -148,7 +148,7 @@ func (p *PythonProvider) InstallUv(ctx *generate.GenerateContext, install *gener
 	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
-		plan.NewExecCommand("uv sync --locked --no-dev --no-install-project"),
+		plan.NewExecCommand("uv sync --locked --no-dev --no-install-project --no-install-workspace"),
 		plan.NewCopyCommand("."),
 		plan.NewExecCommand("uv sync --locked --no-dev --no-editable"),
 	})
