@@ -171,7 +171,7 @@ func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 }
 
 func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
-	build.AddCommand(plan.NewCopyCommand("."))
+	build.AddInput(plan.NewLocalLayer())
 
 	_, ok := p.packageJson.Scripts["build"]
 	if ok {

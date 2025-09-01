@@ -27,8 +27,8 @@ func (p *JavaProvider) StartCommandHelp() string {
 
 func (p *JavaProvider) Plan(ctx *generate.GenerateContext) error {
 	build := ctx.NewCommandStep("build")
-	build.AddCommand(plan.NewCopyCommand("."))
-	build.Inputs = []plan.Layer{plan.NewStepLayer(ctx.GetMiseStepBuilder().Name())}
+	build.AddInput(plan.NewStepLayer(ctx.GetMiseStepBuilder().Name()))
+	build.AddInput(plan.NewLocalLayer())
 
 	if p.usesGradle(ctx) {
 		ctx.Logger.LogInfo("Using Gradle")

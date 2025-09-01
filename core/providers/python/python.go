@@ -65,7 +65,7 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 
 	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewStepLayer(install.Name()))
-	build.AddCommand(plan.NewCopyCommand("."))
+	build.AddInput(plan.NewLocalLayer())
 
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 	maps.Copy(ctx.Deploy.Variables, p.GetPythonEnvVars(ctx))
@@ -340,7 +340,7 @@ func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[str
 
 func (p *PythonProvider) copyInstallFiles(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
 	if p.installNeedsAllFiles(ctx) {
-		install.AddCommand(plan.NewCopyCommand("."))
+		install.AddInput(plan.NewLocalLayer())
 		return
 	}
 
@@ -362,6 +362,8 @@ func (p *PythonProvider) copyInstallFiles(ctx *generate.GenerateContext, install
 	}
 }
 
+// inspect python dependency files and determine if local packages are referenced, and therefore all files are required
+// for installation.
 func (p *PythonProvider) installNeedsAllFiles(ctx *generate.GenerateContext) bool {
 	if requirementsContent, err := ctx.App.ReadFile("requirements.txt"); err == nil {
 		return strings.Contains(requirementsContent, "file://")
