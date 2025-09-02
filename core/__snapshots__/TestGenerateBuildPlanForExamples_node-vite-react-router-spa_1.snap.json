@@ -8,6 +8,10 @@
    "directory": "/root/.local/share/pnpm/store/v3",
    "type": "shared"
   },
+  "react-router": {
+   "directory": "/app/.react-router",
+   "type": "shared"
+  },
   "vite": {
    "directory": "/app/node_modules/.vite",
    "type": "shared"
@@ -117,7 +121,8 @@
   {
    "caches": [
     "node-modules",
-    "vite"
+    "vite",
+    "react-router"
    ],
    "commands": [
     {
