@@ -111,6 +111,9 @@
      "customName": "npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate"
     },
     {
+     "cmd": "mkdir -p /app/node_modules/.cache"
+    },
+    {
      "dest": "package.json",
      "src": "package.json"
     },

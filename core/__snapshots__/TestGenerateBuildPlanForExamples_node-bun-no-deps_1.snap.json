@@ -1,9 +1,5 @@
 {
  "caches": {
-  "next": {
-   "directory": "/app/.next/cache",
-   "type": "shared"
-  },
   "node-modules": {
    "directory": "/app/node_modules/.cache",
    "type": "shared"
@@ -71,7 +67,7 @@
     },
     {
      "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
-     "customName": "install mise packages: node"
+     "customName": "install mise packages: bun, node"
     }
    ],
    "inputs": [
@@ -105,11 +101,7 @@
      "src": "package.json"
     },
     {
-     "dest": "package-lock.json",
-     "src": "package-lock.json"
-    },
-    {
-     "cmd": "npm ci"
+     "cmd": "npm install"
     }
    ],
    "inputs": [
@@ -128,16 +120,12 @@
   },
   {
    "caches": [
-    "node-modules",
-    "next"
+    "node-modules"
    ],
    "commands": [
     {
      "dest": ".",
      "src": "."
-    },
-    {
-     "cmd": "npm run build"
     }
    ],
    "inputs": [
@@ -148,10 +136,7 @@
    "name": "build",
    "secrets": [
     "*"
-   ],
-   "variables": {
-    "NEXT_TELEMETRY_DISABLED": "1"
-   }
+   ]
   }
  ]
 }

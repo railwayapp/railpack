@@ -18,7 +18,8 @@ const (
 	DEFAULT_NODE_VERSION = "22"
 	DEFAULT_BUN_VERSION  = "latest"
 
-	COREPACK_HOME = "/opt/corepack"
+	COREPACK_HOME      = "/opt/corepack"
+	NODE_MODULES_CACHE = "/app/node_modules/.cache"
 )
 
 var (
@@ -258,6 +259,12 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 			plan.NewExecShellCommand("npm i -g corepack@latest && corepack enable && corepack prepare --activate"),
 		})
 	}
+	install.AddCommands([]plan.Command{
+		// it's possible for a package.json to exist without any dependencies, in which case node_modules is not generated
+		// and bun.lockb, etc are not generated either. However, this path is used to compute the cache key, so we ensure
+		// it exists on the filesystem to avoid a docker cache key computation error.
+		plan.NewExecCommand(fmt.Sprintf("mkdir -p %s", NODE_MODULES_CACHE)),
+	})
 
 	p.packageManager.installDependencies(ctx, p.workspace, install)
 }
