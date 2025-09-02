@@ -18,8 +18,9 @@ var Version string // This will be set by main
 func commonPlanFlags() []cli.Flag {
 	return []cli.Flag{
 		&cli.StringSliceFlag{
-			Name:  "env",
-			Usage: "environment variables to set",
+			Name:    "env",
+			Aliases: []string{"e"},
+			Usage:   "environment variables to set",
 		},
 		&cli.StringSliceFlag{
 			Name:  "previous",
