@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/containerd/platforms"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
@@ -32,7 +33,27 @@ func DetermineBuildPlatformFromHost() BuildPlatform {
 	return PlatformLinuxAMD64
 }
 
+func ParsePlatform(platformStr string) (BuildPlatform, error) {
+	if platformStr == "" {
+		return DetermineBuildPlatformFromHost(), nil
+	}
+
+	platform, err := platforms.Parse(platformStr)
+	if err != nil {
+		return BuildPlatform{}, fmt.Errorf("invalid platform format: %s. Must be one of: linux/amd64, linux/arm64, etc", platformStr)
+	}
+
+	return BuildPlatform{
+		OS:           platform.OS,
+		Architecture: platform.Architecture,
+		Variant:      platform.Variant,
+	}, nil
+}
+
 func (p BuildPlatform) String() string {
+	if p.Variant != "" {
+		return fmt.Sprintf("%s/%s/%s", p.OS, p.Architecture, p.Variant)
+	}
 	return fmt.Sprintf("%s/%s", p.OS, p.Architecture)
 }
 
