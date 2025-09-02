@@ -21,7 +21,7 @@
    "type": "shared"
   },
   "vite": {
-   "directory": "node_modules/.vite",
+   "directory": "/app/node_modules/.vite",
    "type": "shared"
   }
  },
@@ -78,6 +78,7 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_VERIFY": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
@@ -90,7 +91,7 @@
    ],
    "inputs": [
     {
-     "image": "dunglas/frankenphp:php8.2.28-bookworm"
+     "image": "dunglas/frankenphp:php8.2.29-bookworm"
     }
    ],
    "name": "packages:image"
@@ -235,7 +236,7 @@
    ],
    "commands": [
     {
-     "cmd": "npm prune --omit=dev"
+     "cmd": "npm prune --omit=dev --ignore-scripts"
     }
    ],
    "inputs": [

@@ -30,6 +30,7 @@ Railpack builds your Elixir application based on your project structure. The bui
 
 - Installs Elixir and Erlang
 - Gets and compiles dependencies using `mix deps.get --only prod` and `mix deps.compile`
+- If defined, prepares assets using `mix assets.setup`
 - If defined, deploys assets and ecto using `mix assets.deploy` and `mix ecto.deploy`
 - Compiles a release for the project using `mix compile` and `mix release`
 - Sets up the start command from your release binary

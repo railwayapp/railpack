@@ -56,7 +56,8 @@ func (p *RustProvider) Plan(ctx *generate.GenerateContext) error {
 	maps.Copy(ctx.Deploy.Variables, p.GetRustEnvVars(ctx))
 	ctx.Deploy.AddInputs([]plan.Layer{
 		plan.NewStepLayer(build.Name(), plan.Filter{
-			Include: []string{"/app/bin"},
+			Include: []string{"."},
+			Exclude: []string{"target"},
 		}),
 	})
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)

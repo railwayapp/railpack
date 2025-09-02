@@ -32,17 +32,20 @@ func (p *ShellProvider) Plan(ctx *generate.GenerateContext) error {
 
 	ctx.Logger.LogInfo("Using shell script: %s", p.scriptName)
 
-	setup := ctx.NewCommandStep("setup")
-	setup.AddInput(plan.NewImageLayer(plan.RailpackRuntimeImage))
-	setup.AddCommands(
+	build := ctx.NewCommandStep("build")
+	build.AddInput(plan.NewImageLayer(plan.RailpackRuntimeImage))
+	build.AddCommands(
 		[]plan.Command{
 			plan.NewCopyCommand("."),
 			plan.NewExecCommand("chmod +x " + p.scriptName),
 		},
 	)
 
-	ctx.Deploy.Base = plan.NewStepLayer(setup.Name())
-	ctx.Deploy.AddInputs([]plan.Layer{ctx.GetMiseStepBuilder().GetLayer()})
+	ctx.Deploy.AddInputs([]plan.Layer{
+		plan.NewStepLayer(build.Name(), plan.Filter{
+			Include: []string{"."},
+		}),
+	})
 
 	return nil
 }

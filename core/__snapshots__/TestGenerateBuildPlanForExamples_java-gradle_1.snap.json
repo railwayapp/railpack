@@ -59,6 +59,7 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_VERIFY": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
@@ -72,7 +73,7 @@
      "src": "."
     },
     {
-     "cmd": "./gradlew clean build -x check -x test"
+     "cmd": "./gradlew clean build -x check -x test -Pproduction"
     }
    ],
    "inputs": [
@@ -114,6 +115,7 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_VERIFY": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
   }

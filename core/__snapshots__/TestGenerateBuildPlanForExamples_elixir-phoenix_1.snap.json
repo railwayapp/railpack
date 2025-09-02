@@ -50,6 +50,7 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_VERIFY": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
@@ -85,6 +86,9 @@
     },
     {
      "cmd": "mix deps.compile"
+    },
+    {
+     "cmd": "mix assets.setup"
     }
    ],
    "inputs": [
@@ -93,9 +97,6 @@
     }
    ],
    "name": "install",
-   "secrets": [
-    "*"
-   ],
    "variables": {
     "ELIXIR_ERL_OPTIONS": "+fnu",
     "LANG": "en_US.UTF-8",
@@ -119,14 +120,18 @@
      "src": "assets*"
     },
     {
-     "cmd": "mix assets.deploy"
+     "dest": "config/",
+     "src": "config/runtime.exs*"
     },
     {
      "cmd": "mix compile"
     },
     {
-     "dest": "config/",
-     "src": "config/runtime.exs*"
+     "cmd": "mix assets.deploy"
+    },
+    {
+     "dest": ".",
+     "src": "rel*"
     },
     {
      "cmd": "mix release"

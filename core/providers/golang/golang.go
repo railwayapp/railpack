@@ -23,7 +23,7 @@ func (p *GoProvider) Name() string {
 }
 
 func (p *GoProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
-	return p.isGoMod(ctx) || ctx.App.HasMatch("main.go"), nil
+	return p.isGoMod(ctx) || p.isGoWorkspace(ctx) || ctx.App.HasMatch("main.go"), nil
 }
 
 func (p *GoProvider) Initialize(ctx *generate.GenerateContext) error {
@@ -68,17 +68,37 @@ func (p *GoProvider) Build(ctx *generate.GenerateContext, build *generate.Comman
 	flags := "-w -s"
 	baseBuildCmd := fmt.Sprintf("go build -ldflags=\"%s\" -o %s", flags, GO_BINARY_NAME)
 
-	if binName, _ := ctx.Env.GetConfigVariable("GO_BIN"); binName != "" {
+	if modulePath, _ := ctx.Env.GetConfigVariable("GO_WORKSPACE_MODULE"); modulePath != "" {
+		// Use the provided env var path to build the specified module
+		ctx.Logger.LogInfo("Building workspace module: %s", modulePath)
+		buildCmd = fmt.Sprintf("%s ./%s", baseBuildCmd, modulePath)
+	} else if binName, _ := ctx.Env.GetConfigVariable("GO_BIN"); binName != "" {
+		// Use the provided env var path to build the specified command
+		ctx.Logger.LogInfo("Building bin: %s", binName)
 		buildCmd = fmt.Sprintf("%s ./cmd/%s", baseBuildCmd, binName)
 	} else if p.isGoMod(ctx) && p.hasRootGoFiles(ctx) {
+		// Use the default build command if there are root go files
 		buildCmd = baseBuildCmd
 	} else if dirs, err := ctx.App.FindDirectories("cmd/*"); err == nil && len(dirs) > 0 {
-		// Try to find a command in the cmd directory
+		// Try to find a command in the cmd directory if no other build command is specified
 		cmdName := filepath.Base(dirs[0])
+		ctx.Logger.LogInfo("Building command: %s", cmdName)
 		buildCmd = fmt.Sprintf("%s ./cmd/%s", baseBuildCmd, cmdName)
 	} else if p.isGoMod(ctx) {
+		// Use the default build command if there are no root go files
 		buildCmd = baseBuildCmd
+	} else if p.isGoWorkspace(ctx) {
+		// For workspaces without explicit module selection, try to find a module with main package
+		packages := p.GoWorkspacePackages(ctx)
+		for _, pkg := range packages {
+			if ctx.App.HasMatch(filepath.Join(pkg, "main.go")) {
+				ctx.Logger.LogInfo("Building workspace module: %s", pkg)
+				buildCmd = fmt.Sprintf("%s ./%s", baseBuildCmd, pkg)
+				break
+			}
+		}
 	} else if ctx.App.HasMatch("main.go") {
+		// Fallback to building the main package if no other build command is specified
 		buildCmd = fmt.Sprintf("%s main.go", baseBuildCmd)
 	}
 
@@ -103,15 +123,32 @@ func (p *GoProvider) InstallGoDeps(ctx *generate.GenerateContext, install *gener
 		plan.NewPathCommand(fmt.Sprintf("%s/bin", GO_PATH)),
 	})
 
-	if !p.isGoMod(ctx) {
+	if !p.isGoMod(ctx) && !p.isGoWorkspace(ctx) {
 		return
 	}
 
 	install.AddCache(p.goBuildCache(ctx))
-	install.AddCommand(plan.NewCopyCommand("go.mod"))
 
-	if ctx.App.HasMatch("go.sum") {
-		install.AddCommand(plan.NewCopyCommand("go.sum"))
+	if p.isGoMod(ctx) {
+		install.AddCommand(plan.NewCopyCommand("go.mod"))
+		if ctx.App.HasMatch("go.sum") {
+			install.AddCommand(plan.NewCopyCommand("go.sum"))
+		}
+	}
+
+	if p.isGoWorkspace(ctx) {
+		install.AddCommand(plan.NewCopyCommand("go.work"))
+		if ctx.App.HasMatch("go.work.sum") {
+			install.AddCommand(plan.NewCopyCommand("go.work.sum"))
+		}
+	}
+
+	workspacePackages := p.GoWorkspacePackages(ctx)
+	for _, pkgPath := range workspacePackages {
+		install.AddCommand(plan.NewCopyCommand(filepath.Join(pkgPath, "go.mod")))
+		if ctx.App.HasMatch(filepath.Join(pkgPath, "go.sum")) {
+			install.AddCommand(plan.NewCopyCommand(filepath.Join(pkgPath, "go.sum")))
+		}
 	}
 
 	install.AddCommand(plan.NewExecCommand("go mod download"))
@@ -157,6 +194,7 @@ func (p *GoProvider) GetBuilder(ctx *generate.GenerateContext) *generate.MiseSte
 
 func (p *GoProvider) addMetadata(ctx *generate.GenerateContext) {
 	ctx.Metadata.SetBool("goMod", p.isGoMod(ctx))
+	ctx.Metadata.SetBool("goWorkspace", p.isGoWorkspace(ctx))
 	ctx.Metadata.SetBool("goRootFile", p.hasRootGoFiles(ctx))
 	ctx.Metadata.SetBool("goGin", p.isGin(ctx))
 	ctx.Metadata.SetBool("goCGO", p.hasCGOEnabled(ctx))
@@ -193,9 +231,34 @@ func (p *GoProvider) isGoMod(ctx *generate.GenerateContext) bool {
 	return ctx.App.HasMatch("go.mod")
 }
 
+func (p *GoProvider) GoWorkspacePackages(ctx *generate.GenerateContext) []string {
+	var packages []string
+
+	goModFiles, err := ctx.App.FindFiles("**/go.mod")
+	if err != nil {
+		return packages
+	}
+
+	for _, modFile := range goModFiles {
+		if modFile == "go.mod" {
+			continue
+		}
+
+		dir := filepath.Dir(modFile)
+		packages = append(packages, dir)
+	}
+
+	return packages
+}
+
+func (p *GoProvider) isGoWorkspace(ctx *generate.GenerateContext) bool {
+	return ctx.App.HasMatch("go.work")
+}
+
 func (p *GoProvider) StartCommandHelp() string {
 	return "To configure your start command, Railpack will check:\n\n" +
 		"1. Create a main.go file in your project root\n\n" +
 		"2. Create a command in the cmd directory (e.g., cmd/server/main.go)\n\n" +
-		"3. Set the GO_BIN environment variable to specify which command to build"
+		"3. Set the GO_BIN environment variable to specify which command to build\n\n" +
+		"4. For workspaces: Set GO_WORKSPACE_MODULE to build a specific module (e.g., GO_WORKSPACE_MODULE=api)"
 }

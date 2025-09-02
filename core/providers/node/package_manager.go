@@ -4,16 +4,17 @@ import (
 	"fmt"
 	"strings"
 
+	semver "github.com/Masterminds/semver/v3"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 )
 
 const (
-	PackageManagerNpm   PackageManager = "npm"
-	PackageManagerPnpm  PackageManager = "pnpm"
-	PackageManagerBun   PackageManager = "bun"
-	PackageManagerYarn1 PackageManager = "yarn1"
-	PackageManagerYarn2 PackageManager = "yarn2"
+	PackageManagerNpm       PackageManager = "npm"
+	PackageManagerPnpm      PackageManager = "pnpm"
+	PackageManagerBun       PackageManager = "bun"
+	PackageManagerYarn1     PackageManager = "yarn1"
+	PackageManagerYarnBerry PackageManager = "yarnberry"
 
 	DEFAULT_PNPM_VERSION = "9"
 )
@@ -26,7 +27,7 @@ func (p PackageManager) Name() string {
 		return "pnpm"
 	case PackageManagerBun:
 		return "bun"
-	case PackageManagerYarn1, PackageManagerYarn2:
+	case PackageManagerYarn1, PackageManagerYarnBerry:
 		return "yarn"
 	default:
 		return ""
@@ -44,11 +45,20 @@ func (p PackageManager) RunScriptCommand(cmd string) string {
 	return "node " + cmd
 }
 
-func (p PackageManager) installDependencies(ctx *generate.GenerateContext, packageJson *PackageJson, install *generate.CommandStepBuilder) {
-	hasPreInstall := packageJson.Scripts != nil && packageJson.Scripts["preinstall"] != ""
-	hasPostInstall := packageJson.Scripts != nil && packageJson.Scripts["postinstall"] != ""
-	hasPrepare := packageJson.Scripts != nil && packageJson.Scripts["prepare"] != ""
-	usesLocalFile := p.usesLocalFile(ctx)
+func (p PackageManager) installDependencies(ctx *generate.GenerateContext, workspace *Workspace, install *generate.CommandStepBuilder) {
+	packageJsons := workspace.AllPackageJson()
+
+	hasPreInstall := false
+	hasPostInstall := false
+	hasPrepare := false
+	usesLocalFile := false
+
+	for _, packageJson := range packageJsons {
+		hasPreInstall = hasPreInstall || (packageJson.Scripts != nil && packageJson.Scripts["preinstall"] != "")
+		hasPostInstall = hasPostInstall || (packageJson.Scripts != nil && packageJson.Scripts["postinstall"] != "")
+		hasPrepare = hasPrepare || (packageJson.Scripts != nil && packageJson.Scripts["prepare"] != "")
+		usesLocalFile = usesLocalFile || p.usesLocalFile(ctx)
+	}
 
 	// If there are any pre/post install scripts, we need the entire app to be copied
 	// This is to handle things like patch-package
@@ -81,7 +91,7 @@ func (p PackageManager) GetInstallCache(ctx *generate.GenerateContext) string {
 		return ctx.Caches.AddCache("bun-install", "/root/.bun/install/cache")
 	case PackageManagerYarn1:
 		return ctx.Caches.AddCacheWithType("yarn-install", "/usr/local/share/.cache/yarn", plan.CacheTypeLocked)
-	case PackageManagerYarn2:
+	case PackageManagerYarnBerry:
 		return ctx.Caches.AddCache("yarn-install", "/app/.yarn/cache")
 	default:
 		return ""
@@ -100,12 +110,17 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 			install.AddCommand(plan.NewExecCommand("npm install"))
 		}
 	case PackageManagerPnpm:
-		install.AddCommand(plan.NewExecCommand("pnpm install --frozen-lockfile --prefer-offline"))
+		hasLockfile := ctx.App.HasMatch("pnpm-lock.yaml")
+		if hasLockfile {
+			install.AddCommand(plan.NewExecCommand("pnpm install --frozen-lockfile --prefer-offline"))
+		} else {
+			install.AddCommand(plan.NewExecCommand("pnpm install"))
+		}
 	case PackageManagerBun:
 		install.AddCommand(plan.NewExecCommand("bun install --frozen-lockfile"))
 	case PackageManagerYarn1:
 		install.AddCommand(plan.NewExecCommand("yarn install --frozen-lockfile"))
-	case PackageManagerYarn2:
+	case PackageManagerYarnBerry:
 		install.AddCommand(plan.NewExecCommand("yarn install --check-cache"))
 	}
 }
@@ -113,26 +128,80 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
 	prune.AddCache(p.GetInstallCache(ctx))
 
+	if pruneCmd, _ := ctx.Env.GetConfigVariable("NODE_PRUNE_CMD"); pruneCmd != "" {
+		prune.AddCommand(plan.NewExecCommand(pruneCmd))
+		return
+	}
+
 	switch p {
 	case PackageManagerNpm:
-		prune.AddCommand(plan.NewExecCommand("npm prune --omit=dev"))
+		prune.AddCommand(plan.NewExecCommand("npm prune --omit=dev --ignore-scripts"))
 	case PackageManagerPnpm:
-		prune.AddCommand(plan.NewExecCommand("pnpm prune --prod"))
+		p.prunePnpm(ctx, prune)
 	case PackageManagerBun:
 		// Prune is not supported in Bun. https://github.com/oven-sh/bun/issues/3605
-		prune.AddCommand(plan.NewExecShellCommand("rm -rf node_modules && bun install --production"))
+		prune.AddCommand(plan.NewExecShellCommand("rm -rf node_modules && bun install --production --ignore-scripts"))
 	case PackageManagerYarn1:
 		prune.AddCommand(plan.NewExecCommand("yarn install --production=true"))
-	case PackageManagerYarn2:
-		prune.AddCommand(plan.NewExecCommand("yarn workspaces focus --production --all"))
+	case PackageManagerYarnBerry:
+		p.pruneYarnBerry(ctx, prune)
 	}
+}
+
+func (p PackageManager) prunePnpm(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
+	if packageJson, err := p.getPackageJsonFromContext(ctx); err == nil {
+		_, pnpmVersion := packageJson.GetPackageManagerInfo()
+		if pnpmVersion != "" {
+			pnpmVersion, err := semver.NewVersion(pnpmVersion)
+
+			// pnpm 8.15.6 added the --ignore-scripts flag to the prune command
+			// https://github.com/pnpm/pnpm/releases/tag/v8.15.6
+			if err == nil && pnpmVersion.Compare(semver.MustParse("8.15.6")) == -1 {
+				prune.AddCommand(plan.NewExecCommand("pnpm prune --prod"))
+				return
+			}
+		}
+	}
+
+	prune.AddCommand(plan.NewExecCommand("pnpm prune --prod --ignore-scripts"))
+}
+
+func (p PackageManager) pruneYarnBerry(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
+	// Check if we can determine the Yarn version from packageManager field
+	if packageJson, err := p.getPackageJsonFromContext(ctx); err == nil {
+		_, version := packageJson.GetPackageManagerInfo()
+		if version != "" && strings.HasPrefix(version, "3.") {
+			// If you know of the proper way to prune Yarn 3, please make a PR
+			ctx.Logger.LogWarn("Yarn 3 doesn't have a prune command, using install instead")
+			prune.AddCommand(plan.NewExecCommand("yarn install --check-cache"))
+			return
+		}
+	}
+
+	// Yarn 2 and 4+ support workspaces focus (also fallback for unknown versions)
+	// Note: yarn workspaces focus doesn't support --ignore-scripts flag
+	prune.AddCommand(plan.NewExecCommand("yarn workspaces focus --production --all"))
+}
+
+func (p PackageManager) getPackageJsonFromContext(ctx *generate.GenerateContext) (*PackageJson, error) {
+	packageJson := NewPackageJson()
+	if !ctx.App.HasMatch("package.json") {
+		return packageJson, nil
+	}
+
+	err := ctx.App.ReadJSON("package.json", packageJson)
+	if err != nil {
+		return nil, err
+	}
+
+	return packageJson, nil
 }
 
 func (p PackageManager) GetInstallFolder(ctx *generate.GenerateContext) []string {
 	switch p {
-	case PackageManagerYarn2:
-		installFolders := []string{"/app/.yarn", p.getYarn2GlobalFolder(ctx)}
-		if p.getYarn2NodeLinker(ctx) == "node-modules" {
+	case PackageManagerYarnBerry:
+		installFolders := []string{"/app/.yarn", p.getYarnBerryGlobalFolder(ctx)}
+		if p.getYarnBerryNodeLinker(ctx) == "node-modules" {
 			installFolders = append(installFolders, "/app/node_modules")
 		}
 		return installFolders
@@ -193,6 +262,8 @@ func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []
 
 // GetPackageManagerPackages installs specific versions of package managers by analyzing the users code
 func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext, packageJson *PackageJson, packages *generate.MiseStepBuilder) {
+	pmName, pmVersion := packageJson.GetPackageManagerInfo()
+
 	// Pnpm
 	if p == PackageManagerPnpm {
 		pnpm := packages.Default("pnpm", DEFAULT_PNPM_VERSION)
@@ -208,14 +279,16 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 			}
 		}
 
-		name, version := p.parsePackageManagerField(packageJson)
-		if name == "pnpm" && version != "" {
-			packages.Version(pnpm, version, "package.json > packageManager")
+		if pmName == "pnpm" && pmVersion != "" {
+			packages.Version(pnpm, pmVersion, "package.json > packageManager")
+
+			// We want to skip installing with Mise and just install with corepack instead
+			packages.SkipMiseInstall(pnpm)
 		}
 	}
 
 	// Yarn
-	if p == PackageManagerYarn1 || p == PackageManagerYarn2 {
+	if p == PackageManagerYarn1 || p == PackageManagerYarnBerry {
 		if p == PackageManagerYarn1 {
 			packages.Default("yarn", "1")
 			packages.AddSupportingAptPackage("tar")
@@ -224,15 +297,11 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 			packages.Default("yarn", "2")
 		}
 
-		name, version := p.parsePackageManagerField(packageJson)
-		if name == "yarn" && version != "" {
-			majorVersion := strings.Split(version, ".")[0]
-
-			// Only apply version if it matches the expected yarn version
-			if (majorVersion == "1" && p == PackageManagerYarn1) ||
-				(majorVersion != "1" && p == PackageManagerYarn2) {
-				packages.Version(packages.Default("yarn", majorVersion), version, "package.json > packageManager")
-			}
+		if pmName == "yarn" && pmVersion != "" {
+			majorVersion := strings.Split(pmVersion, ".")[0]
+			yarn := packages.Default("yarn", majorVersion)
+			packages.Version(yarn, pmVersion, "package.json > packageManager")
+			packages.SkipMiseInstall(yarn)
 		}
 	}
 
@@ -240,9 +309,8 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 	if p == PackageManagerBun {
 		bun := packages.Default("bun", "latest")
 
-		name, version := p.parsePackageManagerField(packageJson)
-		if name == "bun" && version != "" {
-			packages.Version(bun, version, "package.json > packageManager")
+		if pmName == "bun" && pmVersion != "" {
+			packages.Version(bun, pmVersion, "package.json > packageManager")
 		}
 	}
 }
@@ -269,24 +337,6 @@ func (p PackageManager) usesLocalFile(ctx *generate.GenerateContext) bool {
 	return false
 }
 
-// parsePackageManagerField parses the packageManager field from package.json
-// and returns the name and version as a tuple
-func (p PackageManager) parsePackageManagerField(packageJson *PackageJson) (string, string) {
-	if packageJson.PackageManager != nil {
-		pmString := *packageJson.PackageManager
-
-		// Parse packageManager field which is in format "name@version" or "name@version+sha224.hash"
-		parts := strings.Split(pmString, "@")
-		if len(parts) == 2 {
-			// Split version on '+' to remove SHA hash if present
-			versionParts := strings.Split(parts[1], "+")
-			return parts[0], versionParts[0]
-		}
-	}
-
-	return "", ""
-}
-
 type YarnRc struct {
 	GlobalFolder string `yaml:"globalFolder"`
 	NodeLinker   string `yaml:"nodeLinker"`
@@ -300,7 +350,7 @@ func (p PackageManager) getYarnRc(ctx *generate.GenerateContext) YarnRc {
 	return YarnRc{}
 }
 
-func (p PackageManager) getYarn2GlobalFolder(ctx *generate.GenerateContext) string {
+func (p PackageManager) getYarnBerryGlobalFolder(ctx *generate.GenerateContext) string {
 	yarnRc := p.getYarnRc(ctx)
 	if yarnRc.GlobalFolder != "" {
 		return yarnRc.GlobalFolder
@@ -309,7 +359,7 @@ func (p PackageManager) getYarn2GlobalFolder(ctx *generate.GenerateContext) stri
 	return "/root/.yarn"
 }
 
-func (p PackageManager) getYarn2NodeLinker(ctx *generate.GenerateContext) string {
+func (p PackageManager) getYarnBerryNodeLinker(ctx *generate.GenerateContext) string {
 	yarnRc := p.getYarnRc(ctx)
 	if yarnRc.NodeLinker != "" {
 		return yarnRc.NodeLinker

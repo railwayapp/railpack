@@ -1,8 +1,11 @@
 package node
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/railwayapp/railpack/core/generate"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -139,7 +142,7 @@ func TestGetNextApps(t *testing.T) {
 		{
 			name: "turbo with 2 next apps",
 			path: "../../../examples/node-turborepo",
-			want: []string{"apps/docs/", "apps/web/"},
+			want: []string{"apps/docs", "apps/web"},
 		},
 	}
 
@@ -150,9 +153,80 @@ func TestGetNextApps(t *testing.T) {
 			err := provider.Initialize(ctx)
 			require.NoError(t, err)
 
-			nextApps, err := provider.getNextApps(ctx)
+			nextPackages, err := provider.getPackagesWithFramework(ctx, func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+				if pkg.PackageJson.HasScript("build") {
+					return strings.Contains(pkg.PackageJson.Scripts["build"], "next build")
+				}
+				return false
+			})
 			require.NoError(t, err)
+
+			nextApps := make([]string, len(nextPackages))
+			for i, pkg := range nextPackages {
+				nextApps[i] = pkg.Path
+			}
 			require.Equal(t, tt.want, nextApps)
 		})
 	}
+}
+
+func TestPackageJsonRequiresBun(t *testing.T) {
+	// Special cases
+	t.Run("nil package.json", func(t *testing.T) {
+		got := packageJsonRequiresBun(nil)
+		require.False(t, got)
+	})
+
+	t.Run("no scripts", func(t *testing.T) {
+		got := packageJsonRequiresBun(&PackageJson{})
+		require.False(t, got)
+	})
+
+	// Scripts that should trigger bun detection
+	bunScripts := []string{
+		"bun run server.js",
+		"bunx nodemon index.js",
+		"bun test",
+		"npm run clean && bun build.js",
+		"echo 'Running tests' | bun test",
+		"npm run build; bun run server.js",
+		"cd src && bun install",
+		"bun --version",
+		"bunx prisma migrate",
+	}
+
+	t.Run("scripts requiring bun", func(t *testing.T) {
+		packageJson := &PackageJson{
+			Scripts: make(map[string]string),
+		}
+		for i, script := range bunScripts {
+			packageJson.Scripts[fmt.Sprintf("script%d", i)] = script
+		}
+		got := packageJsonRequiresBun(packageJson)
+		require.True(t, got)
+	})
+
+	// Scripts that should NOT trigger bun detection
+	nonBunScripts := []string{
+		"esbuild dev.ts ./src --bundle --outdir=dist --packages=external --platform=node --sourcemap --watch",
+		"webpack --config webpack.bundle.config.js",
+		"node src/bundle-manager.js",
+		"jest --bundle-reporter",
+		"eslint src/bundles/",
+		"sh deploy-bundle.sh",
+		"npm run bundle:production",
+		"yarn bundle",
+		"pnpm run unbundle",
+	}
+
+	t.Run("scripts not requiring bun", func(t *testing.T) {
+		packageJson := &PackageJson{
+			Scripts: make(map[string]string),
+		}
+		for i, script := range nonBunScripts {
+			packageJson.Scripts[fmt.Sprintf("script%d", i)] = script
+		}
+		got := packageJsonRequiresBun(packageJson)
+		require.False(t, got)
+	})
 }

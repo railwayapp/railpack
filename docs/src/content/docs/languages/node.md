@@ -70,25 +70,32 @@ Railpack determines the start command in the following order:
 
 ### Config Variables
 
-| Variable                         | Description                             | Example  |
-| -------------------------------- | --------------------------------------- | -------- |
-| `RAILPACK_NODE_VERSION`          | Override the Node.js version            | `22`     |
-| `RAILPACK_BUN_VERSION`           | Override the Bun version                | `1.2`    |
-| `RAILPACK_NO_SPA`                | Disable SPA mode                        | `true`   |
-| `RAILPACK_SPA_OUTPUT_DIR`        | Directory containing built static files | `dist`   |
-| `RAILPACK_PRUNE_DEPS`            | Remove development dependencies         | `true`   |
-| `RAILPACK_NODE_INSTALL_PATTERNS` | Custom patterns to install dependencies | `prisma` |
-| `RAILPACK_ANGULAR_PROJECT`       | Name of the Angular project to build    | `my-app` |
+| Variable                         | Description                             | Example                                 |
+| -------------------------------- | --------------------------------------- | --------------------------------------- |
+| `RAILPACK_NODE_VERSION`          | Override the Node.js version            | `22`                                    |
+| `RAILPACK_BUN_VERSION`           | Override the Bun version                | `1.2`                                   |
+| `RAILPACK_NO_SPA`                | Disable SPA mode                        | `true`                                  |
+| `RAILPACK_SPA_OUTPUT_DIR`        | Directory containing built static files | `dist`                                  |
+| `RAILPACK_PRUNE_DEPS`            | Remove development dependencies         | `true`                                  |
+| `RAILPACK_NODE_PRUNE_CMD`        | Custom command to prune dependencies    | `npm prune --omit=dev --ignore-scripts` |
+| `RAILPACK_NODE_INSTALL_PATTERNS` | Custom patterns to install dependencies | `prisma`                                |
+| `RAILPACK_ANGULAR_PROJECT`       | Name of the Angular project to build    | `my-app`                                |
 
 ### Package Managers
 
-Railpack detects your package manager based on lock files:
+Railpack detects your package manager in the following order:
 
-- `pnpm-lock.yaml` for pnpm
-- `bun.lockb` or `bun.lock` for Bun
-- `.yarnrc.yml` or `.yarnrc.yaml` for Yarn 2
-- `yarn.lock` for Yarn 1
-- Defaults to npm if no lock file is found
+1. **packageManager field**: Reads the `packageManager` field from
+   `package.json`
+2. **Lock files**: Falls back to detecting based on lock files:
+   - `pnpm-lock.yaml` for pnpm
+   - `bun.lockb` or `bun.lock` for Bun
+   - `.yarnrc.yml` or `.yarnrc.yaml` for Yarn Berry (2+)
+   - `yarn.lock` for Yarn 1
+   - Defaults to npm if no lock file is found
+
+When the `packageManager` field is present, Railpack will use Corepack to
+install the specified package manager version.
 
 ### Install
 
@@ -137,7 +144,7 @@ Including:
 
 - Next.js: Caches `.next/cache` for each Next.js app in the workspace
 - Remix: Caches `.cache`
-- Vite: Caches `.vite/cache`
+- Vite (and Tanstack Start): Caches `.vite/cache`
 - Astro: Caches `.astro/cache`
 - Nuxt:
   - Start command defaults to `node .output/server/index.mjs`

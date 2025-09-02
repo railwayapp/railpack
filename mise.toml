@@ -12,7 +12,7 @@ run = [
 run = "go run cmd/cli/main.go"
 
 [tasks.build]
-run = "go build -o bin/cli cmd/cli/main.go"
+run = "go build -o bin/railpack cmd/cli/main.go"
 
 [tasks.clean]
 run = "rm -rf bin dist docs/dist"

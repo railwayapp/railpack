@@ -1,0 +1,96 @@
+---
+title: Procfile
+description: Configure application start commands using a Procfile
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Railpack automatically detects and uses `Procfile` configuration files to
+determine how your application should start. This is compatible with
+Heroku-style Procfiles and provides a simple way to specify different process
+types for your application.
+
+<Aside>
+  Procfiles are deprecated and natively setting the start command with
+  `RAILPACK_START_CMD` or in the `railpack.json` config file is the recommended
+</Aside>
+
+## Detection
+
+Railpack will automatically detect a `Procfile` in your project root directory.
+No additional configuration is required - if a `Procfile` exists, Railpack will
+use it to set the container start command.
+
+## Format
+
+The `Procfile` uses a YAML-style format where each line defines a process type
+and its associated command:
+
+```yaml
+web: gunicorn --bind 0.0.0.0:3333 main:app
+worker: celery worker -A myapp.celery
+scheduler: celery beat -A myapp.celery
+```
+
+## Process Type Priority
+
+Railpack prioritizes process types in the following order:
+
+1. **web** - Highest priority, typically used for HTTP servers
+2. **worker** - Second priority, typically used for background job processors
+3. **Any other process type** - If neither `web` nor `worker` are defined,
+   Railpack will use the first available process type
+
+This priority system ensures that web servers are preferred for containerized
+deployments, while still supporting applications that only define worker
+processes or custom process types like `scheduler`, `urgentWorker`, or `api`.
+
+## Examples
+
+### Web Application
+
+```yaml
+web: node server.js
+```
+
+### Background Worker
+
+```yaml
+worker: python worker.py
+```
+
+### Multiple Process Types
+
+```yaml
+web: gunicorn app:application
+worker: celery worker -A app.celery
+scheduler: celery beat -A app.celery
+```
+
+In this example, Railpack will use the `web` command as the container start
+command.
+
+### Custom Process Types
+
+```yaml
+api: ./bin/api-server
+urgentWorker: python urgent_tasks.py
+```
+
+If no `web` or `worker` process types are defined, Railpack will use the first
+available process type (in this case, `api`).
+
+## Integration with Other Configuration
+
+The Procfile start command can be overridden by:
+
+- Setting `RAILPACK_START_CMD` environment variable
+- Defining `deploy.startCommand` in your [railpack.json config
+  file](/config/file)
+
+The priority order is:
+
+1. `RAILPACK_START_CMD` environment variable (highest priority)
+2. `deploy.startCommand` in railpack.json
+3. Procfile process types (web → worker → other)
+4. Provider-specific defaults (lowest priority)

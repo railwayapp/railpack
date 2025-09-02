@@ -27,6 +27,14 @@ func (p *ProcfileProvider) Plan(ctx *generate.GenerateContext) (bool, error) {
 	} else if workerCommand != "" {
 		ctx.Logger.LogInfo("Found worker command in Procfile")
 		ctx.Deploy.StartCmd = workerCommand
+	} else if len(parsedProcfile) > 0 {
+		for processType, command := range parsedProcfile {
+			if command != "" {
+				ctx.Logger.LogInfo("Found %s command in Procfile", processType)
+				ctx.Deploy.StartCmd = command
+				break
+			}
+		}
 	}
 
 	return false, nil

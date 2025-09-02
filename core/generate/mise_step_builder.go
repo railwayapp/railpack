@@ -14,6 +14,7 @@ import (
 
 const (
 	MisePackageStepName = "packages:mise"
+	MiseInstallCommand  = "sh -c 'mise trust -a && mise install'"
 )
 
 type MiseStepBuilder struct {
@@ -79,6 +80,10 @@ func (b *MiseStepBuilder) Version(name resolver.PackageRef, version string, sour
 	b.Resolver.Version(name, version, source)
 }
 
+func (b *MiseStepBuilder) SkipMiseInstall(name resolver.PackageRef) {
+	b.Resolver.SetSkipMiseInstall(name, true)
+}
+
 func (b *MiseStepBuilder) Name() string {
 	return b.DisplayName
 }
@@ -133,6 +138,9 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			"MISE_CACHE_DIR":    "/mise/cache",
 			"MISE_SHIMS_DIR":    "/mise/shims",
 			"MISE_INSTALLS_DIR": "/mise/installs",
+			// Don't verify the asset because recently released versions don't have a public key to verify against
+			// https://github.com/railwayapp/railpack/issues/207
+			"MISE_NODE_VERIFY": "false",
 		})
 		maps.Copy(step.Variables, b.Variables)
 
@@ -152,7 +160,8 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 		packagesToInstall := make(map[string]string)
 		for _, pkg := range b.MisePackages {
 			resolved, ok := options.ResolvedPackages[pkg.Name]
-			if ok && resolved.ResolvedVersion != nil {
+
+			if ok && resolved.ResolvedVersion != nil && !b.Resolver.Get(pkg.Name).SkipMiseInstall {
 				packagesToInstall[pkg.Name] = *resolved.ResolvedVersion
 			}
 		}
@@ -174,7 +183,7 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			plan.NewFileCommand("/etc/mise/config.toml", "mise.toml", plan.FileOptions{
 				CustomName: "create mise config",
 			}),
-			plan.NewExecCommand("sh -c 'mise trust -a && mise install'", plan.ExecOptions{
+			plan.NewExecCommand(MiseInstallCommand, plan.ExecOptions{
 				CustomName: "install mise packages: " + strings.Join(pkgNames, ", "),
 			}),
 		})

@@ -17,7 +17,7 @@
    "type": "shared"
   },
   "vite": {
-   "directory": "node_modules/.vite",
+   "directory": "/app/node_modules/.vite",
    "type": "shared"
   }
  },
@@ -102,6 +102,7 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_VERIFY": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
@@ -166,7 +167,7 @@
   {
    "commands": [
     {
-     "cmd": "mise install-into caddy@2.9.1 /railpack/caddy"
+     "cmd": "mise install-into caddy@2.10.2 /railpack/caddy"
     },
     {
      "path": "/railpack/caddy"

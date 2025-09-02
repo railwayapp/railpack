@@ -47,6 +47,11 @@ var BuildCommand = &cli.Command{
 			Name:  "cache-key",
 			Usage: "Unique id to prefix to cache keys",
 		},
+		&cli.BoolFlag{
+			Name:   "dump-llb",
+			Hidden: true,
+			Value:  false,
+		},
 	}, commonPlanFlags()...),
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		buildResult, app, env, err := GenerateBuildResultForCommand(cmd)
@@ -61,13 +66,17 @@ var BuildCommand = &cli.Command{
 			return nil
 		}
 
-		serializedPlan, err := json.MarshalIndent(buildResult.Plan, "", "  ")
-		if err != nil {
-			return cli.Exit(err, 1)
-		}
-
 		if cmd.Bool("show-plan") {
-			fmt.Println(string(serializedPlan))
+			planMap, err := addSchemaToPlanMap(buildResult.Plan)
+			if err != nil {
+				return cli.Exit(err, 1)
+			}
+
+			serializedPlan, err := json.MarshalIndent(planMap, "", "  ")
+			if err != nil {
+				return cli.Exit(err, 1)
+			}
+			fmt.Println(serializedPlan)
 		}
 
 		err = validateSecrets(buildResult.Plan, env)
@@ -84,13 +93,14 @@ var BuildCommand = &cli.Command{
 
 		err = buildkit.BuildWithBuildkitClient(app.Source, buildResult.Plan, buildkit.BuildWithBuildkitClientOptions{
 			ImageName:    cmd.String("name"),
-			DumpLLB:      cmd.Bool("llb"),
+			DumpLLB:      cmd.Bool("dump-llb"),
 			OutputDir:    cmd.String("output"),
 			ProgressMode: cmd.String("progress"),
 			CacheKey:     cmd.String("cache-key"),
 			SecretsHash:  secretsHash,
 			Secrets:      env.Variables,
 			Platform:     platform,
+			GitHubToken:  os.Getenv("GITHUB_TOKEN"),
 		})
 		if err != nil {
 			return cli.Exit(err, 1)

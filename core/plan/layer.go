@@ -85,8 +85,19 @@ func (i *Layer) DisplayName() string {
 	return fmt.Sprintf("input %s", include)
 }
 
+// Supports two types of inputs:
+//
+// Object Notation:
+//   - Step Layer: {"step": "build", "include": ["src/**/*.go"], "exclude": ["*_test.go"]}
+//     References the output of a named build step with optional file filtering
+//   - Image Layer: {"image": "golang:1.21", "include": ["."], "exclude": ["tmp"]}
+//     Uses a Docker image as input with optional file filtering
+//   - Local Layer: {"local": true, "include": ["src"], "exclude": ["node_modules"]}
+//     Uses local files from the build context with filtering
+//
+// String Shortcuts: ".", "...", "$stepname"
 func (i *Layer) UnmarshalJSON(data []byte) error {
-	// First try normal JSON unmarshal
+	// First try normal JSON unmarshal for object notation
 	type Alias Layer
 	aux := &struct {
 		*Alias
@@ -97,17 +108,22 @@ func (i *Layer) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	// If object unmarshaling fails, try string shortcuts
 	str := string(data)
 
+	// Remove quotes from JSON string
 	str = strings.Trim(str, "\"")
 	switch str {
 	case ".":
+		// "." represents a local layer with current directory
 		*i = NewLocalLayer(".")
 		return nil
 	case "...":
+		// Creates a spread layer that expands to include all previous layers' files
 		*i = Layer{Spread: true}
 		return nil
 	default:
+		// "$stepname" represents a reference to another step
 		if strings.HasPrefix(str, "$") {
 			stepName := strings.TrimPrefix(str, "$")
 			*i = NewStepLayer(stepName)

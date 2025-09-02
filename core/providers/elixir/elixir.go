@@ -7,8 +7,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	"github.com/railwayapp/railpack/core/providers/node"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -41,6 +43,8 @@ func (p *ElixirProvider) Plan(ctx *generate.GenerateContext) error {
 
 	install := ctx.NewCommandStep("install")
 	install.AddInput(plan.NewStepLayer(miseStep.Name()))
+	install.Secrets = []string{}
+	install.UseSecretsWithPrefixes([]string{"MIX", "ERL", "ELIXIR", "OTP"})
 	installOutputPaths := p.Install(ctx, install)
 	maps.Copy(install.Variables, p.GetEnvVars(ctx))
 
@@ -59,6 +63,11 @@ func (p *ElixirProvider) Plan(ctx *generate.GenerateContext) error {
 		}),
 	})
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
+
+	// Node (if necessary)
+	if err := p.InstallNode(ctx, build); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -86,7 +95,59 @@ func (p *ElixirProvider) Install(ctx *generate.GenerateContext, install *generat
 		plan.NewCopyCommand("config/prod.exs*", "config/"),
 		plan.NewExecCommand("mix deps.compile"),
 	})
+	if matches := ctx.App.FindFilesWithContent("mix.exs", regexp.MustCompile(`assets\.setup`)); len(matches) > 0 {
+		install.AddCommand(plan.NewExecCommand("mix assets.setup"))
+	}
 	return []string{"deps", "_build", "config", "mix.exs", "mix.lock", MIX_ROOT}
+}
+
+func (p *ElixirProvider) InstallNode(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) error {
+	// All providers assume they're running in the application root
+	// but Phoenix puts it in the assets folder, so we have to lie to the provider
+	assetsApp, err := app.NewApp(ctx.App.Source + "/assets")
+	if err != nil {
+		// If the assets folder doesn't exist, then it isn't an error, we just don't need to install Node
+		return nil
+	}
+	defer func(originalApp *app.App) { ctx.App = originalApp }(ctx.App)
+	ctx.App = assetsApp
+
+	nodeProvider := node.NodeProvider{}
+	isNode, err := nodeProvider.Detect(ctx)
+	if err != nil {
+		return err
+	}
+	if !isNode {
+		return nil
+	}
+
+	err = nodeProvider.Initialize(ctx)
+	if err != nil {
+		return err
+	}
+
+	miseStep := ctx.GetMiseStepBuilder()
+	nodeProvider.InstallMisePackages(ctx, miseStep)
+
+	installNode := ctx.NewCommandStep("install:node")
+	installNode.AddInput(plan.NewStepLayer(miseStep.Name()))
+	nodeProvider.InstallNodeDeps(ctx, installNode)
+
+	// Again, the provider thinks it's in the root folder, but is actually in assets
+	// So we have to modify all copy commands
+	for idx, cmd := range installNode.Commands {
+		if copyCmd, ok := cmd.(plan.CopyCommand); ok {
+			copyCmd.Src = "assets/" + copyCmd.Src
+			installNode.Commands[idx] = copyCmd
+		}
+	}
+
+	// esbuild knows how to load node_modules from the root, so we don't have to copy it to the assets folder
+	build.AddInput(plan.NewStepLayer(installNode.Name(), plan.Filter{
+		Include: []string{"node_modules"},
+	}))
+
+	return nil
 }
 
 func (p *ElixirProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) []string {
@@ -94,6 +155,8 @@ func (p *ElixirProvider) Build(ctx *generate.GenerateContext, build *generate.Co
 		plan.NewCopyCommand("priv*", "."),
 		plan.NewCopyCommand("lib*", "."),
 		plan.NewCopyCommand("assets*", "."),
+		plan.NewCopyCommand("config/runtime.exs*", "config/"),
+		plan.NewExecCommand("mix compile"),
 	})
 	if matches := ctx.App.FindFilesWithContent("mix.exs", regexp.MustCompile(`assets\.deploy`)); len(matches) > 0 {
 		build.AddCommand(plan.NewExecCommand("mix assets.deploy"))
@@ -102,8 +165,7 @@ func (p *ElixirProvider) Build(ctx *generate.GenerateContext, build *generate.Co
 		build.AddCommand(plan.NewExecCommand("mix ecto.deploy"))
 	}
 	build.AddCommands([]plan.Command{
-		plan.NewExecCommand("mix compile"),
-		plan.NewCopyCommand("config/runtime.exs*", "config/"),
+		plan.NewCopyCommand("rel*", "."),
 		plan.NewExecCommand("mix release"),
 	})
 
@@ -115,22 +177,21 @@ var elixirVersionRegex = regexp.MustCompile(`(elixir:[\s].*[> ])([\w|\.]*)`)
 func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	elixir := miseStep.Default("elixir", DEFAULT_ELIXIR_VERSION)
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("ELIXIR_VERSION"); envVersion != "" {
-		miseStep.Version(elixir, envVersion, varName)
+	if mixExs, err := ctx.App.ReadFile("mix.exs"); err == nil {
+		if match := elixirVersionRegex.FindStringSubmatch(mixExs); len(match) > 2 {
+			version := utils.ExtractSemverVersion(match[2])
+			if version != "" {
+				miseStep.Version(elixir, version, "mix.exs")
+			}
+		}
 	}
 
 	if versionFile, err := ctx.App.ReadFile(".elixir-version"); err == nil {
 		miseStep.Version(elixir, strings.TrimSpace(string(versionFile)), ".elixir-version")
 	}
 
-	if mixExs, err := ctx.App.ReadFile("mix.exs"); err == nil {
-		if match := elixirVersionRegex.FindStringSubmatch(mixExs); len(match) > 2 {
-			version := utils.ExtractSemverVersion(match[2])
-			if version != "" {
-				fmt.Println("mix.exs", version)
-				miseStep.Version(elixir, version, "mix.exs")
-			}
-		}
+	if envVersion, varName := ctx.Env.GetConfigVariable("ELIXIR_VERSION"); envVersion != "" {
+		miseStep.Version(elixir, envVersion, varName)
 	}
 
 	pkgs, err := miseStep.Resolver.ResolvePackages()
@@ -148,14 +209,6 @@ func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(erlang, compatibleErlangVersion, "default compatible OTP version")
 	}
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("ERLANG_VERSION"); envVersion != "" {
-		miseStep.Version(erlang, envVersion, varName)
-	}
-
-	if versionFile, err := ctx.App.ReadFile(".erlang-version"); err == nil {
-		miseStep.Version(erlang, strings.TrimSpace(string(versionFile)), ".erlang-version")
-	}
-
 	versionParts := strings.Split(elixirVersion, "-otp-")
 	if len(versionParts) > 1 {
 		otpVersion := versionParts[1]
@@ -163,6 +216,14 @@ func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		if _, err := utils.ParseSemver(otpSemverVersion); err == nil {
 			miseStep.Version(erlang, otpSemverVersion, "resolved compatible OTP version")
 		}
+	}
+
+	if versionFile, err := ctx.App.ReadFile(".erlang-version"); err == nil {
+		miseStep.Version(erlang, strings.TrimSpace(string(versionFile)), ".erlang-version")
+	}
+
+	if envVersion, varName := ctx.Env.GetConfigVariable("ERLANG_VERSION"); envVersion != "" {
+		miseStep.Version(erlang, envVersion, varName)
 	}
 }
 

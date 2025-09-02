@@ -28,6 +28,8 @@ const (
 	secretsHash = "secrets-hash"
 
 	cacheKey = "cache-key"
+
+	githubToken = "github-token"
 )
 
 func StartFrontend() {
@@ -46,6 +48,7 @@ func Build(ctx context.Context, c client.Client) (*client.Result, error) {
 
 	cacheKey := buildArgs[cacheKey]
 	secretsHash := buildArgs[secretsHash]
+	githubToken := buildArgs[githubToken]
 
 	// TODO: Support building for multiple platforms
 	buildPlatform, err := validatePlatform(opts)
@@ -68,6 +71,7 @@ func Build(ctx context.Context, c client.Client) (*client.Result, error) {
 		SecretsHash:   secretsHash,
 		CacheKey:      cacheKey,
 		SessionID:     c.BuildOpts().SessionID,
+		GitHubToken:   githubToken,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error converting plan to LLB: %w", err)

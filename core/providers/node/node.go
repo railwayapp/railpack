@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/railwayapp/railpack/core/app"
@@ -18,6 +19,11 @@ const (
 	DEFAULT_BUN_VERSION  = "latest"
 
 	COREPACK_HOME = "/opt/corepack"
+)
+
+var (
+	// bunCommandRegex matches "bun" or "bunx" as a command (not part of another word)
+	bunCommandRegex = regexp.MustCompile(`(^|\s|;|&|&&|\||\|\|)bunx?\s`)
 )
 
 type NodeProvider struct {
@@ -180,27 +186,42 @@ func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 	p.addCaches(ctx, build)
 }
 
+func (p *NodeProvider) addFrameworkCaches(ctx *generate.GenerateContext, build *generate.CommandStepBuilder, frameworkName string, frameworkCheck func(*WorkspacePackage, *generate.GenerateContext) bool, cacheSubPath string) {
+	if packages, err := p.getPackagesWithFramework(ctx, frameworkCheck); err == nil {
+		for _, pkg := range packages {
+			var cacheName string
+			if pkg.Path == "" {
+				cacheName = frameworkName
+			} else {
+				cacheName = fmt.Sprintf("%s-%s", frameworkName, strings.ReplaceAll(strings.TrimSuffix(pkg.Path, "/"), "/", "-"))
+			}
+			cacheDir := path.Join("/app", pkg.Path, cacheSubPath)
+			build.AddCache(ctx.Caches.AddCache(cacheName, cacheDir))
+		}
+	}
+}
+
 func (p *NodeProvider) addCaches(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
 	build.AddCache(ctx.Caches.AddCache("node-modules", "/app/node_modules/.cache"))
 
-	if nextApps, err := p.getNextApps(ctx); err == nil {
-		for _, nextApp := range nextApps {
-			nextCacheDir := path.Join("/app", nextApp, ".next/cache")
-			build.AddCache(ctx.Caches.AddCache(fmt.Sprintf("next-%s", nextApp), nextCacheDir))
+	p.addFrameworkCaches(ctx, build, "next", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+		if pkg.PackageJson.HasScript("build") {
+			return strings.Contains(pkg.PackageJson.Scripts["build"], "next build")
 		}
-	}
+		return false
+	}, ".next/cache")
 
-	if p.isRemix() {
-		build.AddCache(ctx.Caches.AddCache("remix", ".cache"))
-	}
+	p.addFrameworkCaches(ctx, build, "remix", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+		return pkg.PackageJson.hasDependency("@remix-run/node")
+	}, ".cache")
 
-	if p.isAstro(ctx) {
-		build.AddCache(p.getAstroCache(ctx))
-	}
+	p.addFrameworkCaches(ctx, build, "vite", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+		return p.isVitePackage(pkg, ctx)
+	}, "node_modules/.vite")
 
-	if p.isVite(ctx) {
-		build.AddCache(p.getViteCache(ctx))
-	}
+	p.addFrameworkCaches(ctx, build, "astro", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+		return p.isAstroPackage(pkg, ctx)
+	}, "node_modules/.astro")
 }
 
 func (p *NodeProvider) shouldPrune(ctx *generate.GenerateContext) bool {
@@ -220,11 +241,17 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 	install.UseSecretsWithPrefixes([]string{"NODE", "NPM", "BUN", "PNPM", "YARN", "CI"})
 	install.AddPaths([]string{"/app/node_modules/.bin"})
 
+	if ctx.App.HasMatch("node_modules") {
+		ctx.Logger.LogWarn("node_modules directory found in project root, this is likely a mistake")
+		ctx.Logger.LogWarn("It is recommended to add node_modules to the .gitignore file")
+	}
+
 	if p.usesCorepack() {
+		pmName, pmVersion := p.packageJson.GetPackageManagerInfo()
 		install.AddVariables(map[string]string{
 			"COREPACK_HOME": COREPACK_HOME,
 		})
-		ctx.Logger.LogInfo("Using Corepack")
+		ctx.Logger.LogInfo("Installing %s@%s with Corepack", pmName, pmVersion)
 
 		install.AddCommands([]plan.Command{
 			plan.NewCopyCommand("package.json"),
@@ -232,7 +259,7 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 		})
 	}
 
-	p.packageManager.installDependencies(ctx, p.packageJson, install)
+	p.packageManager.installDependencies(ctx, p.workspace, install)
 }
 
 func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
@@ -297,7 +324,6 @@ func (p *NodeProvider) GetNodeEnvVars(ctx *generate.GenerateContext) map[string]
 
 	if p.packageManager == PackageManagerYarn1 {
 		envVars["YARN_PRODUCTION"] = "false"
-		envVars["MISE_YARN_SKIP_GPG"] = "true" // https://github.com/mise-plugins/mise-yarn/pull/8
 	}
 
 	if p.isAstro(ctx) && !p.isAstroSPA(ctx) {
@@ -322,12 +348,30 @@ func (p *NodeProvider) usesPuppeteer() bool {
 func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
 	packageManager := PackageManagerNpm
 
+	// Check packageManager field first
+	if packageJson, err := p.GetPackageJson(app); err == nil && packageJson.PackageManager != nil {
+		pmName, pmVersion := packageJson.GetPackageManagerInfo()
+		if pmName == "yarn" && pmVersion != "" {
+			majorVersion := strings.Split(pmVersion, ".")[0]
+			if majorVersion == "1" {
+				return PackageManagerYarn1
+			} else {
+				return PackageManagerYarnBerry
+			}
+		} else if pmName == "pnpm" {
+			return PackageManagerPnpm
+		} else if pmName == "bun" {
+			return PackageManagerBun
+		}
+	}
+
+	// Fall back to file-based detection
 	if app.HasMatch("pnpm-lock.yaml") {
 		packageManager = PackageManagerPnpm
 	} else if app.HasMatch("bun.lockb") || app.HasMatch("bun.lock") {
 		packageManager = PackageManagerBun
 	} else if app.HasMatch(".yarnrc.yml") || app.HasMatch(".yarnrc.yaml") {
-		packageManager = PackageManagerYarn2
+		packageManager = PackageManagerYarnBerry
 	} else if app.HasMatch("yarn.lock") {
 		packageManager = PackageManagerYarn1
 	}
@@ -370,43 +414,24 @@ func (p *NodeProvider) SetNodeMetadata(ctx *generate.GenerateContext) {
 	ctx.Metadata.SetBool("nodeUsesCorepack", p.usesCorepack())
 }
 
-func (p *NodeProvider) getNextApps(ctx *generate.GenerateContext) ([]string, error) {
-	nextPaths, err := p.filterPackageJson(ctx, func(packageJson *PackageJson) bool {
-		if packageJson.HasScript("build") {
-			return strings.Contains(packageJson.Scripts["build"], "next build")
-		}
+func (p *NodeProvider) getPackagesWithFramework(ctx *generate.GenerateContext, frameworkCheck func(*WorkspacePackage, *generate.GenerateContext) bool) ([]*WorkspacePackage, error) {
+	packages := []*WorkspacePackage{}
 
-		return false
-	})
-	if err != nil {
-		return nil, err
+	// Check root package first
+	if p.workspace != nil && frameworkCheck(p.workspace.Root, ctx) {
+		packages = append(packages, p.workspace.Root)
 	}
 
-	return nextPaths, nil
-}
-
-func (p *NodeProvider) filterPackageJson(ctx *generate.GenerateContext, filterFunc func(packageJson *PackageJson) bool) ([]string, error) {
-	filteredPaths := []string{}
-
-	files, err := ctx.App.FindFiles("**/package.json")
-	if err != nil {
-		return filteredPaths, err
-	}
-
-	for _, file := range files {
-		var packageJson PackageJson
-		err := ctx.App.ReadJSON(file, &packageJson)
-		if err != nil {
-			return filteredPaths, err
-		}
-
-		if filterFunc(&packageJson) {
-			dirPath := strings.TrimSuffix(file, "package.json")
-			filteredPaths = append(filteredPaths, dirPath)
+	// Check workspace packages
+	if p.workspace != nil {
+		for _, pkg := range p.workspace.Packages {
+			if frameworkCheck(pkg, ctx) {
+				packages = append(packages, pkg)
+			}
 		}
 	}
 
-	return filteredPaths, nil
+	return packages, nil
 }
 
 func (p *NodeProvider) requiresNode(ctx *generate.GenerateContext) bool {
@@ -423,20 +448,32 @@ func (p *NodeProvider) requiresNode(ctx *generate.GenerateContext) bool {
 	return p.isAstro(ctx)
 }
 
+// packageJsonRequiresBun checks if a package.json's scripts use bun commands
+func packageJsonRequiresBun(packageJson *PackageJson) bool {
+	if packageJson == nil || packageJson.Scripts == nil {
+		return false
+	}
+
+	for _, script := range packageJson.Scripts {
+		if bunCommandRegex.MatchString(script) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// requiresBun checks if bun should be installed and available for the build and final image
 func (p *NodeProvider) requiresBun(ctx *generate.GenerateContext) bool {
 	if p.packageManager == PackageManagerBun {
 		return true
 	}
 
-	if p.packageJson != nil {
-		for _, script := range p.packageJson.Scripts {
-			if strings.Contains(script, "bun") {
-				return true
-			}
-		}
+	if packageJsonRequiresBun(p.packageJson) {
+		return true
 	}
 
-	if ctx.Config.Deploy != nil && strings.Contains(ctx.Config.Deploy.StartCmd, "bun") {
+	if ctx.Config.Deploy != nil && bunCommandRegex.MatchString(ctx.Config.Deploy.StartCmd) {
 		return true
 	}
 
@@ -453,6 +490,8 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 			return "cra"
 		} else if p.isAngular(ctx) {
 			return "angular"
+		} else if p.isReactRouter(ctx) {
+			return "react-router"
 		}
 
 		return "static"
@@ -462,8 +501,12 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 		return "nuxt"
 	} else if p.isRemix() {
 		return "remix"
+	} else if p.isTanstackStart() {
+		return "tanstack-start"
 	} else if p.isVite(ctx) {
 		return "vite"
+	} else if p.isReactRouter(ctx) {
+		return "react-router"
 	} else if p.packageManager == PackageManagerBun {
 		return "bun"
 	}
@@ -481,4 +524,8 @@ func (p *NodeProvider) isNuxt() bool {
 
 func (p *NodeProvider) isRemix() bool {
 	return p.hasDependency("@remix-run/node")
+}
+
+func (p *NodeProvider) isTanstackStart() bool {
+	return p.hasDependency("@tanstack/react-start")
 }
