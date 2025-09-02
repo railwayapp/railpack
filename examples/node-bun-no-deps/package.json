@@ -1,0 +1,15 @@
+{
+  "name": "name-of-project",
+  "version": "0.1.0",
+  "description": "stuff goes here...",
+  "main": "app.js",
+  "scripts": {
+    "start": "bun run app.js",
+    "dev": "bun --watch app.js"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}
