@@ -67,3 +67,28 @@ func (p *NodeProvider) getReactRouterOutputDirectory(ctx *generate.GenerateConte
 
 	return DefaultReactRouterOutputDirectory
 }
+
+// isReactRouterPackage detects React Router packages in workspace environments by checking for:
+// - presence of a react-router.config.{ts,js} file in the package directory
+// - a build script containing "react-router build" 
+// - having a dependency on "@react-router/dev"
+// - ensuring a build script exists so there is an actual output directory
+func (p *NodeProvider) isReactRouterPackage(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+	if pkg == nil || pkg.PackageJson == nil {
+		return false
+	}
+
+	rrConfigJS := ReactRouterConfigJS
+	rrConfigTS := ReactRouterConfigTS
+	if pkg.Path != "" {
+		rrConfigJS = pkg.Path + "/" + ReactRouterConfigJS
+		rrConfigTS = pkg.Path + "/" + ReactRouterConfigTS
+	}
+
+	hasRRConfig := ctx.App.HasMatch(rrConfigJS) || ctx.App.HasMatch(rrConfigTS)
+	hasBuildCommand := pkg.PackageJson.HasScript("build")
+	hasRRBuildCommand := strings.Contains(strings.ToLower(pkg.PackageJson.GetScript("build")), "react-router build")
+	hasRRPackage := pkg.PackageJson.hasDependency("@react-router/dev")
+
+	return hasBuildCommand && (hasRRConfig || hasRRBuildCommand || hasRRPackage)
+}

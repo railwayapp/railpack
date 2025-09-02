@@ -222,6 +222,10 @@ func (p *NodeProvider) addCaches(ctx *generate.GenerateContext, build *generate.
 	p.addFrameworkCaches(ctx, build, "astro", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
 		return p.isAstroPackage(pkg, ctx)
 	}, "node_modules/.astro")
+
+	p.addFrameworkCaches(ctx, build, "react-router", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+		return p.isReactRouterPackage(pkg, ctx)
+	}, ".react-router")
 }
 
 func (p *NodeProvider) shouldPrune(ctx *generate.GenerateContext) bool {
