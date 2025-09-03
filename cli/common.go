@@ -66,6 +66,12 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 		return nil, nil, nil, fmt.Errorf("error creating env: %w", err)
 	}
 
+	// if --verbose is passed as a CLI global argument, enable verbose mise logging so the user don't have to understand
+	// the railpack build system deeply to get this debugging information.
+	if cmd.Bool("verbose") && env.GetVariable("MISE_VERBOSE") == "" {
+		env.SetVariable("MISE_VERBOSE", "1")
+	}
+
 	previousVersions := utils.ParsePackageWithVersion(cmd.StringSlice("previous"))
 
 	generateOptions := &core.GenerateBuildPlanOptions{
