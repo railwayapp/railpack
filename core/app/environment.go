@@ -76,7 +76,8 @@ func (e *Environment) GetConfigVariable(name string) (string, string) {
 // IsConfigVariableTruthy checks if a RAILPACK_ prefixed variable is set to "1" or "true"
 func (e *Environment) IsConfigVariableTruthy(name string) bool {
 	if val, _ := e.GetConfigVariable(name); val != "" {
-		return val == "1" || val == "true"
+		lowerVal := strings.ToLower(val)
+		return lowerVal == "1" || lowerVal == "true"
 	}
 	return false
 }

@@ -12,6 +12,7 @@ func TestFromEnvs(t *testing.T) {
 		"VAR2=value2",
 		"RAILPACK_APT_PACKAGES=apt1,apt2",
 		"COMMA=this has, a comma",
+		"RAILPACK_TRUTHY_CASE=True ",
 	})
 
 	require.NoError(t, err)
@@ -19,4 +20,5 @@ func TestFromEnvs(t *testing.T) {
 	require.Equal(t, env.GetVariable("VAR2"), "value2")
 	require.Equal(t, env.GetVariable("RAILPACK_APT_PACKAGES"), "apt1,apt2")
 	require.Equal(t, env.GetVariable("COMMA"), "this has, a comma")
+	require.Equal(t, env.IsConfigVariableTruthy("TRUTHY_CASE"), true)
 }
