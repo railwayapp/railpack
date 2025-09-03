@@ -311,23 +311,25 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(python, pipfileVersion, fmt.Sprintf("Pipfile > %s", pipfileVarName))
 	}
 
-	if p.hasPoetry(ctx) || p.hasUv(ctx) || p.hasPdm(ctx) || p.hasPipfile(ctx) {
-		miseStep.Default("pipx", "latest")
-	}
+	// TODO we should parse the python-version in pyproject.toml
 
 	if p.hasPoetry(ctx) {
-		miseStep.Default("pipx:poetry", "latest")
+		miseStep.Default("poetry", "latest")
 	}
 
 	if p.hasPdm(ctx) {
-		miseStep.Default("pipx:pdm", "latest")
+		// the default pdm backend assumes that pipx is installed
+		miseStep.Default("pipx", "latest")
+		miseStep.Default("pdm", "latest")
 	}
 
 	if p.hasUv(ctx) {
-		miseStep.Default("pipx:uv", "latest")
+		miseStep.Default("uv", "latest")
 	}
 
 	if p.hasPipfile(ctx) {
+		// default pipenv backend does not work with the default python backend
+		miseStep.Default("pipx", "latest")
 		miseStep.Default("pipx:pipenv", "latest")
 	}
 
@@ -434,7 +436,7 @@ func (p *PythonProvider) addMetadata(ctx *generate.GenerateContext) {
 func (p *PythonProvider) usesDep(ctx *generate.GenerateContext, dep string) bool {
 	for _, file := range []string{"requirements.txt", "pyproject.toml", "Pipfile"} {
 		if contents, err := ctx.App.ReadFile(file); err == nil {
-			// TODO: Do something better than string comparison
+			// TODO: Do something better than string comparison, a comment could indicate a dep is included
 			if strings.Contains(strings.ToLower(contents), strings.ToLower(dep)) {
 				return true
 			}
