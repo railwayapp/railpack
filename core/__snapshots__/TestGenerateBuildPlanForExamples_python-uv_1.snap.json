@@ -132,13 +132,6 @@
     },
     {
      "cmd": "uv sync --locked --no-dev --no-install-project"
-    },
-    {
-     "dest": ".",
-     "src": "."
-    },
-    {
-     "cmd": "uv sync --locked --no-dev --no-editable"
     }
    ],
    "inputs": [
@@ -164,13 +157,18 @@
   {
    "commands": [
     {
-     "dest": ".",
-     "src": "."
+     "cmd": "uv sync --locked --no-dev --no-editable"
     }
    ],
    "inputs": [
     {
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

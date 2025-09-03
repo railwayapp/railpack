@@ -76,7 +76,7 @@ var BuildCommand = &cli.Command{
 			if err != nil {
 				return cli.Exit(err, 1)
 			}
-			fmt.Println(serializedPlan)
+			fmt.Println(string(serializedPlan))
 		}
 
 		err = validateSecrets(buildResult.Plan, env)

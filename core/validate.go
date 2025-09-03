@@ -82,13 +82,13 @@ func validateInputs(inputs []plan.Layer, stepName string, logger *logger.Logger)
 	// Check that the first input is an image or step input
 	firstInput := inputs[0]
 	if firstInput.Image == "" && firstInput.Step == "" {
-		logger.LogError("%s inputs must be an image or step input", stepName)
+		logger.LogError("`%s` inputs must be an image or step input\n\n%s", stepName, firstInput.String())
 		return false
 	}
 
 	// and does not have any include or exclude
 	if len(firstInput.Include) > 0 || len(firstInput.Exclude) > 0 {
-		logger.LogError("the first input of %s cannot have any includes or excludes.\n\n%s", stepName, firstInput.String())
+		logger.LogError("the first input of `%s` cannot have any includes or excludes.\n\n%s", stepName, firstInput.String())
 		return false
 	}
 

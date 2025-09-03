@@ -69,16 +69,18 @@
    ],
    "commands": [
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "mvn -DoutputFile=target/mvn-dependency-list.log -B -DskipTests clean dependency:list install -Pproduction"
     }
    ],
    "inputs": [
     {
      "step": "packages:mise"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

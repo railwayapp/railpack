@@ -138,16 +138,18 @@
    ],
    "commands": [
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "npm run build"
     }
    ],
    "inputs": [
     {
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

@@ -216,12 +216,6 @@
    "caches": [
     "node-modules"
    ],
-   "commands": [
-    {
-     "dest": ".",
-     "src": "."
-    }
-   ],
    "inputs": [
     {
      "step": "install"
@@ -236,6 +230,12 @@
       "/root/.local/state/mise"
      ],
      "step": "install:node"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build:node",
@@ -244,15 +244,15 @@
    ]
   },
   {
-   "commands": [
-    {
-     "dest": ".",
-     "src": "."
-    }
-   ],
    "inputs": [
     {
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

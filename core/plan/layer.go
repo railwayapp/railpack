@@ -43,10 +43,10 @@ func NewImageLayer(image string, filter ...Filter) Layer {
 	return input
 }
 
-func NewLocalLayer(path string) Layer {
+func NewLocalLayer() Layer {
 	return Layer{
 		Local:  true,
-		Filter: NewIncludeFilter([]string{path}),
+		Filter: NewIncludeFilter([]string{"."}),
 	}
 }
 
@@ -116,7 +116,7 @@ func (i *Layer) UnmarshalJSON(data []byte) error {
 	switch str {
 	case ".":
 		// "." represents a local layer with current directory
-		*i = NewLocalLayer(".")
+		*i = NewLocalLayer()
 		return nil
 	case "...":
 		// Creates a spread layer that expands to include all previous layers' files

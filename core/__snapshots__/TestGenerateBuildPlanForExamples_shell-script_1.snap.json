@@ -17,16 +17,18 @@
   {
    "commands": [
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "chmod +x start.sh"
     }
    ],
    "inputs": [
     {
      "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",
