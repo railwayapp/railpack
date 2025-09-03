@@ -114,10 +114,6 @@
    ],
    "commands": [
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "mkdir -p bin"
     },
     {
@@ -142,6 +138,12 @@
       "/app/"
      ],
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

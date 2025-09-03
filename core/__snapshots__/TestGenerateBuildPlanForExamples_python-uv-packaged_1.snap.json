@@ -8,12 +8,8 @@
    "directory": "/var/lib/apt/lists",
    "type": "locked"
   },
-  "bun-install": {
-   "directory": "/root/.bun/install/cache",
-   "type": "shared"
-  },
-  "node-modules": {
-   "directory": "/app/node_modules/.cache",
+  "uv": {
+   "directory": "/opt/uv-cache",
    "type": "shared"
   }
  },
@@ -28,35 +24,35 @@
      "/mise/installs",
      "/usr/local/bin/mise",
      "/etc/mise/config.toml",
-     "/root/.local/state/mise"
+     "/root/.local/state/mise",
+     ".python-version"
     ],
     "step": "packages:mise"
    },
    {
     "include": [
-     "/app/node_modules"
+     "/app/.venv"
     ],
     "step": "build"
    },
    {
     "exclude": [
-     "node_modules",
-     ".yarn"
+     ".venv"
     ],
     "include": [
-     "/root/.cache",
      "."
     ],
     "step": "build"
    }
   ],
-  "startCommand": "bun index.ts",
+  "startCommand": "python-uv-packaged",
   "variables": {
-   "CI": "true",
-   "NODE_ENV": "production",
-   "NPM_CONFIG_FUND": "false",
-   "NPM_CONFIG_PRODUCTION": "false",
-   "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+   "PIP_DEFAULT_TIMEOUT": "100",
+   "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+   "PYTHONDONTWRITEBYTECODE": "1",
+   "PYTHONFAULTHANDLER": "1",
+   "PYTHONHASHSEED": "random",
+   "PYTHONUNBUFFERED": "1"
   }
  },
  "steps": [
@@ -67,8 +63,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y nodejs'",
-     "customName": "install apt packages: nodejs"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y python3-dev'",
+     "customName": "install apt packages: python3-dev"
     }
    ],
    "inputs": [
@@ -87,13 +83,17 @@
      "path": "/mise/shims"
     },
     {
+     "dest": ".python-version",
+     "src": ".python-version"
+    },
+    {
      "customName": "create mise config",
      "name": "mise.toml",
      "path": "/etc/mise/config.toml"
     },
     {
      "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
-     "customName": "install mise packages: bun"
+     "customName": "install mise packages: pipx, pipx:uv, python"
     }
    ],
    "inputs": [
@@ -113,25 +113,25 @@
   },
   {
    "caches": [
-    "bun-install"
+    "uv"
    ],
    "commands": [
     {
-     "path": "/app/node_modules/.bin"
+     "dest": "pyproject.toml",
+     "src": "pyproject.toml"
     },
     {
-     "cmd": "mkdir -p /app/node_modules/.cache"
+     "dest": "uv.lock",
+     "src": "uv.lock"
     },
     {
-     "dest": "package.json",
-     "src": "package.json"
+     "path": "/root/.local/bin"
     },
     {
-     "dest": "bun.lockb",
-     "src": "bun.lockb"
+     "path": "/app/.venv/bin"
     },
     {
-     "cmd": "bun install --frozen-lockfile"
+     "cmd": "uv sync --locked --no-dev --no-install-project"
     }
    ],
    "inputs": [
@@ -141,20 +141,23 @@
    ],
    "name": "install",
    "variables": {
-    "CI": "true",
-    "NODE_ENV": "production",
-    "NPM_CONFIG_FUND": "false",
-    "NPM_CONFIG_PRODUCTION": "false",
-    "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+    "PIP_DEFAULT_TIMEOUT": "100",
+    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONFAULTHANDLER": "1",
+    "PYTHONHASHSEED": "random",
+    "PYTHONUNBUFFERED": "1",
+    "UV_CACHE_DIR": "/opt/uv-cache",
+    "UV_COMPILE_BYTECODE": "1",
+    "UV_LINK_MODE": "copy",
+    "UV_PYTHON_DOWNLOADS": "never",
+    "VIRTUAL_ENV": "/app/.venv"
    }
   },
   {
-   "caches": [
-    "node-modules"
-   ],
    "commands": [
     {
-     "cmd": "bun run build"
+     "cmd": "uv sync --locked --no-dev --no-editable"
     }
    ],
    "inputs": [

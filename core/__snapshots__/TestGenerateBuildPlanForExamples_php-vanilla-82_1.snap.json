@@ -110,15 +110,15 @@
    }
   },
   {
-   "commands": [
-    {
-     "dest": ".",
-     "src": "."
-    }
-   ],
    "inputs": [
     {
      "step": "install:composer"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

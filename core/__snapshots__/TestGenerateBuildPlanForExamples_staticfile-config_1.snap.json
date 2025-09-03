@@ -63,10 +63,6 @@
    },
    "commands": [
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "name": "Caddyfile",
      "path": "Caddyfile"
     },
@@ -77,6 +73,12 @@
    "inputs": [
     {
      "step": "packages:mise"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

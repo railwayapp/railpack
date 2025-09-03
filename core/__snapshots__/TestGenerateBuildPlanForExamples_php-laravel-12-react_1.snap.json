@@ -259,10 +259,6 @@
    ],
    "commands": [
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "npm run build"
     },
     {
@@ -296,6 +292,12 @@
       "/root/.local/state/mise"
      ],
      "step": "install:node"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",
