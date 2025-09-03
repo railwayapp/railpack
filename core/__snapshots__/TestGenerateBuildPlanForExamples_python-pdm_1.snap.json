@@ -84,7 +84,7 @@
     },
     {
      "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
-     "customName": "install mise packages: pipx, pipx:pdm, python"
+     "customName": "install mise packages: pdm, pipx, python"
     }
    ],
    "inputs": [
