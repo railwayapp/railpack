@@ -80,7 +80,7 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		return &BuildResult{Success: false, Logs: logger.Logs}
 	}
 
-	// Set the preivous versions
+	// Set the previous versions
 	if options.PreviousVersions != nil {
 		for name, version := range options.PreviousVersions {
 			ctx.Resolver.SetPreviousVersion(name, version)
