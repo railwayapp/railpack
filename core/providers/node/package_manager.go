@@ -266,6 +266,11 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 	if p == PackageManagerPnpm {
 		pnpm := packages.Default("pnpm", DEFAULT_PNPM_VERSION)
 
+		// Prefer explicit version from package.json engines over defaults/lockfile
+		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["pnpm"] != "" {
+			packages.Version(pnpm, packageJson.Engines["pnpm"], "package.json > engines > pnpm")
+		}
+
 		lockfile, err := ctx.App.ReadFile("pnpm-lock.yaml")
 		if err == nil {
 			if strings.HasPrefix(lockfile, "lockfileVersion: 5.3") {
@@ -306,6 +311,11 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 	// Bun
 	if p == PackageManagerBun {
 		bun := packages.Default("bun", "latest")
+
+		// Prefer explicit version from package.json engines over defaults
+		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["bun"] != "" {
+			packages.Version(bun, packageJson.Engines["bun"], "package.json > engines > bun")
+		}
 
 		if pmName == "bun" && pmVersion != "" {
 			packages.Version(bun, pmVersion, "package.json > packageManager")
