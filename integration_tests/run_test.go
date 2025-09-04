@@ -50,6 +50,7 @@ type TestCase struct {
 	ConfigFilePath string            `json:"configFile"`
 	JustBuild      bool              `json:"justBuild"`
 	ShouldFail     bool              `json:"shouldFail"`
+	HTTPCheck      *HTTPCheck        `json:"httpCheck"`
 }
 
 func TestExamplesIntegration(t *testing.T) {
@@ -83,6 +84,7 @@ func TestExamplesIntegration(t *testing.T) {
 		err = json.Unmarshal(testConfigBytes, &testCases)
 		require.NoError(t, err)
 
+		// each entry in the tests.json array is an individual test case which runs it's own container
 		for i, testCase := range testCases {
 			testCase := testCase // capture for parallel execution
 			i := i
@@ -118,7 +120,7 @@ func TestExamplesIntegration(t *testing.T) {
 					t.Fatal("build result is nil")
 				}
 
-				imageName := fmt.Sprintf("railpack-test-%s-%s",
+				imageName := uniqueContainerName(
 					strings.ToLower(strings.ReplaceAll(testName, "/", "-")),
 					strings.ToLower(uuid.New().String()))
 
@@ -137,6 +139,13 @@ func TestExamplesIntegration(t *testing.T) {
 				}
 
 				if testCase.JustBuild {
+					return
+				}
+
+				if testCase.HTTPCheck != nil {
+					if err := runContainerWithHTTPCheck(t, imageName, testCase.Envs, testCase.HTTPCheck); err != nil {
+						t.Fatal(err)
+					}
 					return
 				}
 
@@ -161,7 +170,7 @@ func runContainerWithTimeout(t *testing.T, imageName string, expectedOutputs []s
 	defer cancel()
 
 	// Generate a unique container name so we can reference it later for cleanup
-	containerName := fmt.Sprintf("railpack-test-%s", uuid.New().String())
+	containerName := uniqueContainerName(uuid.New().String())
 
 	// Build docker run command with environment variables
 	args := []string{"run", "--rm", "--name", containerName}
