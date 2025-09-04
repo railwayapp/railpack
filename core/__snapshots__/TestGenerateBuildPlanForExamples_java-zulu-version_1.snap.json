@@ -25,15 +25,9 @@
      "target/."
     ],
     "step": "build"
-   },
-   {
-    "include": [
-     "."
-    ],
-    "step": "install"
    }
   ],
-  "startCommand": "java -jar target/java-zulu-version-1.0-SNAPSHOT.jar"
+  "startCommand": "java  $JAVA_OPTS -jar target/*jar"
  },
  "steps": [
   {
@@ -126,27 +120,6 @@
     "MISE_NODE_VERIFY": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
-  },
-  {
-   "commands": [
-    {
-     "cmd": "sh -c 'mvn clean compile'",
-     "customName": "mvn clean compile"
-    },
-    {
-     "cmd": "sh -c 'mvn package'",
-     "customName": "mvn package"
-    }
-   ],
-   "inputs": [
-    {
-     "step": "packages:mise"
-    }
-   ],
-   "name": "install",
-   "secrets": [
-    "*"
-   ]
   }
  ]
 }
