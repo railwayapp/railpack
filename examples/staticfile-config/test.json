@@ -1,0 +1,9 @@
+[
+  {
+    "httpCheck": {
+      "internalPort": 80,
+      "path": "/",
+      "expected": 200
+    }
+  }
+]

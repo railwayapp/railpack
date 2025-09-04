@@ -1,5 +1,12 @@
 [
   {
     "expectedOutput": "using config from file"
+  },
+  {
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 80
+    }
   }
 ]
