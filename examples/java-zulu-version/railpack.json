@@ -6,7 +6,7 @@
   },
   "steps": {
     "install": {
-      "commands": [mvn clean compile", "mvn package"]
+      "commands": ["mvn clean compile", "mvn package"]
     }
   },
   "deploy": {
