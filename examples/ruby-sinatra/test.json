@@ -1,5 +1,12 @@
 [
   {
     "expectedOutput": "Hello from Sinatra"
+  },
+  {
+    "httpCheck": {
+        "path": "/",
+        "expected": 200,
+        "internalPort": 4567
+    }
   }
 ]

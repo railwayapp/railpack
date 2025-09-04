@@ -1,12 +1,9 @@
 [
   {
-    "expectedOutput": "[remix-serve]"
-  },
-  {
     "httpCheck": {
       "path": "/",
       "expected": 200,
-      "internalPort": 3000
+      "internalPort": 80
     }
   }
 ]
