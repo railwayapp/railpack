@@ -2,6 +2,7 @@ package buildkit
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -21,6 +22,24 @@ import (
 	"github.com/moby/buildkit/util/progress/progressui"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/tonistiigi/fsutil"
+)
+
+const (
+	buildkitHostNotSetError = `BUILDKIT_HOST environment variable is not set.
+
+To start a local BuildKit daemon and set the environment variable run:
+
+	docker run --rm --privileged -d --name buildkit moby/buildkit
+	export BUILDKIT_HOST='docker-container://buildkit'`
+
+	buildkitInfoError = `failed to get buildkit information.
+
+Most likely the $BUILDKIT_HOST is not running. Here's an example of how to start the build container:
+
+	docker run --rm --privileged -d --name buildkit moby/buildkit
+
+Use 'railpack --verbose' to view more error details.
+		`
 )
 
 type BuildWithBuildkitClientOptions struct {
@@ -47,12 +66,12 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 
 	buildkitHost := os.Getenv("BUILDKIT_HOST")
 	if buildkitHost == "" {
-		log.Error("BUILDKIT_HOST environment variable is not set")
-		return fmt.Errorf("BUILDKIT_HOST environment variable is not set")
+		return errors.New(buildkitHostNotSetError)
 	}
 
 	log.Debugf("Connecting to buildkit host: %s", buildkitHost)
 
+	// connecting to the buildkit host does *not* mean the specified build container is running
 	c, err := client.New(ctx, buildkitHost)
 	if err != nil {
 		return fmt.Errorf("failed to connect to buildkit: %w", err)
@@ -62,7 +81,8 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 	// Get the buildkit info early so we can ensure we can connect to the buildkit host
 	info, err := c.Info(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get buildkit info: %w", err)
+		log.Debugf("error getting buildkit info: %v", err)
+		return errors.New(buildkitInfoError)
 	}
 
 	buildPlatform := opts.Platform

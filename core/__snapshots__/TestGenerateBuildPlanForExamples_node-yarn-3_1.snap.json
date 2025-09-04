@@ -105,6 +105,9 @@
      "customName": "npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate"
     },
     {
+     "cmd": "mkdir -p /app/node_modules/.cache"
+    },
+    {
      "dest": "package.json",
      "src": "package.json"
     },
@@ -145,16 +148,18 @@
    ],
    "commands": [
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "yarn run build"
     }
    ],
    "inputs": [
     {
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

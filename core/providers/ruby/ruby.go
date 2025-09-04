@@ -175,7 +175,7 @@ func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 	build.Secrets = []string{}
 	build.UseSecretsWithPrefixes([]string{"RAILS", "BUNDLE", "BOOTSNAP", "SPROCKETS", "WEBPACKER", "ASSET", "DISABLE_SPRING"})
 	build.AddEnvVars(p.GetRubyEnvVars(ctx))
-	build.AddCommand(plan.NewCopyCommand("."))
+	build.AddInput(plan.NewLocalLayer())
 	outputs := []string{"/app"}
 	// Only compile assets if a Rails app have an asset pipeline gem
 	// installed (e.g. sprockets, propshaft). Rails API-only apps [0]

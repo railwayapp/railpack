@@ -5,6 +5,15 @@ __metadata:
   version: 6
   cacheKey: 8
 
+"@types/node@npm:^20.19.10":
+  version: 20.19.11
+  resolution: "@types/node@npm:20.19.11"
+  dependencies:
+    undici-types: ~6.21.0
+  checksum: 8e41e75abd1a50dfba18eed3eb5a8c5e6aa4e46ec840aad645056a678c5b2ee1bd28dbb3bfcc41c7b5c73e9997a39210bd9705466c0c568691baeecef8b23df7
+  languageName: node
+  linkType: hard
+
 "ansi-regex@npm:^3.0.0":
   version: 3.0.1
   resolution: "ansi-regex@npm:3.0.1"
@@ -142,6 +151,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "node-yarn-3@workspace:."
   dependencies:
+    "@types/node": ^20.19.10
     cowsay: ^1.6.0
     typescript: ^5.8.3
   languageName: unknown
@@ -263,6 +273,13 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: f1743b6850976b3debf7cbd53d2bc0b67e75d47eb6410db564c8bb475e92a8a48f8a3fcd14d89cf93426835281c31a8f8a94dad90be4dc899279a898532ba97f
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~6.21.0":
+  version: 6.21.0
+  resolution: "undici-types@npm:6.21.0"
+  checksum: 46331c7d6016bf85b3e8f20c159d62f5ae471aba1eb3dc52fff35a0259d58dcc7d592d4cc4f00c5f9243fa738a11cfa48bd20203040d4a9e6bc25e807fab7ab3
   languageName: node
   linkType: hard
 

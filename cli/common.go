@@ -18,8 +18,9 @@ var Version string // This will be set by main
 func commonPlanFlags() []cli.Flag {
 	return []cli.Flag{
 		&cli.StringSliceFlag{
-			Name:  "env",
-			Usage: "environment variables to set",
+			Name:    "env",
+			Aliases: []string{"e"},
+			Usage:   "environment variables to set",
 		},
 		&cli.StringSliceFlag{
 			Name:  "previous",
@@ -63,6 +64,12 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 	env, err := a.FromEnvs(envsArgs)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("error creating env: %w", err)
+	}
+
+	// if --verbose is passed as a CLI global argument, enable verbose mise logging so the user don't have to understand
+	// the railpack build system deeply to get this debugging information.
+	if cmd.Bool("verbose") && env.GetVariable("MISE_VERBOSE") == "" {
+		env.SetVariable("MISE_VERBOSE", "1")
 	}
 
 	previousVersions := utils.ParsePackageWithVersion(cmd.StringSlice("previous"))

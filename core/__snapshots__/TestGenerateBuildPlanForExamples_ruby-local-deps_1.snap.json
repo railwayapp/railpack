@@ -137,15 +137,15 @@
    }
   },
   {
-   "commands": [
-    {
-     "dest": ".",
-     "src": "."
-    }
-   ],
    "inputs": [
     {
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

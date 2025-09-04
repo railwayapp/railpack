@@ -18,7 +18,8 @@ const (
 	DEFAULT_NODE_VERSION = "22"
 	DEFAULT_BUN_VERSION  = "latest"
 
-	COREPACK_HOME = "/opt/corepack"
+	COREPACK_HOME      = "/opt/corepack"
+	NODE_MODULES_CACHE = "/app/node_modules/.cache"
 )
 
 var (
@@ -170,7 +171,7 @@ func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 }
 
 func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
-	build.AddCommand(plan.NewCopyCommand("."))
+	build.AddInput(plan.NewLocalLayer())
 
 	_, ok := p.packageJson.Scripts["build"]
 	if ok {
@@ -222,6 +223,10 @@ func (p *NodeProvider) addCaches(ctx *generate.GenerateContext, build *generate.
 	p.addFrameworkCaches(ctx, build, "astro", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
 		return p.isAstroPackage(pkg, ctx)
 	}, "node_modules/.astro")
+
+	p.addFrameworkCaches(ctx, build, "react-router", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+		return p.isReactRouterPackage(pkg, ctx)
+	}, ".react-router")
 }
 
 func (p *NodeProvider) shouldPrune(ctx *generate.GenerateContext) bool {
@@ -258,6 +263,12 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 			plan.NewExecShellCommand("npm i -g corepack@latest && corepack enable && corepack prepare --activate"),
 		})
 	}
+	install.AddCommands([]plan.Command{
+		// it's possible for a package.json to exist without any dependencies, in which case node_modules is not generated
+		// and bun.lockb, etc are not generated either. However, this path is used to compute the cache key, so we ensure
+		// it exists on the filesystem to avoid a docker cache key computation error.
+		plan.NewExecCommand(fmt.Sprintf("mkdir -p %s", NODE_MODULES_CACHE)),
+	})
 
 	p.packageManager.installDependencies(ctx, p.workspace, install)
 }

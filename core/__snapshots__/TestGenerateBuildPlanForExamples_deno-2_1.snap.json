@@ -61,16 +61,18 @@
   {
    "commands": [
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "deno cache main.ts"
     }
    ],
    "inputs": [
     {
      "step": "packages:mise"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

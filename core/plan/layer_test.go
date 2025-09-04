@@ -29,13 +29,13 @@ func TestUnmarshalInput(t *testing.T) {
 		{
 			name:     "JSON local input",
 			input:    []byte(`{"local": true, "include": ["."]}`),
-			expected: NewLocalLayer("."),
+			expected: NewLocalLayer(),
 			wantErr:  false,
 		},
 		{
 			name:     "String local input with dot",
 			input:    []byte(`"."`),
-			expected: NewLocalLayer("."),
+			expected: NewLocalLayer(),
 			wantErr:  false,
 		},
 		{

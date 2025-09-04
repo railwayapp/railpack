@@ -139,16 +139,18 @@
   {
    "commands": [
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "bundle exec bootsnap precompile app/ lib/"
     }
    ],
    "inputs": [
     {
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

@@ -139,10 +139,6 @@
   {
    "commands": [
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "bundle exec rake assets:precompile"
     },
     {
@@ -152,6 +148,12 @@
    "inputs": [
     {
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

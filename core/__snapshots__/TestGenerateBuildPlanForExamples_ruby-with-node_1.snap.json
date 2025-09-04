@@ -165,6 +165,9 @@
      "path": "/app/node_modules/.bin"
     },
     {
+     "cmd": "mkdir -p /app/node_modules/.cache"
+    },
+    {
      "dest": "package.json",
      "src": "package.json"
     },
@@ -213,12 +216,6 @@
    "caches": [
     "node-modules"
    ],
-   "commands": [
-    {
-     "dest": ".",
-     "src": "."
-    }
-   ],
    "inputs": [
     {
      "step": "install"
@@ -233,6 +230,12 @@
       "/root/.local/state/mise"
      ],
      "step": "install:node"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build:node",
@@ -241,15 +244,15 @@
    ]
   },
   {
-   "commands": [
-    {
-     "dest": ".",
-     "src": "."
-    }
-   ],
    "inputs": [
     {
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

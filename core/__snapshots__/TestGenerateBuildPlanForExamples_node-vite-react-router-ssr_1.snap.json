@@ -8,6 +8,10 @@
    "directory": "/root/.local/share/pnpm/store/v3",
    "type": "shared"
   },
+  "react-router": {
+   "directory": "/app/.react-router",
+   "type": "shared"
+  },
   "vite": {
    "directory": "/app/node_modules/.vite",
    "type": "shared"
@@ -98,6 +102,9 @@
      "path": "/app/node_modules/.bin"
     },
     {
+     "cmd": "mkdir -p /app/node_modules/.cache"
+    },
+    {
      "dest": "package.json",
      "src": "package.json"
     },
@@ -126,13 +133,10 @@
   {
    "caches": [
     "node-modules",
-    "vite"
+    "vite",
+    "react-router"
    ],
    "commands": [
-    {
-     "dest": ".",
-     "src": "."
-    },
     {
      "cmd": "pnpm run build"
     }
@@ -140,6 +144,12 @@
    "inputs": [
     {
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

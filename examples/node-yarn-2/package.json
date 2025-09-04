@@ -1,15 +1,12 @@
 {
   "name": "node-yarn-2",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node index.js"
   },
   "dependencies": {
-    "cowsay": "^1.6.0",
-    "dayjs": "^1.11.13"
+    "cowsay": "^1.6.0"
   },
   "devDependencies": {
-    "@types/node": "^22.13.9",
-    "typescript": "^5.8.2"
+    "@types/node": "^22.13.9"
   }
 }

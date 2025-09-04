@@ -120,6 +120,9 @@
      "path": "/app/node_modules/.bin"
     },
     {
+     "cmd": "mkdir -p /app/node_modules/.cache"
+    },
+    {
      "dest": "package.json",
      "src": "package.json"
     },
@@ -151,16 +154,18 @@
    ],
    "commands": [
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "bun run build"
     }
    ],
    "inputs": [
     {
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

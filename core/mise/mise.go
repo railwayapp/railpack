@@ -52,8 +52,18 @@ func (m *Mise) GetLatestVersion(pkg, version string) (string, error) {
 	}
 	defer unlock()
 
-	query := fmt.Sprintf("%s@%s", pkg, utils.ExtractSemverVersion(version))
+	// Try with extracted semver version first
+	semverVersion := utils.ExtractSemverVersion(version)
+	query := fmt.Sprintf("%s@%s", pkg, semverVersion)
 	output, err := m.runCmd("latest", query)
+
+	// If semver extraction fails, try with original version
+	// https://github.com/railwayapp/railpack/issues/203
+	if (err != nil || strings.TrimSpace(output) == "") && semverVersion != version {
+		query = fmt.Sprintf("%s@%s", pkg, version)
+		output, err = m.runCmd("latest", query)
+	}
+
 	if err != nil {
 		if strings.Contains(err.Error(), "not found in mise tool registry") {
 			return "", fmt.Errorf("package `%s` not available in Mise. Try installing as apt package instead", pkg)
@@ -77,8 +87,18 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 	}
 	defer unlock()
 
-	query := fmt.Sprintf("%s@%s", pkg, utils.ExtractSemverVersion(version))
+	// Try with extracted semver version first
+	semverVersion := utils.ExtractSemverVersion(version)
+	query := fmt.Sprintf("%s@%s", pkg, semverVersion)
 	output, err := m.runCmd("ls-remote", query)
+
+	// If semver extraction fails, try with original version
+	// https://github.com/railwayapp/railpack/issues/203
+	if (err != nil || strings.TrimSpace(output) == "") && semverVersion != version {
+		query = fmt.Sprintf("%s@%s", pkg, version)
+		output, err = m.runCmd("ls-remote", query)
+	}
+
 	if err != nil {
 		return nil, err
 	}
