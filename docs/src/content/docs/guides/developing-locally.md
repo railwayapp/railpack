@@ -99,6 +99,23 @@ _Note the `docker load` here to load the image into Docker. However, you can
 change the [output](https://github.com/moby/buildkit?tab=readme-ov-file#output)
 or push to a registry instead._
 
+## Integration Tests
+
+Integration tests build and run example applications in containers to verify 
+end-to-end functionality. Each example with a `test.json` file gets tested 
+automatically.
+
+```bash
+# Run all integration tests, this takes a long time. Let CI do this for you.
+mise run test-integration
+
+# Run specific test
+mise run test-integration -- -run "TestExamplesIntegration/python-uv-tool-versions"
+```
+
+The `test.json` file contains an array of test cases. Each case builds and runs the same
+image but checks for different expected output strings.
+
 ## Mise commands
 
 ```bash
