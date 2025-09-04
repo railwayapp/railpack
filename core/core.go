@@ -164,13 +164,9 @@ func GenerateConfigFromFile(app *app.App, env *app.Environment, options *Generat
 		configFileName = envConfigFileName
 	}
 
-	// unless an absolute path, assume relative to the app source directory
-	var absConfigFileName string
-	if !filepath.IsAbs(configFileName) {
-		absConfigFileName = filepath.Join(app.Source, configFileName)
-	} else {
-		absConfigFileName = configFileName
-	}
+	// always assume config file path is relative to the app source directory
+	// https://github.com/railwayapp/railpack/pull/226
+	absConfigFileName := filepath.Join(app.Source, configFileName)
 
 	if _, err := os.Stat(absConfigFileName); err != nil && os.IsNotExist(err) {
 		// if a specific path was specified, we should indicate that it was not found and hard fail
