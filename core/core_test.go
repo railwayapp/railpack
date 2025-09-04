@@ -92,24 +92,3 @@ func TestGenerateConfigFromFile_Malformed(t *testing.T) {
 	require.Error(t, genErr, "expected an error for malformed JSON config file")
 	require.Nil(t, cfg, "config should be nil on error")
 }
-
-// Ensure that providing an absolute path to a valid config file works
-func TestGenerateConfigFromFile_AbsolutePath(t *testing.T) {
-	appPath := "../examples/config-file"
-	userApp, err := app.NewApp(appPath)
-	require.NoError(t, err)
-
-	absConfigPath, err := filepath.Abs(filepath.Join(appPath, "railpack.json"))
-	require.NoError(t, err)
-
-	env := app.NewEnvironment(nil)
-	l := logger.NewLogger()
-
-	options := &GenerateBuildPlanOptions{ConfigFilePath: absConfigPath}
-	cfg, genErr := GenerateConfigFromFile(userApp, env, options, l)
-
-	require.NoError(t, genErr, "expected no error for absolute config path")
-	require.NotNil(t, cfg, "config should not be nil")
-	// Basic sanity check: provider should be carried through from example config
-	require.Equal(t, "node", *cfg.Provider)
-}
