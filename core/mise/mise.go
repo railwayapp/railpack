@@ -2,6 +2,7 @@ package mise
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -120,6 +121,33 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 	return versions, nil
 }
 
+// GetPackageVersions gets all package versions from mise that are defined in the app directory
+func (m *Mise) GetPackageVersions(appDir string) (map[string]string, error) {
+	output, err := m.runCmd("--cd", appDir, "list", "--current", "--json")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get package versions: %w", err)
+	}
+
+	var listOutput MiseListOutput
+	if err := json.Unmarshal([]byte(output), &listOutput); err != nil {
+		return nil, fmt.Errorf("failed to parse mise list output: %w", err)
+	}
+
+	packages := make(map[string]string)
+
+	for toolName, tools := range listOutput {
+		for _, tool := range tools {
+			// Only include tools that are sourced from within the app directory
+			if strings.HasPrefix(tool.Source.Path, appDir) {
+				packages[toolName] = tool.Version
+				break
+			}
+		}
+	}
+
+	return packages, nil
+}
+
 // runCmd runs a mise command with the given arguments
 func (m *Mise) runCmd(args ...string) (string, error) {
 	cacheDir := filepath.Join(m.cacheDir, "cache")
@@ -162,6 +190,26 @@ type MisePackage struct {
 type MiseConfig struct {
 	Tools map[string]MisePackage `toml:"tools"`
 }
+
+// MiseListSource represents the source of a mise tool installation
+type MiseListSource struct {
+	Type string `json:"type"`
+	Path string `json:"path"`
+}
+
+// MiseListTool represents a tool in the mise list output
+type MiseListTool struct {
+	Version          string         `json:"version"`
+	RequestedVersion string         `json:"requested_version"`
+	InstallPath      string         `json:"install_path"`
+	Source           MiseListSource `json:"source"`
+	Installed        bool           `json:"installed"`
+	// --current ensures Active=true for all entries
+	Active bool `json:"active"`
+}
+
+// MiseListOutput represents the full output of mise list --current --json
+type MiseListOutput map[string][]MiseListTool
 
 func GenerateMiseToml(packages map[string]string) (string, error) {
 	config := MiseConfig{
