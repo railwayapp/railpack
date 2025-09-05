@@ -7,6 +7,7 @@ import (
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/core/logger"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,6 +17,7 @@ func TestMain(m *testing.M) {
 	os.Exit(v)
 }
 
+// generate snapshot plan JSON for each build example and assert against it
 func TestGenerateBuildPlanForExamples(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
@@ -58,4 +60,35 @@ func TestGenerateBuildPlanForExamples(t *testing.T) {
 			snaps.MatchStandaloneJSON(t, plan)
 		})
 	}
+}
+
+func TestGenerateConfigFromFile_NotFound(t *testing.T) {
+	// Use an existing example app directory so relative paths resolve
+	appPath := "../examples/config-file"
+	userApp, err := app.NewApp(appPath)
+	require.NoError(t, err)
+
+	env := app.NewEnvironment(nil)
+	l := logger.NewLogger()
+
+	options := &GenerateBuildPlanOptions{ConfigFilePath: "does-not-exist.railpack.json"}
+	cfg, genErr := GenerateConfigFromFile(userApp, env, options, l)
+
+	require.Error(t, genErr, "expected an error when explicit config file does not exist")
+	require.Nil(t, cfg, "config should be nil on error")
+}
+
+func TestGenerateConfigFromFile_Malformed(t *testing.T) {
+	appPath := "../examples/config-file"
+	userApp, err := app.NewApp(appPath)
+	require.NoError(t, err)
+
+	env := app.NewEnvironment(nil)
+	l := logger.NewLogger()
+
+	options := &GenerateBuildPlanOptions{ConfigFilePath: "railpack.malformed.json"}
+	cfg, genErr := GenerateConfigFromFile(userApp, env, options, l)
+
+	require.Error(t, genErr, "expected an error for malformed JSON config file")
+	require.Nil(t, cfg, "config should be nil on error")
 }
