@@ -86,7 +86,7 @@ var BuildCommand = &cli.Command{
 
 		secretsHash := getSecretsHash(env)
 
-		platform, err := getPlatform(cmd.String("platform"))
+		platform, err := buildkit.ParsePlatform(cmd.String("platform"))
 		if err != nil {
 			return cli.Exit(err, 1)
 		}
@@ -108,21 +108,6 @@ var BuildCommand = &cli.Command{
 
 		return nil
 	},
-}
-
-func getPlatform(platformStr string) (buildkit.BuildPlatform, error) {
-	var platform buildkit.BuildPlatform
-	if platformStr == "" {
-		platform = buildkit.DetermineBuildPlatformFromHost()
-	} else if platformStr == "linux/arm64" {
-		platform = buildkit.PlatformLinuxARM64
-	} else if platformStr != "linux/amd64" {
-		return buildkit.BuildPlatform{}, fmt.Errorf("unsupported platform: %s. Must be one of: linux/amd64, linux/arm64", platformStr)
-	} else {
-		platform = buildkit.PlatformLinuxAMD64
-	}
-
-	return platform, nil
 }
 
 func validateSecrets(plan *plan.BuildPlan, env *app.Environment) error {
