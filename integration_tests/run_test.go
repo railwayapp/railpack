@@ -95,6 +95,9 @@ func TestExamplesIntegration(t *testing.T) {
 					ExportCache: *buildkitCacheExport,
 					Secrets:     testCase.Envs,
 					CacheKey:    imageName,
+					// Pass through GITHUB_TOKEN if it exists, this avoids mise timeouts during build
+					// this can easily occur since we run all integration tests in parallel via GHA
+					GitHubToken: os.Getenv("GITHUB_TOKEN"),
 				}); err != nil {
 					t.Fatalf("failed to build image: %v", err)
 				}
@@ -128,10 +131,6 @@ func runContainerWithTimeout(t *testing.T, imageName, expectedOutput string, env
 	args := []string{"run", "--rm", "--name", containerName}
 	for key, value := range envs {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", key, value))
-	}
-	// Pass through GITHUB_TOKEN if it exists, this avoids mise timeouts inside the container
-	if githubToken := os.Getenv("GITHUB_TOKEN"); githubToken != "" {
-		args = append(args, "-e", fmt.Sprintf("GITHUB_TOKEN=%s", githubToken))
 	}
 	args = append(args, imageName)
 
