@@ -3,13 +3,5 @@
   "provider": "java",
   "packages": {
     "java": "zulu-8.86"
-  },
-  "steps": {
-    "install": {
-      "commands": [mvn clean compile", "mvn package"]
-    }
-  },
-  "deploy": {
-    "startCommand": "java -jar target/java-zulu-version-1.0-SNAPSHOT.jar"
   }
 }

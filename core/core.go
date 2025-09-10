@@ -1,7 +1,11 @@
 package core
 
 import (
+	"encoding/json"
+	"fmt"
 	"maps"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -40,6 +44,26 @@ type BuildResult struct {
 	Success           bool                                 `json:"success,omitempty"`
 }
 
+func readConfigJSON(path string, v interface{}) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	jsonBytes, err := utils.StandardizeJSON([]byte(data))
+	if err != nil {
+		return err
+	}
+
+	stringData := string(jsonBytes)
+
+	if err := json.Unmarshal([]byte(stringData), v); err != nil {
+		return fmt.Errorf("error reading %s as JSON: %w", path, err)
+	}
+
+	return nil
+}
+
 func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuildPlanOptions) *BuildResult {
 	logger := logger.NewLogger()
 
@@ -56,7 +80,7 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		return &BuildResult{Success: false, Logs: logger.Logs}
 	}
 
-	// Set the preivous versions
+	// Set the previous versions
 	if options.PreviousVersions != nil {
 		for name, version := range options.PreviousVersions {
 			ctx.Resolver.SetPreviousVersion(name, version)
@@ -140,17 +164,23 @@ func GenerateConfigFromFile(app *app.App, env *app.Environment, options *Generat
 		configFileName = envConfigFileName
 	}
 
-	if !app.HasMatch(configFileName) {
+	// always assume config file path is relative to the app source directory
+	// https://github.com/railwayapp/railpack/pull/226
+	absConfigFileName := filepath.Join(app.Source, configFileName)
+
+	if _, err := os.Stat(absConfigFileName); err != nil && os.IsNotExist(err) {
+		// if a specific path was specified, we should indicate that it was not found and hard fail
 		if configFileName != defaultConfigFileName {
-			logger.LogWarn("Config file `%s` not found", configFileName)
+			return nil, fmt.Errorf("config file %q not found", absConfigFileName)
 		}
 
 		return config, nil
 	}
 
-	if err := app.ReadJSON(configFileName, config); err != nil {
+	// if a JSON file was provided, we should hard fail if we cannot parse it
+	if err := readConfigJSON(absConfigFileName, config); err != nil {
 		logger.LogWarn("Failed to read config file `%s`\nUse the following schema to validate your config file: %s\n", configFileName, c.SchemaUrl)
-		return config, nil
+		return nil, err
 	}
 
 	logger.LogInfo("Using config file `%s`", configFileName)
