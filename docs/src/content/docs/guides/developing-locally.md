@@ -110,6 +110,9 @@ mise run test
 
 # Start the docs dev server
 mise run docs-dev
+
+# Inspect what backend is being used for a given tool
+mise tool poetry
 ```
 
 ## Debugging
