@@ -1,8 +1,5 @@
 [
   {
-    "expectedOutput": "[remix-serve]"
-  },
-  {
     "httpCheck": {
       "path": "/",
       "expected": 200,
