@@ -8,6 +8,11 @@
   },
   {
     "expectedOutput": "Hello via Bun",
-    "configFile": "railpack.invalid.json"
+    "configFile": "railpack.invalid.json",
+    "shouldFail": true
+  },
+  {
+    "configFile": "railpack.malformed.json",
+    "shouldFail": true
   }
 ]

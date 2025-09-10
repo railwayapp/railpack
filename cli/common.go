@@ -36,7 +36,7 @@ func commonPlanFlags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:  "config-file",
-			Usage: "path to config file to use",
+			Usage: "relative path to railpack config file (default: railpack.json)",
 		},
 		&cli.BoolFlag{
 			Name:  "error-missing-start",
