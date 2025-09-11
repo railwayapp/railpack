@@ -5,8 +5,10 @@ import (
 	"maps"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 
+	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
@@ -18,13 +20,18 @@ const (
 	DEFAULT_NODE_VERSION = "22"
 	DEFAULT_BUN_VERSION  = "latest"
 
-	COREPACK_HOME      = "/opt/corepack"
+	COREPACK_HOME = "/opt/corepack"
+
+	// not used by npm, but many other tools: next, jest, webpack, etc
 	NODE_MODULES_CACHE = "/app/node_modules/.cache"
 )
 
 var (
 	// bunCommandRegex matches "bun" or "bunx" as a command (not part of another word)
-	bunCommandRegex = regexp.MustCompile(`(^|\s|;|&|&&|\||\|\|)bunx?\s`)
+	bunCommandRegex   = regexp.MustCompile(`(^|\s|;|&|&&|\||\|\|)bunx?\s`)
+	npmCiCommandRegex = regexp.MustCompile(`.*npm\s+ci\b.*`)
+	// removeNodeModulesRegex matches common explicit removals of node_modules
+	removeNodeModulesRegex = regexp.MustCompile(`(^|\s)(rm\s+-rf\s+|rimraf\s+)(\./)?node_modules(\s|;|&|$)`)
 )
 
 type NodeProvider struct {
@@ -95,6 +102,24 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	build.AddInput(plan.NewStepLayer(install.Name()))
 	p.Build(ctx, build)
 
+	if willRemoveNodeModulesInBuild(build) {
+		ctx.Logger.LogInfo("Excluding `node_modules/.cache` from cache: 'build' phase removes 'node_modules/'")
+
+		removed := false
+		build.Caches = slices.DeleteFunc(build.Caches, func(cacheName string) bool {
+			cache := ctx.Caches.GetCache(cacheName)
+			if cache != nil && cache.Directory == NODE_MODULES_CACHE {
+				removed = true
+				return true
+			}
+			return false
+		})
+
+		if !removed {
+			ctx.Logger.LogWarn("No node_modules found in caches to remove")
+		}
+	}
+
 	// Deploy
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 	maps.Copy(ctx.Deploy.Variables, p.GetNodeEnvVars(ctx))
@@ -129,6 +154,7 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 
 	buildLayer := plan.NewStepLayer(build.Name(), plan.Filter{
 		Include: buildIncludeDirs,
+		// TODO we should just have a default dockerignore/exclusion list instead of hardcoding here
 		Exclude: []string{"node_modules", ".yarn"},
 	})
 
@@ -140,6 +166,27 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	})
 
 	return nil
+}
+
+// Normally, `npm ci` runs in the install phase, but users sometimes place this command in the build phase.
+// If they do, it breaks the build because the `node_modules/.cache` directory is pulled from cache and
+// cannot be removed (mounted as a read-only mount point). `npm ci` runs `rm -rf node_modules` before installing
+// dependencies.
+func willRemoveNodeModulesInBuild(build *generate.CommandStepBuilder) bool {
+	// Inspect only the provided build step for commands removing node_modules
+	log.Debugf("Inspecting build commands %v", build.Commands)
+	for _, cmd := range build.Commands {
+		if execCmd, ok := cmd.(plan.ExecCommand); ok {
+			log.Debugf("Inspecting build command: %s", execCmd.Cmd)
+			// Detect npm ci (which implicitly removes node_modules) or explicit removals
+			// TODO this is brittle: many different commands could remove node_modules, we should add a ENV flag for this
+			if npmCiCommandRegex.MatchString(execCmd.Cmd) || removeNodeModulesRegex.MatchString(execCmd.Cmd) {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (p *NodeProvider) StartCommandHelp() string {
@@ -205,8 +252,10 @@ func (p *NodeProvider) addFrameworkCaches(ctx *generate.GenerateContext, build *
 	}
 }
 
+// cache directories to add to the build step: if lock files are unchanged, these are pulled from cache, but cannot
+// be removed in future steps.
 func (p *NodeProvider) addCaches(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
-	build.AddCache(ctx.Caches.AddCache("node-modules", "/app/node_modules/.cache"))
+	build.AddCache(ctx.Caches.AddCache("node-modules", NODE_MODULES_CACHE))
 
 	p.addFrameworkCaches(ctx, build, "next", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
 		if pkg.PackageJson.HasScript("build") {
@@ -249,6 +298,7 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 	install.UseSecretsWithPrefixes([]string{"NODE", "NPM", "BUN", "PNPM", "YARN", "CI"})
 	install.AddPaths([]string{"/app/node_modules/.bin"})
 
+	// TODO once dockerignore is in place, we should remove this
 	if ctx.App.HasMatch("node_modules") {
 		ctx.Logger.LogWarn("node_modules directory found in project root, this is likely a mistake")
 		ctx.Logger.LogWarn("It is recommended to add node_modules to the .gitignore file")
