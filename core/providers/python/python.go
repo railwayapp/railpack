@@ -314,7 +314,11 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(python, pipfileVersion, fmt.Sprintf("Pipfile > %s", pipfileVarName))
 	}
 
-	if p.hasPoetry(ctx) || p.hasUv(ctx) || p.hasPdm(ctx) || p.hasPipfile(ctx) {
+	// do *not* switch these backends without careful investigation. Most of the poetry backends are poorly maintained
+	// or the package manager 'official' install method is not the recommended method. For instance, pipx is the
+	// recommended install path for poetry and the default poetry backend is poorly maintained.
+
+	if p.hasPoetry(ctx) || p.hasPipfile(ctx) {
 		miseStep.Default("pipx", "latest")
 	}
 
@@ -323,17 +327,16 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	}
 
 	if p.hasPdm(ctx) {
-		miseStep.Default("pipx:pdm", "latest")
+		miseStep.Default("pdm", "latest")
 	}
 
 	if p.hasUv(ctx) {
-		miseStep.Default("pipx:uv", "latest")
+		miseStep.Default("uv", "latest")
 	}
 
 	if p.hasPipfile(ctx) {
 		miseStep.Default("pipx:pipenv", "latest")
 	}
-
 }
 
 func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[string]string {
