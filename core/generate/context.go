@@ -45,6 +45,7 @@ type GenerateContext struct {
 	Metadata        *Metadata
 	Resolver        *resolver.Resolver
 	MiseStepBuilder *MiseStepBuilder
+	miseInstance    *mise.Mise
 
 	Logger *logger.Logger
 }
@@ -107,6 +108,17 @@ func (c *GenerateContext) GetMiseStepBuilder() *MiseStepBuilder {
 	return c.MiseStepBuilder
 }
 
+func (c *GenerateContext) getMiseInstance() (*mise.Mise, error) {
+	if c.miseInstance == nil {
+		var err error
+		c.miseInstance, err = mise.New(mise.InstallDir)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return c.miseInstance, nil
+}
+
 func (c *GenerateContext) EnterSubContext(subContext string) *GenerateContext {
 	c.SubContexts = append(c.SubContexts, subContext)
 	return c
@@ -136,6 +148,16 @@ func (c *GenerateContext) GetStepByName(name string) *StepBuilder {
 
 func (c *GenerateContext) ResolvePackages() (map[string]*resolver.ResolvedPackage, error) {
 	return c.Resolver.ResolvePackages()
+}
+
+// GetMisePackageVersions retrieves package versions from mise tool-versions files
+func (c *GenerateContext) GetMisePackageVersions() (map[string]*mise.MisePackageInfo, error) {
+	miseInstance, err := c.getMiseInstance()
+	if err != nil {
+		return nil, err
+	}
+
+	return miseInstance.GetPackageVersions(c)
 }
 
 // Generate a build plan from the context
@@ -246,6 +268,16 @@ func (c *GenerateContext) applyConfig() {
 			c.Deploy.AddInputs([]plan.Layer{plan.NewStepLayer(name, filter)})
 		}
 	}
+}
+
+// GetAppSource implements mise.ContextInterface
+func (c *GenerateContext) GetAppSource() string {
+	return c.App.Source
+}
+
+// LogWarn implements mise.ContextInterface
+func (c *GenerateContext) LogWarn(format string, args ...interface{}) {
+	c.Logger.LogWarn(format, args...)
 }
 
 // creates a local layer with dockerignore patterns applied

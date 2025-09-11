@@ -8,7 +8,6 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/generate"
-	"github.com/railwayapp/railpack/core/mise"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/internal/utils"
 )
@@ -300,7 +299,11 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	python := miseStep.Default("python", DEFAULT_PYTHON_VERSION)
 
 	// Get mise tool-versions once and reuse
-	miseVersions := p.getMisePackageVersions(ctx)
+	miseVersions, err := ctx.GetMisePackageVersions()
+	if err != nil {
+		ctx.Logger.LogWarn("Failed to get package versions from mise: %s", err.Error())
+		miseVersions = nil
+	}
 
 	// Check mise tool-versions for python version
 	if pkg := miseVersions["python"]; miseVersions != nil && pkg != nil {
@@ -358,23 +361,6 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 			miseStep.Version(pipenv, pkg.Version, pkg.Source)
 		}
 	}
-}
-
-// getMisePackageVersions retrieves package versions from mise tool-versions files
-func (p *PythonProvider) getMisePackageVersions(ctx *generate.GenerateContext) map[string]*mise.MisePackageInfo {
-	miseInstance, err := mise.New(mise.InstallDir)
-	if err != nil {
-		ctx.Logger.LogWarn("Failed to create mise instance: %s", err.Error())
-		return nil
-	}
-
-	versions, err := miseInstance.GetPackageVersions(ctx.)
-	if err != nil {
-		ctx.Logger.LogWarn("Failed to get package versions from mise: %s", err.Error())
-		return nil
-	}
-
-	return versions
 }
 
 func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[string]string {
