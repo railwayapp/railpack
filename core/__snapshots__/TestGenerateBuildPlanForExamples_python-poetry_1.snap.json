@@ -40,7 +40,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "python main.py",
+  "startCommand": "poetry run python main.py",
   "variables": {
    "PIP_DEFAULT_TIMEOUT": "100",
    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
