@@ -203,6 +203,7 @@ var miseConfigFiles = []string{
 	".python-version",
 	".node-version",
 	".nvmrc",
+	".bun-version",
 }
 
 func (b *MiseStepBuilder) GetSupportingMiseConfigFiles(path string) []string {

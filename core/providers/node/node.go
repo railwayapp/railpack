@@ -309,6 +309,10 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			miseStep.Version(bun, envVersion, varName)
 		}
 
+		if bunVersionFile, err := ctx.App.ReadFile(".bun-version"); err == nil {
+			miseStep.Version(bun, string(bunVersionFile), ".bun-version")
+		}
+
 		// If we don't need node in the final image, we still want to include it for the install steps
 		// since many packages need node-gyp to install native modules
 		// in this case, we don't need a specific version, so we'll just pull from apt
