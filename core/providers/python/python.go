@@ -8,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/generate"
+	"github.com/railwayapp/railpack/core/mise"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/internal/utils"
 )
@@ -298,6 +299,14 @@ func (p *PythonProvider) GetBuilderDeps(ctx *generate.GenerateContext) *generate
 func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	python := miseStep.Default("python", DEFAULT_PYTHON_VERSION)
 
+	// Get mise tool-versions once and reuse
+	miseVersions := p.getMisePackageVersions(ctx)
+
+	// Check mise tool-versions for python version
+	if pkg := miseVersions["python"]; miseVersions != nil && pkg != nil {
+		miseStep.Version(python, pkg.Version, pkg.Source)
+	}
+
 	if envVersion, varName := ctx.Env.GetConfigVariable("PYTHON_VERSION"); envVersion != "" {
 		miseStep.Version(python, envVersion, varName)
 	}
@@ -314,26 +323,58 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(python, pipfileVersion, fmt.Sprintf("Pipfile > %s", pipfileVarName))
 	}
 
+	// Install package managers with mise versions if available
 	if p.hasPoetry(ctx) || p.hasUv(ctx) || p.hasPdm(ctx) || p.hasPipfile(ctx) {
-		miseStep.Default("pipx", "latest")
+		pipx := miseStep.Default("pipx", "latest")
+		if pkg := miseVersions["pipx"]; miseVersions != nil && pkg != nil {
+			miseStep.Version(pipx, pkg.Version, pkg.Source)
+		}
 	}
 
 	if p.hasPoetry(ctx) {
-		miseStep.Default("pipx:poetry", "latest")
+		poetry := miseStep.Default("pipx:poetry", "latest")
+		if pkg := miseVersions["poetry"]; miseVersions != nil && pkg != nil {
+			miseStep.Version(poetry, pkg.Version, pkg.Source)
+		}
 	}
 
 	if p.hasPdm(ctx) {
-		miseStep.Default("pipx:pdm", "latest")
+		pdm := miseStep.Default("pipx:pdm", "latest")
+		if pkg := miseVersions["pdm"]; miseVersions != nil && pkg != nil {
+			miseStep.Version(pdm, pkg.Version, pkg.Source)
+		}
 	}
 
 	if p.hasUv(ctx) {
-		miseStep.Default("pipx:uv", "latest")
+		uv := miseStep.Default("pipx:uv", "latest")
+		if pkg := miseVersions["uv"]; miseVersions != nil && pkg != nil {
+			miseStep.Version(uv, pkg.Version, pkg.Source)
+		}
 	}
 
 	if p.hasPipfile(ctx) {
-		miseStep.Default("pipx:pipenv", "latest")
+		pipenv := miseStep.Default("pipx:pipenv", "latest")
+		if pkg := miseVersions["pipenv"]; miseVersions != nil && pkg != nil {
+			miseStep.Version(pipenv, pkg.Version, pkg.Source)
+		}
+	}
+}
+
+// getMisePackageVersions retrieves package versions from mise tool-versions files
+func (p *PythonProvider) getMisePackageVersions(ctx *generate.GenerateContext) map[string]*mise.MisePackageInfo {
+	miseInstance, err := mise.New(mise.InstallDir)
+	if err != nil {
+		ctx.Logger.LogWarn("Failed to create mise instance: %s", err.Error())
+		return nil
 	}
 
+	versions, err := miseInstance.GetPackageVersions(ctx.)
+	if err != nil {
+		ctx.Logger.LogWarn("Failed to get package versions from mise: %s", err.Error())
+		return nil
+	}
+
+	return versions
 }
 
 func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[string]string {
