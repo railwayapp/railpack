@@ -61,3 +61,5 @@ node = "22"
 
 [settings]
 experimental = true
+# without this, navigating into various examples/ will output an annoying warning
+idiomatic_version_file_enable_tools = ["python", "node", "ruby"]
