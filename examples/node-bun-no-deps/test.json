@@ -1,5 +1,5 @@
 [
   {
-    "expectedOutput": "hi from bun without a lock"
+    "expectedOutput": "hi from bun without a lock - using Bun major version 1"
   }
 ]
