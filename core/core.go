@@ -6,7 +6,6 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -140,70 +139,7 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 	return buildResult
 }
 
-var (
-	npmCiCommandRegex      = regexp.MustCompile(`.*npm\s+ci\b.*`)
-	removeNodeModulesRegex = regexp.MustCompile(`(^|\s)(rm\s+-rf\s+|rimraf\s+)(\./)?node_modules(\s|;|&|$)`)
-)
-
-const (
-	NODE_MODULES_CACHE = "/app/node_modules/.cache"
-)
-
-func willRemoveNodeModules(commands []plan.Command) bool {
-	for _, cmd := range commands {
-		if execCmd, ok := cmd.(plan.ExecCommand); ok {
-			log.Debugf("Inspecting build command: %s", execCmd.Cmd)
-			if npmCiCommandRegex.MatchString(execCmd.Cmd) || removeNodeModulesRegex.MatchString(execCmd.Cmd) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func cleansePlanStructure(buildPlan *plan.BuildPlan, logger *logger.Logger) {
-	// let's get the cache key name that has a Directory of NODE_MODULES_CACHE
-	var nodeModulesCacheKey string
-	for cacheName, cacheDef := range buildPlan.Caches {
-		if cacheDef.Directory == NODE_MODULES_CACHE {
-			nodeModulesCacheKey = cacheName
-			break
-		}
-	}
-
-	if nodeModulesCacheKey == "" {
-		// no node_modules cache defined, nothing to do
-		return
-	}
-
-	// Only detach the node modules cache from steps that remove node_modules themselves.
-	// Keep the global cache definition so earlier steps (like install) can still mount it.
-	for i, step := range buildPlan.Steps {
-		if step.Name == "install" || !willRemoveNodeModules(step.Commands) {
-			continue
-		}
-
-		before := len(step.Caches)
-		if before == 0 {
-			continue
-		}
-
-		// step.Caches = slices.Clone(slices.DeleteFunc(step.Caches, func(name string) bool {
-		// 	return name == "" || name == nodeModulesCacheKey
-		// }))
-
-		var newCaches []string
-		for _, name := range step.Caches {
-			if name != "" && name != nodeModulesCacheKey {
-				newCaches = append(newCaches, name)
-			}
-		}
-
-		// wtf?
-		// step.Caches = newCaches
-		buildPlan.Steps[i].Caches = newCaches
-	}
-}
+// cleansing logic moved to cleanse.go
 
 // GetConfig merges the options, environment, and file config into a single config
 func GetConfig(app *app.App, env *app.Environment, options *GenerateBuildPlanOptions, logger *logger.Logger) (*c.Config, error) {
