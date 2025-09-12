@@ -49,6 +49,51 @@ func separatePatterns(patterns []string) (excludes []string, includes []string) 
 	return excludes, includes
 }
 
+// DockerignoreContext holds parsed dockerignore information with caching
+type DockerignoreContext struct {
+	parsed   bool
+	excludes []string
+	includes []string
+	repoPath string
+}
+
+// NewDockerignoreContext creates a new DockerignoreContext for the given repository path
+func NewDockerignoreContext(repoPath string) *DockerignoreContext {
+	return &DockerignoreContext{
+		repoPath: repoPath,
+	}
+}
+
+// Parse parses the .dockerignore file and caches the results
+func (d *DockerignoreContext) Parse() ([]string, []string, error) {
+	if !d.parsed {
+		excludes, includes, err := CheckAndParseDockerignore(d.repoPath)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		d.excludes = excludes
+		d.includes = includes
+		d.parsed = true
+	}
+
+	return d.excludes, d.includes, nil
+}
+
+// ParseWithLogging parses the .dockerignore file, caches the results, and logs when found
+func (d *DockerignoreContext) ParseWithLogging(logger interface{ LogInfo(string, ...interface{}) }) ([]string, []string, error) {
+	excludes, includes, err := d.Parse()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if excludes != nil || includes != nil {
+		logger.LogInfo("Found .dockerignore file, applying filters")
+	}
+
+	return excludes, includes, nil
+}
+
 // HasDockerignoreFile checks if a .dockerignore file exists in the given directory
 func HasDockerignoreFile(repoPath string) bool {
 	dockerignorePath := filepath.Join(repoPath, ".dockerignore")

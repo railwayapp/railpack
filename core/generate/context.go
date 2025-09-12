@@ -46,6 +46,9 @@ type GenerateContext struct {
 	MiseStepBuilder *MiseStepBuilder
 
 	Logger *logger.Logger
+
+	// Dockerignore context
+	dockerignoreCtx *plan.DockerignoreContext
 }
 
 type Command interface {
@@ -69,17 +72,32 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 		return nil, err
 	}
 
+	dockerignoreCtx := plan.NewDockerignoreContext(app.Source)
+
+	// Parse dockerignore early and fail if there are errors
+	excludes, includes, err := dockerignoreCtx.ParseWithLogging(logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse .dockerignore: %w", err)
+	}
+
+	// Debug log the parsed filters
+	if excludes != nil || includes != nil {
+		log.Debugf("Dockerignore exclude patterns: %v", excludes)
+		log.Debugf("Dockerignore include patterns: %v", includes)
+	}
+
 	ctx := &GenerateContext{
-		App:      app,
-		Env:      env,
-		Config:   config,
-		Steps:    make([]StepBuilder, 0),
-		Deploy:   NewDeployBuilder(),
-		Caches:   NewCacheContext(),
-		Secrets:  []string{},
-		Metadata: NewMetadata(),
-		Resolver: resolver,
-		Logger:   logger,
+		App:             app,
+		Env:             env,
+		Config:          config,
+		Steps:           make([]StepBuilder, 0),
+		Deploy:          NewDeployBuilder(),
+		Caches:          NewCacheContext(),
+		Secrets:         []string{},
+		Metadata:        NewMetadata(),
+		Resolver:        resolver,
+		Logger:          logger,
+		dockerignoreCtx: dockerignoreCtx,
 	}
 
 	ctx.applyPackagesFromConfig()
@@ -233,4 +251,28 @@ func (c *GenerateContext) applyConfig() {
 			c.Deploy.AddInputs([]plan.Layer{plan.NewStepLayer(name, filter)})
 		}
 	}
+}
+
+// NewLocalLayer creates a local layer with dockerignore patterns applied
+func (c *GenerateContext) NewLocalLayer() plan.Layer {
+	excludes, includes, _ := c.dockerignoreCtx.Parse() // Error already handled at initialization
+
+	if excludes != nil || includes != nil {
+		// Start with default include of everything if no include patterns specified
+		includePatterns := []string{"."}
+		if len(includes) > 0 {
+			includePatterns = includes
+		}
+
+		return plan.Layer{
+			Local: true,
+			Filter: plan.Filter{
+				Include: includePatterns,
+				Exclude: excludes,
+			},
+		}
+	}
+
+	// No dockerignore patterns, use default behavior
+	return plan.NewLocalLayer()
 }
