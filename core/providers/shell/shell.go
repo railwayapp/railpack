@@ -40,7 +40,7 @@ func (p *ShellProvider) Plan(ctx *generate.GenerateContext) error {
 
 	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewImageLayer(plan.RailpackRuntimeImage))
-	build.AddInput(plan.NewLocalLayer())
+	build.AddInput(ctx.NewLocalLayer())
 	build.AddCommands(
 		[]plan.Command{
 			plan.NewExecCommand("chmod +x " + p.scriptName),
