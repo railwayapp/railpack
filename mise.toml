@@ -13,6 +13,9 @@ run = [
 [tasks.cli]
 run = "go run cmd/cli/main.go"
 
+[tasks.debug-cli]
+run = "dlv debug github.com/railwayapp/railpack/cmd/cli --"
+
 # build the CLI binary (`./bin/railpack`) for local use outside the project
 [tasks.build]
 run = "go build -o bin/railpack cmd/cli/main.go"

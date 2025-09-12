@@ -233,7 +233,23 @@ mise tool poetry
 Here's some helpful debugging tricks:
 
 * `URFAVE_CLI_TRACING=on` for debugging CLI argument parsing
-* `mise run cli --verbose build --show-plan --progress plain examples/node-bun`
+* `mise run cli -- --verbose build --show-plan --progress plain examples/node-bun`
 * `mise run build`, add `./bin/` to your `$PATH`, and then run `railpack` in a separate local directory
-* `NO_COLOR=1`
 * `docker exec buildkit buildctl prune` to clean the builder cache
+* `NO_COLOR=1`
+
+### Interactive Debugging with Delve
+
+```sh
+mise run debug-cli build $(pwd)
+```
+
+Then, set some breakpoints:
+
+```
+break core/providers/node/node.go:177
+continue
+```
+
+The commands you probably want: `ls`, `print build.Commands`, `continue`, `next`, `locals`,
+
