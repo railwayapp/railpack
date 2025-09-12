@@ -1,5 +1,9 @@
 [
-  {  
-    "expectedOutput": "Hello from Python UV!\nPython version: 3.9.23 (main, Sep  2 2025, 14:22:08) \n[Clang 20.1.4 ]\nUV version: uv 0.7.22\n"
-  }
+    {
+        "expectedOutput": [
+          "Hello from Python UV!",
+          "Python version: 3.9.23",
+          "UV version: 0.7.22"
+        ]
+    }
 ]
