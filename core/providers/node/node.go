@@ -5,10 +5,8 @@ import (
 	"maps"
 	"path"
 	"regexp"
-	"slices"
 	"strings"
 
-	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
@@ -28,10 +26,7 @@ const (
 
 var (
 	// bunCommandRegex matches "bun" or "bunx" as a command (not part of another word)
-	bunCommandRegex   = regexp.MustCompile(`(^|\s|;|&|&&|\||\|\|)bunx?\s`)
-	npmCiCommandRegex = regexp.MustCompile(`.*npm\s+ci\b.*`)
-	// removeNodeModulesRegex matches common explicit removals of node_modules
-	removeNodeModulesRegex = regexp.MustCompile(`(^|\s)(rm\s+-rf\s+|rimraf\s+)(\./)?node_modules(\s|;|&|$)`)
+	bunCommandRegex = regexp.MustCompile(`(^|\s|;|&|&&|\||\|\|)bunx?\s`)
 )
 
 type NodeProvider struct {
@@ -102,24 +97,6 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	build.AddInput(plan.NewStepLayer(install.Name()))
 	p.Build(ctx, build)
 
-	if willRemoveNodeModulesInBuild(build) {
-		ctx.Logger.LogInfo("Excluding `node_modules/.cache` from cache: 'build' phase removes 'node_modules/'")
-
-		removed := false
-		build.Caches = slices.DeleteFunc(build.Caches, func(cacheName string) bool {
-			cache := ctx.Caches.GetCache(cacheName)
-			if cache != nil && cache.Directory == NODE_MODULES_CACHE {
-				removed = true
-				return true
-			}
-			return false
-		})
-
-		if !removed {
-			ctx.Logger.LogWarn("No node_modules found in caches to remove")
-		}
-	}
-
 	// Deploy
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 	maps.Copy(ctx.Deploy.Variables, p.GetNodeEnvVars(ctx))
@@ -168,27 +145,6 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	return nil
 }
 
-// Normally, `npm ci` runs in the install phase, but users sometimes place this command in the build phase.
-// If they do, it breaks the build because the `node_modules/.cache` directory is pulled from cache and
-// cannot be removed (mounted as a read-only mount point). `npm ci` runs `rm -rf node_modules` before installing
-// dependencies.
-func willRemoveNodeModulesInBuild(build *generate.CommandStepBuilder) bool {
-	// Inspect only the provided build step for commands removing node_modules
-	log.Debugf("Inspecting build commands %v", build.Commands)
-	for _, cmd := range build.Commands {
-		if execCmd, ok := cmd.(plan.ExecCommand); ok {
-			log.Debugf("Inspecting build command: %s", execCmd.Cmd)
-			// Detect npm ci (which implicitly removes node_modules) or explicit removals
-			// TODO this is brittle: many different commands could remove node_modules, we should add a ENV flag for this
-			if npmCiCommandRegex.MatchString(execCmd.Cmd) || removeNodeModulesRegex.MatchString(execCmd.Cmd) {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
 func (p *NodeProvider) StartCommandHelp() string {
 	return "To configure your start command, Railpack will check:\n\n" +
 		"1. A \"start\" script in your package.json:\n" +
@@ -231,7 +187,7 @@ func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 		}
 	}
 
-	p.addCaches(ctx, build)
+	p.addCachesToBuildStep(ctx, build)
 }
 
 // adds framework-specific caches for packages that match the given framework check.
@@ -254,7 +210,7 @@ func (p *NodeProvider) addFrameworkCaches(ctx *generate.GenerateContext, build *
 
 // cache directories to add to the build step: if lock files are unchanged, these are pulled from cache, but cannot
 // be removed in future steps.
-func (p *NodeProvider) addCaches(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
+func (p *NodeProvider) addCachesToBuildStep(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
 	build.AddCache(ctx.Caches.AddCache("node-modules", NODE_MODULES_CACHE))
 
 	p.addFrameworkCaches(ctx, build, "next", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
