@@ -8,11 +8,10 @@ import (
 	"github.com/moby/patternmatcher/ignorefile"
 )
 
-// CheckAndParseDockerignore checks if a .dockerignore file exists and parses it
+// checks if a .dockerignore file exists in the app directory and parses it
 func CheckAndParseDockerignore(repoPath string) ([]string, []string, error) {
 	dockerignorePath := filepath.Join(repoPath, ".dockerignore")
 
-	// 1. Check if .dockerignore exists
 	file, err := os.Open(dockerignorePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -23,13 +22,11 @@ func CheckAndParseDockerignore(repoPath string) ([]string, []string, error) {
 	}
 	defer file.Close()
 
-	// 2. Read and parse the .dockerignore file
 	patterns, err := ignorefile.ReadAll(file)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error parsing .dockerignore: %w", err)
 	}
 
-	// 3. Separate exclude and include patterns
 	excludePatterns, includePatterns := separatePatterns(patterns)
 
 	return excludePatterns, includePatterns, nil
@@ -49,7 +46,6 @@ func separatePatterns(patterns []string) (excludes []string, includes []string) 
 	return excludes, includes
 }
 
-// DockerignoreContext holds parsed dockerignore information with caching
 type DockerignoreContext struct {
 	parsed   bool
 	excludes []string
@@ -57,7 +53,6 @@ type DockerignoreContext struct {
 	repoPath string
 }
 
-// NewDockerignoreContext creates a new DockerignoreContext for the given repository path
 func NewDockerignoreContext(repoPath string) *DockerignoreContext {
 	return &DockerignoreContext{
 		repoPath: repoPath,
@@ -80,7 +75,6 @@ func (d *DockerignoreContext) Parse() ([]string, []string, error) {
 	return d.excludes, d.includes, nil
 }
 
-// ParseWithLogging parses the .dockerignore file, caches the results, and logs when found
 func (d *DockerignoreContext) ParseWithLogging(logger interface{ LogInfo(string, ...interface{}) }) ([]string, []string, error) {
 	excludes, includes, err := d.Parse()
 	if err != nil {

@@ -28,9 +28,10 @@ type StepBuilder interface {
 }
 
 type GenerateContext struct {
-	App    *a.App
-	Env    *a.Environment
-	Config *config.Config
+	App             *a.App
+	Env             *a.Environment
+	Config          *config.Config
+	dockerignoreCtx *plan.DockerignoreContext
 
 	BaseImage string
 	Steps     []StepBuilder
@@ -46,9 +47,6 @@ type GenerateContext struct {
 	MiseStepBuilder *MiseStepBuilder
 
 	Logger *logger.Logger
-
-	// Dockerignore context
-	dockerignoreCtx *plan.DockerignoreContext
 }
 
 type Command interface {
@@ -73,14 +71,11 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 	}
 
 	dockerignoreCtx := plan.NewDockerignoreContext(app.Source)
-
-	// Parse dockerignore early and fail if there are errors
 	excludes, includes, err := dockerignoreCtx.ParseWithLogging(logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse .dockerignore: %w", err)
 	}
 
-	// Debug log the parsed filters
 	if excludes != nil || includes != nil {
 		log.Debugf("Dockerignore exclude patterns: %v", excludes)
 		log.Debugf("Dockerignore include patterns: %v", includes)
@@ -253,26 +248,17 @@ func (c *GenerateContext) applyConfig() {
 	}
 }
 
-// NewLocalLayer creates a local layer with dockerignore patterns applied
+// creates a local layer with dockerignore patterns applied
 func (c *GenerateContext) NewLocalLayer() plan.Layer {
-	excludes, includes, _ := c.dockerignoreCtx.Parse() // Error already handled at initialization
+	layer := plan.NewLocalLayer()
 
-	if excludes != nil || includes != nil {
-		// Start with default include of everything if no include patterns specified
-		includePatterns := []string{"."}
-		if len(includes) > 0 {
-			includePatterns = includes
-		}
-
-		return plan.Layer{
-			Local: true,
-			Filter: plan.Filter{
-				Include: includePatterns,
-				Exclude: excludes,
-			},
-		}
+	excludes, includes, _ := c.dockerignoreCtx.Parse()
+	if len(includes) > 0 {
+		layer.Filter.Include = utils.RemoveDuplicates(append(layer.Filter.Include, includes...))
+	}
+	if len(excludes) > 0 {
+		layer.Filter.Exclude = utils.RemoveDuplicates(append(layer.Filter.Exclude, excludes...))
 	}
 
-	// No dockerignore patterns, use default behavior
-	return plan.NewLocalLayer()
+	return layer
 }
