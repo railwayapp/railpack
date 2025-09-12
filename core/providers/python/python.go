@@ -256,7 +256,7 @@ func (p *PythonProvider) InstallPip(ctx *generate.GenerateContext, install *gene
 func (p *PythonProvider) AddRuntimeDeps(ctx *generate.GenerateContext) {
 	for dep, requiredPkgs := range pythonRuntimeDepRequirements {
 		if p.usesDep(ctx, dep) {
-			ctx.Logger.LogInfo("Installing runtime apt packages for %s", dep)
+			ctx.Logger.LogInfo("Installing runtime apt packages for %s: %v", dep, requiredPkgs)
 			ctx.Deploy.AddAptPackages(requiredPkgs)
 		}
 	}
@@ -272,15 +272,18 @@ func (p *PythonProvider) AddRuntimeDeps(ctx *generate.GenerateContext) {
 
 func (p *PythonProvider) GetBuilderDeps(ctx *generate.GenerateContext) *generate.MiseStepBuilder {
 	miseStep := ctx.GetMiseStepBuilder()
-	miseStep.SupportingAptPackages = append(miseStep.SupportingAptPackages, "python3-dev")
 
+	// certain packages require apt libraries in order to properly build. We shouldn't handle all cases, but we attempt
+	// to cover as many popular packages as possible.
 	for dep, requiredPkgs := range pythonBuildDepRequirements {
 		if p.usesDep(ctx, dep) {
-			ctx.Logger.LogInfo("Installing build apt packages for %s", dep)
+			ctx.Logger.LogInfo("Installing build apt packages for %s: %v", dep, requiredPkgs)
 			miseStep.SupportingAptPackages = append(miseStep.SupportingAptPackages, requiredPkgs...)
 		}
 	}
 
+	// detecting database support is multi-faceted, so we special case them
+	// note that these packages do *not* persist past the build phase and must be re-installed in the runtime if needed
 	if p.usesPostgres(ctx) {
 		miseStep.SupportingAptPackages = append(miseStep.SupportingAptPackages, "libpq-dev")
 	}
@@ -311,7 +314,11 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(python, pipfileVersion, fmt.Sprintf("Pipfile > %s", pipfileVarName))
 	}
 
-	if p.hasPoetry(ctx) || p.hasUv(ctx) || p.hasPdm(ctx) || p.hasPipfile(ctx) {
+	// do *not* switch these backends without careful investigation. Most of the poetry backends are poorly maintained
+	// or the package manager 'official' install method is not the recommended method. For instance, pipx is the
+	// recommended install path for poetry and the default poetry backend is poorly maintained.
+
+	if p.hasPoetry(ctx) || p.hasPipfile(ctx) {
 		miseStep.Default("pipx", "latest")
 	}
 
@@ -320,17 +327,16 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	}
 
 	if p.hasPdm(ctx) {
-		miseStep.Default("pipx:pdm", "latest")
+		miseStep.Default("pdm", "latest")
 	}
 
 	if p.hasUv(ctx) {
-		miseStep.Default("pipx:uv", "latest")
+		miseStep.Default("uv", "latest")
 	}
 
 	if p.hasPipfile(ctx) {
 		miseStep.Default("pipx:pipenv", "latest")
 	}
-
 }
 
 func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[string]string {

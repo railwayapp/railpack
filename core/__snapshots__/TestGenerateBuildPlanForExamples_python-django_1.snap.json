@@ -63,8 +63,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libpq-dev python3-dev'",
-     "customName": "install apt packages: libpq-dev python3-dev"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libpq-dev'",
+     "customName": "install apt packages: libpq-dev"
     }
    ],
    "inputs": [
