@@ -57,7 +57,7 @@ func (p *StaticfileProvider) Plan(ctx *generate.GenerateContext) error {
 
 	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewStepLayer(miseStep.Name()))
-	build.AddInput(plan.NewLocalLayer())
+	build.AddInput(ctx.NewLocalLayer())
 
 	err := p.addCaddyfileToStep(ctx, build)
 	if err != nil {
