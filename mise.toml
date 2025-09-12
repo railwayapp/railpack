@@ -53,10 +53,9 @@ dir = "docs"
 run = "bun run dev"
 
 [tools]
-go = "1.23.4"
-golangci-lint = "1.63.4"
+go = "1.25.1"
+golangci-lint = "2.4.0"
 bun = "1.2"
-node = "22"
 "go:github.com/wagoodman/dive" = "latest"
 
 [settings]
