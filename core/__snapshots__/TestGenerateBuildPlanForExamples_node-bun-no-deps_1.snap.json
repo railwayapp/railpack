@@ -1,11 +1,19 @@
 {
  "caches": {
-  "node-modules": {
-   "directory": "/app/node_modules/.cache",
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  },
+  "bun-install": {
+   "directory": "/root/.bun/install/cache",
    "type": "shared"
   },
-  "npm-install": {
-   "directory": "/root/.npm",
+  "node-modules": {
+   "directory": "/app/node_modules/.cache",
    "type": "shared"
   }
  },
@@ -42,7 +50,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "npm run start",
+  "startCommand": "bun run start",
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
@@ -52,6 +60,24 @@
   }
  },
  "steps": [
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y nodejs'",
+     "customName": "install apt packages: nodejs"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:apt:build"
+  },
   {
    "assets": {
     "mise.toml": "[mise.toml]"
@@ -67,12 +93,12 @@
     },
     {
      "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
-     "customName": "install mise packages: bun, node"
+     "customName": "install mise packages: bun"
     }
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+     "step": "packages:apt:build"
     }
    ],
    "name": "packages:mise",
@@ -87,7 +113,7 @@
   },
   {
    "caches": [
-    "npm-install"
+    "bun-install"
    ],
    "commands": [
     {
@@ -101,7 +127,7 @@
      "src": "package.json"
     },
     {
-     "cmd": "npm install"
+     "cmd": "bun install --frozen-lockfile"
     }
    ],
    "inputs": [
