@@ -87,10 +87,3 @@ func (d *DockerignoreContext) ParseWithLogging(logger interface{ LogInfo(string,
 
 	return excludes, includes, nil
 }
-
-// HasDockerignoreFile checks if a .dockerignore file exists in the given directory
-func HasDockerignoreFile(repoPath string) bool {
-	dockerignorePath := filepath.Join(repoPath, ".dockerignore")
-	_, err := os.Stat(dockerignorePath)
-	return !os.IsNotExist(err)
-}

@@ -98,3 +98,56 @@ func TestGenerateContext(t *testing.T) {
 
 	snaps.MatchJSON(t, serializedPlan)
 }
+
+func TestGenerateContextDockerignore(t *testing.T) {
+	t.Run("context with dockerignore", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/dockerignore")
+
+		// Verify dockerignore was parsed during context creation
+		require.NotNil(t, ctx.dockerignoreCtx)
+
+		// Test NewLocalLayer with dockerignore patterns
+		layer := ctx.NewLocalLayer()
+		require.True(t, layer.Local)
+		require.NotNil(t, layer.Filter)
+
+		// Should have exclude patterns from .dockerignore
+		require.NotEmpty(t, layer.Filter.Exclude)
+		require.Contains(t, layer.Filter.Exclude, ".vscode")
+		require.Contains(t, layer.Filter.Exclude, "*.log")
+		require.Contains(t, layer.Filter.Exclude, "__pycache__") // Trailing slash is stripped by parser
+
+		// Should have default include pattern
+		require.Equal(t, []string{"."}, layer.Filter.Include)
+	})
+
+	t.Run("context without dockerignore", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+
+		// Verify dockerignore context exists but has no patterns
+		require.NotNil(t, ctx.dockerignoreCtx)
+
+		// Test NewLocalLayer without dockerignore patterns
+		layer := ctx.NewLocalLayer()
+		require.True(t, layer.Local)
+
+		// Should use default behavior when no dockerignore patterns exist
+		require.NotNil(t, layer.Filter)
+		require.Equal(t, []string{"."}, layer.Filter.Include)
+		require.Empty(t, layer.Filter.Exclude)
+	})
+
+	t.Run("context creation with no dockerignore", func(t *testing.T) {
+		// Test with a directory that exists but has no .dockerignore file
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+
+		// Should succeed even without .dockerignore file
+		require.NotNil(t, ctx)
+		require.NotNil(t, ctx.dockerignoreCtx)
+
+		// Verify parsing works with no file present
+		excludes, includes, _ := ctx.dockerignoreCtx.Parse()
+		require.Nil(t, excludes)
+		require.Nil(t, includes)
+	})
+}
