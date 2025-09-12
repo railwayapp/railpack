@@ -1,3 +1,5 @@
+// Converts the internal build plan graph to a BuildKit LLB
+
 package build_llb
 
 import (
@@ -96,7 +98,7 @@ func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *Buil
 	return g, nil
 }
 
-// GenerateLLB generates the LLB state for the build graph
+// generate the LLB state for the build graph
 func (g *BuildGraph) GenerateLLB() (*BuildGraphOutput, error) {
 	// Get processing order using topological sort
 	order, err := g.graph.ComputeProcessingOrder()
@@ -180,7 +182,7 @@ func (g *BuildGraph) processNode(node *StepNode) error {
 	return nil
 }
 
-// convertNodeToLLB converts a step node to an LLB state
+// converts a step node to an LLB state
 func (g *BuildGraph) convertNodeToLLB(node *StepNode) (*llb.State, error) {
 	state, err := g.getNodeStartingState(node)
 	if err != nil {
@@ -391,7 +393,7 @@ func (g *BuildGraph) getSecretInvalidationMountOptions(node *StepNode, secretOpt
 	return opts
 }
 
-// getCacheMountOptions returns the llb.RunOption slice for the given cache keys
+// returns the llb.RunOption slice for the given cache keys
 func (g *BuildGraph) getCacheMountOptions(cacheKeys []string) ([]llb.RunOption, error) {
 	var opts []llb.RunOption
 

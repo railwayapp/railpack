@@ -173,7 +173,8 @@ For example:
 
 Caches are used to speed up builds by storing and reusing files between builds.
 Each cache has a type and a directory. Caches **are not persisted** in the final
-image.
+image. Cache folders cannot be removed by build scripts once defined (you'll receive
+a `EBUSY: resource busy or locked` error if you try).
 
 The cache name is referenced in the `caches` field of a step. A cache has the
 following properties:
