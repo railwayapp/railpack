@@ -15,7 +15,6 @@ func CheckAndParseDockerignore(repoPath string) ([]string, []string, error) {
 	file, err := os.Open(dockerignorePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// No .dockerignore file exists
 			return nil, nil, nil
 		}
 		return nil, nil, fmt.Errorf("error opening .dockerignore: %w", err)
