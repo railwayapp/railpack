@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -43,6 +44,29 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 		for _, expected := range expectedPatterns {
 			require.Contains(t, excludes, expected, "Expected pattern %s not found in excludes", expected)
 		}
+	})
+
+	t.Run("inaccessible dockerignore", func(t *testing.T) {
+		// Create a temporary directory and file
+		tempDir, err := os.MkdirTemp("", "dockerignore-test")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		dockerignorePath := filepath.Join(tempDir, ".dockerignore")
+		err = os.WriteFile(dockerignorePath, []byte("*.log\nnode_modules\n"), 0644)
+		require.NoError(t, err)
+
+		// Make the file unreadable (this simulates permission errors)
+		err = os.Chmod(dockerignorePath, 0000)
+		require.NoError(t, err)
+		defer func() { _ = os.Chmod(dockerignorePath, 0644) }() // Restore permissions for cleanup
+
+		// This should fail with a permission error
+		excludes, includes, err := CheckAndParseDockerignore(tempDir)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "error opening .dockerignore")
+		require.Nil(t, excludes)
+		require.Nil(t, includes)
 	})
 }
 
@@ -141,6 +165,30 @@ func TestDockerignoreContext(t *testing.T) {
 		require.Nil(t, excludes)
 		require.Nil(t, includes)
 		require.True(t, ctx.parsed) // Should still mark as parsed
+	})
+
+	t.Run("parse error handling", func(t *testing.T) {
+		// Create a temporary directory with an inaccessible .dockerignore
+		tempDir, err := os.MkdirTemp("", "dockerignore-test")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		dockerignorePath := filepath.Join(tempDir, ".dockerignore")
+		err = os.WriteFile(dockerignorePath, []byte("*.log\n"), 0644)
+		require.NoError(t, err)
+
+		// Make the file unreadable
+		err = os.Chmod(dockerignorePath, 0000)
+		require.NoError(t, err)
+		defer func() { _ = os.Chmod(dockerignorePath, 0644) }()
+
+		ctx := NewDockerignoreContext(tempDir)
+		excludes, includes, err := ctx.Parse()
+
+		require.Error(t, err)
+		require.Nil(t, excludes)
+		require.Nil(t, includes)
+		require.False(t, ctx.parsed) // Should not mark as parsed on error
 	})
 }
 

@@ -2,6 +2,8 @@ package generate
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -149,5 +151,34 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		excludes, includes, _ := ctx.dockerignoreCtx.Parse()
 		require.Nil(t, excludes)
 		require.Nil(t, includes)
+	})
+
+	t.Run("context creation fails with invalid dockerignore", func(t *testing.T) {
+		// Create a temporary directory with an inaccessible .dockerignore
+		tempDir, err := os.MkdirTemp("", "dockerignore-test")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		dockerignorePath := filepath.Join(tempDir, ".dockerignore")
+		err = os.WriteFile(dockerignorePath, []byte("*.log\nnode_modules\n"), 0644)
+		require.NoError(t, err)
+
+		// Make the file unreadable to simulate a parsing error
+		err = os.Chmod(dockerignorePath, 0000)
+		require.NoError(t, err)
+		defer func() { _ = os.Chmod(dockerignorePath, 0644) }()
+
+		// Create app with the temp directory
+		userApp, err := app.NewApp(tempDir)
+		require.NoError(t, err)
+
+		env := app.NewEnvironment(nil)
+		config := config.EmptyConfig()
+
+		// Context creation should fail due to dockerignore parsing error
+		ctx, err := NewGenerateContext(userApp, env, config, logger.NewLogger())
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to parse .dockerignore")
+		require.Nil(t, ctx)
 	})
 }
