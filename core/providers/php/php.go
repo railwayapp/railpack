@@ -305,9 +305,10 @@ func (p *PhpProvider) getPhpExtensions(ctx *generate.GenerateContext) []string {
 	}
 
 	if dbConnection := ctx.Env.GetVariable("DB_CONNECTION"); dbConnection != "" {
-		if dbConnection == "mysql" {
+		switch dbConnection {
+		case "mysql":
 			extensions = append(extensions, "pdo_mysql")
-		} else if dbConnection == "pgsql" {
+		case "pgsql":
 			extensions = append(extensions, "pdo_pgsql")
 		}
 	}
@@ -434,7 +435,11 @@ func (p *PhpProvider) phpImagePackage(ctx *generate.GenerateContext) (*generate.
 		if err != nil {
 			return false
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				ctx.Logger.LogWarn("failed to close response body: %v", err)
+			}
+		}()
 		return resp.StatusCode == http.StatusOK
 	})
 
