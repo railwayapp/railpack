@@ -56,7 +56,6 @@ run = "bun run dev"
 go = "1.25.1"
 golangci-lint = "2.4.0"
 bun = "1.2"
-"go:github.com/wagoodman/dive" = "latest"
 
 [settings]
 experimental = true
