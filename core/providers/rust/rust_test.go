@@ -15,10 +15,10 @@ func TestRust(t *testing.T) {
 		rustVersion string
 	}{
 		{
-			name:        "rust ring",
-			path:        "../../../examples/rust-ring",
+			name:        "rust system deps",
+			path:        "../../../examples/rust-system-deps",
 			detected:    true,
-			rustVersion: "1.84.0",
+			rustVersion: "1.85.1",
 		},
 		{
 			name:     "node",
