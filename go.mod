@@ -9,6 +9,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.8.0
 	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/charmbracelet/log v0.4.0
+	github.com/containerd/platforms v1.0.0-rc.1
 	github.com/gkampitakis/go-snaps v0.5.9
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
@@ -39,7 +40,6 @@ require (
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
-	github.com/containerd/platforms v1.0.0-rc.1 // indirect
 	github.com/containerd/ttrpc v1.2.7 // indirect
 	github.com/containerd/typeurl/v2 v2.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
