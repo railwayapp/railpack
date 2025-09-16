@@ -460,7 +460,7 @@ func (p *NodeProvider) requiresNode(ctx *generate.GenerateContext) bool {
 		}
 	}
 
-	return p.isAstro(ctx)
+	return p.isAstro(ctx) || p.isVite(ctx)
 }
 
 // packageJsonRequiresBun checks if a package.json's scripts use bun commands
