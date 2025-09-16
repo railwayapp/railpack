@@ -17,7 +17,7 @@ with support for Node, Python, Go, PHP, and more.
 
 # Bash commands
 
-- `mise run build` - Build the CLI binary (`./bin/railpack`), use this instead of `go build` (`./bin/railpack`), use this instead of `go build`
+- `mise run build` - Build the CLI binary (`./bin/railpack`), use this instead of `go build`
 - `mise run check` - Run linting, formatting, and static analysis
 - `mise run test` - Run unit tests
 - `mise run test-integration` - Runs *all* integration tests. Never run this. Instead, only run the test that you are currently working on, e.g. `mise run test-integration -- -run "TestExamplesIntegration/config-file"`
