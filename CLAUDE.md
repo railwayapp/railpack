@@ -21,7 +21,6 @@ with support for Node, Python, Go, PHP, and more.
 - `mise run check` - Run linting, formatting, and static analysis
 - `mise run test` - Run unit tests
 - `mise run test-integration` - Runs *all* integration tests. Never run this. Instead, only run the test that you are currently working on, e.g. `mise run test-integration -- -run "TestExamplesIntegration/config-file"`
-- `mise run test-integration` - Runs *all* integration tests. Never run this. Instead, only run the test that you are currently working on, e.g. `mise run test-integration -- -run "TestExamplesIntegration/config-file"`
 
 # Code style
 
