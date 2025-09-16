@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	DEFAULT_PYTHON_VERSION = "3.11"
+	DEFAULT_PYTHON_VERSION = "3.13"
 	UV_CACHE_DIR           = "/opt/uv-cache"
 	PIP_CACHE_DIR          = "/opt/pip-cache"
 	VENV_PATH              = "/app/.venv"

@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	DEFAULT_RUST_VERSION = "1.85.1"
+	DEFAULT_RUST_VERSION = "1.89"
 	CARGO_REGISTRY_CACHE = "/root/.cargo/registry"
 	CARGO_GIT_CACHE      = "/root/.cargo/git"
 	CARGO_TARGET_CACHE   = "target"
