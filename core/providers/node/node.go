@@ -260,6 +260,8 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 
 		install.AddCommands([]plan.Command{
 			plan.NewCopyCommand("package.json"),
+			// corepack will detect the package manager version from package.json, safe to assume the user is properly
+			// specifying the version they want there, no need to check other version specifications.
 			plan.NewExecShellCommand("npm i -g corepack@latest && corepack enable && corepack prepare --activate"),
 		})
 	}
@@ -313,6 +315,11 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			miseStep.Version(bun, string(bunVersionFile), ".bun-version")
 		}
 
+		if bunVersionFile, err := ctx.App.ReadFile(".bun-version"); err == nil {
+			miseStep.Version(bun, string(bunVersionFile), ".bun-version")
+		}
+
+		// TODO why don't we install this via mise?
 		// If we don't need node in the final image, we still want to include it for the install steps
 		// since many packages need node-gyp to install native modules
 		// in this case, we don't need a specific version, so we'll just pull from apt
@@ -352,6 +359,7 @@ func (p *NodeProvider) hasDependency(dependency string) bool {
 	return p.packageJson.hasDependency(dependency)
 }
 
+// if packageManager config exists in package.json, then assume corepack
 func (p *NodeProvider) usesCorepack() bool {
 	return p.packageJson != nil && p.packageJson.PackageManager != nil && p.packageManager != PackageManagerBun
 }
@@ -361,8 +369,6 @@ func (p *NodeProvider) usesPuppeteer() bool {
 }
 
 func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
-	packageManager := PackageManagerNpm
-
 	// Check packageManager field first
 	if packageJson, err := p.GetPackageJson(app); err == nil && packageJson.PackageManager != nil {
 		pmName, pmVersion := packageJson.GetPackageManagerInfo()
@@ -382,16 +388,34 @@ func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
 
 	// Fall back to file-based detection
 	if app.HasMatch("pnpm-lock.yaml") {
-		packageManager = PackageManagerPnpm
+		return PackageManagerPnpm
 	} else if app.HasMatch("bun.lockb") || app.HasMatch("bun.lock") {
-		packageManager = PackageManagerBun
+		return PackageManagerBun
 	} else if app.HasMatch(".yarnrc.yml") || app.HasMatch(".yarnrc.yaml") {
-		packageManager = PackageManagerYarnBerry
+		return PackageManagerYarnBerry
 	} else if app.HasMatch("yarn.lock") {
-		packageManager = PackageManagerYarn1
+		return PackageManagerYarn1
 	}
 
-	return packageManager
+	// Finally, consider engines as a last-resort
+	if packageJson, err := p.GetPackageJson(app); err == nil && packageJson.Engines != nil {
+		if engine := strings.TrimSpace(packageJson.Engines["pnpm"]); engine != "" {
+			return PackageManagerPnpm
+		}
+		if engine := strings.TrimSpace(packageJson.Engines["bun"]); engine != "" {
+			return PackageManagerBun
+		}
+		if engine := strings.TrimSpace(packageJson.Engines["yarn"]); engine != "" {
+			// Decide yarn major: 1 -> yarn1, otherwise default to berry
+			major := strings.Split(engine, ".")[0]
+			if major == "1" {
+				return PackageManagerYarn1
+			}
+			return PackageManagerYarnBerry
+		}
+	}
+
+	return PackageManagerNpm
 }
 
 func (p *NodeProvider) GetPackageJson(app *app.App) (*PackageJson, error) {
