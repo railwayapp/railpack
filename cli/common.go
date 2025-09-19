@@ -88,6 +88,7 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 	return buildResult, app, env, nil
 }
 
+// add $schema link to resulting map JSON for improved IDE experience when manually editing
 func addSchemaToPlanMap(p *plan.BuildPlan) (map[string]any, error) {
 	if p == nil {
 		return map[string]any{"$schema": config.SchemaUrl}, nil

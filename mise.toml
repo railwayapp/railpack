@@ -12,6 +12,9 @@ run = [
 [tasks.cli]
 run = "go run cmd/cli/main.go"
 
+[tasks.debug-cli]
+run = "dlv debug github.com/railwayapp/railpack/cmd/cli --"
+
 [tasks.build]
 run = "go build -o bin/railpack cmd/cli/main.go"
 
@@ -51,6 +54,7 @@ golangci-lint = "1.63.4"
 bun = "1.2"
 node = "22"
 "go:github.com/wagoodman/dive" = "latest"
+"go:github.com/go-delve/delve/cmd/dlv" = "latest"
 
 [settings]
 experimental = true

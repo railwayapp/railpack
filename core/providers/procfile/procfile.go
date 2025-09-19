@@ -1,3 +1,4 @@
+// this provider is unique: it used solely to extract a start command
 package procfile
 
 import "github.com/railwayapp/railpack/core/generate"
