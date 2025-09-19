@@ -99,7 +99,12 @@ func (r *Resolver) ResolvePackages() (map[string]*ResolvedPackage, error) {
 			var err error
 			latestVersion, err = r.mise.GetLatestVersion(name, fuzzyVersion)
 			if err != nil {
-				return nil, err
+				// If we are not installign with Mise, then we don't need to error if we can't resolve the version
+				if pkg.SkipMiseInstall {
+					latestVersion = fuzzyVersion
+				} else {
+					return nil, err
+				}
 			}
 		}
 
