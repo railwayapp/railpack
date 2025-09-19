@@ -1,0 +1,54 @@
+{
+ "deploy": {
+  "base": {
+   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+  },
+  "inputs": [
+   {
+    "include": [
+     "."
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "sh start.sh"
+ },
+ "steps": [
+  {
+   "commands": [
+    {
+     "cmd": "chmod +x start.sh"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+    },
+    {
+     "exclude": [
+      ".vscode",
+      ".copier",
+      ".env-specific",
+      ".env*",
+      "__pycache__",
+      "test",
+      "tmp/*",
+      "*.log",
+      "Justfile",
+      "TODO*",
+      "README.md",
+      "docker-compose*.yml"
+     ],
+     "include": [
+      "."
+     ],
+     "local": true
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ]
+  }
+ ]
+}

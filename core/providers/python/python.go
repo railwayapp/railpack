@@ -70,7 +70,7 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 	p.addMetadata(ctx)
 
 	build.AddInput(plan.NewStepLayer(install.Name()))
-	build.AddInput(plan.NewLocalLayer())
+	build.AddInput(ctx.NewLocalLayer())
 
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 	maps.Copy(ctx.Deploy.Variables, p.GetPythonEnvVars(ctx))
@@ -349,7 +349,7 @@ func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[str
 
 func (p *PythonProvider) copyInstallFiles(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
 	if p.installNeedsAllFiles(ctx) {
-		install.AddInput(plan.NewLocalLayer())
+		install.AddInput(ctx.NewLocalLayer())
 		return
 	}
 

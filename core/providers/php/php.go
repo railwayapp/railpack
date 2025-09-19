@@ -89,7 +89,7 @@ func (p *PhpProvider) Plan(ctx *generate.GenerateContext) error {
 		// A manual build command will go here
 		build := ctx.NewCommandStep("build")
 		build.AddInput(plan.NewStepLayer(composer.Name()))
-		build.AddInput(plan.NewLocalLayer())
+		build.AddInput(ctx.NewLocalLayer())
 		ctx.Deploy.Base = plan.NewStepLayer(build.Name())
 		p.ConditionallyIncludeMise(ctx)
 	}
