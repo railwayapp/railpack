@@ -1,0 +1,149 @@
+{
+ "caches": {
+  "cargo_git": {
+   "directory": "/root/.cargo/git",
+   "type": "shared"
+  },
+  "cargo_registry": {
+   "directory": "/root/.cargo/registry",
+   "type": "shared"
+  },
+  "cargo_target": {
+   "directory": "target",
+   "type": "shared"
+  }
+ },
+ "deploy": {
+  "base": {
+   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+  },
+  "inputs": [
+   {
+    "exclude": [
+     "target"
+    ],
+    "include": [
+     "."
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "./bin/rust-open-ssl",
+  "variables": {
+   "ROCKET_ADDRESS": "0.0.0.0"
+  }
+ },
+ "steps": [
+  {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "commands": [
+    {
+     "path": "/mise/shims"
+    },
+    {
+     "customName": "create mise config",
+     "name": "mise.toml",
+     "path": "/etc/mise/config.toml"
+    },
+    {
+     "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
+     "customName": "install mise packages: rust"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:mise",
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_VERIFY": "false",
+    "MISE_SHIMS_DIR": "/mise/shims"
+   }
+  },
+  {
+   "caches": [
+    "cargo_registry",
+    "cargo_git"
+   ],
+   "commands": [
+    {
+     "dest": ".",
+     "src": "Cargo.toml*"
+    },
+    {
+     "dest": ".",
+     "src": "Cargo.lock*"
+    },
+    {
+     "cmd": "mkdir -p src"
+    },
+    {
+     "cmd": "sh -c 'echo \"fn main() { }\" \u003e /app/src/main.rs \u0026\u0026 if grep -q \"\\[lib\\]\" Cargo.toml; then echo \"fn main() { }\" \u003e /app/src/lib.rs; fi'",
+     "customName": "compile dependencies"
+    },
+    {
+     "cmd": "cat /app/src/main.rs"
+    },
+    {
+     "cmd": "cargo build --release"
+    },
+    {
+     "cmd": "rm -rf src target/release/rust-open-ssl*"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install",
+   "secrets": [
+    "*"
+   ]
+  },
+  {
+   "caches": [
+    "cargo_target"
+   ],
+   "commands": [
+    {
+     "cmd": "mkdir -p bin"
+    },
+    {
+     "cmd": "cargo build --release"
+    },
+    {
+     "cmd": "cp target/release/rust-open-ssl bin"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    },
+    {
+     "exclude": [
+      "/app/"
+     ],
+     "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ]
+  }
+ ]
+}

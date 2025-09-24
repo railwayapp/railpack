@@ -1,0 +1,9 @@
+{
+    "$schema": "https://schema.railpack.com",
+    "deploy": {
+      // without this, `python` is used directly, running `poetry` directly could fail if it was copied
+      // into the poetry venv from a previous step's binary which has since been removed from the image
+      // we ran into this originally when installing python3-dev
+      "startCommand": "poetry run python main.py"
+    }
+}

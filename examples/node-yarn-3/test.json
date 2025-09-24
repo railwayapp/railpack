@@ -1,6 +1,6 @@
 [
   {
-    "expectedOutput": "Hello from Yarn 3",
+    "expectedOutput": "Hello from Yarn 3.8.7",
     "envs": {
       "RAILPACK_PRUNE_DEPS": "true"
     }

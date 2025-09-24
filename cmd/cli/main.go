@@ -30,6 +30,11 @@ func main() {
 		lipgloss.SetColorProfile(termenv.TrueColor)
 	}
 
+	// https://no-color.org
+	if os.Getenv("NO_COLOR") != "" {
+		lipgloss.SetColorProfile(termenv.Ascii)
+	}
+
 	commands := []*urfave.Command{
 		cli.BuildCommand,
 		cli.PrepareCommand,

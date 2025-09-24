@@ -6,9 +6,11 @@ on:
     paths-ignore:
       - "docs/**"
   pull_request:
-    branches: [main]
     paths-ignore:
       - "docs/**"
+  schedule:
+    # run every day to alert against changes in default mise versions which break snapshot tests
+    - cron: "0 0 * * *"
 
 jobs:
   test:

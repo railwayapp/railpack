@@ -42,11 +42,19 @@ func TestInitialize(t *testing.T) {
 		name           string
 		path           string
 		wantScriptName string
+		hasError       bool
 	}{
 		{
 			name:           "default script",
 			path:           "../../../examples/shell-script",
 			wantScriptName: StartScriptName,
+			hasError:       false,
+		},
+		{
+			name:           "default script",
+			path:           "../../../examples/config-file",
+			wantScriptName: "",
+			hasError:       true,
 		},
 	}
 
@@ -55,8 +63,13 @@ func TestInitialize(t *testing.T) {
 			ctx := testingUtils.CreateGenerateContext(t, tt.path)
 			provider := ShellProvider{}
 			err := provider.Initialize(ctx)
-			require.NoError(t, err)
-			require.Equal(t, tt.wantScriptName, provider.scriptName)
+
+			if tt.hasError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.wantScriptName, provider.scriptName)
+			}
 		})
 	}
 }

@@ -90,6 +90,7 @@
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
     "MISE_NODE_COREPACK": "true",
+    "MISE_NODE_VERIFY": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
@@ -108,6 +109,9 @@
     {
      "cmd": "sh -c 'npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate'",
      "customName": "npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate"
+    },
+    {
+     "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
      "dest": "package.json",
@@ -168,16 +172,18 @@
    ],
    "commands": [
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "npm run build"
     }
    ],
    "inputs": [
     {
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

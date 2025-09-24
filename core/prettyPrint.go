@@ -270,6 +270,10 @@ func getStepsToPrint(br *BuildResult) []*plan.Step {
 	return execSteps
 }
 
+var skippableCommands = []string{
+	"mkdir -p /app/node_modules/.cache",
+}
+
 func getCommandsToPrint(commands []plan.Command) []plan.ExecCommand {
 	if commands == nil {
 		return []plan.ExecCommand{}
@@ -278,10 +282,21 @@ func getCommandsToPrint(commands []plan.Command) []plan.ExecCommand {
 	execCommands := []plan.ExecCommand{}
 	for _, cmd := range commands {
 		if execCmd, ok := cmd.(plan.ExecCommand); ok {
-			execCommands = append(execCommands, execCmd)
+			if !isSkippableCommand(execCmd.Cmd) {
+				execCommands = append(execCommands, execCmd)
+			}
 		}
 	}
 	return execCommands
+}
+
+func isSkippableCommand(cmd string) bool {
+	for _, skippable := range skippableCommands {
+		if cmd == skippable {
+			return true
+		}
+	}
+	return false
 }
 
 func formatSource(pkg *resolver.ResolvedPackage) string {

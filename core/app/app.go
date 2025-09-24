@@ -11,7 +11,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/tailscale/hujson"
+	"github.com/railwayapp/railpack/internal/utils"
 	"gopkg.in/yaml.v2"
 )
 
@@ -90,6 +90,14 @@ func (a *App) findGlob(pattern string) ([]string, error) {
 	return matches, nil
 }
 
+// Check if a relative file exists in the app's source directory
+func (a *App) HasFile(path string) bool {
+	fullPath := filepath.Join(a.Source, path)
+
+	_, err := os.Stat(fullPath)
+	return !os.IsNotExist(err)
+}
+
 // HasMatch checks if a path matching a glob exists (files or directories)
 func (a *App) HasMatch(pattern string) bool {
 	files, err := a.FindFiles(pattern)
@@ -126,7 +134,7 @@ func (a *App) FindFilesWithContent(pattern string, regex *regexp.Regexp) []strin
 	return matches
 }
 
-// ReadFile reads the contents of a file
+// ReadFile reads the contents of a file within the application source directory
 func (a *App) ReadFile(name string) (string, error) {
 	path := filepath.Join(a.Source, name)
 	data, err := os.ReadFile(path)
@@ -145,7 +153,7 @@ func (a *App) ReadJSON(name string, v interface{}) error {
 		return err
 	}
 
-	jsonBytes, err := standardizeJSON([]byte(data))
+	jsonBytes, err := utils.StandardizeJSON([]byte(data))
 	if err != nil {
 		return err
 	}
@@ -207,13 +215,4 @@ func (a *App) stripSourcePath(absPath string) (string, error) {
 		return "", errors.New("failed to parse source path")
 	}
 	return rel, nil
-}
-
-func standardizeJSON(b []byte) ([]byte, error) {
-	ast, err := hujson.Parse(b)
-	if err != nil {
-		return b, err
-	}
-	ast.Standardize()
-	return ast.Pack(), nil
 }

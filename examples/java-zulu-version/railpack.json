@@ -1,0 +1,7 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "provider": "java",
+  "packages": {
+    "java": "zulu-8.86"
+  }
+}

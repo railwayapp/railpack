@@ -254,6 +254,7 @@ func (g *BuildGraph) convertExecCommandToLLB(node *StepNode, cmd plan.ExecComman
 
 	// These options mount all secrets as environments variables
 	// We want to add all secrets to all commands, even if they are not specified in the step
+	// Note: This does mean that if the number of secrets change, then the cache for every step will be invalidated
 	secretOpts := []llb.RunOption{}
 	for _, secret := range g.Plan.Secrets {
 		secretOpts = append(secretOpts, llb.AddSecret(secret, llb.SecretID(secret), llb.SecretAsEnv(true), llb.SecretAsEnvName(secret)))
@@ -370,8 +371,10 @@ func (g *BuildGraph) getSecretInvalidationMountOptions(node *StepNode, secretOpt
 		hashCommand := fmt.Sprintf("sh -c 'echo \"%s\" | sha256sum > /used-secrets-hash'", secretsString)
 
 		usedSecretsState := g.usedSecretsBase.
+			// Depend on the secrets-hash file so that it is invalidated when the secrets change
 			File(llb.Copy(*g.secretsFile, "/secrets-hash", "/secrets-hash"),
 				llb.WithCustomName("[railpack] copy secrets hash")).
+			// Run the hash command to generate the used secrets hash
 			Run(append([]llb.RunOption{
 				llb.Shlex(hashCommand),
 				llb.WithCustomName("[railpack] hash used secrets")},
@@ -381,7 +384,8 @@ func (g *BuildGraph) getSecretInvalidationMountOptions(node *StepNode, secretOpt
 			llb.Copy(usedSecretsState, "/used-secrets-hash", "/used-secrets-hash"),
 			llb.WithCustomName("[railpack] copy used secrets hash"))
 
-		opts = append(secretOpts, llb.AddMount("/used-secrets-hash", usedSecretsHash))
+		// Mount the used secrets file so that the layer is invalidated when these secrets change
+		opts = append(opts, llb.AddMount("/used-secrets-hash", usedSecretsHash))
 	}
 
 	return opts

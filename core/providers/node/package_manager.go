@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	semver "github.com/Masterminds/semver/v3"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 )
@@ -127,11 +128,16 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
 	prune.AddCache(p.GetInstallCache(ctx))
 
+	if pruneCmd, _ := ctx.Env.GetConfigVariable("NODE_PRUNE_CMD"); pruneCmd != "" {
+		prune.AddCommand(plan.NewExecCommand(pruneCmd))
+		return
+	}
+
 	switch p {
 	case PackageManagerNpm:
 		prune.AddCommand(plan.NewExecCommand("npm prune --omit=dev --ignore-scripts"))
 	case PackageManagerPnpm:
-		prune.AddCommand(plan.NewExecCommand("pnpm prune --prod --ignore-scripts"))
+		p.prunePnpm(ctx, prune)
 	case PackageManagerBun:
 		// Prune is not supported in Bun. https://github.com/oven-sh/bun/issues/3605
 		prune.AddCommand(plan.NewExecShellCommand("rm -rf node_modules && bun install --production --ignore-scripts"))
@@ -140,6 +146,24 @@ func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate
 	case PackageManagerYarnBerry:
 		p.pruneYarnBerry(ctx, prune)
 	}
+}
+
+func (p PackageManager) prunePnpm(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
+	if packageJson, err := p.getPackageJsonFromContext(ctx); err == nil {
+		_, pnpmVersion := packageJson.GetPackageManagerInfo()
+		if pnpmVersion != "" {
+			pnpmVersion, err := semver.NewVersion(pnpmVersion)
+
+			// pnpm 8.15.6 added the --ignore-scripts flag to the prune command
+			// https://github.com/pnpm/pnpm/releases/tag/v8.15.6
+			if err == nil && pnpmVersion.Compare(semver.MustParse("8.15.6")) == -1 {
+				prune.AddCommand(plan.NewExecCommand("pnpm prune --prod"))
+				return
+			}
+		}
+	}
+
+	prune.AddCommand(plan.NewExecCommand("pnpm prune --prod --ignore-scripts"))
 }
 
 func (p PackageManager) pruneYarnBerry(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {

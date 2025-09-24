@@ -9,6 +9,7 @@
     "cowsay": "^1.6.0"
   },
   "devDependencies": {
+    "@types/node": "^20.19.10",
     "typescript": "^5.8.3"
   }
 }

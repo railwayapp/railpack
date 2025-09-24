@@ -47,6 +47,11 @@ var BuildCommand = &cli.Command{
 			Name:  "cache-key",
 			Usage: "Unique id to prefix to cache keys",
 		},
+		&cli.BoolFlag{
+			Name:   "dump-llb",
+			Hidden: true,
+			Value:  false,
+		},
 	}, commonPlanFlags()...),
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		buildResult, app, env, err := GenerateBuildResultForCommand(cmd)
@@ -62,11 +67,15 @@ var BuildCommand = &cli.Command{
 		}
 
 		if cmd.Bool("show-plan") {
-			serializedPlan, err := json.MarshalIndent(buildResult.Plan, "", "  ")
+			planMap, err := addSchemaToPlanMap(buildResult.Plan)
 			if err != nil {
 				return cli.Exit(err, 1)
 			}
 
+			serializedPlan, err := json.MarshalIndent(planMap, "", "  ")
+			if err != nil {
+				return cli.Exit(err, 1)
+			}
 			fmt.Println(string(serializedPlan))
 		}
 
@@ -77,14 +86,14 @@ var BuildCommand = &cli.Command{
 
 		secretsHash := getSecretsHash(env)
 
-		platform, err := getPlatform(cmd.String("platform"))
+		platform, err := buildkit.ParsePlatform(cmd.String("platform"))
 		if err != nil {
 			return cli.Exit(err, 1)
 		}
 
 		err = buildkit.BuildWithBuildkitClient(app.Source, buildResult.Plan, buildkit.BuildWithBuildkitClientOptions{
 			ImageName:    cmd.String("name"),
-			DumpLLB:      cmd.Bool("llb"),
+			DumpLLB:      cmd.Bool("dump-llb"),
 			OutputDir:    cmd.String("output"),
 			ProgressMode: cmd.String("progress"),
 			CacheKey:     cmd.String("cache-key"),
@@ -99,21 +108,6 @@ var BuildCommand = &cli.Command{
 
 		return nil
 	},
-}
-
-func getPlatform(platformStr string) (buildkit.BuildPlatform, error) {
-	var platform buildkit.BuildPlatform
-	if platformStr == "" {
-		platform = buildkit.DetermineBuildPlatformFromHost()
-	} else if platformStr == "linux/arm64" {
-		platform = buildkit.PlatformLinuxARM64
-	} else if platformStr != "linux/amd64" {
-		return buildkit.BuildPlatform{}, fmt.Errorf("unsupported platform: %s. Must be one of: linux/amd64, linux/arm64", platformStr)
-	} else {
-		platform = buildkit.PlatformLinuxAMD64
-	}
-
-	return platform, nil
 }
 
 func validateSecrets(plan *plan.BuildPlan, env *app.Environment) error {

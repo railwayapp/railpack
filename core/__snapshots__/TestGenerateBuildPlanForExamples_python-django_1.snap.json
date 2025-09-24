@@ -63,8 +63,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libpq-dev python3-dev'",
-     "customName": "install apt packages: libpq-dev python3-dev"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libpq-dev'",
+     "customName": "install apt packages: libpq-dev"
     }
    ],
    "inputs": [
@@ -107,6 +107,7 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_VERIFY": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
@@ -131,13 +132,6 @@
     },
     {
      "cmd": "uv sync --locked --no-dev --no-install-project"
-    },
-    {
-     "dest": ".",
-     "src": "."
-    },
-    {
-     "cmd": "uv sync --locked --no-dev --no-editable"
     }
    ],
    "inputs": [
@@ -163,13 +157,18 @@
   {
    "commands": [
     {
-     "dest": ".",
-     "src": "."
+     "cmd": "uv sync --locked --no-dev --no-editable"
     }
    ],
    "inputs": [
     {
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

@@ -19,10 +19,21 @@ Install and use all versions of tools needed for Railpack
 mise run setup
 ```
 
-List all the commands available
+This command will also start a buildkit container (check out `mise.toml` in the root directory for more information).
+
+Use the `cli` task to run the railpack CLI (this is like `railpack --help`)
 
 ```bash
 mise run cli --help
+```
+
+If you want to compile a development build of railpack to use elsewhere on your machine:
+
+```bash
+mise run build
+
+# add the railpack repo `bin/` directory to your path to use the newly-compiled railpack on your machine
+export PATH="$PWD/bin:$PATH"
 ```
 
 ## Building directly with Buildkit
@@ -36,6 +47,13 @@ order to build the generated LLB.
 
 ```bash
 mise run cli --verbose build examples/node-bun
+```
+
+Remember, `mise run` runs the cli in the root project directory. So, if you are in a specific project example directory, you'll want to specify the path to the example directory as an absolute path:
+
+```bash
+cd examples/node-angular/
+mise run cli build $(pwd)
 ```
 
 You need to have a BuildKit instance running (see below).
@@ -92,4 +110,16 @@ mise run test
 
 # Start the docs dev server
 mise run docs-dev
+
+# Inspect what backend is being used for a given tool
+mise tool poetry
 ```
+
+## Debugging
+
+Here's some helpful debugging tricks:
+
+* `URFAVE_CLI_TRACING=on` for debugging CLI argument parsing
+* `mise run cli --verbose build --show-plan --progress plain examples/node-bun`
+* `mise run build`, add `./bin/` to your `$PATH`, and then run `railpack` in a separate local directory
+* `NO_COLOR=1` 

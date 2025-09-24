@@ -15,7 +15,7 @@
    ],
    "inputs": [
     {
-     "image": "dunglas/frankenphp:php8.4.10-bookworm"
+     "image": "dunglas/frankenphp:php8.4.12-bookworm"
     }
    ],
    "name": "packages:image"
@@ -87,15 +87,15 @@
    }
   },
   {
-   "commands": [
-    {
-     "dest": ".",
-     "src": "."
-    }
-   ],
    "inputs": [
     {
      "step": "install:composer"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

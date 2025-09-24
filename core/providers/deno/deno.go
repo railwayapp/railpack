@@ -73,8 +73,8 @@ func (p *DenoProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 		return
 	}
 
+	build.AddInput(plan.NewLocalLayer())
 	build.AddCommands([]plan.Command{
-		plan.NewCopyCommand("."),
 		plan.NewExecCommand(fmt.Sprintf("deno cache %s", p.mainFile)),
 	})
 }

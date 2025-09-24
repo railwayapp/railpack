@@ -18,7 +18,8 @@ const (
 	DEFAULT_NODE_VERSION = "22"
 	DEFAULT_BUN_VERSION  = "latest"
 
-	COREPACK_HOME = "/opt/corepack"
+	COREPACK_HOME      = "/opt/corepack"
+	NODE_MODULES_CACHE = "/app/node_modules/.cache"
 )
 
 var (
@@ -170,7 +171,7 @@ func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 }
 
 func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
-	build.AddCommand(plan.NewCopyCommand("."))
+	build.AddInput(plan.NewLocalLayer())
 
 	_, ok := p.packageJson.Scripts["build"]
 	if ok {
@@ -222,6 +223,10 @@ func (p *NodeProvider) addCaches(ctx *generate.GenerateContext, build *generate.
 	p.addFrameworkCaches(ctx, build, "astro", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
 		return p.isAstroPackage(pkg, ctx)
 	}, "node_modules/.astro")
+
+	p.addFrameworkCaches(ctx, build, "react-router", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+		return p.isReactRouterPackage(pkg, ctx)
+	}, ".react-router")
 }
 
 func (p *NodeProvider) shouldPrune(ctx *generate.GenerateContext) bool {
@@ -258,6 +263,12 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 			plan.NewExecShellCommand("npm i -g corepack@latest && corepack enable && corepack prepare --activate"),
 		})
 	}
+	install.AddCommands([]plan.Command{
+		// it's possible for a package.json to exist without any dependencies, in which case node_modules is not generated
+		// and bun.lockb, etc are not generated either. However, this path is used to compute the cache key, so we ensure
+		// it exists on the filesystem to avoid a docker cache key computation error.
+		plan.NewExecCommand(fmt.Sprintf("mkdir -p %s", NODE_MODULES_CACHE)),
+	})
 
 	p.packageManager.installDependencies(ctx, p.workspace, install)
 }
@@ -298,6 +309,10 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			miseStep.Version(bun, envVersion, varName)
 		}
 
+		if bunVersionFile, err := ctx.App.ReadFile(".bun-version"); err == nil {
+			miseStep.Version(bun, string(bunVersionFile), ".bun-version")
+		}
+
 		// If we don't need node in the final image, we still want to include it for the install steps
 		// since many packages need node-gyp to install native modules
 		// in this case, we don't need a specific version, so we'll just pull from apt
@@ -324,7 +339,6 @@ func (p *NodeProvider) GetNodeEnvVars(ctx *generate.GenerateContext) map[string]
 
 	if p.packageManager == PackageManagerYarn1 {
 		envVars["YARN_PRODUCTION"] = "false"
-		envVars["MISE_YARN_SKIP_GPG"] = "true" // https://github.com/mise-plugins/mise-yarn/pull/8
 	}
 
 	if p.isAstro(ctx) && !p.isAstroSPA(ctx) {
@@ -446,7 +460,7 @@ func (p *NodeProvider) requiresNode(ctx *generate.GenerateContext) bool {
 		}
 	}
 
-	return p.isAstro(ctx)
+	return p.isAstro(ctx) || p.isVite(ctx)
 }
 
 // packageJsonRequiresBun checks if a package.json's scripts use bun commands
@@ -491,6 +505,8 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 			return "cra"
 		} else if p.isAngular(ctx) {
 			return "angular"
+		} else if p.isReactRouter(ctx) {
+			return "react-router"
 		}
 
 		return "static"
@@ -504,6 +520,8 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 		return "tanstack-start"
 	} else if p.isVite(ctx) {
 		return "vite"
+	} else if p.isReactRouter(ctx) {
+		return "react-router"
 	} else if p.packageManager == PackageManagerBun {
 		return "bun"
 	}

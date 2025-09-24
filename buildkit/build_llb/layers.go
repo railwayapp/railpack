@@ -179,6 +179,7 @@ func hasPathOverlap(paths1, paths2 []string) bool {
 // For container paths, the full relative path structure is preserved under /app.
 func resolvePaths(include string, isLocal bool) (srcPath, destPath string) {
 	if isLocal {
+		// convert a local path reference to fully qualified container path
 		return include, filepath.Join("/app", filepath.Base(include))
 	}
 

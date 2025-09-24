@@ -1,0 +1,5 @@
+[
+  {
+    "expectedOutput": "Hello from python-uv-workspace!Hello from workspace-package!"
+  }
+]

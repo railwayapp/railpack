@@ -89,6 +89,7 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_VERIFY": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
@@ -99,6 +100,9 @@
    "commands": [
     {
      "path": "/app/node_modules/.bin"
+    },
+    {
+     "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
      "dest": "package.json",
@@ -134,16 +138,18 @@
    ],
    "commands": [
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "npm run build"
     }
    ],
    "inputs": [
     {
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",

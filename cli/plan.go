@@ -29,11 +29,16 @@ var PlanCommand = &cli.Command{
 			return cli.Exit(err, 1)
 		}
 
-		serializedPlan, err := json.MarshalIndent(buildResult.Plan, "", "  ")
+		// Include $schema in the generated plan JSON for editor support
+		planMap, err := addSchemaToPlanMap(buildResult.Plan)
 		if err != nil {
 			return cli.Exit(err, 1)
 		}
-		buildResultString := string(serializedPlan)
+		serializedPlan, err := json.MarshalIndent(planMap, "", "  ")
+		if err != nil {
+			return cli.Exit(err, 1)
+		}
+		buildResultString := serializedPlan
 
 		output := cmd.String("out")
 		if output == "" {

@@ -50,6 +50,7 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_VERIFY": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
@@ -116,11 +117,11 @@
      "src": "assets*"
     },
     {
-     "cmd": "mix compile"
-    },
-    {
      "dest": "config/",
      "src": "config/runtime.exs*"
+    },
+    {
+     "cmd": "mix compile"
     },
     {
      "dest": ".",

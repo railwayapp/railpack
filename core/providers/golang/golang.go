@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	DEFAULT_GO_VERSION = "1.23"
+	DEFAULT_GO_VERSION = "1.25"
 	GO_BUILD_CACHE_KEY = "go-build"
 	GO_BINARY_NAME     = "out"
 	GO_PATH            = "/go"
@@ -102,7 +102,7 @@ func (p *GoProvider) Build(ctx *generate.GenerateContext, build *generate.Comman
 		buildCmd = fmt.Sprintf("%s main.go", baseBuildCmd)
 	}
 
-	build.AddCommand(plan.NewCopyCommand("."))
+	build.AddInput(plan.NewLocalLayer())
 
 	if buildCmd == "" {
 		return

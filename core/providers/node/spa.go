@@ -36,8 +36,9 @@ func (p *NodeProvider) isSPA(ctx *generate.GenerateContext) bool {
 	isAstro := p.isAstroSPA(ctx)
 	isCRA := p.isCRA(ctx)
 	isAngular := p.isAngular(ctx)
+	isReactRouter := p.isReactRouter(ctx)
 
-	return (isVite || isAstro || isCRA || isAngular) && p.getOutputDirectory(ctx) != ""
+	return (isVite || isAstro || isCRA || isAngular || isReactRouter) && p.getOutputDirectory(ctx) != ""
 }
 
 func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
@@ -45,7 +46,9 @@ func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
 		return ""
 	}
 
-	if p.isVite(ctx) {
+	if p.isReactRouter(ctx) {
+		return "react-router"
+	} else if p.isVite(ctx) {
 		return "vite"
 	} else if p.isAstro(ctx) {
 		return "astro"
@@ -124,6 +127,8 @@ func (p *NodeProvider) getOutputDirectory(ctx *generate.GenerateContext) string 
 
 	if dir, _ := ctx.Env.GetConfigVariable(OUTPUT_DIR_VAR); dir != "" {
 		outputDir = dir
+	} else if p.isReactRouter(ctx) {
+		outputDir = p.getReactRouterOutputDirectory(ctx)
 	} else if p.isVite(ctx) {
 		outputDir = p.getViteOutputDirectory(ctx)
 	} else if p.isAstroSPA(ctx) {

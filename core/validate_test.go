@@ -100,7 +100,7 @@ func TestValidateInputs(t *testing.T) {
 
 	t.Run("invalid first input", func(t *testing.T) {
 		inputs := []plan.Layer{
-			plan.NewLocalLayer("."),
+			plan.NewLocalLayer(),
 		}
 		require.False(t, validateInputs(inputs, "test", logger))
 	})

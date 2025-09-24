@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	DEFAULT_RUST_VERSION = "1.85.1"
+	DEFAULT_RUST_VERSION = "1.89"
 	CARGO_REGISTRY_CACHE = "/root/.cargo/registry"
 	CARGO_GIT_CACHE      = "/root/.cargo/git"
 	CARGO_TARGET_CACHE   = "target"
@@ -175,8 +175,8 @@ func (p *RustProvider) Install(ctx *generate.GenerateContext, install *generate.
 }
 
 func (p *RustProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
+	build.AddInput(plan.NewLocalLayer())
 	build.AddCommands([]plan.Command{
-		plan.NewCopyCommand("."),
 		plan.NewExecCommand("mkdir -p bin"),
 	})
 

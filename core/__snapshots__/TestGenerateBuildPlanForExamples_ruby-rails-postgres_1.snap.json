@@ -43,6 +43,7 @@
    "BUNDLE_GEMFILE": "/app/Gemfile",
    "GEM_HOME": "/usr/local/bundle",
    "GEM_PATH": "/usr/local/bundle",
+   "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so",
    "MALLOC_ARENA_MAX": "2"
   }
  },
@@ -54,8 +55,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y cargo libyaml-dev rustc'",
-     "customName": "install apt packages: cargo libyaml-dev rustc"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y cargo libjemalloc-dev libyaml-dev rustc'",
+     "customName": "install apt packages: cargo libjemalloc-dev libyaml-dev rustc"
     }
    ],
    "inputs": [
@@ -94,6 +95,7 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_VERIFY": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
@@ -130,15 +132,12 @@
     "BUNDLE_GEMFILE": "/app/Gemfile",
     "GEM_HOME": "/usr/local/bundle",
     "GEM_PATH": "/usr/local/bundle",
+    "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so",
     "MALLOC_ARENA_MAX": "2"
    }
   },
   {
    "commands": [
-    {
-     "dest": ".",
-     "src": "."
-    },
     {
      "cmd": "bundle exec rake assets:precompile"
     },
@@ -149,6 +148,12 @@
    "inputs": [
     {
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",
@@ -156,6 +161,7 @@
     "BUNDLE_GEMFILE": "/app/Gemfile",
     "GEM_HOME": "/usr/local/bundle",
     "GEM_PATH": "/usr/local/bundle",
+    "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so",
     "MALLOC_ARENA_MAX": "2"
    }
   },
@@ -166,8 +172,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y default-libmysqlclient-dev libicu-dev libmagickwand-dev libpq-dev libvips-dev libxml2-dev libxslt-dev libyaml-dev'",
-     "customName": "install apt packages: default-libmysqlclient-dev libicu-dev libmagickwand-dev libpq-dev libvips-dev libxml2-dev libxslt-dev libyaml-dev"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y default-libmysqlclient-dev libicu-dev libjemalloc-dev libmagickwand-dev libpq-dev libvips-dev libxml2-dev libxslt-dev libyaml-dev'",
+     "customName": "install apt packages: default-libmysqlclient-dev libicu-dev libjemalloc-dev libmagickwand-dev libpq-dev libvips-dev libxml2-dev libxslt-dev libyaml-dev"
     }
    ],
    "inputs": [

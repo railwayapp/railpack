@@ -18,13 +18,7 @@
     "include": [
      "."
     ],
-    "step": "setup"
-   },
-   {
-    "include": [
-     "."
-    ],
-    "local": true
+    "step": "build"
    }
   ],
   "startCommand": "caddy run --config Caddyfile --adapter caddyfile 2\u003e\u00261"
@@ -59,6 +53,7 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_VERIFY": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
@@ -78,9 +73,15 @@
    "inputs": [
     {
      "step": "packages:mise"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
-   "name": "setup",
+   "name": "build",
    "secrets": [
     "*"
    ]

@@ -1,3 +1,6 @@
+// this provider is distinct from the SPA functionality used by node providers
+// it is meant to simply serve static files over HTTP
+
 package staticfile
 
 import (
@@ -52,22 +55,23 @@ func (p *StaticfileProvider) Plan(ctx *generate.GenerateContext) error {
 	miseStep := ctx.GetMiseStepBuilder()
 	miseStep.Default("caddy", "latest")
 
-	setup := ctx.NewCommandStep("setup")
-	setup.AddInput(plan.NewStepLayer(miseStep.Name()))
-	err := p.Setup(ctx, setup)
+	build := ctx.NewCommandStep("build")
+	build.AddInput(plan.NewStepLayer(miseStep.Name()))
+	build.AddInput(plan.NewLocalLayer())
+
+	err := p.addCaddyfileToStep(ctx, build)
 	if err != nil {
 		return err
 	}
 
 	ctx.Deploy.AddInputs([]plan.Layer{
 		miseStep.GetLayer(),
-		plan.NewStepLayer(setup.Name(), plan.Filter{
+		plan.NewStepLayer(build.Name(), plan.Filter{
 			Include: []string{"."},
 		}),
-		plan.NewLocalLayer("."),
 	})
 
-	ctx.Deploy.StartCmd = p.CaddyStartCommand(ctx)
+	ctx.Deploy.StartCmd = fmt.Sprintf("caddy run --config %s --adapter caddyfile 2>&1", CaddyfilePath)
 
 	return nil
 }
@@ -76,11 +80,7 @@ func (p *StaticfileProvider) StartCommandHelp() string {
 	return ""
 }
 
-func (p *StaticfileProvider) CaddyStartCommand(ctx *generate.GenerateContext) string {
-	return "caddy run --config " + CaddyfilePath + " --adapter caddyfile 2>&1"
-}
-
-func (p *StaticfileProvider) Setup(ctx *generate.GenerateContext, setup *generate.CommandStepBuilder) error {
+func (p *StaticfileProvider) addCaddyfileToStep(ctx *generate.GenerateContext, setup *generate.CommandStepBuilder) error {
 	ctx.Logger.LogInfo("Using root dir: %s", p.RootDir)
 
 	data := map[string]interface{}{

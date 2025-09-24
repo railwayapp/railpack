@@ -28,6 +28,7 @@ type TestCase struct {
 	Envs           map[string]string `json:"envs"`
 	ConfigFilePath string            `json:"configFile"`
 	JustBuild      bool              `json:"justBuild"`
+	ShouldFail     bool              `json:"shouldFail"`
 }
 
 func TestExamplesIntegration(t *testing.T) {
@@ -78,6 +79,16 @@ func TestExamplesIntegration(t *testing.T) {
 				buildResult := core.GenerateBuildPlan(userApp, env, &core.GenerateBuildPlanOptions{
 					ConfigFilePath: testCase.ConfigFilePath,
 				})
+
+				// Handle case where we expect the build to fail
+				if testCase.ShouldFail {
+					if buildResult.Success {
+						t.Fatalf("expected build to fail, but it succeeded")
+					}
+					// Test passes - build failed as expected
+					return
+				}
+
 				if !buildResult.Success {
 					t.Fatalf("failed to generate build plan: %v", buildResult.Logs)
 				}
@@ -95,6 +106,9 @@ func TestExamplesIntegration(t *testing.T) {
 					ExportCache: *buildkitCacheExport,
 					Secrets:     testCase.Envs,
 					CacheKey:    imageName,
+					// Pass through GITHUB_TOKEN if it exists, this avoids mise timeouts during build
+					// this can easily occur since we run all integration tests in parallel via GHA
+					GitHubToken: os.Getenv("GITHUB_TOKEN"),
 				}); err != nil {
 					t.Fatalf("failed to build image: %v", err)
 				}
