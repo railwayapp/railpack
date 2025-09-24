@@ -28,9 +28,10 @@ type StepBuilder interface {
 }
 
 type GenerateContext struct {
-	App    *a.App
-	Env    *a.Environment
-	Config *config.Config
+	App             *a.App
+	Env             *a.Environment
+	Config          *config.Config
+	dockerignoreCtx *plan.DockerignoreContext
 
 	BaseImage string
 	Steps     []StepBuilder
@@ -69,17 +70,29 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 		return nil, err
 	}
 
+	dockerignoreCtx := plan.NewDockerignoreContext(app)
+	excludes, includes, err := dockerignoreCtx.ParseWithLogging(logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse .dockerignore: %w", err)
+	}
+
+	if excludes != nil || includes != nil {
+		log.Debugf("Dockerignore exclude patterns: %v", excludes)
+		log.Debugf("Dockerignore include patterns: %v", includes)
+	}
+
 	ctx := &GenerateContext{
-		App:      app,
-		Env:      env,
-		Config:   config,
-		Steps:    make([]StepBuilder, 0),
-		Deploy:   NewDeployBuilder(),
-		Caches:   NewCacheContext(),
-		Secrets:  []string{},
-		Metadata: NewMetadata(),
-		Resolver: resolver,
-		Logger:   logger,
+		App:             app,
+		Env:             env,
+		Config:          config,
+		Steps:           make([]StepBuilder, 0),
+		Deploy:          NewDeployBuilder(),
+		Caches:          NewCacheContext(),
+		Secrets:         []string{},
+		Metadata:        NewMetadata(),
+		Resolver:        resolver,
+		Logger:          logger,
+		dockerignoreCtx: dockerignoreCtx,
 	}
 
 	ctx.applyPackagesFromConfig()
@@ -233,4 +246,19 @@ func (c *GenerateContext) applyConfig() {
 			c.Deploy.AddInputs([]plan.Layer{plan.NewStepLayer(name, filter)})
 		}
 	}
+}
+
+// creates a local layer with dockerignore patterns applied
+func (c *GenerateContext) NewLocalLayer() plan.Layer {
+	layer := plan.NewLocalLayer()
+
+	excludes, includes, _ := c.dockerignoreCtx.Parse()
+	if len(includes) > 0 {
+		layer.Filter.Include = utils.RemoveDuplicates(append(layer.Filter.Include, includes...))
+	}
+	if len(excludes) > 0 {
+		layer.Filter.Exclude = utils.RemoveDuplicates(append(layer.Filter.Exclude, excludes...))
+	}
+
+	return layer
 }

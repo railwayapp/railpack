@@ -1,8 +1,3 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with
-code in this repository.
-
 # What is Railpack
 
 Zero-config application builder that automatically analyzes your code and turns
@@ -22,9 +17,10 @@ with support for Node, Python, Go, PHP, and more.
 
 # Bash commands
 
-- `mise run build` - Build the CLI binary
+- `mise run build` - Build the CLI binary (`./bin/railpack`), use this instead of `go build`
 - `mise run check` - Run linting, formatting, and static analysis
 - `mise run test` - Run unit tests
+- `mise run test-integration` - Runs *all* integration tests. Never run this. Instead, only run the test that you are currently working on, e.g. `mise run test-integration -- -run "TestExamplesIntegration/config-file"`
 
 # Code style
 
@@ -33,11 +29,16 @@ with support for Node, Python, Go, PHP, and more.
 - Do not write comments that are obvious from the code itself; focus on
   explaining why something is done, not what it does
 - Seriously, do not write comments that are obvious from the code itself.
+- Do not write one-line functions
+- Always use the App abstraction for file system operations.
 
 # Workflow
 
 - Be sure to run `mise run check` when you're done making code changes
 - Don't run tests manually unless instructed to do so
+- Use the `cli` mise task to test your changes on a specific example project, i.e. `mise run cli -- --verbose build --show-plan examples/node-vite-react-router-spa/`
+- Never `git commit`
+- Do not use `bin/railpack` instead use `mise run cli` (which is the development build of `railpack`)
 
 # File Conventions
 

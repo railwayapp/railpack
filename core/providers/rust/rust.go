@@ -175,7 +175,7 @@ func (p *RustProvider) Install(ctx *generate.GenerateContext, install *generate.
 }
 
 func (p *RustProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
-	build.AddInput(plan.NewLocalLayer())
+	build.AddInput(ctx.NewLocalLayer())
 	build.AddCommands([]plan.Command{
 		plan.NewExecCommand("mkdir -p bin"),
 	})
