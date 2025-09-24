@@ -5,12 +5,20 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/railwayapp/railpack/core/app"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCheckAndParseDockerignore(t *testing.T) {
 	t.Run("nonexistent dockerignore", func(t *testing.T) {
-		excludes, includes, err := CheckAndParseDockerignore("/nonexistent/path")
+		tempDir, err := os.MkdirTemp("", "dockerignore-test")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		testApp, err := app.NewApp(tempDir)
+		require.NoError(t, err)
+
+		excludes, includes, err := CheckAndParseDockerignore(testApp)
 		require.NoError(t, err)
 		require.Nil(t, excludes)
 		require.Nil(t, includes)
@@ -18,7 +26,10 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 
 	t.Run("valid dockerignore file", func(t *testing.T) {
 		examplePath := filepath.Join("..", "..", "examples", "dockerignore")
-		excludes, includes, err := CheckAndParseDockerignore(examplePath)
+		testApp, err := app.NewApp(examplePath)
+		require.NoError(t, err)
+
+		excludes, includes, err := CheckAndParseDockerignore(testApp)
 
 		require.NoError(t, err)
 		require.NotNil(t, excludes)
@@ -61,10 +72,13 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 		require.NoError(t, err)
 		defer func() { _ = os.Chmod(dockerignorePath, 0644) }() // Restore permissions for cleanup
 
+		testApp, err := app.NewApp(tempDir)
+		require.NoError(t, err)
+
 		// This should fail with a permission error
-		excludes, includes, err := CheckAndParseDockerignore(tempDir)
+		excludes, includes, err := CheckAndParseDockerignore(testApp)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "error opening .dockerignore")
+		require.Contains(t, err.Error(), "error reading .dockerignore")
 		require.Nil(t, excludes)
 		require.Nil(t, includes)
 	})
@@ -114,9 +128,16 @@ func TestSeparatePatterns(t *testing.T) {
 
 func TestDockerignoreContext(t *testing.T) {
 	t.Run("new context", func(t *testing.T) {
-		ctx := NewDockerignoreContext("/some/path")
+		tempDir, err := os.MkdirTemp("", "dockerignore-test")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		testApp, err := app.NewApp(tempDir)
+		require.NoError(t, err)
+
+		ctx := NewDockerignoreContext(testApp)
 		require.NotNil(t, ctx)
-		require.Equal(t, "/some/path", ctx.repoPath)
+		require.Equal(t, testApp, ctx.app)
 		require.False(t, ctx.parsed)
 		require.Nil(t, ctx.excludes)
 		require.Nil(t, ctx.includes)
@@ -124,7 +145,10 @@ func TestDockerignoreContext(t *testing.T) {
 
 	t.Run("parse caching", func(t *testing.T) {
 		examplePath := filepath.Join("..", "..", "examples", "dockerignore")
-		ctx := NewDockerignoreContext(examplePath)
+		testApp, err := app.NewApp(examplePath)
+		require.NoError(t, err)
+
+		ctx := NewDockerignoreContext(testApp)
 
 		// First parse
 		excludes1, includes1, err1 := ctx.Parse()
@@ -140,7 +164,10 @@ func TestDockerignoreContext(t *testing.T) {
 
 	t.Run("parse with logging", func(t *testing.T) {
 		examplePath := filepath.Join("..", "..", "examples", "dockerignore")
-		ctx := NewDockerignoreContext(examplePath)
+		testApp, err := app.NewApp(examplePath)
+		require.NoError(t, err)
+
+		ctx := NewDockerignoreContext(testApp)
 
 		// Mock logger that captures calls
 		logCalls := []string{}
@@ -158,7 +185,14 @@ func TestDockerignoreContext(t *testing.T) {
 	})
 
 	t.Run("parse nonexistent file", func(t *testing.T) {
-		ctx := NewDockerignoreContext("/nonexistent/path")
+		tempDir, err := os.MkdirTemp("", "dockerignore-test")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		testApp, err := app.NewApp(tempDir)
+		require.NoError(t, err)
+
+		ctx := NewDockerignoreContext(testApp)
 
 		excludes, includes, err := ctx.Parse()
 		require.NoError(t, err)
@@ -182,7 +216,10 @@ func TestDockerignoreContext(t *testing.T) {
 		require.NoError(t, err)
 		defer func() { _ = os.Chmod(dockerignorePath, 0644) }()
 
-		ctx := NewDockerignoreContext(tempDir)
+		testApp, err := app.NewApp(tempDir)
+		require.NoError(t, err)
+
+		ctx := NewDockerignoreContext(testApp)
 		excludes, includes, err := ctx.Parse()
 
 		require.Error(t, err)
