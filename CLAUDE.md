@@ -30,6 +30,7 @@ with support for Node, Python, Go, PHP, and more.
   explaining why something is done, not what it does
 - Seriously, do not write comments that are obvious from the code itself.
 - Do not write one-line functions
+- Always use the App abstraction for file system operations.
 
 # Workflow
 
