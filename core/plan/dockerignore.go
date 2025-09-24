@@ -1,29 +1,27 @@
 package plan
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
+	"strings"
 
 	"github.com/moby/patternmatcher/ignorefile"
+	"github.com/railwayapp/railpack/core/app"
 )
 
 // checks if a .dockerignore file exists in the app directory and parses it
-func CheckAndParseDockerignore(repoPath string) ([]string, []string, error) {
-	dockerignorePath := filepath.Join(repoPath, ".dockerignore")
-
-	file, err := os.Open(dockerignorePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil, nil
-		}
-		return nil, nil, fmt.Errorf("error opening .dockerignore: %w", err)
+func CheckAndParseDockerignore(app *app.App) ([]string, []string, error) {
+	if !app.HasFile(".dockerignore") {
+		return nil, nil, nil
 	}
-	defer file.Close()
 
-	patterns, err := ignorefile.ReadAll(file)
+	content, err := app.ReadFile(".dockerignore")
 	if err != nil {
-		return nil, nil, fmt.Errorf("error parsing .dockerignore: %w", err)
+		return nil, nil, err
+	}
+
+	reader := strings.NewReader(content)
+	patterns, err := ignorefile.ReadAll(reader)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	excludePatterns, includePatterns := separatePatterns(patterns)
@@ -49,19 +47,19 @@ type DockerignoreContext struct {
 	parsed   bool
 	excludes []string
 	includes []string
-	repoPath string
+	app      *app.App
 }
 
-func NewDockerignoreContext(repoPath string) *DockerignoreContext {
+func NewDockerignoreContext(app *app.App) *DockerignoreContext {
 	return &DockerignoreContext{
-		repoPath: repoPath,
+		app: app,
 	}
 }
 
 // Parse parses the .dockerignore file and caches the results
 func (d *DockerignoreContext) Parse() ([]string, []string, error) {
 	if !d.parsed {
-		excludes, includes, err := CheckAndParseDockerignore(d.repoPath)
+		excludes, includes, err := CheckAndParseDockerignore(d.app)
 		if err != nil {
 			return nil, nil, err
 		}
