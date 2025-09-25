@@ -32,6 +32,7 @@ type GenerateBuildPlanOptions struct {
 	PreviousVersions         map[string]string
 	ConfigFilePath           string
 	ErrorMissingStartCommand bool
+	Vars                     map[string]string
 }
 
 type BuildResult struct {
@@ -255,6 +256,10 @@ func GenerateConfigFromOptions(options *GenerateBuildPlanOptions) *c.Config {
 
 	if options.StartCommand != "" {
 		config.Deploy.StartCmd = options.StartCommand
+	}
+
+	if options.Vars != nil {
+		config.Deploy.Variables = options.Vars
 	}
 
 	return config
