@@ -21,7 +21,6 @@ import (
 	"github.com/moby/buildkit/util/appcontext"
 	_ "github.com/moby/buildkit/util/grpcutil/encoding/proto"
 	"github.com/moby/buildkit/util/progress/progressui"
-	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/tonistiigi/fsutil"
 )
@@ -51,7 +50,7 @@ type BuildWithBuildkitClientOptions struct {
 	ProgressMode string
 	SecretsHash  string
 	Secrets      map[string]string
-	Platform     specs.Platform
+	Platform     string
 	ImportCache  string
 	ExportCache  string
 	CacheKey     string
@@ -87,14 +86,10 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		return errors.New(buildkitInfoError)
 	}
 
-	buildPlatform := opts.Platform
-	if buildPlatform.OS == "" && buildPlatform.Architecture == "" {
-		// Use our helper function to get the default platform
-		var err error
-		buildPlatform, err = ParsePlatformWithDefaults("")
-		if err != nil {
-			return fmt.Errorf("failed to get default platform: %w", err)
-		}
+	// Parse the platform string using our helper function
+	buildPlatform, err := ParsePlatformWithDefaults(opts.Platform)
+	if err != nil {
+		return fmt.Errorf("failed to parse platform '%s': %w", opts.Platform, err)
 	}
 
 	llbState, image, err := ConvertPlanToLLB(plan, ConvertPlanOptions{
