@@ -3,7 +3,6 @@ package integration_tests
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -46,17 +45,21 @@ func TestPlatformIntegration(t *testing.T) {
 		t.Skip("platform example directory does not exist")
 	}
 
-	testConfigPath := filepath.Join(platformExampleDir, "test.json")
-	if _, err := os.Stat(testConfigPath); os.IsNotExist(err) {
-		t.Skip("platform test config does not exist")
+	// Inline test cases instead of reading from JSON file
+	testCases := []PlatformTestCase{
+		{
+			ExpectedOutput: "x86_64",
+			Platform:       "linux/amd64",
+		},
+		{
+			ExpectedOutput: "aarch64",
+			Platform:       "linux/arm64",
+		},
+		{
+			ExpectedOutput: "aarch64",
+			Platform:       "linux/arm64/v8",
+		},
 	}
-
-	testConfigBytes, err := os.ReadFile(testConfigPath)
-	require.NoError(t, err)
-
-	var testCases []PlatformTestCase
-	err = json.Unmarshal(testConfigBytes, &testCases)
-	require.NoError(t, err)
 
 	for i, testCase := range testCases {
 		testCase := testCase // capture for parallel execution
