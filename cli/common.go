@@ -23,6 +23,10 @@ func commonPlanFlags() []cli.Flag {
 			Usage:   "environment variables to set",
 		},
 		&cli.StringSliceFlag{
+			Name:  "var",
+			Usage: "variables to set",
+		},
+		&cli.StringSliceFlag{
 			Name:  "previous",
 			Usage: "versions of packages used for previous builds (e.g. 'package@version')",
 		},
@@ -60,10 +64,16 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 	log.Debugf("Building %s", app.Source)
 
 	envsArgs := cmd.StringSlice("env")
+	varsArgs := cmd.StringSlice("var")
 
 	env, err := a.FromEnvs(envsArgs)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("error creating env: %w", err)
+	}
+
+	vars, err := a.ParseKeyValueStrings(varsArgs, false)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("error parsing vars: %w", err)
 	}
 
 	// if --verbose is passed as a CLI global argument, enable verbose mise logging so the user don't have to understand
@@ -81,6 +91,7 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 		PreviousVersions:         previousVersions,
 		ConfigFilePath:           cmd.String("config-file"),
 		ErrorMissingStartCommand: cmd.Bool("error-missing-start"),
+		Vars:                     vars,
 	}
 
 	buildResult := core.GenerateBuildPlan(app, env, generateOptions)
