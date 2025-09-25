@@ -84,6 +84,31 @@ func (b *MiseStepBuilder) SkipMiseInstall(name resolver.PackageRef) {
 	b.Resolver.SetSkipMiseInstall(name, true)
 }
 
+// Use mise-specified versions for all packages in the input list
+func (b *MiseStepBuilder) UseMiseVersions(ctx *GenerateContext, packages []string) {
+	miseVersions, err := ctx.GetMisePackageVersions()
+	if err != nil {
+		ctx.Logger.LogWarn("Failed to get package versions from mise: %s", err.Error())
+		return
+	}
+
+	if miseVersions == nil {
+		return
+	}
+
+	for _, packageName := range packages {
+		if pkg := miseVersions[packageName]; pkg != nil {
+			// Find the existing package reference
+			for _, pkgRef := range b.MisePackages {
+				if pkgRef.Name == packageName {
+					b.Version(*pkgRef, pkg.Version, pkg.Source)
+					break
+				}
+			}
+		}
+	}
+}
+
 func (b *MiseStepBuilder) Name() string {
 	return b.DisplayName
 }
