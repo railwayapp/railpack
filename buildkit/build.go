@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/containerd/platforms"
 	"github.com/moby/buildkit/client"
 	_ "github.com/moby/buildkit/client/connhelper/dockercontainer"
 	_ "github.com/moby/buildkit/client/connhelper/nerdctlcontainer"
@@ -20,6 +21,7 @@ import (
 	"github.com/moby/buildkit/util/appcontext"
 	_ "github.com/moby/buildkit/util/grpcutil/encoding/proto"
 	"github.com/moby/buildkit/util/progress/progressui"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/tonistiigi/fsutil"
 )
@@ -49,7 +51,7 @@ type BuildWithBuildkitClientOptions struct {
 	ProgressMode string
 	SecretsHash  string
 	Secrets      map[string]string
-	Platform     BuildPlatform
+	Platform     specs.Platform
 	ImportCache  string
 	ExportCache  string
 	CacheKey     string
@@ -86,8 +88,8 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 	}
 
 	buildPlatform := opts.Platform
-	if (buildPlatform == BuildPlatform{}) {
-		buildPlatform = DetermineBuildPlatformFromHost()
+	if buildPlatform.OS == "" && buildPlatform.Architecture == "" {
+		buildPlatform = platforms.DefaultSpec()
 	}
 
 	llbState, image, err := ConvertPlanToLLB(plan, ConvertPlanOptions{
@@ -175,7 +177,7 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		return fmt.Errorf("error creating FS: %w", err)
 	}
 
-	log.Debugf("Building image for %s with BuildKit %s", buildPlatform.String(), info.BuildkitVersion.Version)
+	log.Debugf("Building image for %s with BuildKit %s", platforms.Format(buildPlatform), info.BuildkitVersion.Version)
 
 	secretsMap := make(map[string][]byte)
 	for k, v := range opts.Secrets {

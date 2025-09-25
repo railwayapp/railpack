@@ -2,30 +2,40 @@ package buildkit
 
 import (
 	"testing"
+
+	"github.com/containerd/platforms"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
-func TestParsePlatform(t *testing.T) {
+func TestValidatePlatform(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected BuildPlatform
+		expected specs.Platform
 		wantErr  bool
 	}{
 		{
-			name:  "empty string returns host platform",
-			input: "",
-			expected: func() BuildPlatform {
-				return DetermineBuildPlatformFromHost()
-			}(),
-			wantErr: false,
+			name:     "empty string returns host platform",
+			input:    "",
+			expected: platforms.DefaultSpec(),
+			wantErr:  false,
 		},
 		{
 			name:  "linux/arm64/v8",
 			input: "linux/arm64/v8",
-			expected: BuildPlatform{
+			expected: specs.Platform{
 				OS:           "linux",
 				Architecture: "arm64",
 				Variant:      "v8",
+			},
+			wantErr: false,
+		},
+		{
+			name:  "linux/amd64",
+			input: "linux/amd64",
+			expected: specs.Platform{
+				OS:           "linux",
+				Architecture: "amd64",
 			},
 			wantErr: false,
 		},
@@ -34,38 +44,30 @@ func TestParsePlatform(t *testing.T) {
 			input:   "invalid",
 			wantErr: true,
 		},
+		{
+			name:    "multiple platforms not supported",
+			input:   "linux/amd64,linux/arm64",
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParsePlatform(tt.input)
+			opts := map[string]string{"platform": tt.input}
+			got, err := validatePlatform(opts)
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("ParsePlatform() expected error but got none")
+					t.Errorf("validatePlatform() expected error but got none")
 				}
 				return
 			}
 			if err != nil {
-				t.Errorf("ParsePlatform() error = %v", err)
+				t.Errorf("validatePlatform() error = %v", err)
 				return
 			}
-			if got != tt.expected {
-				t.Errorf("ParsePlatform() = %v, want %v", got, tt.expected)
+			if got.OS != tt.expected.OS || got.Architecture != tt.expected.Architecture || got.Variant != tt.expected.Variant {
+				t.Errorf("validatePlatform() = %v, want %v", got, tt.expected)
 			}
 		})
-	}
-}
-
-func TestBuildPlatformString(t *testing.T) {
-	platform := BuildPlatform{
-		OS:           "linux",
-		Architecture: "arm64",
-		Variant:      "v8",
-	}
-	expected := "linux/arm64/v8"
-
-	got := platform.String()
-	if got != expected {
-		t.Errorf("BuildPlatform.String() = %v, want %v", got, expected)
 	}
 }

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/containerd/platforms"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/railwayapp/railpack/buildkit"
 	"github.com/railwayapp/railpack/core"
 	"github.com/railwayapp/railpack/core/app"
@@ -86,9 +88,17 @@ var BuildCommand = &cli.Command{
 
 		secretsHash := getSecretsHash(env)
 
-		platform, err := buildkit.ParsePlatform(cmd.String("platform"))
-		if err != nil {
-			return cli.Exit(err, 1)
+		platformStr := cmd.String("platform")
+		var platform specs.Platform
+
+		if platformStr == "" {
+			platform = platforms.DefaultSpec()
+		} else {
+			var parseErr error
+			platform, parseErr = platforms.Parse(platformStr)
+			if parseErr != nil {
+				return cli.Exit(parseErr, 1)
+			}
 		}
 
 		err = buildkit.BuildWithBuildkitClient(app.Source, buildResult.Plan, buildkit.BuildWithBuildkitClientOptions{
