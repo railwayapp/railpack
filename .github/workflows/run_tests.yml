@@ -64,6 +64,10 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
+      # required for integration tests that use multiple platforms
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Run test for ${{ matrix.example }}
         env:
           # without the GITHUB_TOKEN, mise will 403 us
