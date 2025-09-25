@@ -21,10 +21,18 @@ func NewEnvironment(variables *map[string]string) *Environment {
 
 // FromEnvs collects variables from the given environment variable names
 func FromEnvs(envs []string) (*Environment, error) {
-	env := NewEnvironment(nil)
+	vars, err := ParseKeyValueStrings(envs, true)
+	if err != nil {
+		return nil, err
+	}
+	return NewEnvironment(&vars), nil
+}
+
+func ParseKeyValueStrings(pairs []string, lookupEnv bool) (map[string]string, error) {
+	vars := make(map[string]string)
 	re := regexp.MustCompile(`(?s)([A-Za-z0-9_+\-]*)(?:=?)(.*)`)
 
-	for _, e := range envs {
+	for _, e := range pairs {
 		matches := re.FindStringSubmatch(e)
 		if len(matches) < 3 {
 			continue
@@ -34,18 +42,21 @@ func FromEnvs(envs []string) (*Environment, error) {
 		value := matches[2]
 
 		if value == "" {
-			// A bare NAME inherits from the process env; NAME= is skipped.
-			if !strings.Contains(e, "=") {
-				if v, ok := os.LookupEnv(name); ok {
-					env.SetVariable(name, v)
+			if lookupEnv {
+				// A bare NAME inherits from the process env; NAME= is skipped.
+				if !strings.Contains(e, "=") {
+					if v, ok := os.LookupEnv(name); ok {
+						vars[name] = v
+					}
 				}
 			}
 		} else {
-			env.SetVariable(name, value)
+			// Use provided name, value pair
+			vars[name] = value
 		}
 	}
 
-	return env, nil
+	return vars, nil
 }
 
 // GetVariable returns the value of the given variable name
