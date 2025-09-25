@@ -169,12 +169,6 @@ type MiseConfig struct {
 	Tools map[string]MisePackage `toml:"tools"`
 }
 
-// represents a app-local mise package
-type MisePackageInfo struct {
-	Version string
-	Source  string
-}
-
 func GenerateMiseToml(packages map[string]string) (string, error) {
 	config := MiseConfig{
 		Tools: make(map[string]MisePackage),

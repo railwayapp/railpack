@@ -19,6 +19,12 @@ const (
 	MiseInstallCommand  = "sh -c 'mise trust -a && mise install'"
 )
 
+// represents a app-local mise package
+type MisePackageInfo struct {
+	Version string
+	Source  string
+}
+
 // MiseListSource represents the source of a mise tool installation
 type MiseListSource struct {
 	Type string `json:"type"`
@@ -108,7 +114,7 @@ func (b *MiseStepBuilder) SkipMiseInstall(name resolver.PackageRef) {
 
 // GetMisePackageVersions gets all package versions from mise that are defined in the app directory environment
 // this can include additional packages defined outside the app directory, but we filter those out
-func (b *MiseStepBuilder) GetMisePackageVersions(ctx *GenerateContext) (map[string]*mise.MisePackageInfo, error) {
+func (b *MiseStepBuilder) GetMisePackageVersions(ctx *GenerateContext) (map[string]*MisePackageInfo, error) {
 	miseInstance, err := mise.New(mise.InstallDir)
 	if err != nil {
 		return nil, err
@@ -125,7 +131,7 @@ func (b *MiseStepBuilder) GetMisePackageVersions(ctx *GenerateContext) (map[stri
 		return nil, fmt.Errorf("failed to parse mise list output: %w", err)
 	}
 
-	packages := make(map[string]*mise.MisePackageInfo)
+	packages := make(map[string]*MisePackageInfo)
 
 	for toolName, tools := range listOutput {
 		var appDirTools []MiseListTool
@@ -149,7 +155,7 @@ func (b *MiseStepBuilder) GetMisePackageVersions(ctx *GenerateContext) (map[stri
 
 		if len(appDirTools) > 0 {
 			firstTool := appDirTools[0]
-			packages[toolName] = &mise.MisePackageInfo{
+			packages[toolName] = &MisePackageInfo{
 				Version: firstTool.Version,
 				// include the source so we can surface this to the user so they understand where the package version came from
 				Source: firstTool.Source.Type,
