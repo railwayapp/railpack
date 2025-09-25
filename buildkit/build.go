@@ -89,7 +89,12 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 
 	buildPlatform := opts.Platform
 	if buildPlatform.OS == "" && buildPlatform.Architecture == "" {
-		buildPlatform = platforms.DefaultSpec()
+		// Use our helper function to get the default platform
+		var err error
+		buildPlatform, err = ParsePlatformWithDefaults("")
+		if err != nil {
+			return fmt.Errorf("failed to get default platform: %w", err)
+		}
 	}
 
 	llbState, image, err := ConvertPlanToLLB(plan, ConvertPlanOptions{

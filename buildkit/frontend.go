@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/containerd/platforms"
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/buildkit/exporter/containerimage/exptypes"
 	"github.com/moby/buildkit/frontend/gateway/client"
@@ -125,18 +124,14 @@ func readRailpackPlan(ctx context.Context, c client.Client) (*plan.BuildPlan, er
 // validatePlatform checks if the platform is supported and returns the corresponding specs.Platform
 func validatePlatform(opts map[string]string) (specs.Platform, error) {
 	platformStr := opts["platform"]
-	if platformStr == "" {
-		// Default to host platform if none specified
-		return platforms.DefaultSpec(), nil
-	}
 
 	// Error if multiple platforms are specified
 	if strings.Contains(platformStr, ",") {
 		return specs.Platform{}, fmt.Errorf("multiple platforms are not supported, got: %s", platformStr)
 	}
 
-	// Parse the platform using container d platforms package
-	platform, err := platforms.Parse(platformStr)
+	// Parse the platform using our helper function
+	platform, err := ParsePlatformWithDefaults(platformStr)
 	if err != nil {
 		return specs.Platform{}, fmt.Errorf("invalid platform format: %s. Must be one of: linux/amd64, linux/arm64, etc", platformStr)
 	}
