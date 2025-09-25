@@ -1,14 +1,14 @@
 [
   {
-    "expectedOutput": "Architecture: x86_64",
+    "expectedOutput": "x86_64",
     "platform": "linux/amd64"
   },
   {
-    "expectedOutput": "Architecture: aarch64",
+    "expectedOutput": "aarch64",
     "platform": "linux/arm64"
   },
   {
-    "expectedOutput": "Architecture: aarch64",
+    "expectedOutput": "aarch64",
     "platform": "linux/arm64/v8"
   }
 ]
