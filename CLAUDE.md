@@ -1,7 +1,7 @@
 # What is Railpack
 
 Zero-config application builder that automatically analyzes your code and turns
-it into a container image. It's the successor to Nixpacks, built on BuildKit
+it into a container image. It's built on BuildKit
 with support for Node, Python, Go, PHP, and more.
 
 # Architecture
@@ -15,13 +15,6 @@ with support for Node, Python, Go, PHP, and more.
 - **Providers**: Language-specific modules that detect project types (e.g. Node
   detects package.json) and generate appropriate build steps
 
-# Bash commands
-
-- `mise run build` - Build the CLI binary (`./bin/railpack`), use this instead of `go build`
-- `mise run check` - Run linting, formatting, and static analysis
-- `mise run test` - Run unit tests
-- `mise run test-integration` - Runs *all* integration tests. Never run this. Instead, only run the test that you are currently working on, e.g. `mise run test-integration -- -run "TestExamplesIntegration/config-file"`
-
 # Code style
 
 - Follow Go conventions and existing patterns in the codebase
@@ -34,10 +27,13 @@ with support for Node, Python, Go, PHP, and more.
 
 # Workflow
 
+- Do not use `go` directly. Instead, inspect @mise.toml and use `mise run <task>` to run various dev lifecycle commands.
 - Be sure to run `mise run check` when you're done making code changes
-- Don't run tests manually unless instructed to do so
+- Run unit tests and a couple of relevant integration tests to verify your changes
+  - Don't run tests manually using `go test` unless instructed to do so
+  - If tests are failing that are unrelated to your changes, let me know and stop working.
 - Use the `cli` mise task to test your changes on a specific example project, i.e. `mise run cli -- --verbose build --show-plan examples/node-vite-react-router-spa/`
-- Never `git commit`
+- Do not run any write operations with `git`
 - Do not use `bin/railpack` instead use `mise run cli` (which is the development build of `railpack`)
 
 # File Conventions
