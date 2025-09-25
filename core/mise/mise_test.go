@@ -19,8 +19,8 @@ func (t *testContext) GetAppSource() string {
 	return t.appSource
 }
 
-func (t *testContext) LogWarn(format string, args ...interface{}) {
-	t.logger.LogWarn(format, args...)
+func (t *testContext) GetLogger() *logger.Logger {
+	return t.logger
 }
 
 func CreateTestContext(t *testing.T, appDir string) MiseAppContext {

@@ -12,6 +12,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/alexflint/go-filemutex"
 	"github.com/charmbracelet/log"
+	"github.com/railwayapp/railpack/core/logger"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -153,7 +154,7 @@ func (m *Mise) GetPackageVersions(ctx MiseAppContext) (map[string]*MisePackageIn
 			}
 
 			// this is possible, although in practice it should be extremely rare
-			ctx.LogWarn("Multiple versions of tool '%s' found: %v. Using the first one: %s",
+			ctx.GetLogger().LogWarn("Multiple versions of tool '%s' found: %v. Using the first one: %s",
 				toolName, versions, versions[0])
 		}
 
@@ -242,7 +243,7 @@ type MisePackageInfo struct {
 // a separate interface instead of *generate.GenerateContext directly to avoid import cycling
 type MiseAppContext interface {
 	GetAppSource() string
-	LogWarn(format string, args ...interface{})
+	GetLogger() *logger.Logger
 }
 
 func GenerateMiseToml(packages map[string]string) (string, error) {

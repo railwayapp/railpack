@@ -270,16 +270,6 @@ func (c *GenerateContext) applyConfig() {
 	}
 }
 
-// GetAppSource implements mise.ContextInterface
-func (c *GenerateContext) GetAppSource() string {
-	return c.App.Source
-}
-
-// LogWarn implements mise.ContextInterface
-func (c *GenerateContext) LogWarn(format string, args ...interface{}) {
-	c.Logger.LogWarn(format, args...)
-}
-
 // creates a local layer with dockerignore patterns applied
 func (c *GenerateContext) NewLocalLayer() plan.Layer {
 	layer := plan.NewLocalLayer()
@@ -293,4 +283,15 @@ func (c *GenerateContext) NewLocalLayer() plan.Layer {
 	}
 
 	return layer
+}
+
+// in order to get around a circular dependency issue, we need to define discrete getters to interface with
+// the mise package version logic.
+
+func (c *GenerateContext) GetAppSource() string {
+	return c.App.Source
+}
+
+func (c *GenerateContext) GetLogger() *logger.Logger {
+	return c.Logger
 }
