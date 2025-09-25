@@ -123,3 +123,4 @@ Here's some helpful debugging tricks:
 * `mise run cli --verbose build --show-plan --progress plain examples/node-bun`
 * `mise run build`, add `./bin/` to your `$PATH`, and then run `railpack` in a separate local directory
 * `NO_COLOR=1` 
+* `docker exec buildkit buildctl prune` to clean the builder cache

@@ -97,16 +97,18 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "npm ci"
     }
    ],
    "inputs": [
     {
      "step": "packages:mise"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "install",

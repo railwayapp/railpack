@@ -96,16 +96,18 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "pnpm install --frozen-lockfile --prefer-offline"
     }
    ],
    "inputs": [
     {
      "step": "packages:mise"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "install",
