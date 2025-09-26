@@ -314,26 +314,36 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(python, pipfileVersion, fmt.Sprintf("Pipfile > %s", pipfileVarName))
 	}
 
+	// Collect all packages that will be used by the provider
+	packages := []string{"python"}
+
+	// Install package managers
 	if p.hasPoetry(ctx) || p.hasUv(ctx) || p.hasPdm(ctx) || p.hasPipfile(ctx) {
 		miseStep.Default("pipx", "latest")
+		packages = append(packages, "pipx")
 	}
 
 	if p.hasPoetry(ctx) {
 		miseStep.Default("pipx:poetry", "latest")
+		packages = append(packages, "pipx:poetry")
 	}
 
 	if p.hasPdm(ctx) {
 		miseStep.Default("pipx:pdm", "latest")
+		packages = append(packages, "pipx:pdm")
 	}
 
 	if p.hasUv(ctx) {
 		miseStep.Default("pipx:uv", "latest")
+		packages = append(packages, "pipx:uv")
 	}
 
 	if p.hasPipfile(ctx) {
 		miseStep.Default("pipx:pipenv", "latest")
+		packages = append(packages, "pipx:pipenv")
 	}
 
+	miseStep.UseMiseVersions(ctx, packages)
 }
 
 func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[string]string {

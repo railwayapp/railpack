@@ -1,0 +1,9 @@
+[
+    {
+        "expectedOutput": [
+          "Hello from Python UV!",
+          "Python version: 3.9.23",
+          "UV version: 0.7.22"
+        ]
+    }
+]

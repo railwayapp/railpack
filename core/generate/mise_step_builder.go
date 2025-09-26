@@ -1,6 +1,8 @@
+// build step that installs packages defined by mise configuration, provider configuration, or user configuration
 package generate
 
 import (
+	"encoding/json"
 	"fmt"
 	"maps"
 	"sort"
@@ -16,6 +18,32 @@ const (
 	MisePackageStepName = "packages:mise"
 	MiseInstallCommand  = "sh -c 'mise trust -a && mise install'"
 )
+
+// represents a app-local mise package
+type MisePackageInfo struct {
+	Version string
+	Source  string
+}
+
+// MiseListSource represents the source of a mise tool installation
+type MiseListSource struct {
+	Type string `json:"type"`
+	Path string `json:"path"`
+}
+
+// MiseListTool represents a tool in the mise list output
+type MiseListTool struct {
+	Version          string         `json:"version"`
+	RequestedVersion string         `json:"requested_version"`
+	InstallPath      string         `json:"install_path"`
+	Source           MiseListSource `json:"source"`
+	Installed        bool           `json:"installed"`
+	// --current ensures Active=true for all entries
+	Active bool `json:"active"`
+}
+
+// MisePackageListOutput represents the full output of `mise list --current --json`
+type MisePackageListOutput map[string][]MiseListTool
 
 type MiseStepBuilder struct {
 	DisplayName           string
@@ -82,6 +110,85 @@ func (b *MiseStepBuilder) Version(name resolver.PackageRef, version string, sour
 
 func (b *MiseStepBuilder) SkipMiseInstall(name resolver.PackageRef) {
 	b.Resolver.SetSkipMiseInstall(name, true)
+}
+
+// GetMisePackageVersions gets all package versions from mise that are defined in the app directory environment
+// this can include additional packages defined outside the app directory, but we filter those out
+func (b *MiseStepBuilder) GetMisePackageVersions(ctx *GenerateContext) (map[string]*MisePackageInfo, error) {
+	miseInstance, err := mise.New(mise.InstallDir)
+	if err != nil {
+		return nil, err
+	}
+
+	appDir := ctx.GetAppSource()
+	output, err := miseInstance.GetCurrentList(appDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get package versions: %w", err)
+	}
+
+	var listOutput MisePackageListOutput
+	if err := json.Unmarshal([]byte(output), &listOutput); err != nil {
+		return nil, fmt.Errorf("failed to parse mise list output: %w", err)
+	}
+
+	packages := make(map[string]*MisePackageInfo)
+
+	for toolName, tools := range listOutput {
+		var appDirTools []MiseListTool
+		for _, tool := range tools {
+			// Only include tools that are sourced from within the app directory
+			if strings.HasPrefix(tool.Source.Path, appDir) {
+				appDirTools = append(appDirTools, tool)
+			}
+		}
+
+		if len(appDirTools) > 1 {
+			versions := make([]string, len(appDirTools))
+			for i, tool := range appDirTools {
+				versions[i] = tool.Version
+			}
+
+			// this is possible, although in practice it should be extremely rare
+			ctx.GetLogger().LogWarn("Multiple versions of tool '%s' found: %v. Using the first one: %s",
+				toolName, versions, versions[0])
+		}
+
+		if len(appDirTools) > 0 {
+			firstTool := appDirTools[0]
+			packages[toolName] = &MisePackageInfo{
+				Version: firstTool.Version,
+				// include the source so we can surface this to the user so they understand where the package version came from
+				Source: firstTool.Source.Type,
+			}
+		}
+	}
+
+	return packages, nil
+}
+
+// Use mise-specified versions for all packages in the input list
+func (b *MiseStepBuilder) UseMiseVersions(ctx *GenerateContext, packages []string) {
+	miseVersions, err := b.GetMisePackageVersions(ctx)
+	if err != nil {
+		ctx.Logger.LogWarn("Failed to get package versions from mise: %s", err.Error())
+		return
+	}
+
+	if miseVersions == nil {
+		return
+	}
+
+	for _, packageName := range packages {
+		if pkg := miseVersions[packageName]; pkg != nil {
+			// Find the existing package reference
+			for _, pkgRef := range b.MisePackages {
+				if pkgRef.Name == packageName {
+					b.Version(*pkgRef, pkg.Version, pkg.Source)
+					break
+				}
+			}
+		}
+	}
 }
 
 func (b *MiseStepBuilder) Name() string {

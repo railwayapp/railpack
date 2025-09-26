@@ -1,3 +1,4 @@
+// helper utilities to run the mise tool
 package mise
 
 import (
@@ -44,7 +45,7 @@ func New(cacheDir string) (*Mise, error) {
 	}, nil
 }
 
-// GetLatestVersion gets the latest version of a package matching the version constraint
+// gets the latest version of a package matching the version constraint
 func (m *Mise) GetLatestVersion(pkg, version string) (string, error) {
 	_, unlock, err := m.createAndLock(pkg)
 	if err != nil {
@@ -120,6 +121,11 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 	return versions, nil
 }
 
+// GetCurrentList returns the JSON output of 'mise list --current --json' for a specific app directory
+func (m *Mise) GetCurrentList(appDir string) (string, error) {
+	return m.runCmd("--cd", appDir, "list", "--current", "--json")
+}
+
 // runCmd runs a mise command with the given arguments
 func (m *Mise) runCmd(args ...string) (string, error) {
 	cacheDir := filepath.Join(m.cacheDir, "cache")
@@ -180,7 +186,7 @@ func GenerateMiseToml(packages map[string]string) (string, error) {
 	return buf.String(), nil
 }
 
-// createAndLock creates a file mutex and locks it, returning the mutex and an unlock function
+// lock ensuring mise does not work on the same package concurrently
 func (m *Mise) createAndLock(pkg string) (*filemutex.FileMutex, func(), error) {
 	fileLockPath := filepath.Join(m.cacheDir, fmt.Sprintf("lock-%s", strings.ReplaceAll(pkg, "/", "-")))
 	mu, err := filemutex.New(fileLockPath)
