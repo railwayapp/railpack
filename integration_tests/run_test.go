@@ -25,6 +25,7 @@ var buildkitCacheExport = flag.String("buildkit-cache-export", "", "BuildKit cac
 
 type TestCase struct {
 	ExpectedOutput string            `json:"expectedOutput"`
+	Platform       string            `json:"platform"`
 	Envs           map[string]string `json:"envs"`
 	ConfigFilePath string            `json:"configFile"`
 	JustBuild      bool              `json:"justBuild"`
@@ -102,6 +103,7 @@ func TestExamplesIntegration(t *testing.T) {
 
 				if err := buildkit.BuildWithBuildkitClient(examplePath, buildResult.Plan, buildkit.BuildWithBuildkitClientOptions{
 					ImageName:   imageName,
+					Platform:    testCase.Platform,
 					ImportCache: *buildkitCacheImport,
 					ExportCache: *buildkitCacheExport,
 					Secrets:     testCase.Envs,
@@ -117,7 +119,7 @@ func TestExamplesIntegration(t *testing.T) {
 					return
 				}
 
-				if err := runContainerWithTimeout(t, imageName, testCase.ExpectedOutput, testCase.Envs); err != nil {
+				if err := runContainerWithTimeout(t, imageName, testCase.ExpectedOutput, testCase.Envs, testCase.Platform); err != nil {
 					t.Fatal(err)
 				}
 			})
@@ -131,7 +133,7 @@ func cmdDoneChan(cmd *exec.Cmd) chan error {
 	return ch
 }
 
-func runContainerWithTimeout(t *testing.T, imageName, expectedOutput string, envs map[string]string) error {
+func runContainerWithTimeout(t *testing.T, imageName, expectedOutput string, envs map[string]string, platformStr string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
@@ -140,6 +142,12 @@ func runContainerWithTimeout(t *testing.T, imageName, expectedOutput string, env
 
 	// Build docker run command with environment variables
 	args := []string{"run", "--rm", "--name", containerName}
+
+	// Add platform specification if provided
+	if platformStr != "" {
+		args = append(args, "--platform", platformStr)
+	}
+
 	for key, value := range envs {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", key, value))
 	}

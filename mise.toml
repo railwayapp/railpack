@@ -12,21 +12,28 @@ run = [
 [tasks.cli]
 run = "go run cmd/cli/main.go"
 
+# build the CLI binary (`./bin/railpack`)
 [tasks.build]
 run = "go build -o bin/railpack cmd/cli/main.go"
 
 [tasks.clean]
 run = "rm -rf bin dist docs/dist"
 
+# run unit tests
 [tasks.test]
 run = "go test -short ./..."
 
+# Runs *all* integration tests. It is extremely slow, do not run this locally.
+# Instead, only run the test that you are currently working on:
+# `mise run test-integration -- -run "TestExamplesIntegration/config-file"`
 [tasks.test-integration]
 run = "go test -v ./integration_tests"
 
+# update all test snapshots
 [tasks.test-update-snapshots]
 run = "UPDATE_SNAPS=true go test -short ./..."
 
+# linting, formatting, and static analysis
 [tasks.check]
 run = """
 go vet ./...

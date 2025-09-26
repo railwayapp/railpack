@@ -13,6 +13,7 @@ import (
 	"github.com/moby/buildkit/frontend/gateway/client"
 	gw "github.com/moby/buildkit/frontend/gateway/grpcclient"
 	"github.com/moby/buildkit/util/appcontext"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 	"github.com/railwayapp/railpack/core/plan"
 )
@@ -120,31 +121,22 @@ func readRailpackPlan(ctx context.Context, c client.Client) (*plan.BuildPlan, er
 	return plan, nil
 }
 
-// validatePlatform checks if the platform is supported and returns the corresponding BuildPlatform
-func validatePlatform(opts map[string]string) (BuildPlatform, error) {
+// validatePlatform checks if the platform is supported and returns the corresponding specs.Platform
+func validatePlatform(opts map[string]string) (specs.Platform, error) {
 	platformStr := opts["platform"]
-	if platformStr == "" {
-		// Default to host platform if none specified
-		return DetermineBuildPlatformFromHost(), nil
-	}
 
 	// Error if multiple platforms are specified
 	if strings.Contains(platformStr, ",") {
-		return BuildPlatform{}, fmt.Errorf("multiple platforms are not supported, got: %s", platformStr)
+		return specs.Platform{}, fmt.Errorf("multiple platforms are not supported, got: %s", platformStr)
 	}
 
-	// Match against supported platforms
-	switch platformStr {
-	case PlatformLinuxAMD64.String():
-		return PlatformLinuxAMD64, nil
-	case PlatformLinuxARM64.String():
-		return PlatformLinuxARM64, nil
-	default:
-		return BuildPlatform{}, fmt.Errorf("unsupported platform: %s. Must be one of: %s, %s",
-			platformStr,
-			PlatformLinuxAMD64.String(),
-			PlatformLinuxARM64.String())
+	// Parse the platform using our helper function
+	platform, err := ParsePlatformWithDefaults(platformStr)
+	if err != nil {
+		return specs.Platform{}, fmt.Errorf("invalid platform format: %s. Must be one of: linux/amd64, linux/arm64, etc", platformStr)
 	}
+
+	return platform, nil
 }
 
 // Read a file from the build context

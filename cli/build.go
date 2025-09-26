@@ -86,11 +86,7 @@ var BuildCommand = &cli.Command{
 
 		secretsHash := getSecretsHash(env)
 
-		platform, err := buildkit.ParsePlatform(cmd.String("platform"))
-		if err != nil {
-			return cli.Exit(err, 1)
-		}
-
+		platformStr := cmd.String("platform")
 		err = buildkit.BuildWithBuildkitClient(app.Source, buildResult.Plan, buildkit.BuildWithBuildkitClientOptions{
 			ImageName:    cmd.String("name"),
 			DumpLLB:      cmd.Bool("dump-llb"),
@@ -99,7 +95,7 @@ var BuildCommand = &cli.Command{
 			CacheKey:     cmd.String("cache-key"),
 			SecretsHash:  secretsHash,
 			Secrets:      env.Variables,
-			Platform:     platform,
+			Platform:     platformStr,
 			GitHubToken:  os.Getenv("GITHUB_TOKEN"),
 		})
 		if err != nil {

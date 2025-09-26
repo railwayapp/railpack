@@ -1,0 +1,14 @@
+[
+  {
+    "expectedOutput": "x86_64",
+    "platform": "linux/amd64"
+  },
+  {
+    "expectedOutput": "aarch64",
+    "platform": "linux/arm64"
+  },
+  {
+    "expectedOutput": "aarch64",
+    "platform": "linux/arm64/v8"
+  }
+]

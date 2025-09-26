@@ -14,7 +14,7 @@ import (
 )
 
 type ConvertPlanOptions struct {
-	BuildPlatform BuildPlatform
+	BuildPlatform specs.Platform
 
 	// Hash of all the secrets values that can be used to invalidate the layer cache when a secret changes
 	SecretsHash string
@@ -34,7 +34,7 @@ const (
 )
 
 func ConvertPlanToLLB(plan *p.BuildPlan, opts ConvertPlanOptions) (*llb.State, *Image, error) {
-	platform := opts.BuildPlatform.ToPlatform()
+	platform := opts.BuildPlatform
 
 	localState := llb.Local("context",
 		llb.SharedKeyHint("local"),

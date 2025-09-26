@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/containerd/platforms"
 	"github.com/moby/buildkit/client"
 	_ "github.com/moby/buildkit/client/connhelper/dockercontainer"
 	_ "github.com/moby/buildkit/client/connhelper/nerdctlcontainer"
@@ -49,7 +50,7 @@ type BuildWithBuildkitClientOptions struct {
 	ProgressMode string
 	SecretsHash  string
 	Secrets      map[string]string
-	Platform     BuildPlatform
+	Platform     string
 	ImportCache  string
 	ExportCache  string
 	CacheKey     string
@@ -85,9 +86,10 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		return errors.New(buildkitInfoError)
 	}
 
-	buildPlatform := opts.Platform
-	if (buildPlatform == BuildPlatform{}) {
-		buildPlatform = DetermineBuildPlatformFromHost()
+	// Parse the platform string using our helper function
+	buildPlatform, err := ParsePlatformWithDefaults(opts.Platform)
+	if err != nil {
+		return fmt.Errorf("failed to parse platform '%s': %w", opts.Platform, err)
 	}
 
 	llbState, image, err := ConvertPlanToLLB(plan, ConvertPlanOptions{
@@ -175,7 +177,7 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		return fmt.Errorf("error creating FS: %w", err)
 	}
 
-	log.Debugf("Building image for %s with BuildKit %s", buildPlatform.String(), info.BuildkitVersion.Version)
+	log.Debugf("Building image for %s with BuildKit %s", platforms.Format(buildPlatform), info.BuildkitVersion.Version)
 
 	secretsMap := make(map[string][]byte)
 	for k, v := range opts.Secrets {
