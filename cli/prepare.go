@@ -26,6 +26,14 @@ var PrepareCommand = &cli.Command{
 			Name:  "info-out",
 			Usage: "output file for the JSON serialized build result info",
 		},
+		&cli.BoolFlag{
+			Name:  "show-plan",
+			Usage: "dump the build plan to stdout",
+		},
+		&cli.BoolFlag{
+			Name:  "hide-pretty-plan",
+			Usage: "hide the pretty-printed build result output",
+		},
 	}, commonPlanFlags()...),
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		buildResult, _, _, err := GenerateBuildResultForCommand(cmd)
@@ -33,12 +41,27 @@ var PrepareCommand = &cli.Command{
 			return cli.Exit(err, 1)
 		}
 
-		// Pretty print the result to stdout
-		core.PrettyPrintBuildResult(buildResult, core.PrintOptions{Version: Version})
+		// Pretty print the result to stdout unless hidden
+		if !cmd.Bool("hide-pretty-plan") {
+			core.PrettyPrintBuildResult(buildResult, core.PrintOptions{Version: Version})
+		}
 
 		if !buildResult.Success {
 			os.Exit(1)
 			return nil
+		}
+
+		// Show plan to stdout if requested
+		if cmd.Bool("show-plan") {
+			planMap, err := addSchemaToPlanMap(buildResult.Plan)
+			if err != nil {
+				return cli.Exit(err, 1)
+			}
+			serialized, err := json.MarshalIndent(planMap, "", "  ")
+			if err != nil {
+				return cli.Exit(err, 1)
+			}
+			os.Stdout.Write(serialized)
 		}
 
 		// Save plan if requested
