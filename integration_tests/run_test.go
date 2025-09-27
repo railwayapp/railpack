@@ -17,7 +17,10 @@ import (
 	"github.com/railwayapp/railpack/buildkit"
 	"github.com/railwayapp/railpack/core"
 	"github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/core/config"
+	"github.com/railwayapp/railpack/internal/utils"
 	"github.com/stretchr/testify/require"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 var buildkitCacheImport = flag.String("buildkit-cache-import", "", "BuildKit cache import configuration")
@@ -218,5 +221,64 @@ func runContainerWithTimeout(t *testing.T, imageName, expectedOutput string, env
 		}
 		require.Contains(t, output.String(), expectedOutput, "container output did not contain expected string")
 		return nil
+	}
+}
+
+func TestSchemaValidation(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+
+	examplesDir := filepath.Join(filepath.Dir(wd), "examples")
+
+	// Get the JSON schema from railpack schema command
+	schema := config.GetJsonSchema()
+	require.NotNil(t, schema)
+
+	// Find all railpack.json files in examples directory
+	railpackFiles, err := filepath.Glob(filepath.Join(examplesDir, "**/railpack.json"))
+	require.NoError(t, err)
+	require.NotEmpty(t, railpackFiles, "No railpack.json files found in examples directory")
+
+	t.Logf("Found %d railpack.json files to validate", len(railpackFiles))
+
+	for _, railpackFile := range railpackFiles {
+		railpackFile := railpackFile // capture for parallel execution
+
+		// Extract relative path for test name
+		relPath, err := filepath.Rel(examplesDir, railpackFile)
+		require.NoError(t, err)
+
+		t.Run(relPath, func(t *testing.T) {
+			t.Parallel()
+
+			// Read the railpack.json file
+			content, err := os.ReadFile(railpackFile)
+			require.NoError(t, err, "Failed to read %s", railpackFile)
+			
+			// Standardize JSON (handles JSON5/JSONC comments) using the same approach as railpack
+			jsonBytes, err := utils.StandardizeJSON(content)
+			require.NoError(t, err, "Failed to parse JSON5/JSONC in %s", railpackFile)
+			
+			// Validate using external JSON schema validator (same as IDEs would use)
+			schemaLoader := gojsonschema.NewGoLoader(schema)
+			documentLoader := gojsonschema.NewBytesLoader(jsonBytes)
+			
+			result, err := gojsonschema.Validate(schemaLoader, documentLoader)
+			require.NoError(t, err, "Failed to validate schema for %s", railpackFile)
+			
+			if !result.Valid() {
+				var errors []string
+				for _, desc := range result.Errors() {
+					errors = append(errors, fmt.Sprintf("- %s", desc))
+				}
+				t.Fatalf("Schema validation failed for %s:\n%s", railpackFile, strings.Join(errors, "\n"))
+			}
+
+			t.Logf("✓ %s is valid", relPath)
+		})
 	}
 }
