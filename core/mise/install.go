@@ -108,14 +108,22 @@ func downloadAndInstall(cacheDir string) error {
 	if err != nil {
 		return fmt.Errorf("failed to download mise: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Warnf("failed to close response body: %v", err)
+		}
+	}()
 
 	// Create temporary directory
 	tempDir, err := os.MkdirTemp("", "mise-install")
 	if err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			log.Warnf("failed to remove temp directory: %v", err)
+		}
+	}()
 
 	archivePath := filepath.Join(tempDir, assetName)
 	f, err := os.Create(archivePath)
@@ -124,10 +132,14 @@ func downloadAndInstall(cacheDir string) error {
 	}
 
 	if _, err := io.Copy(f, resp.Body); err != nil {
-		f.Close()
+		if closeErr := f.Close(); closeErr != nil {
+			log.Warnf("failed to close file: %v", closeErr)
+		}
 		return fmt.Errorf("failed to save archive: %w", err)
 	}
-	f.Close()
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("failed to close file: %w", err)
+	}
 
 	if runtime.GOOS == "windows" {
 		err = extractZip(archivePath, binaryPath)
@@ -152,13 +164,21 @@ func extractTarGz(archivePath, binaryPath string) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Warnf("failed to close file: %v", err)
+		}
+	}()
 
 	gzr, err := gzip.NewReader(f)
 	if err != nil {
 		return err
 	}
-	defer gzr.Close()
+	defer func() {
+		if err := gzr.Close(); err != nil {
+			log.Warnf("failed to close gzip reader: %v", err)
+		}
+	}()
 
 	tr := tar.NewReader(gzr)
 	binaryPathInArchive := "mise/bin/mise"
@@ -202,7 +222,11 @@ func extractZip(archivePath, binaryPath string) error {
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer func() {
+		if err := r.Close(); err != nil {
+			log.Warnf("failed to close zip reader: %v", err)
+		}
+	}()
 
 	writeAndMove, cleanup, err := createAtomicWriter(binaryPath)
 	if err != nil {
@@ -220,7 +244,9 @@ func extractZip(archivePath, binaryPath string) error {
 
 			err = writeAndMove(func(tempFile *os.File) error {
 				_, err := io.Copy(tempFile, rc)
-				rc.Close()
+				if closeErr := rc.Close(); closeErr != nil {
+					log.Warnf("failed to close reader: %v", closeErr)
+				}
 				return err
 			})
 
@@ -257,9 +283,13 @@ func createAtomicWriter(targetPath string) (writeAndMove func(write func(tempFil
 
 	success := false
 	cleanup = func() {
-		tempFile.Close()
+		if err := tempFile.Close(); err != nil {
+			log.Warnf("failed to close temp file: %v", err)
+		}
 		if !success {
-			os.Remove(tempPath)
+			if err := os.Remove(tempPath); err != nil {
+				log.Warnf("failed to remove temp file: %v", err)
+			}
 		}
 	}
 
