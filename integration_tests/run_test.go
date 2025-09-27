@@ -27,6 +27,7 @@ type TestCase struct {
 	ExpectedOutput string            `json:"expectedOutput"`
 	Platform       string            `json:"platform"`
 	Envs           map[string]string `json:"envs"`
+	Vars           map[string]string `json:"vars"`
 	ConfigFilePath string            `json:"configFile"`
 	JustBuild      bool              `json:"justBuild"`
 	ShouldFail     bool              `json:"shouldFail"`
@@ -79,6 +80,7 @@ func TestExamplesIntegration(t *testing.T) {
 				env := app.NewEnvironment(&testCase.Envs)
 				buildResult := core.GenerateBuildPlan(userApp, env, &core.GenerateBuildPlanOptions{
 					ConfigFilePath: testCase.ConfigFilePath,
+					Vars:           testCase.Vars,
 				})
 
 				// Handle case where we expect the build to fail
