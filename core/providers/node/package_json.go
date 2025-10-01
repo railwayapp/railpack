@@ -72,6 +72,9 @@ func (p *PackageJson) hasLocalDependency() bool {
 	return false
 }
 
+// parse a packageManager string in the format "name@version" or "name@version+extra".
+// Returns the package manager name and version as separate strings.
+// returns empty strings for both name and version if it can't be parsed
 func (p *PackageJson) GetPackageManagerInfo() (string, string) {
 	if p == nil || p.PackageManager == nil {
 		return "", ""
