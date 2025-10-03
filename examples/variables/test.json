@@ -1,0 +1,8 @@
+[
+  {
+    "vars": {
+      "MY_VAR": "hello world"
+    },
+    "expectedOutput": "hello world"
+  }
+]
