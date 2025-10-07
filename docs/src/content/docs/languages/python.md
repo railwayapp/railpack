@@ -19,7 +19,8 @@ Your project will be detected as a Python application if any of these conditions
 The Python version is determined in the following order:
 
 - Set via the `RAILPACK_PYTHON_VERSION` environment variable
-- Read from the `.python-version` file
+- Read from mise-compatible version files (`.python-version`,
+  `.tool-versions`, `mise.toml`)
 - Read from the `runtime.txt` file
 - Read from the `Pipfile` if present
 - Defaults to `3.13.2`
