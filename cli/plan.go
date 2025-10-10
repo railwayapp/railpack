@@ -43,8 +43,12 @@ var PlanCommand = &cli.Command{
 		output := cmd.String("out")
 		if output == "" {
 			// Write to stdout if no output file specified
-			os.Stdout.Write([]byte(buildResultString))
-			os.Stdout.Write([]byte("\n"))
+			if _, err := os.Stdout.Write([]byte(buildResultString)); err != nil {
+				return cli.Exit(err, 1)
+			}
+			if _, err := os.Stdout.Write([]byte("\n")); err != nil {
+				return cli.Exit(err, 1)
+			}
 			return nil
 		} else {
 			if err := os.MkdirAll(filepath.Dir(output), 0755); err != nil {

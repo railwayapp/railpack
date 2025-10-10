@@ -31,3 +31,5 @@ dist
 
 .vscode/
 .DS_Store
+
+mise.local.toml
