@@ -1,0 +1,6 @@
+{
+  "provider": "shell",
+  "deploy": {
+    "startCommand": "bash start.sh"
+  }
+}
