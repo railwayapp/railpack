@@ -1,0 +1,16 @@
+{
+  "name": "node-pnpm-engines",
+  "version": "1.0.0",
+  "description": "Example testing engines specification for Node.js and PNPM",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "engines": {
+    "node": "22.19.0",
+    "pnpm": "8.15.9"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
