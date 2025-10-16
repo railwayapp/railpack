@@ -22,7 +22,7 @@ func NewEnvironment(variables *map[string]string) *Environment {
 // FromEnvs collects variables from the given environment variable names
 func FromEnvs(envs []string) (*Environment, error) {
 	env := NewEnvironment(nil)
-	re := regexp.MustCompile(`([A-Za-z0-9_-]*)(?:=?)(.*)`)
+	re := regexp.MustCompile(`([A-Za-z0-9_+\-]*)(?:=?)(.*)`)
 
 	for _, e := range envs {
 		matches := re.FindStringSubmatch(e)
