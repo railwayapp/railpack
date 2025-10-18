@@ -29,7 +29,7 @@ func TestGolang(t *testing.T) {
 			path:      "../../../examples/go-cmd-dirs",
 			detected:  true,
 			hasGoMod:  true,
-			goVersion: "1.18",
+			goVersion: "1.25.3",
 		},
 		{
 			name:         "go workspaces",
