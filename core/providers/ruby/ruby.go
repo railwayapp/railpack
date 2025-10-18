@@ -122,6 +122,10 @@ func (p *RubyProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 		if app.HasMatch("rails") {
 			return "bundle exec rails server -b 0.0.0.0 -p ${PORT:-3000}"
 		} else {
+			if !app.HasMatch("bin/rails") {
+				ctx.Logger.LogWarn("bin/rails not found, run `bundle binstubs railties` to avoid potential startup problems")
+			}
+
 			return "bundle exec bin/rails server -b 0.0.0.0 -p ${PORT:-3000} -e $RAILS_ENV"
 		}
 	} else if app.HasMatch("config/environment.rb") && app.HasMatch("script") {
