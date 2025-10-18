@@ -166,6 +166,11 @@ site-search button[data-open-modal] {
     @apply font-mono bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-1.5 py-0.5 text-sm text-gray-600 dark:text-gray-300 rounded-md;
   }
 
+  /* generally, code elements in the first column are environment variable lists */
+  td:first-child code {
+    white-space: nowrap;
+  }
+
   :not(a, strong, em, del, span, input, code, br) + hr {
     @apply my-8;
   }
