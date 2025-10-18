@@ -29,5 +29,8 @@ jobs:
       - name: Go Checks
         run: mise run check
 
+      - name: Trust Examples
+        run: mise run trust-examples
+
       - name: Test Unit
         run: mise run test
