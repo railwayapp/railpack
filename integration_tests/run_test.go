@@ -18,6 +18,7 @@ import (
 	"github.com/railwayapp/railpack/buildkit"
 	"github.com/railwayapp/railpack/core"
 	"github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/internal/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -44,6 +45,7 @@ func (s *StringOrArray) UnmarshalJSON(data []byte) error {
 
 type TestCase struct {
 	Platform string `json:"platform"`
+	// can be a single string, or an array of strings for multiple expected outputs
 	// matches against the entire output of the container if it cannot be found in a single line
 	ExpectedOutput StringOrArray     `json:"expectedOutput"`
 	Envs           map[string]string `json:"envs"`
@@ -78,6 +80,10 @@ func TestExamplesIntegration(t *testing.T) {
 		}
 
 		testConfigBytes, err := os.ReadFile(testConfigPath)
+		require.NoError(t, err)
+
+		// allow json5/hujson in the test.json file
+		testConfigBytes, err = utils.StandardizeJSON(testConfigBytes)
 		require.NoError(t, err)
 
 		var testCases []TestCase
