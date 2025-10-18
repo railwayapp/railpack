@@ -1,5 +1,5 @@
 [
   {
-    "expectedOutput": "hello from custom toolchain"
+    "expectedOutput": "hello from custom toolchain (rustc 1.59.0)"
   }
 ]
