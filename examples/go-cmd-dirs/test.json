@@ -1,5 +1,5 @@
 [
   {
-    "expectedOutput": "Hello from Go"
+    "expectedOutput": "Hello from Go go1.25.3"
   }
 ]
