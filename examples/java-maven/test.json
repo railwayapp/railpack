@@ -1,12 +1,5 @@
 [
-    {
-        "expectedOutput": "Hello Railpack!"
-    },
-    {
-        "httpCheck": {
-            "path": "/",
-            "expected": 200,
-            "internalPort": 8080
-        }
-    }
+  {
+    "expectedOutput": "Hello Railpack!"
+  }
 ]

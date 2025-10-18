@@ -1,12 +1,13 @@
 [
   {
     "justBuild": true
-  },
-  {
-    "httpCheck": {
-        "path": "/",
-        "expected": 200,
-        "internalPort": 3000
-    }
   }
+  // needs a postgres server
+  // {
+  //   "httpCheck": {
+  //       "path": "/",
+  //       "expected": 200,
+  //       "internalPort": 3000
+  //   }
+  // }
 ]

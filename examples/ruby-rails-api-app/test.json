@@ -1,12 +1,9 @@
 [
   {
-    "justBuild": true
-  },
-  {
     "httpCheck": {
-        "path": "/",
-        "expected": 200,
-        "internalPort": 3000
+      "path": "/",
+      "expected": 200,
+      "internalPort": 3000
     }
   }
 ]
