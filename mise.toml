@@ -7,6 +7,7 @@ run = [
   "mise install",
   "docker run --rm --privileged -d --name buildkit moby/buildkit || true",
   "mise run tidy",
+  "cd docs/ && bun install",
 ]
 
 [tasks.cli]
