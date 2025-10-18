@@ -5,6 +5,8 @@ _.path = './bin'
 [tasks.setup]
 run = [
   "mise install",
+  # trust all mise.toml files in the examples directory, otherwise unit tests can fail
+  "find examples -name \"mise.toml\" -execdir mise trust \\;",
   "docker run --rm --privileged -d --name buildkit moby/buildkit || true",
   "mise run tidy",
   "cd docs/ && bun install",
