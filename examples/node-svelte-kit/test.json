@@ -1,4 +1,7 @@
 [
+  {
+    "justBuild": true
+  }
   // TODO right now caddy is not automatically added to a svelte project
   // {
   //   "httpCheck": {
