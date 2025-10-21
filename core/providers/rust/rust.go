@@ -330,12 +330,10 @@ func (p *RustProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		}
 	}
 
-	if cargoToml != nil {
-		if cargoToml.Package.RustVersion != "" {
-			// Newer versions of Rust allow the `rust-version` field in Cargo.toml
-			if version := utils.ExtractSemverVersion(cargoToml.Package.RustVersion); version != "" {
-				miseStep.Version(rust, version, "Cargo.toml")
-			}
+	if cargoToml != nil && cargoToml.Package.RustVersion != "" {
+		// Newer versions of Rust allow the `rust-version` field in Cargo.toml
+		if version := utils.ExtractSemverVersion(cargoToml.Package.RustVersion); version != "" {
+			miseStep.Version(rust, version, "Cargo.toml")
 		}
 	}
 
