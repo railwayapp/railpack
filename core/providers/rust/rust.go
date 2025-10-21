@@ -340,10 +340,20 @@ func (p *RustProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	}
 
 	if toolchain, err := parseRustToolchain(ctx); err == nil {
-		if version := utils.ExtractSemverVersion(toolchain.Toolchain.Version); version != "" {
+		versionSource := toolchain.Toolchain.Channel
+		// TODO: Remove support for deprecated Version field in a future release
+		if toolchain.Toolchain.Version != "" {
+			ctx.Logger.LogWarn("The 'version' field in rust-toolchain.toml is deprecated and will be removed in a future release. Please use 'channel' instead.")
+			if versionSource == "" {
+				versionSource = toolchain.Toolchain.Version
+			}
+		}
+		if version := utils.ExtractSemverVersion(versionSource); version != "" {
 			miseStep.Version(rust, version, "rust-toolchain.toml")
 		}
 	}
+
+	miseStep.UseMiseVersions(ctx, []string{"rust"})
 }
 
 var wasmRegex = regexp.MustCompile(`target\s*=\s*"wasm32-wasi"`)
