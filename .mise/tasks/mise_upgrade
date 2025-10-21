@@ -1,0 +1,82 @@
+#!/usr/bin/env zsh
+# Description: one-click command to check for a new mise version and create a PR to update it.
+
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+# Check that we're on the main branch
+current_branch="$(git branch --show-current)"
+if [[ "$current_branch" != "main" ]]; then
+  echo "Error: must be on 'main' branch, currently on '$current_branch'" >&2
+  exit 1
+fi
+
+# Pull latest changes from upstream
+git pull upstream main
+
+# Require clean working tree for tracked files
+if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+  echo "Error: tracked files are dirty. Commit or stash first." >&2
+  exit 1
+fi
+
+# Tooling checks
+if ! command -v gh >/dev/null 2>&1; then
+  echo "Error: gh CLI is required (brew install gh)." >&2
+  exit 1
+fi
+
+if ! command -v perl >/dev/null 2>&1; then
+  echo "Error: perl is required." >&2
+  exit 1
+fi
+
+# Get latest mise tag via GitHub API
+latest_tag="$(gh release view --repo jdx/mise --json tagName --jq .tagName)"
+if [[ -z "$latest_tag" ]]; then
+  echo "Error: could not determine latest mise release tag" >&2
+  exit 1
+fi
+latest="${latest_tag#v}"
+
+file="$repo_root/core/mise/install.go"
+if [[ ! -f "$file" ]]; then
+  echo "Error: $file not found" >&2
+  exit 1
+fi
+
+# Proceed regardless of current miseVersion; we'll set githubReleaseBase to the latest version string
+
+branch="chore/update-mise-$latest"
+if git show-ref --verify --quiet "refs/heads/$branch"; then
+  echo "Local branch $branch already exists." >&2
+  exit 1
+fi
+
+git switch -c "$branch"
+
+# Replace the miseVersion line with the version string
+perl -i -pe 's/^(\s*)miseVersion\s*=.*$/\1miseVersion = "'"$latest"'"/' "$file"
+
+new="$(awk -F'"' '/miseVersion[[:space:]]*=/{print $2; exit}' "$file")"
+if [[ "$new" != "$latest" ]]; then
+  echo "Error: failed to update miseVersion in $file" >&2
+  exit 1
+fi
+
+mise run check
+
+# If nothing changed, stop early
+if git diff --quiet -- "$file"; then
+  echo "miseVersion already set to $latest. Nothing to do."
+  exit 0
+fi
+
+git add -- "$file"
+git commit -m "update mise $latest"
+
+gh pr create \
+  --title "chore: mise update $latest" \
+  --body "Update mise to $latest" \
