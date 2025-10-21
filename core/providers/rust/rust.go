@@ -168,7 +168,6 @@ func (p *RustProvider) Install(ctx *generate.GenerateContext, install *generate.
 	install.AddCommands([]plan.Command{
 		plan.NewExecCommand(`mkdir -p src`),
 		plan.NewExecShellCommand(dummyCmd, plan.ExecOptions{CustomName: "compile dependencies"}),
-		plan.NewExecCommand(`cat /app/src/main.rs`),
 		plan.NewExecCommand(fmt.Sprintf("%s%s", buildCmd, targetArg)),
 		plan.NewExecCommand(fmt.Sprintf("rm -rf src target/%srelease/%s*", targetPath, p.getAppName(ctx))),
 	})
