@@ -2,4 +2,11 @@
   {
     "justBuild": true
   }
+  // {
+  //   "httpCheck": {
+  //       "path": "/",
+  //       "expected": 200,
+  //       "internalPort": 8000
+  //   }
+  // }
 ]

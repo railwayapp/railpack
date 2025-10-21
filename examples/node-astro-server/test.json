@@ -1,5 +1,12 @@
 [
   {
     "expectedOutput": "Server listening on"
+  },
+  {
+    "httpCheck": {
+        "path": "/",
+        "expected": 200,
+        "internalPort": 4321
+    }
   }
 ]

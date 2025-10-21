@@ -1,5 +1,13 @@
 [
   {
-    "justBuild": true
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 4000
+    },
+    "envs": {
+      "PHX_SERVER": "true",
+      "SECRET_KEY_BASE": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
   }
 ]

@@ -2,4 +2,12 @@
   {
     "justBuild": true
   }
+  // needs a postgres server
+  // {
+  //   "httpCheck": {
+  //       "path": "/",
+  //       "expected": 200,
+  //       "internalPort": 3000
+  //   }
+  // }
 ]

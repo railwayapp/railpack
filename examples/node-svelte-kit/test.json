@@ -1,0 +1,13 @@
+[
+  {
+    "justBuild": true
+  }
+  // TODO right now caddy is not automatically added to a svelte project
+  // {
+  //   "httpCheck": {
+  //     "path": "/",
+  //     "expected": 200,
+  //     "internalPort": 3000
+  //   }
+  // }
+]
