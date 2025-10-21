@@ -15,12 +15,13 @@ Your project will be detected as a Rust application if any of these conditions a
 
 The Rust version is determined in the following order:
 
-- Set via the `package.edition` field in the `Cargo.toml` file
-- Set via the `RAILPACK_RUST_VERSION` environment variable
-- Read from the `.rust-version` or `rust-version.txt` file
+- Any mise-supported version file (`mise.toml`, `.tool-versions`, etc).
+- Read from the `toolchain.channel` field in the `rust-toolchain.toml` file
 - Read from the `package.rust-version` field in the `Cargo.toml` file
-- Read from the `toolchain.version` field in the `rust-toolchain.toml` file
-- Defaults to `1.85.1`
+- Read from the `.rust-version` or `rust-version.txt` file
+- Set via the `RAILPACK_RUST_VERSION` environment variable
+- Set via the `package.edition` field in the `Cargo.toml` file
+- Defaults to `1.89`
 
 ## Runtime Variables
 
