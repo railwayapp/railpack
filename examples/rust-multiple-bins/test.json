@@ -1,5 +1,5 @@
 [
   {
-    "expectedOutput": "This is Bin 1!"
+    "expectedOutput": "This is Bin 1! (rustc 1.84.0)"
   }
 ]

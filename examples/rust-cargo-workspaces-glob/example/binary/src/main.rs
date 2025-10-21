@@ -1,3 +1,3 @@
 fn main() {
-    println!("{}", library::MESSAGE);
+    println!("{} ({})", library::MESSAGE, env!("RUST_VERSION"));
 }

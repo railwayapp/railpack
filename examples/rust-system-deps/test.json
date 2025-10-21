@@ -1,5 +1,5 @@
 [
   {
-    "expectedOutput": "hello from rust system deps"
+    "expectedOutput": "hello from rust system deps (rustc 1.85.1)"
   }
 ]

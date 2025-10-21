@@ -2,8 +2,8 @@
 extern crate rocket;
 
 #[get("/")]
-fn index() -> &'static str {
-    "Hello, from Rocket!"
+fn index() -> String {
+    format!("Hello, from Rocket! ({})", env!("RUST_VERSION"))
 }
 
 #[launch]
