@@ -20,6 +20,7 @@ import (
 type BuildStepOptions struct {
 	ResolvedPackages map[string]*resolver.ResolvedPackage
 	Caches           *CacheContext
+	UserVariables    map[string]string
 }
 
 type StepBuilder interface {
@@ -38,7 +39,8 @@ type GenerateContext struct {
 	Steps     []StepBuilder
 	Deploy    *DeployBuilder
 
-	Caches *CacheContext
+	Caches        *CacheContext
+	UserVariables map[string]string
 
 	SubContexts []string
 
@@ -96,6 +98,7 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 		Steps:           make([]StepBuilder, 0),
 		Deploy:          NewDeployBuilder(),
 		Caches:          NewCacheContext(),
+		UserVariables:   make(map[string]string),
 		Metadata:        NewMetadata(),
 		Resolver:        resolver,
 		Logger:          logger,
@@ -178,6 +181,7 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 	buildStepOptions := &BuildStepOptions{
 		ResolvedPackages: resolvedPackages,
 		Caches:           c.Caches,
+		UserVariables:    c.UserVariables,
 	}
 
 	for _, stepBuilder := range c.Steps {
