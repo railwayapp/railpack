@@ -249,8 +249,9 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		miseStep.Version(ruby, utils.ExtractSemverVersion(string(versionFile)), ".ruby-version")
 	}
 
-	if gemfileVersion := parseVersionFromGemfile(ctx); gemfileVersion != "" {
-		miseStep.Version(ruby, gemfileVersion, "Gemfile")
+	if constraint := extractRubyConstraintFromGemfile(ctx); constraint != "" {
+		miseStep.Resolver.SetVersionAvailable(ruby, isStableRubyVersion)
+		miseStep.Version(ruby, constraint, "Gemfile")
 	}
 
 	miseStep.AddSupportingAptPackage("libyaml-dev")
@@ -263,6 +264,11 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		miseStep.AddSupportingAptPackage("rustc")
 		miseStep.AddSupportingAptPackage("cargo")
 	}
+}
+
+func isStableRubyVersion(version string) bool {
+	return !(strings.Contains(version, "-dev") || strings.Contains(version, "-preview") ||
+		strings.Contains(version, "-rc") || strings.Contains(version, "dev"))
 }
 
 func (p *RubyProvider) getRubyVersion(ctx *generate.GenerateContext) string {
@@ -324,34 +330,8 @@ func (p *RubyProvider) addMetadata(ctx *generate.GenerateContext) {
 }
 
 var (
-	gemfileVersionRegex     = regexp.MustCompile(`ruby (?:'|")(.*)(?:'|")[^>]"`)
-	gemfileLockVersionRegex = regexp.MustCompile(`ruby ((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))[^>]`)
+	gemfileVersionRegex = regexp.MustCompile(`ruby\s+(?:'|")([^'"]+)(?:'|")`)
 )
-
-func parseVersionFromGemfile(ctx *generate.GenerateContext) string {
-	gemfile, err := ctx.App.ReadFile("Gemfile")
-	if err != nil {
-		return ""
-	}
-
-	matches := gemfileVersionRegex.FindStringSubmatch(string(gemfile))
-
-	if len(matches) > 2 {
-		return matches[2]
-	}
-
-	gemfileLock, err := ctx.App.ReadFile("Gemfile.lock")
-	if err != nil {
-		return ""
-	}
-
-	matches = gemfileLockVersionRegex.FindStringSubmatch(string(gemfileLock))
-	if len(matches) > 1 {
-		return matches[1]
-	}
-
-	return ""
-}
 
 func parseBundlerVersionFromGemfile(ctx *generate.GenerateContext) string {
 	gemfileLock, err := ctx.App.ReadFile("Gemfile.lock")
@@ -396,4 +376,16 @@ func parseLocalPathsFromGemfile(ctx *generate.GenerateContext) []string {
 	}
 
 	return paths
+}
+
+func extractRubyConstraintFromGemfile(ctx *generate.GenerateContext) string {
+	gemfile, err := ctx.App.ReadFile("Gemfile")
+	if err != nil {
+		return ""
+	}
+	matches := gemfileVersionRegex.FindStringSubmatch(string(gemfile))
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
 }

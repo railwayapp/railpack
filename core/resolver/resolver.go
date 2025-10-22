@@ -156,3 +156,7 @@ func (r *Resolver) SetVersionAvailable(ref PackageRef, isVersionAvailable func(v
 func (r *Resolver) SetSkipMiseInstall(ref PackageRef, skipMiseInstall bool) {
 	r.packages[ref.Name].SkipMiseInstall = skipMiseInstall
 }
+
+func (r *Resolver) GetMise() *mise.Mise {
+	return r.mise
+}
