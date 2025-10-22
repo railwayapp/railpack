@@ -1,5 +1,9 @@
 [
   {
-    "expectedOutput": "Node.js version: v22.19.0\nPNPM version: v8.15.9"
+    "expectedOutput": [
+    	"Node.js version: v22.19.0",
+    	"PNPM version (from user agent): v8.15.9",
+    	"PNPM version (from CLI): v8.15.9"
+    ]
   }
 ]
