@@ -17,6 +17,7 @@ const (
 	CARGO_REGISTRY_CACHE = "/root/.cargo/registry"
 	CARGO_GIT_CACHE      = "/root/.cargo/git"
 	CARGO_TARGET_CACHE   = "target"
+	DUMMY_RS_SOURCE      = "fn main() { }"
 )
 
 type RustProvider struct{}
@@ -147,7 +148,6 @@ func (p *RustProvider) Install(ctx *generate.GenerateContext, install *generate.
 	})
 
 	buildCmd := "cargo build --release"
-	dummyCmd := `echo "fn main() { }" > /app/src/main.rs && if grep -q "\[lib\]" Cargo.toml; then echo "fn main() { }" > /app/src/lib.rs; fi`
 	target := p.getTarget(ctx)
 	targetArg := ""
 	targetPath := ""
@@ -165,9 +165,26 @@ func (p *RustProvider) Install(ctx *generate.GenerateContext, install *generate.
 		return
 	}
 
+	// Always create main.rs for dependency compilation
+	install.Assets["main.rs"] = DUMMY_RS_SOURCE
+
+	// Check if project has a lib section, conditionally create lib.rs
+	cargoToml, err := parseCargoTOML(ctx)
+	if err == nil && cargoToml != nil && cargoToml.Lib.Name != "" {
+		install.Assets["lib.rs"] = DUMMY_RS_SOURCE
+	}
+
 	install.AddCommands([]plan.Command{
 		plan.NewExecCommand(`mkdir -p src`),
-		plan.NewExecShellCommand(dummyCmd, plan.ExecOptions{CustomName: "compile dependencies"}),
+		plan.NewFileCommand("src/main.rs", "main.rs", plan.FileOptions{CustomName: "compile dependencies"}),
+	})
+
+	// Add lib.rs FileCommand only if it was added to assets
+	if _, hasLib := install.Assets["lib.rs"]; hasLib {
+		install.AddCommand(plan.NewFileCommand("src/lib.rs", "lib.rs"))
+	}
+
+	install.AddCommands([]plan.Command{
 		plan.NewExecCommand(fmt.Sprintf("%s%s", buildCmd, targetArg)),
 		plan.NewExecCommand(fmt.Sprintf("rm -rf src target/%srelease/%s*", targetPath, p.getAppName(ctx))),
 	})
