@@ -13,16 +13,19 @@ Your project will be detected as a Elixir application if a `mix.exs` file exists
 
 The Elixir version is determined in the following order:
 
-- Set via the `RAILPACK_ELIXIR_VERSION` environment variable
+- Any mise-supported version file (`mise.toml`, `.tool-versions`, etc)
 - Set via the `.elixir-version` file
 - Detected from the `mix.exs` file
+- Set via the `RAILPACK_ELIXIR_VERSION` environment variable
 - Defaults to `1.18`
 
 The OTP version is determined in the following order:
 
-- Set via the `RAILPACK_ERLANG_VERSION` environment variable
+- Any mise-supported version file (`mise.toml`, `.tool-versions`, etc)
 - Set via the `.erlang-version` file
 - Detected automatically from the resolved Elixir version
+- Set via the `RAILPACK_ERLANG_VERSION` environment variable
+- Defaults to `27.3`
 
 ## Configuration
 
