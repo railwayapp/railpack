@@ -68,6 +68,9 @@
    }
   },
   {
+   "assets": {
+    "main.rs": "fn main() { }"
+   },
    "caches": [
     "cargo_registry",
     "cargo_git"
@@ -85,11 +88,9 @@
      "cmd": "mkdir -p src"
     },
     {
-     "cmd": "sh -c 'echo \"fn main() { }\" \u003e /app/src/main.rs \u0026\u0026 if grep -q \"\\[lib\\]\" Cargo.toml; then echo \"fn main() { }\" \u003e /app/src/lib.rs; fi'",
-     "customName": "compile dependencies"
-    },
-    {
-     "cmd": "cat /app/src/main.rs"
+     "customName": "compile dependencies",
+     "name": "main.rs",
+     "path": "src/main.rs"
     },
     {
      "cmd": "cargo build --release"
