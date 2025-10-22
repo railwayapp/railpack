@@ -39,6 +39,10 @@
      "path": "/mise/shims"
     },
     {
+     "dest": ".tool-versions",
+     "src": ".tool-versions"
+    },
+    {
      "customName": "create mise config",
      "name": "mise.toml",
      "path": "/etc/mise/config.toml"
