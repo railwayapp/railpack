@@ -115,7 +115,12 @@ func ExtractSemverVersion(version string) string {
 
 // ParseSemver parses a semantic version string and returns a Semver struct.
 func ParseSemver(version string) (*Semver, error) {
-	// Remove potential prefixes like "v" or "ruby-"
+	// Handle corepack version format like "pnpm@8.15.4"
+	if idx := strings.Index(version, "@"); idx != -1 {
+		version = version[idx+1:]
+	}
+
+	// Remove potential prefixes like "v"
 	version = strings.TrimPrefix(version, "v")
 
 	// Split by dots

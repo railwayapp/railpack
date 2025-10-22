@@ -25,6 +25,8 @@ The Node.js version is determined in the following order:
 The Bun version is determined in the following order:
 
 - Set via the `RAILPACK_BUN_VERSION` environment variable
+- Read from the `.bun-version` file
+- Read from the `engines.bun` field in `package.json`
 - Defaults to `latest`
 
 If Bun is used as the package manager, Node.js will still be installed in the
@@ -86,16 +88,23 @@ Railpack determines the start command in the following order:
 Railpack detects your package manager in the following order:
 
 1. **packageManager field**: Reads the `packageManager` field from
-   `package.json`
+   `package.json` (uses Corepack to install the specified version)
 2. **Lock files**: Falls back to detecting based on lock files:
    - `pnpm-lock.yaml` for pnpm
    - `bun.lockb` or `bun.lock` for Bun
    - `.yarnrc.yml` or `.yarnrc.yaml` for Yarn Berry (2+)
    - `yarn.lock` for Yarn 1
-   - Defaults to npm if no lock file is found
+3. **engines field**: As a fallback, checks the `engines` field in
+   `package.json` for package manager versions:
+   - `engines.pnpm` for pnpm version
+   - `engines.bun` for Bun version
+   - `engines.yarn` for Yarn version
+   - Defaults to npm if no package manager is detected
 
 When the `packageManager` field is present, Railpack will use Corepack to
-install the specified package manager version.
+install the specified package manager version. When a package manager is
+detected via the `engines` field, the specified version constraint will be
+used.
 
 ### Install
 

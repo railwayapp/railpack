@@ -1,19 +1,11 @@
 {
  "caches": {
-  "apt": {
-   "directory": "/var/cache/apt",
-   "type": "locked"
-  },
-  "apt-lists": {
-   "directory": "/var/lib/apt/lists",
-   "type": "locked"
-  },
-  "bun-install": {
-   "directory": "/root/.bun/install/cache",
-   "type": "shared"
-  },
   "node-modules": {
    "directory": "/app/node_modules/.cache",
+   "type": "shared"
+  },
+  "pnpm-install": {
+   "directory": "/root/.local/share/pnpm/store/v3",
    "type": "shared"
   }
  },
@@ -50,7 +42,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "bun run start",
+  "startCommand": "pnpm run start",
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
@@ -60,24 +52,6 @@
   }
  },
  "steps": [
-  {
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
-   "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y nodejs'",
-     "customName": "install apt packages: nodejs"
-    }
-   ],
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
-    }
-   ],
-   "name": "packages:apt:build"
-  },
   {
    "assets": {
     "mise.toml": "[mise.toml]"
@@ -93,12 +67,12 @@
     },
     {
      "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
-     "customName": "install mise packages: bun"
+     "customName": "install mise packages: node, pnpm"
     }
    ],
    "inputs": [
     {
-     "step": "packages:apt:build"
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
     }
    ],
    "name": "packages:mise",
@@ -113,7 +87,7 @@
   },
   {
    "caches": [
-    "bun-install"
+    "pnpm-install"
    ],
    "commands": [
     {
@@ -127,7 +101,7 @@
      "src": "package.json"
     },
     {
-     "cmd": "bun install --frozen-lockfile"
+     "cmd": "pnpm install"
     }
    ],
    "inputs": [

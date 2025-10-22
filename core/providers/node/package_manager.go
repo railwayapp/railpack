@@ -266,6 +266,11 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 	if p == PackageManagerPnpm {
 		pnpm := packages.Default("pnpm", DEFAULT_PNPM_VERSION)
 
+		// Prefer explicit version from package.json engines over defaults/lockfile
+		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["pnpm"] != "" {
+			packages.Version(pnpm, packageJson.Engines["pnpm"], "package.json > engines > pnpm")
+		}
+
 		lockfile, err := ctx.App.ReadFile("pnpm-lock.yaml")
 		if err == nil {
 			if strings.HasPrefix(lockfile, "lockfileVersion: 5.3") {
@@ -280,25 +285,37 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 		if pmName == "pnpm" && pmVersion != "" {
 			packages.Version(pnpm, pmVersion, "package.json > packageManager")
 
-			// We want to skip installing with Mise and just install with corepack instead
+			// skip installing via Mise and install with corepack instead
+			// https://github.com/railwayapp/railpack/issues/201
 			packages.SkipMiseInstall(pnpm)
 		}
 	}
 
 	// Yarn
 	if p == PackageManagerYarn1 || p == PackageManagerYarnBerry {
+		var defaultMajor string
 		if p == PackageManagerYarn1 {
-			packages.Default("yarn", "1")
+			defaultMajor = "1"
 			packages.AddSupportingAptPackage("tar")
 			packages.AddSupportingAptPackage("gpg")
 		} else {
-			packages.Default("yarn", "2")
+			defaultMajor = "2"
+		}
+		yarn := packages.Default("yarn", defaultMajor)
+
+		// Prefer explicit version from package.json engines over defaults
+		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["yarn"] != "" {
+			packages.Version(yarn, packageJson.Engines["yarn"], "package.json > engines > yarn")
 		}
 
+		// TODO we should use SemVer at this point
 		if pmName == "yarn" && pmVersion != "" {
 			majorVersion := strings.Split(pmVersion, ".")[0]
 			yarn := packages.Default("yarn", majorVersion)
 			packages.Version(yarn, pmVersion, "package.json > packageManager")
+
+			// skip installing via Mise and install with corepack instead
+			// https://github.com/railwayapp/railpack/issues/201
 			packages.SkipMiseInstall(yarn)
 		}
 	}
@@ -306,6 +323,11 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 	// Bun
 	if p == PackageManagerBun {
 		bun := packages.Default("bun", "latest")
+
+		// Prefer explicit version from package.json engines over defaults
+		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["bun"] != "" {
+			packages.Version(bun, packageJson.Engines["bun"], "package.json > engines > bun")
+		}
 
 		if pmName == "bun" && pmVersion != "" {
 			packages.Version(bun, pmVersion, "package.json > packageManager")
