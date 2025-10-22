@@ -303,6 +303,9 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 	step.Assets = b.Assets
 	step.Secrets = []string{}
 
+	// Add user variables to this step
+	maps.Copy(step.Variables, options.UserVariables)
+
 	p.Steps = append(p.Steps, *step)
 
 	return nil

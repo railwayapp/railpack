@@ -2,6 +2,7 @@ package generate
 
 import (
 	"fmt"
+	"maps"
 
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/resolver"
@@ -72,6 +73,9 @@ func (b *InstallBinStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptio
 		plan.NewPathCommand(binPath),
 		plan.NewPathCommand(fmt.Sprintf("%s/bin", binPath)),
 	})
+
+	// Add user variables to this step
+	maps.Copy(step.Variables, options.UserVariables)
 
 	p.Steps = append(p.Steps, *step)
 

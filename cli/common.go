@@ -23,8 +23,8 @@ func commonPlanFlags() []cli.Flag {
 			Usage:   "environment variables to set",
 		},
 		&cli.StringSliceFlag{
-			Name:  "var",
-			Usage: "variables to set",
+			Name:  "secret",
+			Usage: "secrets to expose (can lookup from environment)",
 		},
 		&cli.StringSliceFlag{
 			Name:  "previous",
@@ -64,16 +64,16 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 	log.Debugf("Building %s", app.Source)
 
 	envsArgs := cmd.StringSlice("env")
-	varsArgs := cmd.StringSlice("var")
+	secretsArgs := cmd.StringSlice("secret")
 
-	env, err := a.FromEnvs(envsArgs)
+	env, err := a.FromEnvs(secretsArgs)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("error creating env: %w", err)
 	}
 
-	vars, err := a.ParseKeyValueStrings(varsArgs, false)
+	vars, err := a.ParseKeyValueStrings(envsArgs, false)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("error parsing vars: %w", err)
+		return nil, nil, nil, fmt.Errorf("error parsing env vars: %w", err)
 	}
 
 	// if --verbose is passed as a CLI global argument, enable verbose mise logging so the user don't have to understand
