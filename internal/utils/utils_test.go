@@ -78,6 +78,16 @@ func TestParseSemver(t *testing.T) {
 			wantErr:     true,
 			errorPrefix: "invalid major version",
 		},
+		{
+			name:    "corepack version",
+			version: "pnpm@8.15.4",
+			want: &Semver{
+				Major: 8,
+				Minor: 15,
+				Patch: 4,
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
