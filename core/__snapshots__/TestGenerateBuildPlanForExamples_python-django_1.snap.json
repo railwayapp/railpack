@@ -45,7 +45,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "python manage.py migrate \u0026\u0026 gunicorn mysite.wsgi:application",
+  "startCommand": "python manage.py migrate \u0026\u0026 gunicorn --bind 0.0.0.0:${PORT:-8000} mysite.wsgi:application",
   "variables": {
    "PIP_DEFAULT_TIMEOUT": "100",
    "PIP_DISABLE_PIP_VERSION_CHECK": "1",

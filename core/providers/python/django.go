@@ -41,7 +41,7 @@ func (p *PythonProvider) getDjangoStartCommand(ctx *generate.GenerateContext) st
 	}
 
 	ctx.Logger.LogInfo("Using Django app: %s", appName)
-	return fmt.Sprintf("python manage.py migrate && gunicorn %s:application", appName)
+	return fmt.Sprintf("python manage.py migrate && gunicorn --bind 0.0.0.0:${PORT:-8000} %s:application", appName)
 }
 
 func (p *PythonProvider) isDjango(ctx *generate.GenerateContext) bool {

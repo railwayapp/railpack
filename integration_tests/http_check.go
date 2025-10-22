@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -14,14 +16,86 @@ import (
 
 const (
 	// Grace period for servers to bind after initial log lines.
-	containerStartGracePeriod = 500 * time.Millisecond
+	containerStartGracePeriod = 2 * time.Second
 	// Total timeout for the HTTP check to succeed. Instead of specifying the number of retries, we use a total timeout.
 	httpCheckTimeout = 35 * time.Second
 	// Time between HTTP check retries.
 	httpCheckInterval = 300 * time.Millisecond
 	// Timeout for a single HTTP GET request.
 	httpCheckClientTimeout = 3 * time.Second
+	// Network name suffix when docker-compose creates the network
+	composeNetworkSuffix = "_default"
 )
+
+// ComposeConfig holds information about docker-compose services for an example
+type ComposeConfig struct {
+	ProjectName       string
+	ExamplePath       string
+	NetworkName       string
+	DockerComposePath string
+}
+
+// detectAndStartCompose checks if a docker-compose.yml exists in the example directory
+// and starts the services with a unique network name. Returns nil if no compose file exists or is empty.
+func detectAndStartCompose(examplePath string, t interface {
+	Logf(format string, args ...interface{})
+}) (*ComposeConfig, error) {
+	composeFile := filepath.Join(examplePath, "docker-compose.yml")
+
+	// Check if docker-compose.yml exists
+	fileInfo, err := os.Stat(composeFile)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+
+	// Skip empty files (e.g., test files that verify dockerignore works)
+	if fileInfo.Size() == 0 {
+		return nil, nil
+	}
+
+	// Generate a unique project name and network name
+	projectName := fmt.Sprintf("railpack-test-%s", strings.ToLower(uuid.New().String()))
+	networkName := projectName + composeNetworkSuffix
+
+	// Start docker-compose services and wait for them to be ready
+	cmd := exec.Command("docker", "compose",
+		"-f", composeFile,
+		"--project-name", projectName,
+		"up", "-d", "--wait")
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("failed to start docker-compose services: %v: %s", err, string(out))
+	}
+	t.Logf("Started docker-compose services with network: %s", networkName)
+
+	return &ComposeConfig{
+		ProjectName:       projectName,
+		ExamplePath:       examplePath,
+		NetworkName:       networkName,
+		DockerComposePath: composeFile,
+	}, nil
+}
+
+// stopAndCleanupCompose stops and removes docker-compose services
+func stopAndCleanupCompose(config *ComposeConfig, logger interface {
+	Logf(format string, args ...interface{})
+}) error {
+	if config == nil {
+		return nil
+	}
+
+	cmd := exec.Command("docker", "compose",
+		"-f", config.DockerComposePath,
+		"--project-name", config.ProjectName,
+		"down", "--volumes")
+
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to stop docker-compose services: %v: %s", err, string(out))
+	}
+
+	return nil
+}
 
 // HTTPCheck defines an HTTP endpoint check for a container
 // Path defaults to /, Expected defaults to 200.
@@ -33,7 +107,11 @@ type HTTPCheck struct {
 
 // runContainerWithHTTPCheck starts a container from the given image,
 // maps the internalPort to a random host port, and checks the given path returns the expected status code.
-func runContainerWithHTTPCheck(t *testing.T, imageName string, envs map[string]string, hc *HTTPCheck) error {
+// If networkName is provided, the container will be connected to that network.
+func runContainerWithHTTPCheck(t *testing.T, imageName string, envs map[string]string, hc *HTTPCheck, networkName string) error {
+	if networkName != "" {
+		t.Logf("Using network: %s", networkName)
+	}
 	if hc.Path == "" {
 		hc.Path = "/"
 	}
@@ -54,6 +132,11 @@ func runContainerWithHTTPCheck(t *testing.T, imageName string, envs map[string]s
 	// Run detached without --rm so we can fetch logs even if it exits.
 	// Cleanup is handled explicitly in the deferred stopContainer call below.
 	args := []string{"run", "-d", "--name", containerName, "-p", fmt.Sprintf("127.0.0.1:%d:%d", hostPort, hc.InternalPort)}
+
+	if networkName != "" {
+		args = append(args, "--network", networkName)
+	}
+
 	for k, v := range envs { // test-provided envs
 		args = append(args, "-e", fmt.Sprintf("%s=%s", k, v))
 	}

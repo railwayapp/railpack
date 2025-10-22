@@ -1,12 +1,12 @@
 [
   {
-    "justBuild": true
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 8000
+    },
+    "envs": {
+      "DATABASE_URL": "postgresql://django_user:django_password@postgres:5432/django_db"
+    }
   }
-  // {
-  //   "httpCheck": {
-  //       "path": "/",
-  //       "expected": 200,
-  //       "internalPort": 8000
-  //   }
-  // }
 ]

@@ -101,8 +101,8 @@ or push to a registry instead._
 
 ## Integration Tests
 
-Integration tests build and run example applications in containers to verify 
-end-to-end functionality. Each example with a `test.json` file gets tested 
+Integration tests build and run example applications in containers to verify
+end-to-end functionality. Each example with a `test.json` file gets tested
 automatically.
 
 ```bash
@@ -115,6 +115,33 @@ mise run test-integration -- -run "TestExamplesIntegration/python-uv-tool-versio
 
 The `test.json` file contains an array of test cases. Each case builds and runs the same
 image but checks for different expected output strings.
+
+### HTTP Checks
+
+In addition to a basic `justBuild: true` check or a output assertion, you can also run a HTTP check will starts the container and assert that a specific route returns an expected HTTP code:
+
+```json
+{
+  "httpCheck": {
+    "path": "/",
+    "expected": 200,
+    "internalPort": 3000
+  }
+}
+```
+
+### Services
+
+Integation tests can define services (postgres, redis, anything with a docker image) that
+are required for the application to run. Create a `docker-compose.yml` in a test directory
+and it will automatically be picked up and run before the project container is run.
+
+Here's an example of how to run the container locally to manually test it:
+
+```shell
+docker compose up -d
+docker run -it --network python-django_default --env DATABASE_URL="postgresql://django_user:django_password@postgres:5432/django_db" python-django
+```
 
 ## Mise commands
 
@@ -139,5 +166,5 @@ Here's some helpful debugging tricks:
 * `URFAVE_CLI_TRACING=on` for debugging CLI argument parsing
 * `mise run cli --verbose build --show-plan --progress plain examples/node-bun`
 * `mise run build`, add `./bin/` to your `$PATH`, and then run `railpack` in a separate local directory
-* `NO_COLOR=1` 
+* `NO_COLOR=1`
 * `docker exec buildkit buildctl prune` to clean the builder cache

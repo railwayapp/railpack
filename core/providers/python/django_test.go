@@ -18,7 +18,7 @@ func TestDjango(t *testing.T) {
 			name:     "django project",
 			path:     "../../../examples/python-django",
 			appName:  "mysite.wsgi",
-			startCmd: "python manage.py migrate && gunicorn mysite.wsgi:application",
+			startCmd: "python manage.py migrate && gunicorn --bind 0.0.0.0:${PORT:-8000} mysite.wsgi:application",
 		},
 		{
 			name: "non-django project",
