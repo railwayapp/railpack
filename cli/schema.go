@@ -22,8 +22,12 @@ var SchemaCommand = &cli.Command{
 			return cli.Exit(err, 1)
 		}
 
-		os.Stdout.Write(schemaJson)
-		os.Stdout.Write([]byte("\n"))
+		if _, err := os.Stdout.Write(schemaJson); err != nil {
+			return cli.Exit(err, 1)
+		}
+		if _, err := os.Stdout.Write([]byte("\n")); err != nil {
+			return cli.Exit(err, 1)
+		}
 
 		return nil
 	},

@@ -13,7 +13,11 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 	t.Run("nonexistent dockerignore", func(t *testing.T) {
 		tempDir, err := os.MkdirTemp("", "dockerignore-test")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() {
+			if err := os.RemoveAll(tempDir); err != nil {
+				t.Errorf("failed to remove temp dir: %v", err)
+			}
+		}()
 
 		testApp, err := app.NewApp(tempDir)
 		require.NoError(t, err)
@@ -61,7 +65,11 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 		// Create a temporary directory and file
 		tempDir, err := os.MkdirTemp("", "dockerignore-test")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() {
+			if err := os.RemoveAll(tempDir); err != nil {
+				t.Errorf("failed to remove temp dir: %v", err)
+			}
+		}()
 
 		dockerignorePath := filepath.Join(tempDir, ".dockerignore")
 		err = os.WriteFile(dockerignorePath, []byte("*.log\nnode_modules\n"), 0644)
@@ -130,7 +138,11 @@ func TestDockerignoreContext(t *testing.T) {
 	t.Run("new context", func(t *testing.T) {
 		tempDir, err := os.MkdirTemp("", "dockerignore-test")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() {
+			if err := os.RemoveAll(tempDir); err != nil {
+				t.Errorf("failed to remove temp dir: %v", err)
+			}
+		}()
 
 		testApp, err := app.NewApp(tempDir)
 		require.NoError(t, err)
@@ -187,7 +199,11 @@ func TestDockerignoreContext(t *testing.T) {
 	t.Run("parse nonexistent file", func(t *testing.T) {
 		tempDir, err := os.MkdirTemp("", "dockerignore-test")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() {
+			if err := os.RemoveAll(tempDir); err != nil {
+				t.Errorf("failed to remove temp dir: %v", err)
+			}
+		}()
 
 		testApp, err := app.NewApp(tempDir)
 		require.NoError(t, err)
@@ -205,7 +221,11 @@ func TestDockerignoreContext(t *testing.T) {
 		// Create a temporary directory with an inaccessible .dockerignore
 		tempDir, err := os.MkdirTemp("", "dockerignore-test")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() {
+			if err := os.RemoveAll(tempDir); err != nil {
+				t.Errorf("failed to remove temp dir: %v", err)
+			}
+		}()
 
 		dockerignorePath := filepath.Join(tempDir, ".dockerignore")
 		err = os.WriteFile(dockerignorePath, []byte("*.log\n"), 0644)
