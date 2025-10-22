@@ -194,8 +194,9 @@ func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(elixir, envVersion, varName)
 	}
 
-	pkgs, err := miseStep.Resolver.ResolvePackages()
 	erlang := miseStep.Default("erlang", DEFAULT_ERLANG_VERSION)
+
+	pkgs, err := miseStep.Resolver.ResolvePackages()
 	elixirVersion := DEFAULT_ELIXIR_VERSION
 	if err == nil && pkgs["elixir"] != nil && pkgs["elixir"].ResolvedVersion != nil {
 		elixirVersion = *pkgs["elixir"].ResolvedVersion
@@ -225,6 +226,8 @@ func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	if envVersion, varName := ctx.Env.GetConfigVariable("ERLANG_VERSION"); envVersion != "" {
 		miseStep.Version(erlang, envVersion, varName)
 	}
+
+	miseStep.UseMiseVersions(ctx, []string{"elixir", "erlang"})
 }
 
 func (p *ElixirProvider) GetEnvVars(ctx *generate.GenerateContext) map[string]string {
@@ -287,6 +290,8 @@ func getCompatibleErlangVersion(elixirVersion string) string {
 		return "26"
 	case "1.17", "1.18":
 		return "27"
+	case "1.19":
+		return "28"
 	default:
 		return DEFAULT_ERLANG_VERSION
 	}
