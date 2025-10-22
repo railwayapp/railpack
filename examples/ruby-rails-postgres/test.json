@@ -1,8 +1,5 @@
 [
   {
-    "justBuild": true
-  },
-  {
     "httpCheck": {
       "path": "/",
       "expected": 200,
