@@ -22,7 +22,7 @@ func TestGolang(t *testing.T) {
 			path:      "../../../examples/go-mod",
 			detected:  true,
 			hasGoMod:  true,
-			goVersion: "1.23",
+			goVersion: "1.25.3",
 		},
 		{
 			name:      "go cmd dirs",
