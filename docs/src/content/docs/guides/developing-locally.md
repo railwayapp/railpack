@@ -118,7 +118,7 @@ image but checks for different expected output strings.
 
 ### HTTP Checks
 
-In addition to a basic `justBuild: true` check or a output assertion, you can also run a HTTP check will starts the container and assert that a specific route returns an expected HTTP code:
+In addition to a basic `justBuild: true` check or an output assertion, you can also run an HTTP check that starts the container and asserts that a specific route returns an expected HTTP code:
 
 ```json
 {
@@ -127,6 +127,28 @@ In addition to a basic `justBuild: true` check or a output assertion, you can al
     "expected": 200,
     "internalPort": 3000
   }
+}
+```
+
+### Output Assertions
+
+You can verify that the application outputs specific strings. `expectedOutput` can
+be a single string or an array of strings that all must be present in the output:
+
+```json
+{
+  "expectedOutput": "Server running on port 3000"
+}
+```
+
+Or with multiple strings:
+
+```json
+{
+  "expectedOutput": [
+    "Elixir version: 1.18",
+    "Erlang/OTP version: 27"
+  ]
 }
 ```
 
