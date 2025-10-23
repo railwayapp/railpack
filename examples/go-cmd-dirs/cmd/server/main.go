@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,7 +17,7 @@ func main() {
 		})
 	})
 
-	fmt.Println("Hello from Go")
+	fmt.Printf("Hello from Go %s\n", runtime.Version())
 
 	r.Run()
 }
