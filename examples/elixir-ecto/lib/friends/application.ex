@@ -7,10 +7,14 @@ defmodule Friends.Application do
 
   @impl true
   def start(_type, _args) do
+    IO.puts("Elixir version: #{System.version()}")
+    IO.puts("Erlang/OTP version: #{:erlang.system_info(:otp_release)}")
+
     children = [
       # Starts a worker by calling: Friends.Worker.start_link(arg)
       # {Friends.Worker, arg}
       Friends.Repo,
+      {Plug.Cowboy, port: 4000, scheme: :http, plug: Friends.HTTPHandler}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

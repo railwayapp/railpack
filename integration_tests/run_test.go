@@ -67,9 +67,6 @@ func TestExamplesIntegration(t *testing.T) {
 	entries, err := os.ReadDir(examplesDir)
 	require.NoError(t, err)
 
-	// Track all compose configs to clean up at the very end
-	composeConfigsByExample := make(map[string]*ComposeConfig)
-
 	for _, entry := range entries {
 		entry := entry // capture for parallel execution
 		if !entry.IsDir() {
@@ -93,13 +90,29 @@ func TestExamplesIntegration(t *testing.T) {
 		err = json.Unmarshal(testConfigBytes, &testCases)
 		require.NoError(t, err)
 
+		// Validate test case configuration
+		for i, testCase := range testCases {
+			// Check if both httpCheck and expectedOutput are specified in the same test case
+			if testCase.HTTPCheck != nil && len(testCase.ExpectedOutput) > 0 {
+				t.Fatalf("%s case-%d: cannot have both httpCheck and expectedOutput in the same test case", entry.Name(), i)
+			}
+
+			// Check if justBuild is used alongside other test cases
+			if testCase.JustBuild && len(testCases) > 1 {
+				t.Fatalf("%s: justBuild can only be used alone (no other test cases allowed in the same file)", entry.Name())
+			}
+		}
 		// Start docker-compose services for this example if they exist
 		examplePath := filepath.Join(examplesDir, entry.Name())
 		composeConfig, err := detectAndStartCompose(examplePath, t)
 		require.NoError(t, err)
 
 		if composeConfig != nil {
-			composeConfigsByExample[entry.Name()] = composeConfig
+			t.Cleanup(func() {
+				if err := stopAndCleanupCompose(composeConfig, t); err != nil {
+					t.Errorf("failed to cleanup docker-compose for %s: %v", entry.Name(), err)
+				}
+			})
 		}
 
 		// each entry in the tests.json array is an individual test case which runs it's own container
@@ -178,17 +191,6 @@ func TestExamplesIntegration(t *testing.T) {
 			})
 		}
 	}
-
-	// Create a cleanup subtest that waits for all parallel tests to complete before cleaning up
-	t.Run("cleanup", func(t *testing.T) {
-		t.Logf("Starting cleanup of docker-compose services")
-		for exampleName, composeConfig := range composeConfigsByExample {
-			if cleanupErr := stopAndCleanupCompose(composeConfig, t); cleanupErr != nil {
-				t.Errorf("failed to cleanup docker-compose for %s: %v", exampleName, cleanupErr)
-			}
-		}
-		t.Logf("Cleanup complete")
-	})
 }
 
 // wait until cmd subprocess exits
