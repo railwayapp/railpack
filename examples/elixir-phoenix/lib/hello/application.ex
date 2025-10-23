@@ -7,6 +7,9 @@ defmodule Hello.Application do
 
   @impl true
   def start(_type, _args) do
+    IO.puts("Elixir version: #{System.version()}")
+    IO.puts("Erlang/OTP version: #{:erlang.system_info(:otp_release)}")
+
     children = [
       HelloWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:hello, :dns_cluster_query) || :ignore},

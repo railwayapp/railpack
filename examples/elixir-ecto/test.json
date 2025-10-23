@@ -1,5 +1,12 @@
 [
   {
-    "justBuild": true
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 4000
+    },
+    "envs": {
+      "DATABASE_URL": "postgresql://friends_user:friends_password@postgres:5432/friends_db"
+    }
   }
 ]
