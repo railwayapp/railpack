@@ -37,8 +37,5 @@ jobs:
       - name: Vet
         run: go vet ./...
 
-      - name: Trust Examples
-        run: mise run trust-examples
-
       - name: Test Unit
         run: go test -short ./...
