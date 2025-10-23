@@ -13,7 +13,7 @@ run = [
 [tasks.cli]
 run = "go run cmd/cli/main.go"
 
-# build the CLI binary (`./bin/railpack`)
+# build the CLI binary (`./bin/railpack`) for local use outside the project
 [tasks.build]
 run = "go build -o bin/railpack cmd/cli/main.go"
 
@@ -30,7 +30,7 @@ run = "go test -short ./..."
 [tasks.test-integration]
 run = "go test -v ./integration_tests"
 
-# update all test snapshots
+# update all test snapshots, if you've updated a example/ project, run this to update the snapshots
 [tasks.test-update-snapshots]
 run = "UPDATE_SNAPS=true go test -short ./..."
 

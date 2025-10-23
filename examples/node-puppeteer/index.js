@@ -6,6 +6,8 @@ const puppeteer = require("puppeteer");
     headless: true,
     args: ["--no-sandbox"],
   });
+  const version = await browser.version();
+  console.log(`Chrome version: ${version}`);
   console.log("Creating Page");
   const page = await browser.newPage();
   console.log("Navigating to hackernews");
