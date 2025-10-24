@@ -346,6 +346,10 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	}
 
 	miseStep.UseMiseVersions(ctx, packages)
+
+	// Disable Python compilation to avoid incompatibility issues with some packages
+	// https://mise.jdx.dev/lang/python.html#python.compile
+	miseStep.Variables["MISE_PYTHON_COMPILE"] = "false"
 }
 
 func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[string]string {
