@@ -29,7 +29,7 @@ func getBinaryName() string {
 	return fmt.Sprintf("mise-%s", miseVersion)
 }
 
-// getAssetName returns the platform-specific asset name
+// getAssetName returns the name of the asset based on the operating system and architecture
 func getAssetName() (string, error) {
 	var platform string
 
@@ -52,12 +52,40 @@ func getAssetName() (string, error) {
 		return "", fmt.Errorf("unsupported platform: %s %s", runtime.GOOS, runtime.GOARCH)
 	}
 
+	// Detect musl libc on Linux
+	if runtime.GOOS == "linux" && isMusl() {
+		platform += "-musl"
+	}
+
 	extension := "tar.gz"
 	if runtime.GOOS == "windows" {
 		extension = "zip"
 	}
 
 	return fmt.Sprintf("mise-v%s-%s.%s", miseVersion, platform, extension), nil
+}
+
+// isMusl detects if the system is using musl libc (e.g., Alpine Linux)
+func isMusl() bool {
+	// Check for musl dynamic linker
+	muslPaths := []string{
+		"/lib/ld-musl-x86_64.so.1",
+		"/lib/ld-musl-aarch64.so.1",
+		"/lib/ld-musl-armhf.so.1",
+	}
+
+	for _, path := range muslPaths {
+		if _, err := os.Stat(path); err == nil {
+			return true
+		}
+	}
+
+	// Check for Alpine Linux
+	if _, err := os.Stat("/etc/alpine-release"); err == nil {
+		return true
+	}
+
+	return false
 }
 
 // getBinaryPath returns the full path to the binary
