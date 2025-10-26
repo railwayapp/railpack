@@ -1,0 +1,9 @@
+[tools]
+"go:github.com/wagoodman/dive" = "latest"
+"go:github.com/go-delve/delve/cmd/dlv" = "latest"
+"github:x-motemen/gore" = "latest"
+"go:golang.org/x/tools/gopls" = "latest"
+
+# [tasks.test-integration-example]
+# run = "go test -v ./integration_tests"
+#  -run "TestExamplesIntegration/python-uv-tool-versions/case-0"
