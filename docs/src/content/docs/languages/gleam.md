@@ -11,7 +11,7 @@ Your project will be detected as a Gleam application if a `gleam.toml` file exis
 
 ## Versions
 
-Both Gleam and Erlang default to the latest version. This can be overridden with `RAILPACK_PACKAGES`.
+Both Gleam and Erlang default to the latest version; Erlang is available in both the build and runtime environments, but Gleam is only available during the build. This can be overridden with any mise-supported version file (`mise.toml`, `.tool-versions`, etc) or the `RAILPACK_PACKAGES` environment.
 
 ## Configuration
 

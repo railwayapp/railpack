@@ -31,9 +31,11 @@ func (p *GleamProvider) Plan(ctx *generate.GenerateContext) error {
 
 	p.installErlang(ctx.GetMiseStepBuilder())
 	ctx.GetMiseStepBuilder().Default("gleam", "latest")
+	ctx.GetMiseStepBuilder().UseMiseVersions(ctx, []string{"gleam", "erlang"})
 
 	runtimeMiseStep := ctx.NewMiseStepBuilder("packages:mise:runtime")
 	p.installErlang(runtimeMiseStep)
+	runtimeMiseStep.UseMiseVersions(ctx, []string{"erlang"})
 
 	outPath := "build/erlang-shipment/."
 	ctx.Deploy.AddInputs([]plan.Layer{
