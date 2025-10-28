@@ -4,6 +4,7 @@ import (
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/providers/deno"
 	"github.com/railwayapp/railpack/core/providers/elixir"
+	"github.com/railwayapp/railpack/core/providers/gleam"
 	"github.com/railwayapp/railpack/core/providers/golang"
 	"github.com/railwayapp/railpack/core/providers/java"
 	"github.com/railwayapp/railpack/core/providers/node"
@@ -35,6 +36,7 @@ func GetLanguageProviders() []Provider {
 		&python.PythonProvider{},
 		&deno.DenoProvider{},
 		&node.NodeProvider{},
+		&gleam.GleamProvider{},
 		&staticfile.StaticfileProvider{},
 		&shell.ShellProvider{},
 	}
