@@ -393,23 +393,29 @@ func (g *BuildGraph) getSecretInvalidationMountOptions(node *StepNode, secretOpt
 	return opts
 }
 
+func isCacheEnabled(key string) bool {
+	return !slices.Contains(strings.Split(os.Getenv("RAILPACK_DISABLE_CACHES"), " "), key)
+}
+
 // returns the llb.RunOption slice for the given cache keys
 func (g *BuildGraph) getCacheMountOptions(cacheKeys []string) ([]llb.RunOption, error) {
 	var opts []llb.RunOption
 
 	for _, cacheKey := range cacheKeys {
-		if planCache, ok := g.Plan.Caches[cacheKey]; ok {
-			cache := g.CacheStore.GetCache(cacheKey, planCache)
-			cacheType := llb.CacheMountShared
-			if planCache.Type == plan.CacheTypeLocked {
-				cacheType = llb.CacheMountLocked
-			}
+		if isCacheEnabled(cacheKey) {
+			if planCache, ok := g.Plan.Caches[cacheKey]; ok {
+				cache := g.CacheStore.GetCache(cacheKey, planCache)
+				cacheType := llb.CacheMountShared
+				if planCache.Type == plan.CacheTypeLocked {
+					cacheType = llb.CacheMountLocked
+				}
 
-			opts = append(opts,
-				llb.AddMount(planCache.Directory, *cache.cacheState, llb.AsPersistentCacheDir(cache.cacheKey, cacheType)),
-			)
-		} else {
-			return nil, fmt.Errorf("cache with key %q not found", cacheKey)
+				opts = append(opts,
+					llb.AddMount(planCache.Directory, *cache.cacheState, llb.AsPersistentCacheDir(cache.cacheKey, cacheType)),
+				)
+			} else {
+				return nil, fmt.Errorf("cache with key %q not found", cacheKey)
+			}
 		}
 	}
 	return opts, nil

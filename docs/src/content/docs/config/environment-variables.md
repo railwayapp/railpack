@@ -16,6 +16,7 @@ often prefixed with `RAILPACK_`.
 | `RAILPACK_PACKAGES`            | Install additional Mise packages. In the format `pkg@version`. The latest version is used if not provided.                                                                      |
 | `RAILPACK_BUILD_APT_PACKAGES`  | Install additional Apt packages during build                                                                                                                                    |
 | `RAILPACK_DEPLOY_APT_PACKAGES` | Install additional Apt packages in the final image                                                                                                                              |
+| `RAILPACK_DISABLE_CACHES`      | Specify specific BuildKit cache keys to disable. |
 
 To configure more parts of the build, it is recommended to use a [config file](/config/file).
 
