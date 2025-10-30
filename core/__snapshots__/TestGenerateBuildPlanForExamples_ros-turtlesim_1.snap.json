@@ -1,0 +1,76 @@
+{
+ "deploy": {
+  "base": {
+   "image": "osrf/ros:kilted-desktop"
+  },
+  "inputs": [
+   {
+    "step": "apt"
+   },
+   {
+    "include": [
+     "."
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "source install/setup.bash \u0026\u0026 ros launch launch/multisim.launch.py"
+ },
+ "steps": [
+  {
+   "inputs": [
+    {
+     "image": "osrf/ros:kilted-desktop"
+    }
+   ],
+   "name": "image"
+  },
+  {
+   "commands": [
+    {
+     "cmd": "apt-get update"
+    },
+    {
+     "cmd": "apt-get install -y python3-colcon-common-extensions python3-rosdep ros-dev-tools"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "image"
+    }
+   ],
+   "name": "apt",
+   "secrets": [
+    "*"
+   ]
+  },
+  {
+   "commands": [
+    {
+     "cmd": "rosdep update"
+    },
+    {
+     "cmd": "rosdep install --from-paths src --ignore-src -r -y"
+    },
+    {
+     "cmd": "colcon build"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "apt"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ]
+  }
+ ]
+}
