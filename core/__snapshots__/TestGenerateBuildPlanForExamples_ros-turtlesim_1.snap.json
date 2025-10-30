@@ -14,7 +14,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "source install/setup.bash \u0026\u0026 ros launch launch/multisim.launch.py"
+  "startCommand": "source /opt/ros/kilted/setup.bash \u0026\u0026 source install/setup.bash \u0026\u0026 ros launch launch/multisim.launch.py"
  },
  "steps": [
   {
@@ -31,7 +31,10 @@
      "cmd": "apt-get update"
     },
     {
-     "cmd": "apt-get install -y python3-colcon-common-extensions python3-rosdep ros-dev-tools"
+     "cmd": "apt-get install -y python3-colcon-common-extensions python3-rosdep ros-dev-tools ros-kilted-desktop"
+    },
+    {
+     "cmd": "apt-get install -y ros-kilted-ament-cmake ros-kilted-ament-cmake-core ros-kilted-ament-cmake-python"
     }
    ],
    "inputs": [
@@ -53,7 +56,7 @@
      "cmd": "rosdep install --from-paths src --ignore-src -r -y"
     },
     {
-     "cmd": "colcon build"
+     "cmd": "bash -c 'source /opt/ros/kilted/setup.bash \u0026\u0026 colcon build'"
     }
    ],
    "inputs": [
