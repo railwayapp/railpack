@@ -8,6 +8,7 @@ import (
 	"github.com/railwayapp/railpack/core/providers/gleam"
 	"github.com/railwayapp/railpack/core/providers/golang"
 	"github.com/railwayapp/railpack/core/providers/java"
+	"github.com/railwayapp/railpack/core/providers/meson"
 	"github.com/railwayapp/railpack/core/providers/node"
 	"github.com/railwayapp/railpack/core/providers/php"
 	"github.com/railwayapp/railpack/core/providers/python"
@@ -40,6 +41,7 @@ func GetLanguageProviders() []Provider {
 		&node.NodeProvider{},
 		&gleam.GleamProvider{},
 		&ros.RosProvider{},
+		&meson.MesonProvider{},
 		&cmake.CmakeProvider{},
 		&staticfile.StaticfileProvider{},
 		&shell.ShellProvider{},
