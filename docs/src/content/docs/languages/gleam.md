@@ -16,3 +16,6 @@ Both Gleam and Erlang default to the latest version; Erlang is available in both
 ## Configuration
 
 Railpack will build your Gleam application as an Erlang shipment using `gleam export erlang-shipment`, and run it using `./build/erlang-shipment/entrypoint.sh run`. By default, the source tree is not available in the final container.
+
+Variables available:
+- `RAILPACK_GLEAM_INCLUDE_SOURCE` - if this variable is truthy, the source tree will be included in the final container.
