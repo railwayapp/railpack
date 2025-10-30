@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>turtlesim</name>
+  <version>1.10.2</version>
+  <description>
+    turtlesim is a tool made for teaching ROS and ROS packages.
+  </description>
+
+  <maintainer email="alejandro@openrobotics.org">Alejandro Hernandez Cordero</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://www.ros.org/wiki/turtlesim</url>
+  <url type="bugtracker">https://github.com/ros/ros_tutorials/issues</url>
+  <url type="repository">https://github.com/ros/ros_tutorials</url>
+
+  <author email="audrow@openrobotics.org">Audrow Nash</author>
+  <author email="dthomas@osrfoundation.org">Dirk Thomas</author>
+  <author>Josh Faust</author>
+  <author email="mabel@openrobotics.org">Mabel Zhang</author>
+  <author email="michael.jeronimo@openrobotics.org">Michael Jeronimo</author>
+  <author email="sloretz@openrobotics.org">Shane Loretz</author>
+
+  <build_depend>qt5-qmake</build_depend>
+  <build_depend>qtbase5-dev</build_depend>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>libqt5-core</exec_depend>
+  <exec_depend>libqt5-gui</exec_depend>
+
+  <depend>ament_index_cpp</depend>
+  <depend>geometry_msgs</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>turtlesim_msgs</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

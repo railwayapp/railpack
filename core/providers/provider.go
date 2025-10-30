@@ -12,6 +12,7 @@ import (
 	"github.com/railwayapp/railpack/core/providers/node"
 	"github.com/railwayapp/railpack/core/providers/php"
 	"github.com/railwayapp/railpack/core/providers/python"
+	"github.com/railwayapp/railpack/core/providers/ros"
 	"github.com/railwayapp/railpack/core/providers/ruby"
 	"github.com/railwayapp/railpack/core/providers/rust"
 	"github.com/railwayapp/railpack/core/providers/shell"
@@ -41,6 +42,7 @@ func GetLanguageProviders() []Provider {
 		&dotnet.DotnetProvider{},
 		&node.NodeProvider{},
 		&gleam.GleamProvider{},
+		&ros.RosProvider{},
 		&staticfile.StaticfileProvider{},
 		&shell.ShellProvider{},
 	}
