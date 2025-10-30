@@ -146,6 +146,7 @@ export default defineConfig({
             { label: "Gleam", link: "/languages/gleam" },
             { label: "CMake", link: "/languages/cmake" },
             { label: "Meson", link: "/languages/meson" },
+            { label: "ROS", link: "/languages/ros" },
             { label: "Staticfile", link: "/languages/staticfile" },
             { label: "Shell Scripts", link: "/languages/shell" },
           ],
