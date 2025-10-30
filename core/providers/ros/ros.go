@@ -28,14 +28,15 @@ func (p *RosProvider) StartCommandHelp() string {
 }
 
 func (p *RosProvider) Plan(ctx *generate.GenerateContext) error {
+	baseImageName := ROS_DEFAULT_IMAGE
 	baseImage := ctx.NewImageStep("image", func(options *generate.BuildStepOptions) string {
-		return ROS_DEFAULT_IMAGE
+		return baseImageName
 	})
 
 	packages := ctx.NewCommandStep("apt")
 	packages.AddCommands([]plan.Command{
 		plan.NewExecCommand("apt-get update"),
-		plan.NewExecCommand("apt-get install -y python3-colcon-common-extensions python3-rosdep"),
+		plan.NewExecCommand("apt-get install -y python3-colcon-common-extensions python3-rosdep ros-dev-tools"),
 	})
 	packages.AddInput(plan.NewStepLayer(baseImage.Name()))
 
@@ -52,7 +53,8 @@ func (p *RosProvider) Plan(ctx *generate.GenerateContext) error {
 
 	ctx.Deploy.StartCmd = "source install/setup.bash"
 	ctx.Deploy.AddInputs([]plan.Layer{
-		plan.NewStepLayer(build.Name()),
+		plan.NewStepLayer(packages.Name()),
+		plan.NewStepLayer(build.Name(), plan.NewIncludeFilter([]string{"."})),
 	})
 	ctx.Deploy.Base.Image = ROS_DEFAULT_IMAGE
 	if err == nil && len(launchFiles) > 0 {
@@ -60,8 +62,4 @@ func (p *RosProvider) Plan(ctx *generate.GenerateContext) error {
 	}
 
 	return nil
-}
-
-func (p *RosProvider) installErlang(step *generate.MiseStepBuilder) {
-	step.Default("erlang", "latest")
 }
