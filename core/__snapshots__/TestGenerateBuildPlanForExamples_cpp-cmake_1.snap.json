@@ -11,7 +11,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "/build/cmake-example"
+  "startCommand": "/build/cpp-cmake"
  },
  "steps": [
   {
