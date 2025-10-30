@@ -59,7 +59,15 @@ func (p *RosProvider) Plan(ctx *generate.GenerateContext) error {
 		plan.NewExecCommand(fmt.Sprintf("bash -c 'source /opt/ros/%s/setup.bash && colcon build'", rosVersion)),
 	})
 
-	launchFiles, err := ctx.App.FindFiles("launch/*.{xml,py}")
+	launchFile := ctx.Env.GetVariable(ctx.Env.ConfigVariable("ROS_LAUNCH_FILE"))
+	if launchFile == "" {
+		launchFiles, err := ctx.App.FindFiles("launch/*.{xml,py}")
+		if err == nil && len(launchFiles) > 0 {
+			launchFile = launchFiles[0]
+		}
+	} else {
+		launchFile = "launch/" + launchFile
+	}
 
 	ctx.Deploy.StartCmd = fmt.Sprintf("source /opt/ros/%s/setup.bash && source install/setup.bash", rosVersion)
 	ctx.Deploy.AddInputs([]plan.Layer{
@@ -67,8 +75,8 @@ func (p *RosProvider) Plan(ctx *generate.GenerateContext) error {
 		plan.NewStepLayer(build.Name(), plan.NewIncludeFilter([]string{"."})),
 	})
 	ctx.Deploy.Base.Image = baseImageName
-	if err == nil && len(launchFiles) > 0 {
-		ctx.Deploy.StartCmd += fmt.Sprintf(" && ros2 launch %s", launchFiles[0])
+	if launchFile != "" {
+		ctx.Deploy.StartCmd += fmt.Sprintf(" && ros2 launch %s", launchFile)
 	}
 
 	return nil
