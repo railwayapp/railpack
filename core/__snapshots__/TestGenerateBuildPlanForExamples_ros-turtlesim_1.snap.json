@@ -14,7 +14,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "source /opt/ros/kilted/setup.bash \u0026\u0026 source install/setup.bash \u0026\u0026 ros launch launch/multisim.launch.py"
+  "startCommand": "source /opt/ros/kilted/setup.bash \u0026\u0026 source install/setup.bash \u0026\u0026 ros2 launch launch/multisim.launch.py"
  },
  "steps": [
   {
