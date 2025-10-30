@@ -15,4 +15,4 @@ The latest versions of CMake and Ninja will be installed during build.
 
 ## Configuration
 
-Railpack will build your application into a build directory at `/build`, and run it with the executable in that directory whose name matches the name of your project's root directory. The source tree will not be available in the final container by default, only the build directory.
+Railpack will build your application into a build directory at `/build`, and run the executable in that directory whose name matches the name of your project's root directory. The source tree will not be available in the final container by default, only the build directory.

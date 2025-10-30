@@ -145,6 +145,7 @@ export default defineConfig({
             { label: "Elixir", link: "/languages/elixir" },
             { label: "Gleam", link: "/languages/gleam" },
             { label: "CMake", link: "/languages/cmake" },
+            { label: "Meson", link: "/languages/meson" },
             { label: "Staticfile", link: "/languages/staticfile" },
             { label: "Shell Scripts", link: "/languages/shell" },
           ],
