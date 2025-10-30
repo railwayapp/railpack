@@ -7,7 +7,10 @@ import (
 	"github.com/railwayapp/railpack/core/plan"
 )
 
-const ROS_DEFAULT_IMAGE = "osrf/ros:kilted-desktop"
+const (
+	ROS_IMAGE           = "osrf/ros:%s-desktop"
+	ROS_VERSION_DEFAULT = "kilted"
+)
 
 type RosProvider struct{}
 
@@ -28,7 +31,11 @@ func (p *RosProvider) StartCommandHelp() string {
 }
 
 func (p *RosProvider) Plan(ctx *generate.GenerateContext) error {
-	baseImageName := ROS_DEFAULT_IMAGE
+	rosVersion := ctx.Env.GetVariable(ctx.Env.ConfigVariable("ROS_VERSION"))
+	if rosVersion == "" {
+		rosVersion = ROS_VERSION_DEFAULT
+	}
+	baseImageName := fmt.Sprintf(ROS_IMAGE, rosVersion)
 	baseImage := ctx.NewImageStep("image", func(options *generate.BuildStepOptions) string {
 		return baseImageName
 	})
@@ -36,8 +43,11 @@ func (p *RosProvider) Plan(ctx *generate.GenerateContext) error {
 	packages := ctx.NewCommandStep("apt")
 	packages.AddCommands([]plan.Command{
 		plan.NewExecCommand("apt-get update"),
-		plan.NewExecCommand("apt-get install -y python3-colcon-common-extensions python3-rosdep ros-dev-tools"),
+		plan.NewExecCommand(fmt.Sprintf("apt-get install -y python3-colcon-common-extensions python3-rosdep ros-dev-tools ros-%s-desktop", rosVersion)),
 	})
+	if ctx.App.HasMatch("**/CMakeLists.txt") {
+		packages.AddCommand(plan.NewExecCommand(fmt.Sprintf("apt-get install -y ros-%s-ament-cmake ros-%s-ament-cmake-core ros-%s-ament-cmake-python", rosVersion, rosVersion, rosVersion)))
+	}
 	packages.AddInput(plan.NewStepLayer(baseImage.Name()))
 
 	build := ctx.NewCommandStep("build")
@@ -46,17 +56,17 @@ func (p *RosProvider) Plan(ctx *generate.GenerateContext) error {
 	build.AddCommands([]plan.Command{
 		plan.NewExecCommand("rosdep update"),
 		plan.NewExecCommand("rosdep install --from-paths src --ignore-src -r -y"),
-		plan.NewExecCommand("colcon build"),
+		plan.NewExecCommand(fmt.Sprintf("bash -c 'source /opt/ros/%s/setup.bash && colcon build'", rosVersion)),
 	})
 
 	launchFiles, err := ctx.App.FindFiles("launch/*.{xml,py}")
 
-	ctx.Deploy.StartCmd = "source install/setup.bash"
+	ctx.Deploy.StartCmd = fmt.Sprintf("source /opt/ros/%s/setup.bash && source install/setup.bash", rosVersion)
 	ctx.Deploy.AddInputs([]plan.Layer{
 		plan.NewStepLayer(packages.Name()),
 		plan.NewStepLayer(build.Name(), plan.NewIncludeFilter([]string{"."})),
 	})
-	ctx.Deploy.Base.Image = ROS_DEFAULT_IMAGE
+	ctx.Deploy.Base.Image = baseImageName
 	if err == nil && len(launchFiles) > 0 {
 		ctx.Deploy.StartCmd += fmt.Sprintf(" && ros launch %s", launchFiles[0])
 	}
