@@ -68,7 +68,7 @@ func (p *RosProvider) Plan(ctx *generate.GenerateContext) error {
 	})
 	ctx.Deploy.Base.Image = baseImageName
 	if err == nil && len(launchFiles) > 0 {
-		ctx.Deploy.StartCmd += fmt.Sprintf(" && ros launch %s", launchFiles[0])
+		ctx.Deploy.StartCmd += fmt.Sprintf(" && ros2 launch %s", launchFiles[0])
 	}
 
 	return nil
