@@ -99,3 +99,7 @@ Railpack automatically installs system dependencies for common databases:
 
 - **PostgreSQL**: Installs `libpq-dev` at build time and `libpq5` at runtime
 - **MySQL**: Installs `default-libmysqlclient-dev` at build time and `default-mysql-client` at runtime
+
+## BuildKit Caching
+
+The Python provider will cache `/opt/pip-cache` under the cache key `pip`, and, for `uv`-based apps, `/opt/uv-cache` under the key `uv`.
