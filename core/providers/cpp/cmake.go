@@ -14,9 +14,10 @@ func (_ *CppProvider) DetectCmake(ctx *generate.GenerateContext) (buildSystem, b
 	return nil, false
 }
 
-func (_ *cmake) Install(mise *generate.MiseStepBuilder) {
+func (_ *cmake) Install(ctx *generate.GenerateContext, mise *generate.MiseStepBuilder) {
 	mise.Default("cmake", "latest")
 	mise.Default("ninja", "latest")
+	mise.UseMiseVersions(ctx, []string{"meson", "ninja"})
 }
 
 func (_ *cmake) Build(build *generate.CommandStepBuilder) {

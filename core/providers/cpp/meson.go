@@ -14,9 +14,10 @@ func (_ *CppProvider) DetectMeson(ctx *generate.GenerateContext) (buildSystem, b
 	return nil, false
 }
 
-func (_ *meson) Install(mise *generate.MiseStepBuilder) {
+func (_ *meson) Install(ctx *generate.GenerateContext, mise *generate.MiseStepBuilder) {
 	mise.Default("meson", "latest")
 	mise.Default("ninja", "latest")
+	mise.UseMiseVersions(ctx, []string{"meson", "ninja"})
 }
 
 func (_ *meson) Build(build *generate.CommandStepBuilder) {
