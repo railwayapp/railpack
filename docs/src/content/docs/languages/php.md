@@ -111,3 +111,7 @@ frameworks like Vue.js or React.
 
 You can see the [node docs](/languages/node) for information on how to configure
 node.
+
+## BuildKit Caching
+
+The PHP provider will cache `/opt/cache/composer` under the cache key `composer`.

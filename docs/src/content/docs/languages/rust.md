@@ -50,3 +50,7 @@ The start command is:
 | Variable                   | Description                 | Example      |
 | -------------------------- | --------------------------- | ------------ |
 | `RAILPACK_RUST_VERSION`    | Override the Rust version   | `1.85.1`     |
+
+## BuildKit Caching
+
+The Rust provider will cache `~/.cargo/registry` under the key `cargo_registry`, `~/.cargo/git` under `cargo_git`, and `target` under `cargo_target`.

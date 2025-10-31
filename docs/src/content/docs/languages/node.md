@@ -161,4 +161,4 @@ Including:
 
 As well as a default cache for node modules:
 
-- Node modules: Caches `node_modules/.cache`
+- Node modules: Caches `node_modules/.cache` (with the cache key `node-modules`)

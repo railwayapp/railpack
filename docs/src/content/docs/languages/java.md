@@ -27,3 +27,7 @@ The Java version is determined in the following order:
 | ------------------------- | --------------------------- | ------- |
 | `RAILPACK_JDK_VERSION`    | Override the JDK version    | `17`    |
 | `RAILPACK_GRADLE_VERSION` | Override the Gradle version | `8.5`   |
+
+## BuildKit Caching
+
+The Java provider will cache the build cache &mdash; for Gradle, `~/.gradle` under the key `gradle`, and, for Maven, `.m2/repository` under `maven`.
