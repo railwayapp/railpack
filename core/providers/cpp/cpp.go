@@ -37,7 +37,7 @@ func (p *CppProvider) Plan(ctx *generate.GenerateContext) error {
 		buildsystem, _ = p.DetectMeson(ctx)
 	}
 
-	buildsystem.Install(packages)
+	buildsystem.Install(ctx, packages)
 
 	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewStepLayer(packages.Name()))
