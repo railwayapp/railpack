@@ -3,14 +3,13 @@ package providers
 import (
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
-	"github.com/railwayapp/railpack/core/providers/cmake"
+	"github.com/railwayapp/railpack/core/providers/cpp"
 	"github.com/railwayapp/railpack/core/providers/deno"
 	"github.com/railwayapp/railpack/core/providers/dotnet"
 	"github.com/railwayapp/railpack/core/providers/elixir"
 	"github.com/railwayapp/railpack/core/providers/gleam"
 	"github.com/railwayapp/railpack/core/providers/golang"
 	"github.com/railwayapp/railpack/core/providers/java"
-	"github.com/railwayapp/railpack/core/providers/meson"
 	"github.com/railwayapp/railpack/core/providers/node"
 	"github.com/railwayapp/railpack/core/providers/php"
 	"github.com/railwayapp/railpack/core/providers/python"
@@ -45,8 +44,7 @@ func GetLanguageProviders() []Provider {
 		&node.NodeProvider{},
 		&gleam.GleamProvider{},
 		&ros.RosProvider{},
-		&meson.MesonProvider{},
-		&cmake.CmakeProvider{},
+		&cpp.CppProvider{},
 		&staticfile.StaticfileProvider{},
 		&shell.ShellProvider{},
 	}
