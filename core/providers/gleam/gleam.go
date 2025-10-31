@@ -38,10 +38,16 @@ func (p *GleamProvider) Plan(ctx *generate.GenerateContext) error {
 	runtimeMiseStep.UseMiseVersions(ctx, []string{"erlang"})
 
 	outPath := "build/erlang-shipment/."
+
+	includedPath := outPath
+	if ctx.Env.IsConfigVariableTruthy("GLEAM_INCLUDE_SOURCE") {
+		includedPath = "."
+	}
+
 	ctx.Deploy.AddInputs([]plan.Layer{
 		runtimeMiseStep.GetLayer(),
 		plan.NewStepLayer(build.Name(), plan.Filter{
-			Include: []string{outPath},
+			Include: []string{includedPath},
 		}),
 	})
 
