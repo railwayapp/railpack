@@ -403,20 +403,22 @@ func (g *BuildGraph) getCacheMountOptions(cacheKeys []string) ([]llb.RunOption, 
 	var opts []llb.RunOption
 
 	for _, cacheKey := range cacheKeys {
-		if isCacheEnabled(cacheKey) {
-			if planCache, ok := g.Plan.Caches[cacheKey]; ok {
-				cache := g.CacheStore.GetCache(cacheKey, planCache)
-				cacheType := llb.CacheMountShared
-				if planCache.Type == plan.CacheTypeLocked {
-					cacheType = llb.CacheMountLocked
-				}
+		if !isCacheEnabled(cacheKey) {
+			continue
+		}
 
-				opts = append(opts,
-					llb.AddMount(planCache.Directory, *cache.cacheState, llb.AsPersistentCacheDir(cache.cacheKey, cacheType)),
-				)
-			} else {
-				return nil, fmt.Errorf("cache with key %q not found", cacheKey)
+		if planCache, ok := g.Plan.Caches[cacheKey]; ok {
+			cache := g.CacheStore.GetCache(cacheKey, planCache)
+			cacheType := llb.CacheMountShared
+			if planCache.Type == plan.CacheTypeLocked {
+				cacheType = llb.CacheMountLocked
 			}
+
+			opts = append(opts,
+				llb.AddMount(planCache.Directory, *cache.cacheState, llb.AsPersistentCacheDir(cache.cacheKey, cacheType)),
+			)
+		} else {
+			return nil, fmt.Errorf("cache with key %q not found", cacheKey)
 		}
 	}
 	return opts, nil
