@@ -5,6 +5,7 @@ import (
 
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	"mvdan.cc/sh/v3/fileutil"
 )
 
 const (
@@ -34,9 +35,15 @@ func (p *ShellProvider) Initialize(ctx *generate.GenerateContext) error {
 }
 
 func (p *ShellProvider) Plan(ctx *generate.GenerateContext) error {
-	ctx.Deploy.StartCmd = "sh " + p.scriptName
+	interpreter, err := detectShellInterpreter(ctx, p.scriptName)
+	if err != nil {
+		return err
+	}
 
-	ctx.Logger.LogInfo("Using shell script: %s", p.scriptName)
+	ctx.Deploy.StartCmd = interpreter + " " + p.scriptName
+	ctx.Metadata.Set("detectedShellInterpreter", interpreter)
+
+	ctx.Logger.LogInfo("Using shell script: %s with interpreter: %s", p.scriptName, interpreter)
 
 	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewImageLayer(plan.RailpackRuntimeImage))
@@ -78,4 +85,33 @@ func getScript(ctx *generate.GenerateContext) string {
 	}
 
 	return ""
+}
+
+func detectShellInterpreter(ctx *generate.GenerateContext, scriptName string) (string, error) {
+	content, err := ctx.App.ReadFile(scriptName)
+	if err != nil {
+		return "", err
+	}
+
+	interpreter := fileutil.Shebang([]byte(content))
+	if interpreter == "" {
+		return "sh", nil
+	}
+
+	return mapToAvailableShell(ctx, interpreter), nil
+}
+
+func mapToAvailableShell(ctx *generate.GenerateContext, shell string) string {
+	switch shell {
+	case "bash":
+		return "bash"
+	case "sh", "dash":
+		return "sh"
+	case "mksh", "zsh", "ksh", "fish":
+		ctx.Logger.LogWarn("Shell '%s' not available in runtime, using 'bash'", shell)
+		return "bash"
+	default:
+		ctx.Logger.LogWarn("Unknown shell '%s', using 'sh'", shell)
+		return "sh"
+	}
 }
