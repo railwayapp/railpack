@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	DEFAULT_DOTNET_VERSION   = "6.0.428"
+	DEFAULT_DOTNET_VERSION   = "8.0"
 	DOTNET_ROOT              = "/mise/installs/dotnet"
 	DOTNET_DEPENDENCIES_ROOT = "/root/.nuget/packages"
 )
@@ -97,8 +97,8 @@ func (p *DotnetProvider) Install(ctx *generate.GenerateContext, install *generat
 
 func (p *DotnetProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
 	maps.Copy(build.Variables, p.GetEnvVars(ctx))
+	build.AddInput(ctx.NewLocalLayer())
 	build.AddCommands([]plan.Command{
-		plan.NewCopyCommand("."),
 		plan.NewExecCommand("dotnet publish --no-restore -c Release -o out"),
 	})
 }
@@ -165,6 +165,8 @@ func (p *DotnetProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	if envVersion, varName := ctx.Env.GetConfigVariable("DOTNET_VERSION"); envVersion != "" {
 		miseStep.Version(dotnet, envVersion, varName)
 	}
+
+	miseStep.UseMiseVersions(ctx, []string{"dotnet"})
 }
 
 func (p *DotnetProvider) getDotnetVersion(ctx *generate.GenerateContext) string {
