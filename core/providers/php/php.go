@@ -80,7 +80,7 @@ func (p *PhpProvider) Plan(ctx *generate.GenerateContext) error {
 		ctx.Logger.LogInfo("Found Laravel app")
 	}
 
-	p.addMetadata(ctx)
+	ctx.Metadata.SetBool("phpLaravel", isLaravel)
 
 	if isNode {
 		err = p.DeployWithNode(ctx, nodeProvider, composer, isLaravel)
@@ -349,10 +349,6 @@ func (p *PhpProvider) needsRedisExtension(ctx *generate.GenerateContext, compose
 
 func (p *PhpProvider) usesLaravel(ctx *generate.GenerateContext) bool {
 	return ctx.App.HasMatch("artisan")
-}
-
-func (p *PhpProvider) addMetadata(ctx *generate.GenerateContext) {
-	ctx.Metadata.SetBool("phpLaravel", p.usesLaravel(ctx))
 }
 
 type ConfigFiles struct {
