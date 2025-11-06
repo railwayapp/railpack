@@ -23,6 +23,26 @@ Create a shell script in your project root (e.g., `start.sh`):
 echo "Hello world..."
 ```
 
+## Shell Interpreter Detection
+
+Railpack automatically detects which shell interpreter to use by reading the
+shebang line in your script. The following shells are supported:
+
+| Shell  | Shebang Example      | Notes                            |
+| ------ | -------------------- | -------------------------------- |
+| `bash` | `#!/bin/bash`        | Available in base image          |
+| `sh`   | `#!/bin/sh`          | Available in base image          |
+| `dash` | `#!/bin/dash`        | Available in base image (uses sh)|
+| `zsh`  | `#!/bin/zsh`         | Automatically installed          |
+
+If no shebang is present, `sh` is used as the default.
+
+### Unsupported Shells
+
+Non-POSIX shells like `fish`, `mksh`, and `ksh` cannot be automatically
+detected and will fall back to `bash`. If you need to use these shells, you
+may need to install them manually in your script or use a supported shell.
+
 ## Config Variables
 
 | Variable                | Description                              | Example     |
