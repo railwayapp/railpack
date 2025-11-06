@@ -41,6 +41,12 @@ func (p *ElixirProvider) Plan(ctx *generate.GenerateContext) error {
 	miseStep := ctx.GetMiseStepBuilder()
 	p.InstallMisePackages(ctx, miseStep)
 
+	isPhoenix := p.usesPhoenix(ctx)
+	isEcto := p.usesEcto(ctx)
+
+	ctx.Metadata.SetBool("elixirPhoenix", isPhoenix)
+	ctx.Metadata.SetBool("elixirEcto", isEcto)
+
 	install := ctx.NewCommandStep("install")
 	install.AddInput(plan.NewStepLayer(miseStep.Name()))
 	install.Secrets = []string{}
@@ -261,6 +267,22 @@ func (p *ElixirProvider) findBinName(ctx *generate.GenerateContext) string {
 	}
 
 	return ""
+}
+
+func (p *ElixirProvider) usesPhoenix(ctx *generate.GenerateContext) bool {
+	mixExs, err := ctx.App.ReadFile("mix.exs")
+	if err != nil {
+		return false
+	}
+	return strings.Contains(mixExs, "{:phoenix,")
+}
+
+func (p *ElixirProvider) usesEcto(ctx *generate.GenerateContext) bool {
+	mixExs, err := ctx.App.ReadFile("mix.exs")
+	if err != nil {
+		return false
+	}
+	return strings.Contains(mixExs, "{:ecto,") || strings.Contains(mixExs, "{:ecto_sql,")
 }
 
 // See: https://hexdocs.pm/elixir/1.18.3/compatibility-and-deprecations.html#between-elixir-and-erlang-otp
