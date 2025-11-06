@@ -31,6 +31,10 @@ railpack build . --name my-app
 Railpack automatically detects your project type and generates an optimized
 container image.
 
+**Note:** The above steps are for running Railpack locally to experiment and
+test. If you deploy on a platform like [Railway](https://railway.com), Railpack
+runs automatically when you push changes to your repository—no setup required.
+
 ## Documentation
 
 Full documentation for both operators and users is available at
