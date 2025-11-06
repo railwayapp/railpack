@@ -10,10 +10,10 @@ incorporates many of the learnings from running Nixpacks in production at
 
 ## Getting Started
 
-Install Mise, which manages the required tools:
+Install Railpack:
 
 ```bash
-curl https://mise.run | sh
+curl -sSL https://raw.githubusercontent.com/railwayapp/railpack/main/install.sh | bash
 ```
 
 Create a sample JavaScript application using Vite:
