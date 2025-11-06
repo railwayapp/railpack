@@ -10,27 +10,26 @@ incorporates many of the learnings from running Nixpacks in production at
 
 ## Getting Started
 
-Install Railpack:
-
 ```bash
-curl -sSL https://raw.githubusercontent.com/railwayapp/railpack/main/install.sh | bash
-```
+# Install mise (manages dev tools)
+curl https://mise.run | sh
 
-Create a sample JavaScript application using Vite:
+# Install Railpack
+curl -sSL https://railpack.com/install.sh | sh
 
-```bash
+# Set up BuildKit (required for building)
+mise run setup
+
+# Create a sample Vite + React app
 npm create vite@latest my-app -- --template react
 cd my-app
-```
 
-Build a container image with Railpack:
-
-```bash
+# Build container image
 railpack build . --name my-app
 ```
 
-That's it! Railpack automatically detects your project type and generates an
-optimized container image.
+Railpack automatically detects your project type and generates an optimized
+container image.
 
 ## Documentation
 
