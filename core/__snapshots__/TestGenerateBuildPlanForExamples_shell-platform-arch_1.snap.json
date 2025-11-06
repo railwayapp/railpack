@@ -1,7 +1,17 @@
 {
+ "caches": {
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  }
+ },
  "deploy": {
   "base": {
-   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+   "step": "packages:apt:runtime"
   },
   "inputs": [
    {
@@ -11,7 +21,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "bash start.sh"
+  "startCommand": "zsh start.sh"
  },
  "steps": [
   {
@@ -35,6 +45,24 @@
    "secrets": [
     "*"
    ]
+  },
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y zsh'",
+     "customName": "install apt packages: zsh"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+    }
+   ],
+   "name": "packages:apt:runtime"
   }
  ]
 }
