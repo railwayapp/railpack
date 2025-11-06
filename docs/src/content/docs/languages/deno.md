@@ -15,6 +15,8 @@ Your project will be detected as a Deno application if a `deno.json` or
 The Deno version is determined in the following order:
 
 - Set via the `RAILPACK_DENO_VERSION` environment variable
+- Read from mise-compatible version files (`.deno-version`,
+  `.tool-versions`, `mise.toml`)
 - Defaults to `2`
 
 ## Configuration

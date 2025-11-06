@@ -85,6 +85,8 @@ func (p *DenoProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	if envVersion, varName := ctx.Env.GetConfigVariable("DENO_VERSION"); envVersion != "" {
 		miseStep.Version(deno, envVersion, varName)
 	}
+
+	miseStep.UseMiseVersions(ctx, []string{"deno"})
 }
 
 func (p *DenoProvider) findMainFile(ctx *generate.GenerateContext) string {
