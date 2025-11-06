@@ -81,8 +81,9 @@ func (p *JavaProvider) Plan(ctx *generate.GenerateContext) error {
 func (p *JavaProvider) getStartCmd(ctx *generate.GenerateContext) string {
 	if p.usesGradle(ctx) {
 		buildGradle := p.readBuildGradle(ctx)
+		// TODO this seems like a hack? Why are we doing it like this? Let's make sure this is tested and then we can refactor
 		return fmt.Sprintf("java $JAVA_OPTS -jar %s $(ls -1 */build/libs/*jar | grep -v plain)", getGradlePortConfig(buildGradle))
-	} else if ctx.App.HasMatch("pom.xml") {
+	} else if ctx.App.HasFile("pom.xml") {
 		return fmt.Sprintf("java %s $JAVA_OPTS -jar target/*jar", getMavenPortConfig(ctx))
 	} else {
 		return "java $JAVA_OPTS -jar target/*jar"
