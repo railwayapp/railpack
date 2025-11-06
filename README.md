@@ -17,8 +17,8 @@ curl https://mise.run | sh
 # Install Railpack
 curl -sSL https://railpack.com/install.sh | sh
 
-# Set up BuildKit (required for building)
-mise run setup
+# Start BuildKit container
+docker run --rm --privileged -d --name buildkit moby/buildkit
 
 # Create a sample Vite + React app
 npm create vite@latest my-app -- --template react
