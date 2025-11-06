@@ -43,6 +43,12 @@ func (p *ShellProvider) Plan(ctx *generate.GenerateContext) error {
 	ctx.Deploy.StartCmd = interpreter + " " + p.scriptName
 	ctx.Metadata.Set("detectedShellInterpreter", interpreter)
 
+	// zsh is not included in the base image by default, but it's common enough that we should support it
+	if interpreter == "zsh" {
+		ctx.Logger.LogInfo("Installing zsh for shell script execution")
+		ctx.Deploy.AddAptPackages([]string{"zsh"})
+	}
+
 	ctx.Logger.LogInfo("Using shell script: %s with interpreter: %s", p.scriptName, interpreter)
 
 	build := ctx.NewCommandStep("build")
@@ -93,6 +99,9 @@ func detectShellInterpreter(ctx *generate.GenerateContext, scriptName string) (s
 		return "", err
 	}
 
+	// fileutil.Shebang only recognizes POSIX-compliant shells (bash, sh, zsh, etc).
+	// Non-POSIX shells like fish are not detected and will return empty string.
+	// TODO in the future, we should add config for forcing a specific shell interpreter.
 	interpreter := fileutil.Shebang([]byte(content))
 	if interpreter == "" {
 		return "sh", nil
@@ -105,9 +114,11 @@ func mapToAvailableShell(ctx *generate.GenerateContext, shell string) string {
 	switch shell {
 	case "bash":
 		return "bash"
+	case "zsh":
+		return "zsh"
 	case "sh", "dash":
 		return "sh"
-	case "mksh", "zsh", "ksh", "fish":
+	case "mksh", "ksh", "fish":
 		ctx.Logger.LogWarn("Shell '%s' not available in runtime, using 'bash'", shell)
 		return "bash"
 	default:
