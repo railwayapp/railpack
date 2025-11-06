@@ -1,6 +1,8 @@
 package shell
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/railwayapp/railpack/core/app"
@@ -119,6 +121,64 @@ func TestGetScript(t *testing.T) {
 
 			scriptName := getScript(ctx)
 			require.Equal(t, tt.wantScriptName, scriptName)
+		})
+	}
+}
+
+func TestDetectShellInterpreter(t *testing.T) {
+	tests := []struct {
+		name            string
+		scriptContent   string
+		wantInterpreter string
+	}{
+		{
+			name:            "bash shebang",
+			scriptContent:   "#!/bin/bash\necho 'hello'",
+			wantInterpreter: "bash",
+		},
+		{
+			name:            "bash with env",
+			scriptContent:   "#!/usr/bin/env bash\necho 'hello'",
+			wantInterpreter: "bash",
+		},
+		{
+			name:            "sh shebang",
+			scriptContent:   "#!/bin/sh\necho 'hello'",
+			wantInterpreter: "sh",
+		},
+		{
+			name:            "dash shebang",
+			scriptContent:   "#!/bin/dash\necho 'hello'",
+			wantInterpreter: "sh",
+		},
+		{
+			name:            "zsh shebang (unsupported)",
+			scriptContent:   "#!/bin/zsh\necho 'hello'",
+			wantInterpreter: "bash",
+		},
+		{
+			name:            "no shebang",
+			scriptContent:   "echo 'hello'",
+			wantInterpreter: "sh",
+		},
+		{
+			name:            "empty file",
+			scriptContent:   "",
+			wantInterpreter: "sh",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			scriptPath := filepath.Join(tmpDir, "test.sh")
+			err := os.WriteFile(scriptPath, []byte(tt.scriptContent), 0644)
+			require.NoError(t, err)
+
+			ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+			got, err := detectShellInterpreter(ctx, "test.sh")
+			require.NoError(t, err)
+			require.Equal(t, tt.wantInterpreter, got)
 		})
 	}
 }
