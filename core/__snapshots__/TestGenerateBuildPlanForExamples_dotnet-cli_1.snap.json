@@ -109,10 +109,6 @@
   {
    "commands": [
     {
-     "dest": ".",
-     "src": "."
-    },
-    {
      "cmd": "dotnet publish --no-restore -c Release -o out"
     }
    ],
@@ -126,6 +122,12 @@
       "/root/.nuget/packages"
      ],
      "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "build",
