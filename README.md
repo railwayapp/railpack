@@ -20,8 +20,8 @@ curl -sSL https://railpack.com/install.sh | sh
 # Start BuildKit container
 docker run --rm --privileged -d --name buildkit moby/buildkit
 
-# Create a sample Vite + React app
-npm create vite@latest my-app -- --template react
+# Create a Next.js app
+npm create next-app@latest my-app
 cd my-app
 
 # Build container image
