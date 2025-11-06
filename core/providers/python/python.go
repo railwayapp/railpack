@@ -325,6 +325,11 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Default("pipx:pipenv", "latest")
 	}
 
+	// Disable Python compilation to use precompiled binaries instead of building from source.
+	// Compiled versions may lack essential libraries (e.g., SQLite) causing runtime crashes.
+	// See: https://mise.jdx.dev/lang/python.html#python.compile
+	// Context: https://github.com/railwayapp/railpack/issues/301
+	miseStep.Variables["MISE_PYTHON_COMPILE"] = "false"
 }
 
 func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[string]string {
