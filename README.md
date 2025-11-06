@@ -11,33 +11,33 @@ incorporates many of the learnings from running Nixpacks in production at
 ## Getting Started
 
 ```bash
-# Install mise (manages dev tools)
+# Install mise & railpack
 curl -sSL https://mise.run | sh
+mise install ubi:railwayapp/railpack@latest
 
-# Install Railpack
-curl -sSL https://railpack.com/install.sh | sh
-
-# Start BuildKit container
+# start BuildKit container & let railpack know about it
 docker run --rm --privileged -d --name buildkit moby/buildkit
+export BUILDKIT_HOST='docker-container://buildkit'
 
-# Create a Next.js app
+# create a Next.js app
 npm create next-app@latest my-app
 cd my-app
 
-# Build container image
-railpack build . --name my-app
+# build and run the app!
+railpack build .
+docker run -it my-app
 ```
 
-Railpack automatically detects your project type and generates an optimized
+Railpack automatically detects the project type (next, in this case, but many languages & frameworks are supported!) and generates an optimized
 container image.
 
 **Note:** The above steps are for running Railpack locally to experiment and
-test. If you deploy on a platform like [Railway](https://railway.com), Railpack
-runs automatically when you push changes to your repository—no setup required.
+test. If you deploy on [Railway](https://railway.com), Railpack
+runs automatically when you push changes to your repository.
 
 ## Documentation
 
-Full documentation for both operators and users is available at
+Full documentation for both operators (platforms, like Railway) and users (developers using Railpack to build their applications) is available at
 [railpack.com](https://railpack.com).
 
 ## Contributing
