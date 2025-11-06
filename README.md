@@ -12,7 +12,7 @@ incorporates many of the learnings from running Nixpacks in production at
 
 ```bash
 # Install mise (manages dev tools)
-curl https://mise.run | sh
+curl -sSL https://mise.run | sh
 
 # Install Railpack
 curl -sSL https://railpack.com/install.sh | sh
