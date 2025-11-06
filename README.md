@@ -25,7 +25,7 @@ cd my-app
 
 # build and run the app!
 railpack build .
-docker run -it my-app
+docker run -p 3000:3000 -it my-app
 ```
 
 Railpack automatically detects the project type (next, in this case, but many languages & frameworks are supported!) and generates an optimized
