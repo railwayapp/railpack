@@ -39,6 +39,7 @@ with support for Node, Python, Go, PHP, and more.
 - Do not run any write operations with `git`
 - Do not use `bin/railpack` instead use `mise run cli` (which is the development build of `railpack`)
   - Therefore do not run `mise build`, we don't need a `railpack` binary for local testing
+- Make a tmp directory (`mktemp`) for testing things out if needed and don't worry about cleaning it up
 
 # Tests
 
