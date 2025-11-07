@@ -254,10 +254,10 @@ func (c *GenerateContext) NewLocalLayer() plan.Layer {
 
 	excludes, includes, _ := c.dockerignoreCtx.Parse()
 	if len(includes) > 0 {
-		layer.Filter.Include = utils.RemoveDuplicates(append(layer.Filter.Include, includes...))
+		layer.Include = utils.RemoveDuplicates(append(layer.Include, includes...))
 	}
 	if len(excludes) > 0 {
-		layer.Filter.Exclude = utils.RemoveDuplicates(append(layer.Filter.Exclude, excludes...))
+		layer.Exclude = utils.RemoveDuplicates(append(layer.Exclude, excludes...))
 	}
 
 	return layer

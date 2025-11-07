@@ -114,13 +114,13 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		require.NotNil(t, layer.Filter)
 
 		// Should have exclude patterns from .dockerignore
-		require.NotEmpty(t, layer.Filter.Exclude)
-		require.Contains(t, layer.Filter.Exclude, ".vscode")
-		require.Contains(t, layer.Filter.Exclude, "*.log")
-		require.Contains(t, layer.Filter.Exclude, "__pycache__") // Trailing slash is stripped by parser
+		require.NotEmpty(t, layer.Exclude)
+		require.Contains(t, layer.Exclude, ".vscode")
+		require.Contains(t, layer.Exclude, "*.log")
+		require.Contains(t, layer.Exclude, "__pycache__") // Trailing slash is stripped by parser
 
 		// Should have default include pattern
-		require.Equal(t, []string{"."}, layer.Filter.Include)
+		require.Equal(t, []string{"."}, layer.Include)
 	})
 
 	t.Run("context without dockerignore", func(t *testing.T) {
@@ -135,8 +135,8 @@ func TestGenerateContextDockerignore(t *testing.T) {
 
 		// Should use default behavior when no dockerignore patterns exist
 		require.NotNil(t, layer.Filter)
-		require.Equal(t, []string{"."}, layer.Filter.Include)
-		require.Empty(t, layer.Filter.Exclude)
+		require.Equal(t, []string{"."}, layer.Include)
+		require.Empty(t, layer.Exclude)
 	})
 
 	t.Run("context creation with no dockerignore", func(t *testing.T) {
@@ -157,7 +157,11 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		// Create a temporary directory with an inaccessible .dockerignore
 		tempDir, err := os.MkdirTemp("", "dockerignore-test")
 		require.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() {
+			if err := os.RemoveAll(tempDir); err != nil {
+				t.Errorf("failed to remove temp dir: %v", err)
+			}
+		}()
 
 		dockerignorePath := filepath.Join(tempDir, ".dockerignore")
 		err = os.WriteFile(dockerignorePath, []byte("*.log\nnode_modules\n"), 0644)

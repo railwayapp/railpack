@@ -146,9 +146,9 @@ func formatLogs(output *strings.Builder, logs []logger.Msg) {
 			lines := strings.Split(msg, "\n")
 			for i, line := range lines {
 				if i == 0 {
-					output.WriteString(logErrorStyle.Render(fmt.Sprintf("✖ %s", line)))
+					fmt.Fprintf(output, "%s", logErrorStyle.Render(fmt.Sprintf("✖ %s", line)))
 				} else {
-					output.WriteString(fmt.Sprintf("  %s", line))
+					fmt.Fprintf(output, "  %s", line)
 				}
 				if i < len(lines)-1 {
 					output.WriteString("\n")
@@ -190,7 +190,7 @@ func formatPackages(output *strings.Builder, packages map[string]*resolver.Resol
 		}
 		version = localVersionStyle.Render(version)
 		source := sourceStyle.Render(formatSource(pkg))
-		output.WriteString(fmt.Sprintf("%s%s%s%s%s", name, separator, version, separator, source))
+		fmt.Fprintf(output, "%s%s%s%s%s", name, separator, version, separator, source)
 		output.WriteString("\n")
 	}
 }
@@ -223,7 +223,7 @@ func formatSteps(output *strings.Builder, br *BuildResult) {
 			if cmd.CustomName != "" {
 				cmdText = cmd.CustomName
 			}
-			output.WriteString(fmt.Sprintf("%s %s", commandPrefixStyle.Render("$"), commandStyle.Render(cmdText)))
+			fmt.Fprintf(output, "%s %s", commandPrefixStyle.Render("$"), commandStyle.Render(cmdText))
 			output.WriteString("\n")
 		}
 	}
@@ -233,7 +233,7 @@ func formatDeploy(output *strings.Builder, br *BuildResult) {
 	if br.Plan != nil && br.Plan.Deploy.StartCmd != "" {
 		output.WriteString(sectionHeaderStyle.MarginTop(1).Render("Deploy"))
 		output.WriteString("\n")
-		output.WriteString(fmt.Sprintf("%s %s", commandPrefixStyle.Render("$"), commandStyle.Render(br.Plan.Deploy.StartCmd)))
+		fmt.Fprintf(output, "%s %s", commandPrefixStyle.Render("$"), commandStyle.Render(br.Plan.Deploy.StartCmd))
 	}
 }
 
