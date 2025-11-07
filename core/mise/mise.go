@@ -1,4 +1,4 @@
-// helper utilities to run the mise tool
+// helper utilities to run the mise tool on the host
 package mise
 
 import (
@@ -36,6 +36,7 @@ func New(cacheDir string) (*Mise, error) {
 		return nil, fmt.Errorf("failed to ensure mise is installed: %w", err)
 	}
 
+	// without the GITHUB_TOKEN, mise will 403 us
 	githubToken := os.Getenv("GITHUB_TOKEN")
 
 	return &Mise{
@@ -121,7 +122,7 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 	return versions, nil
 }
 
-// GetCurrentList returns the JSON output of 'mise list --current --json' for a specific app directory
+// returns the JSON output of 'mise list --current --json' for a specific app directory
 func (m *Mise) GetCurrentList(appDir string) (string, error) {
 	return m.runCmd("--cd", appDir, "list", "--current", "--json")
 }
@@ -130,15 +131,18 @@ func (m *Mise) GetCurrentList(appDir string) (string, error) {
 func (m *Mise) runCmd(args ...string) (string, error) {
 	cacheDir := filepath.Join(m.cacheDir, "cache")
 	dataDir := filepath.Join(m.cacheDir, "data")
+	stateDir := filepath.Join(m.cacheDir, "state")
 
 	cmd := exec.Command(m.binaryPath, args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
+	// https://github.com/jdx/mise/blob/main/src/dirs.rs
 	cmd.Env = append(cmd.Env,
 		fmt.Sprintf("MISE_CACHE_DIR=%s", cacheDir),
 		fmt.Sprintf("MISE_DATA_DIR=%s", dataDir),
+		fmt.Sprintf("MISE_STATE_DIR=%s", stateDir),
 		"MISE_HTTP_TIMEOUT=120s",
 		"MISE_FETCH_REMOTE_VERSIONS_TIMEOUT=120s",
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
