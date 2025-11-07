@@ -152,9 +152,9 @@ func TestDetectShellInterpreter(t *testing.T) {
 			wantInterpreter: "sh",
 		},
 		{
-			name:            "zsh shebang (unsupported)",
+			name:            "zsh shebang",
 			scriptContent:   "#!/bin/zsh\necho 'hello'",
-			wantInterpreter: "bash",
+			wantInterpreter: "zsh",
 		},
 		{
 			name:            "no shebang",
