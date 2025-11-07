@@ -62,6 +62,9 @@ func (p *JavaProvider) Plan(ctx *generate.GenerateContext) error {
 	outPath := "target/."
 	if ctx.App.HasMatch("**/build/libs/*.jar") || p.usesGradle(ctx) {
 		outPath = "."
+	} else if p.isMultimoduleMaven(ctx) {
+		outPath = "."
+		ctx.Logger.LogWarn("Multi-module Maven project detected. If the build fails to find the correct JAR, specify a custom start command.")
 	}
 
 	ctx.Deploy.AddInputs([]plan.Layer{
@@ -84,7 +87,11 @@ func (p *JavaProvider) getStartCmd(ctx *generate.GenerateContext) string {
 		// TODO this seems like a hack? Why are we doing it like this? Let's make sure this is tested and then we can refactor
 		return fmt.Sprintf("java $JAVA_OPTS -jar %s $(ls -1 */build/libs/*jar | grep -v plain)", getGradlePortConfig(buildGradle))
 	} else if ctx.App.HasFile("pom.xml") {
-		return fmt.Sprintf("java %s $JAVA_OPTS -jar target/*jar", getMavenPortConfig(ctx))
+		portConfig := getMavenPortConfig(ctx)
+		if p.isMultimoduleMaven(ctx) {
+			return fmt.Sprintf("java %s $JAVA_OPTS -jar $(find */target -name '*-jar-with-dependencies.jar' -o -name '*-spring-boot*.jar' | head -1)", portConfig)
+		}
+		return fmt.Sprintf("java %s $JAVA_OPTS -jar target/*jar", portConfig)
 	} else {
 		return "java $JAVA_OPTS -jar target/*jar"
 	}
