@@ -124,11 +124,17 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 
 // returns the JSON output of 'mise list --current --json' for a specific app directory
 func (m *Mise) GetCurrentList(appDir string) (string, error) {
-	return m.runCmd("--cd", appDir, "list", "--current", "--json")
+	trustedConfigEnv := fmt.Sprintf("MISE_TRUSTED_CONFIG_PATHS=%s", appDir)
+	return m.runCmdWithEnv([]string{trustedConfigEnv}, "--cd", appDir, "list", "--current", "--json")
 }
 
 // runCmd runs a mise command with the given arguments
 func (m *Mise) runCmd(args ...string) (string, error) {
+	return m.runCmdWithEnv(nil, args...)
+}
+
+// runCmdWithEnv runs a mise command with additional environment variables
+func (m *Mise) runCmdWithEnv(extraEnv []string, args ...string) (string, error) {
 	cacheDir := filepath.Join(m.cacheDir, "cache")
 	dataDir := filepath.Join(m.cacheDir, "data")
 	stateDir := filepath.Join(m.cacheDir, "state")
@@ -152,6 +158,10 @@ func (m *Mise) runCmd(args ...string) (string, error) {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("GITHUB_TOKEN=%s", m.githubToken))
 	}
 
+	if len(extraEnv) > 0 {
+		cmd.Env = append(cmd.Env, extraEnv...)
+	}
+
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to run mise command '%s': %w\n%s\n\n%s",
 			strings.Join(append([]string{m.binaryPath}, args...), " "),
@@ -173,6 +183,7 @@ type MiseConfig struct {
 	Tools map[string]MisePackage `toml:"tools"`
 }
 
+// used by the container mise logic, but uses the package structs defined in this file
 func GenerateMiseToml(packages map[string]string) (string, error) {
 	config := MiseConfig{
 		Tools: make(map[string]MisePackage),
