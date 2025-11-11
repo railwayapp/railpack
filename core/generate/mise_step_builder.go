@@ -17,7 +17,7 @@ import (
 const (
 	MisePackageStepName = "packages:mise"
 	// System-level config at /etc/mise/config.toml is auto-trusted by mise
-	MiseInstallCommand  = "sh -c 'mise install'"
+	MiseInstallCommand  = "mise install"
 )
 
 // represents a app-local mise package
