@@ -19,12 +19,6 @@
      "build/erlang-shipment/."
     ],
     "step": "build"
-   },
-   {
-    "include": [
-     "."
-    ],
-    "local": true
    }
   ],
   "startCommand": "./build/erlang-shipment/entrypoint.sh run"
