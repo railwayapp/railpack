@@ -80,6 +80,8 @@ func (p *PhpProvider) Plan(ctx *generate.GenerateContext) error {
 		ctx.Logger.LogInfo("Found Laravel app")
 	}
 
+	ctx.Metadata.SetBool("phpLaravel", isLaravel)
+
 	if isNode {
 		err = p.DeployWithNode(ctx, nodeProvider, composer, isLaravel)
 		if err != nil {
