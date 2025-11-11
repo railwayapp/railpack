@@ -54,7 +54,6 @@ type MiseStepBuilder struct {
 	Assets                map[string]string
 	Inputs                []plan.Layer
 	Variables             map[string]string
-	Settings              map[string]interface{}
 	app                   *a.App
 	env                   *a.Environment
 }
@@ -70,7 +69,6 @@ func (c *GenerateContext) NewMiseStepBuilder(displayName string) *MiseStepBuilde
 		Assets:                map[string]string{},
 		Inputs:                []plan.Layer{},
 		Variables:             map[string]string{},
-		Settings:              map[string]interface{}{},
 		app:                   c.App,
 		env:                   c.Env,
 	}
@@ -275,7 +273,7 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			}
 		}
 
-		miseToml, err := mise.GenerateMiseToml(packagesToInstall, b.Settings)
+		miseToml, err := mise.GenerateMiseToml(packagesToInstall)
 		if err != nil {
 			return fmt.Errorf("failed to generate mise.toml: %w", err)
 		}
