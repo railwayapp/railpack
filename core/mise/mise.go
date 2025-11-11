@@ -1,4 +1,7 @@
 // helper utilities to run the mise tool on the host
+// this is distinct from the mise step builder which generates mise commands to be run inside the container
+// for this reason, the commands here are heavily sandboxed from the host environment to avoid picking up host configs
+
 package mise
 
 import (
@@ -125,9 +128,9 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 // returns the JSON output of 'mise list --current --json' for a specific app directory
 func (m *Mise) GetCurrentList(appDir string) (string, error) {
 	// MISE_TRUSTED_CONFIG_PATHS allows mise to use configs in the app directory
-	// MISE_CEILING_PATHS prevents mise from searching parent directories, isolating it to the app directory
+	// MISE_CEILING_PATHS set to parent dir allows reading appDir configs while preventing search of grandparent dirs
 	trustedConfigEnv := fmt.Sprintf("MISE_TRUSTED_CONFIG_PATHS=%s", appDir)
-	ceilingPathsEnv := fmt.Sprintf("MISE_CEILING_PATHS=%s", appDir)
+	ceilingPathsEnv := fmt.Sprintf("MISE_CEILING_PATHS=%s", filepath.Dir(appDir))
 	return m.runCmdWithEnv([]string{trustedConfigEnv, ceilingPathsEnv}, "--cd", appDir, "list", "--current", "--json")
 }
 
