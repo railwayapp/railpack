@@ -128,7 +128,8 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 // returns the JSON output of 'mise list --current --json' for a specific app directory
 func (m *Mise) GetCurrentList(appDir string) (string, error) {
 	// MISE_TRUSTED_CONFIG_PATHS allows mise to use configs in the app directory
-	// MISE_CEILING_PATHS set to parent dir allows reading appDir configs while preventing search of grandparent dirs
+	// MISE_CEILING_PATHS prevents mise from searching parent directories, isolating it to the app directory
+	// We set the ceiling to the parent dir so mise can still read configs in appDir itself
 	trustedConfigEnv := fmt.Sprintf("MISE_TRUSTED_CONFIG_PATHS=%s", appDir)
 	ceilingPathsEnv := fmt.Sprintf("MISE_CEILING_PATHS=%s", filepath.Dir(appDir))
 	return m.runCmdWithEnv([]string{trustedConfigEnv, ceilingPathsEnv}, "--cd", appDir, "list", "--current", "--json")
