@@ -1,7 +1,0 @@
-{
-  "$schema": "https://schema.railpack.com",
-  "provider": "gleam",
-  "deploy": {
-    "inputs": ["...", { "local": true, "include": ["."] }]
-  }
-}
