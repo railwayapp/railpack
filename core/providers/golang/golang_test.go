@@ -37,7 +37,7 @@ func TestGolang(t *testing.T) {
 			detected:     true,
 			hasGoMod:     false,
 			hasWorkspace: true,
-			goVersion:    "1.25",
+			goVersion:    "1.25.3",
 		},
 		{
 			name:     "node",
