@@ -165,11 +165,25 @@ docker compose up -d
 docker run -it --network python-django_default --env DATABASE_URL="postgresql://django_user:django_password@postgres:5432/django_db" python-django
 ```
 
-## Mise commands
+## Mise
+
+Mise is absolutely central to this entire project, so you'll have to dig into the details.
+
+* `mise trust` state is located in `~/.local/state/mise/trusted-configs`
+* There are two mise 'environments' to keep in mind: the host environment, which uses a specific version of mise downloaded
+  just for railpack, and the mise binary run during the build process. The mise version will be the same, but the environment
+  is different.
+
+### Mise Commands
+
+Some helpful commands for debugging issues with mise:
 
 ```bash
 # Lint and format
 mise run check
+
+# Where is a particular binary?
+mise where pipx:squawk-cli@
 
 # Run tests
 mise run test
