@@ -57,13 +57,13 @@ func (m *Mise) GetLatestVersion(pkg, version string) (string, error) {
 	// Try with extracted semver version first
 	semverVersion := utils.ExtractSemverVersion(version)
 	query := fmt.Sprintf("%s@%s", pkg, semverVersion)
-	output, err := m.runCmd("latest", query)
+	output, err := m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1"}, "latest", query)
 
 	// If semver extraction fails, try with original version
 	// https://github.com/railwayapp/railpack/issues/203
 	if (err != nil || strings.TrimSpace(output) == "") && semverVersion != version {
 		query = fmt.Sprintf("%s@%s", pkg, version)
-		output, err = m.runCmd("latest", query)
+		output, err = m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1"}, "latest", query)
 	}
 
 	if err != nil {
@@ -92,13 +92,13 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 	// Try with extracted semver version first
 	semverVersion := utils.ExtractSemverVersion(version)
 	query := fmt.Sprintf("%s@%s", pkg, semverVersion)
-	output, err := m.runCmd("ls-remote", query)
+	output, err := m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1"}, "ls-remote", query)
 
 	// If semver extraction fails, try with original version
 	// https://github.com/railwayapp/railpack/issues/203
 	if (err != nil || strings.TrimSpace(output) == "") && semverVersion != version {
 		query = fmt.Sprintf("%s@%s", pkg, version)
-		output, err = m.runCmd("ls-remote", query)
+		output, err = m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1"}, "ls-remote", query)
 	}
 
 	if err != nil {
@@ -126,11 +126,6 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 func (m *Mise) GetCurrentList(appDir string) (string, error) {
 	trustedConfigEnv := fmt.Sprintf("MISE_TRUSTED_CONFIG_PATHS=%s", appDir)
 	return m.runCmdWithEnv([]string{trustedConfigEnv}, "--cd", appDir, "list", "--current", "--json")
-}
-
-// runCmd runs a mise command with the given arguments
-func (m *Mise) runCmd(args ...string) (string, error) {
-	return m.runCmdWithEnv(nil, args...)
 }
 
 // runCmdWithEnv runs a mise command with additional environment variables
