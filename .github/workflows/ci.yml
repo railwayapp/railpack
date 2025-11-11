@@ -21,7 +21,7 @@ jobs:
       - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074
 
       - name: Lint
-        uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9
+        uses: golangci/golangci-lint-action@v6
         with:
           version: v1.63.4
           args: --timeout=5m
