@@ -17,13 +17,8 @@ jobs:
     name: Check and Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.23.4"
-          cache: true
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074
 
       - name: Lint
         uses: golangci/golangci-lint-action@v6
@@ -31,11 +26,8 @@ jobs:
           version: v1.63.4
           args: --timeout=5m
 
-      - name: Format
-        run: go fmt ./...
-
-      - name: Vet
-        run: go vet ./...
+      - name: Go Checks
+        run: mise run check
 
       - name: Test Unit
-        run: go test -short ./...
+        run: mise run test

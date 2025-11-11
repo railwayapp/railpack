@@ -1,4 +1,7 @@
-// helper utilities to run the mise tool
+// helper utilities to run the mise tool on the host
+// this is distinct from the mise step builder which generates mise commands to be run inside the container
+// for this reason, the commands here are heavily sandboxed from the host environment to avoid picking up host configs
+
 package mise
 
 import (
@@ -36,6 +39,7 @@ func New(cacheDir string) (*Mise, error) {
 		return nil, fmt.Errorf("failed to ensure mise is installed: %w", err)
 	}
 
+	// without the GITHUB_TOKEN, mise will 403 us
 	githubToken := os.Getenv("GITHUB_TOKEN")
 
 	return &Mise{
@@ -56,13 +60,13 @@ func (m *Mise) GetLatestVersion(pkg, version string) (string, error) {
 	// Try with extracted semver version first
 	semverVersion := utils.ExtractSemverVersion(version)
 	query := fmt.Sprintf("%s@%s", pkg, semverVersion)
-	output, err := m.runCmd("latest", query)
+	output, err := m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1"}, "latest", query)
 
 	// If semver extraction fails, try with original version
 	// https://github.com/railwayapp/railpack/issues/203
 	if (err != nil || strings.TrimSpace(output) == "") && semverVersion != version {
 		query = fmt.Sprintf("%s@%s", pkg, version)
-		output, err = m.runCmd("latest", query)
+		output, err = m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1"}, "latest", query)
 	}
 
 	if err != nil {
@@ -91,13 +95,13 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 	// Try with extracted semver version first
 	semverVersion := utils.ExtractSemverVersion(version)
 	query := fmt.Sprintf("%s@%s", pkg, semverVersion)
-	output, err := m.runCmd("ls-remote", query)
+	output, err := m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1"}, "ls-remote", query)
 
 	// If semver extraction fails, try with original version
 	// https://github.com/railwayapp/railpack/issues/203
 	if (err != nil || strings.TrimSpace(output) == "") && semverVersion != version {
 		query = fmt.Sprintf("%s@%s", pkg, version)
-		output, err = m.runCmd("ls-remote", query)
+		output, err = m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1"}, "ls-remote", query)
 	}
 
 	if err != nil {
@@ -121,24 +125,35 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 	return versions, nil
 }
 
-// GetCurrentList returns the JSON output of 'mise list --current --json' for a specific app directory
+// returns the JSON output of 'mise list --current --json' for a specific app directory
 func (m *Mise) GetCurrentList(appDir string) (string, error) {
-	return m.runCmd("--cd", appDir, "list", "--current", "--json")
+	// MISE_TRUSTED_CONFIG_PATHS allows mise to use configs in the app directory
+	// MISE_CEILING_PATHS prevents mise from searching parent directories, isolating it to the app directory
+	// We set the ceiling to the parent dir so mise can still read configs in appDir itself
+	trustedConfigEnv := fmt.Sprintf("MISE_TRUSTED_CONFIG_PATHS=%s", appDir)
+	ceilingPathsEnv := fmt.Sprintf("MISE_CEILING_PATHS=%s", filepath.Dir(appDir))
+	return m.runCmdWithEnv([]string{trustedConfigEnv, ceilingPathsEnv}, "--cd", appDir, "list", "--current", "--json")
 }
 
-// runCmd runs a mise command with the given arguments
-func (m *Mise) runCmd(args ...string) (string, error) {
+// runCmdWithEnv runs a mise command with additional environment variables
+func (m *Mise) runCmdWithEnv(extraEnv []string, args ...string) (string, error) {
 	cacheDir := filepath.Join(m.cacheDir, "cache")
 	dataDir := filepath.Join(m.cacheDir, "data")
+	stateDir := filepath.Join(m.cacheDir, "state")
+	systemDir := filepath.Join(m.cacheDir, "system")
 
 	cmd := exec.Command(m.binaryPath, args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
+	// https://github.com/jdx/mise/blob/main/src/dirs.rs
+	// MISE_SYSTEM_DIR ensures any local config on the host does not interfere with mise commands
 	cmd.Env = append(cmd.Env,
 		fmt.Sprintf("MISE_CACHE_DIR=%s", cacheDir),
 		fmt.Sprintf("MISE_DATA_DIR=%s", dataDir),
+		fmt.Sprintf("MISE_STATE_DIR=%s", stateDir),
+		fmt.Sprintf("MISE_SYSTEM_DIR=%s", systemDir),
 		"MISE_HTTP_TIMEOUT=120s",
 		"MISE_FETCH_REMOTE_VERSIONS_TIMEOUT=120s",
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
@@ -147,6 +162,12 @@ func (m *Mise) runCmd(args ...string) (string, error) {
 	if m.githubToken != "" {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("GITHUB_TOKEN=%s", m.githubToken))
 	}
+
+	if len(extraEnv) > 0 {
+		cmd.Env = append(cmd.Env, extraEnv...)
+	}
+
+	log.Debugf("Running mise command with env: %v", cmd.Env)
 
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to run mise command '%s': %w\n%s\n\n%s",
@@ -169,6 +190,7 @@ type MiseConfig struct {
 	Tools map[string]MisePackage `toml:"tools"`
 }
 
+// used by the container mise logic, but uses the package structs defined in this file
 func GenerateMiseToml(packages map[string]string) (string, error) {
 	config := MiseConfig{
 		Tools: make(map[string]MisePackage),
