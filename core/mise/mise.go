@@ -124,8 +124,11 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 
 // returns the JSON output of 'mise list --current --json' for a specific app directory
 func (m *Mise) GetCurrentList(appDir string) (string, error) {
+	// MISE_TRUSTED_CONFIG_PATHS allows mise to use configs in the app directory
+	// MISE_CEILING_PATHS prevents mise from searching parent directories, isolating it to the app directory
 	trustedConfigEnv := fmt.Sprintf("MISE_TRUSTED_CONFIG_PATHS=%s", appDir)
-	return m.runCmdWithEnv([]string{trustedConfigEnv}, "--cd", appDir, "list", "--current", "--json")
+	ceilingPathsEnv := fmt.Sprintf("MISE_CEILING_PATHS=%s", appDir)
+	return m.runCmdWithEnv([]string{trustedConfigEnv, ceilingPathsEnv}, "--cd", appDir, "list", "--current", "--json")
 }
 
 // runCmdWithEnv runs a mise command with additional environment variables
@@ -133,6 +136,7 @@ func (m *Mise) runCmdWithEnv(extraEnv []string, args ...string) (string, error) 
 	cacheDir := filepath.Join(m.cacheDir, "cache")
 	dataDir := filepath.Join(m.cacheDir, "data")
 	stateDir := filepath.Join(m.cacheDir, "state")
+	systemDir := filepath.Join(m.cacheDir, "system")
 
 	cmd := exec.Command(m.binaryPath, args...)
 	var stdout, stderr bytes.Buffer
@@ -140,10 +144,12 @@ func (m *Mise) runCmdWithEnv(extraEnv []string, args ...string) (string, error) 
 	cmd.Stderr = &stderr
 
 	// https://github.com/jdx/mise/blob/main/src/dirs.rs
+	// MISE_SYSTEM_DIR ensures any local config on the host does not interfere with mise commands
 	cmd.Env = append(cmd.Env,
 		fmt.Sprintf("MISE_CACHE_DIR=%s", cacheDir),
 		fmt.Sprintf("MISE_DATA_DIR=%s", dataDir),
 		fmt.Sprintf("MISE_STATE_DIR=%s", stateDir),
+		fmt.Sprintf("MISE_SYSTEM_DIR=%s", systemDir),
 		"MISE_HTTP_TIMEOUT=120s",
 		"MISE_FETCH_REMOTE_VERSIONS_TIMEOUT=120s",
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
@@ -156,6 +162,8 @@ func (m *Mise) runCmdWithEnv(extraEnv []string, args ...string) (string, error) 
 	if len(extraEnv) > 0 {
 		cmd.Env = append(cmd.Env, extraEnv...)
 	}
+
+	log.Debugf("Running mise command with env: %v", cmd.Env)
 
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to run mise command '%s': %w\n%s\n\n%s",
