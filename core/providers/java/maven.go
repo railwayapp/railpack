@@ -8,6 +8,16 @@ import (
 
 const MAVEN_CACHE_KEY = "maven"
 
+// isMultimoduleMaven detects if this is a multi-module Maven project where JARs
+// are built in subdirectories (e.g., app/target/*.jar) rather than at the root.
+func (p *JavaProvider) isMultimoduleMaven(ctx *generate.GenerateContext) bool {
+	pomFile, err := ctx.App.ReadFile("pom.xml")
+	if err != nil {
+		return false
+	}
+	return strings.Contains(pomFile, "<modules>")
+}
+
 func (p *JavaProvider) getMavenExe(ctx *generate.GenerateContext) string {
 	if ctx.App.HasMatch("mvnw") && ctx.App.HasMatch(".mvn/wrapper/maven-wrapper.properties") {
 		return "./mvnw"
