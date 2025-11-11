@@ -51,18 +51,13 @@ If JAR selection fails, specify a custom start command.
 
 ## Custom Start Command
 
-To override the default start command, create a `railpack.toml` file in
+To override the default start command, create a `railpack.json` file in
 your project root:
 
-```toml
-[build]
-# Custom command to run your application
-startCommand = "java -jar server/target/my-app.jar"
-```
-
-You can also use shell commands to dynamically find JARs:
-
-```toml
-[build]
-startCommand = "java -jar $(find . -name 'my-app-*.jar' | head -1)"
+```json
+{
+  "deploy": {
+    "startCommand": "java -jar server/target/my-app.jar"
+  }
+}
 ```
