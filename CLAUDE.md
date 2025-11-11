@@ -25,6 +25,9 @@ with support for Node, Python, Go, PHP, and more.
 - Seriously, do not write comments that are obvious from the code itself.
 - Do not write one-line functions
 - Always use the App abstraction for file system operations.
+- When configuring Mise settings, prefer environment variables (e.g.
+  `MISE_PIPX_UVX`) over TOML settings to maintain consistency with existing
+  patterns in the codebase.
 
 # Workflow
 
@@ -39,7 +42,10 @@ with support for Node, Python, Go, PHP, and more.
 - Do not run any write operations with `git`
 - Do not use `bin/railpack` instead use `mise run cli` (which is the development build of `railpack`)
   - Therefore do not run `mise build`, we don't need a `railpack` binary for local testing
-- Make a tmp directory (`mktemp`) for testing things out if needed and don't worry about cleaning it up
+- Use a local `tmp/` directory for temporary files instead of the global `/tmp/`
+  directory. Don't worry about cleaning up tmp directories.
+- You can clone the mise repo (https://github.com/jdx/mise) into `tmp/` to
+  inspect it when needed.
 
 # Tests
 
