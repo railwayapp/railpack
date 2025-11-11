@@ -66,7 +66,7 @@
      "path": "/etc/mise/config.toml"
     },
     {
-     "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
+     "cmd": "sh -c 'mise install'",
      "customName": "install mise packages: python, uv"
     }
    ],
@@ -82,6 +82,7 @@
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
     "MISE_NODE_VERIFY": "false",
+    "MISE_PARANOID": "1",
     "MISE_PYTHON_COMPILE": "false",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
