@@ -448,8 +448,6 @@ func (p *PythonProvider) addMetadata(ctx *generate.GenerateContext) {
 
 	ctx.Metadata.Set("pythonPackageManager", pkgManager)
 	ctx.Metadata.Set("pythonRuntime", p.getRuntime(ctx))
-	ctx.Metadata.SetBool("pythonDjango", p.isDjango(ctx))
-	ctx.Metadata.SetBool("pythonFlask", p.isFlask(ctx))
 }
 
 func (p *PythonProvider) usesDep(ctx *generate.GenerateContext, dep string) bool {
