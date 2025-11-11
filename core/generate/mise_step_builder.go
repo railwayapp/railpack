@@ -16,7 +16,8 @@ import (
 
 const (
 	MisePackageStepName = "packages:mise"
-	MiseInstallCommand  = "sh -c 'mise trust -a && mise install'"
+	// System-level config at /etc/mise/config.toml is auto-trusted by mise
+	MiseInstallCommand  = "sh -c 'mise install'"
 )
 
 // represents a app-local mise package
@@ -248,6 +249,8 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			// Don't verify the asset because recently released versions don't have a public key to verify against
 			// https://github.com/railwayapp/railpack/issues/207
 			"MISE_NODE_VERIFY": "false",
+			// Enforces HTTPS and stricter security
+			"MISE_PARANOID": "1",
 		})
 		maps.Copy(step.Variables, b.Variables)
 
