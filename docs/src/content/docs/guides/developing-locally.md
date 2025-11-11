@@ -152,6 +152,39 @@ Or with multiple strings:
 }
 ```
 
+### Environment Variables
+
+You can pass environment variables to the container at runtime using the
+`envs` key. This is useful for testing with different configurations, secrets,
+or Railpack configuration variables:
+
+```json
+{
+  "expectedOutput": "Server running on port 3000",
+  "envs": {
+    "DATABASE_URL": "postgresql://user:password@postgres:5432/db",
+    "SECRET_KEY": "test-secret"
+  }
+}
+```
+
+You can also use `RAILPACK_*` configuration variables in `envs` to test
+different build configurations:
+
+```json
+{
+  "expectedOutput": "hello from Node",
+  "envs": {
+    "RAILPACK_PRUNE_DEPS": "true",
+    "RAILPACK_STATIC_FILE_ROOT": "/custom/path"
+  }
+}
+```
+
+See the [environment variables
+documentation](/config/environment-variables) for a complete list of available
+`RAILPACK_*` configuration options.
+
 ### Services
 
 Integation tests can define services (postgres, redis, anything with a docker image) that
