@@ -280,10 +280,12 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 
 func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	requiresNode := p.requiresNode(ctx)
+	misePackages := []string{}
 
 	// Node
 	if requiresNode {
 		node := miseStep.Default("node", DEFAULT_NODE_VERSION)
+		misePackages = append(misePackages, "node")
 
 		if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
 			miseStep.Version(node, envVersion, varName)
@@ -309,6 +311,7 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	// Bun
 	if p.requiresBun(ctx) {
 		bun := miseStep.Default("bun", DEFAULT_BUN_VERSION)
+		misePackages = append(misePackages, "bun")
 
 		if envVersion, varName := ctx.Env.GetConfigVariable("BUN_VERSION"); envVersion != "" {
 			miseStep.Version(bun, envVersion, varName)
@@ -322,12 +325,12 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			miseStep.Version(bun, string(bunVersionFile), ".bun-version")
 		}
 
-		// TODO why don't we install this via mise?
 		// If we don't need node in the final image, we still want to include it for the install steps
 		// since many packages need node-gyp to install native modules
-		// in this case, we don't need a specific version, so we'll just pull from apt
+		// TODO: use the same version detection logic as when bun is not in place (NODE_VERSION, package.json engines, .nvmrc, .node-version)
 		if !requiresNode && ctx.Config.Packages["node"] == "" {
-			miseStep.AddSupportingAptPackage("nodejs")
+			miseStep.Default("node", "latest")
+			misePackages = append(misePackages, "node")
 		}
 	}
 
@@ -335,6 +338,11 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 
 	if p.usesCorepack() {
 		miseStep.Variables["MISE_NODE_COREPACK"] = "true"
+	}
+
+	// Check for mise.toml and .tool-versions and use those versions if they exist
+	if len(misePackages) > 0 {
+		miseStep.UseMiseVersions(ctx, misePackages)
 	}
 }
 
