@@ -253,6 +253,8 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		miseStep.Version(ruby, gemfileVersion, "Gemfile")
 	}
 
+	miseStep.UseMiseVersions(ctx, []string{"ruby"})
+
 	miseStep.AddSupportingAptPackage("libyaml-dev")
 	miseStep.AddSupportingAptPackage("libjemalloc-dev")
 	version := p.getRubyVersion(ctx)
