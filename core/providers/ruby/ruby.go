@@ -118,6 +118,8 @@ func (p *RubyProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	startCommand := ""
 	app := ctx.App
 
+	// TODO we auto-run migrations for django, but not for rails, why the difference?
+
 	if p.usesRails(ctx) {
 		if app.HasMatch("rails") {
 			return "bundle exec rails server -b 0.0.0.0 -p ${PORT:-3000}"

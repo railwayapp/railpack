@@ -177,6 +177,7 @@ func (o *BuildStepOptions) NewAptInstallCommand(pkgs []string) plan.Command {
 	pkgs = utils.RemoveDuplicates(pkgs)
 	sort.Strings(pkgs)
 
+	// sh -c is required because && is a shell operator that needs a shell to interpret it
 	return plan.NewExecCommand("sh -c 'apt-get update && apt-get install -y "+strings.Join(pkgs, " ")+"'", plan.ExecOptions{
 		CustomName: "install apt packages: " + strings.Join(pkgs, " "),
 	})

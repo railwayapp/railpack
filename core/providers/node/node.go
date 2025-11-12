@@ -187,6 +187,8 @@ func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 	p.addCaches(ctx, build)
 }
 
+// adds framework-specific caches for packages that match the given framework check.
+// It creates uniquely named caches for each package's framework subdirectory to optimize build performance.
 func (p *NodeProvider) addFrameworkCaches(ctx *generate.GenerateContext, build *generate.CommandStepBuilder, frameworkName string, frameworkCheck func(*WorkspacePackage, *generate.GenerateContext) bool, cacheSubPath string) {
 	if packages, err := p.getPackagesWithFramework(ctx, frameworkCheck); err == nil {
 		for _, pkg := range packages {
@@ -196,6 +198,7 @@ func (p *NodeProvider) addFrameworkCaches(ctx *generate.GenerateContext, build *
 			} else {
 				cacheName = fmt.Sprintf("%s-%s", frameworkName, strings.ReplaceAll(strings.TrimSuffix(pkg.Path, "/"), "/", "-"))
 			}
+			// in this case, pkg.Path represents the relative path to a workspace package from the root of your repository
 			cacheDir := path.Join("/app", pkg.Path, cacheSubPath)
 			build.AddCache(ctx.Caches.AddCache(cacheName, cacheDir))
 		}
