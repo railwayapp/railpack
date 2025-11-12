@@ -19,7 +19,8 @@ The Ruby version is determined in the following order:
 - Set via the `RAILPACK_RUBY_VERSION` environment variable
 - Read from the `.ruby-version` file
 - Read from the `Gemfile` file
-- Defaults to `3.4.2`
+- Read from mise-compatible version files (`.tool-versions`, `mise.toml`)
+- Defaults to `3.4.6`
 
 ## Runtime Variables
 

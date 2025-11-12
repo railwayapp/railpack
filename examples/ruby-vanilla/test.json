@@ -1,5 +1,8 @@
 [
-  {
-    "expectedOutput": "Hello from Ruby"
-  }
+    {
+        "expectedOutput": [
+            "Hello from Ruby",
+            "Ruby version: 3.3.0"
+        ]
+    }
 ]

@@ -20,7 +20,8 @@
      "/mise/installs",
      "/usr/local/bin/mise",
      "/etc/mise/config.toml",
-     "/root/.local/state/mise"
+     "/root/.local/state/mise",
+     "mise.toml"
     ],
     "step": "packages:mise"
    },
@@ -54,8 +55,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libjemalloc-dev libyaml-dev'",
-     "customName": "install apt packages: libjemalloc-dev libyaml-dev"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y cargo libjemalloc-dev libyaml-dev rustc'",
+     "customName": "install apt packages: cargo libjemalloc-dev libyaml-dev rustc"
     }
    ],
    "inputs": [
@@ -72,6 +73,10 @@
    "commands": [
     {
      "path": "/mise/shims"
+    },
+    {
+     "dest": "mise.toml",
+     "src": "mise.toml"
     },
     {
      "customName": "create mise config",
