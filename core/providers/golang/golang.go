@@ -160,9 +160,7 @@ func (p *GoProvider) InstallGoDeps(ctx *generate.GenerateContext, install *gener
 	}
 }
 
-func (p *GoProvider) InstallGoPackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
-	goPkg := miseStep.Default("go", DEFAULT_GO_VERSION)
-
+func (p *GoProvider) extractGoVersionFromMod(ctx *generate.GenerateContext) string {
 	if goModContents, err := ctx.App.ReadFile("go.mod"); err == nil {
 		// Split content into lines and look for "go X.XX" line
 		lines := strings.Split(string(goModContents), "\n")
@@ -170,16 +168,26 @@ func (p *GoProvider) InstallGoPackages(ctx *generate.GenerateContext, miseStep *
 			if strings.HasPrefix(strings.TrimSpace(line), "go ") {
 				// Extract version number
 				if goVersion := strings.TrimSpace(strings.TrimPrefix(line, "go")); goVersion != "" {
-					miseStep.Version(goPkg, goVersion, "go.mod")
-					break
+					return goVersion
 				}
 			}
 		}
+	}
+	return ""
+}
+
+func (p *GoProvider) InstallGoPackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
+	goPkg := miseStep.Default("go", DEFAULT_GO_VERSION)
+
+	if goVersion := p.extractGoVersionFromMod(ctx); goVersion != "" {
+		miseStep.Version(goPkg, goVersion, "go.mod")
 	}
 
 	if envVersion, varName := ctx.Env.GetConfigVariable("GO_VERSION"); envVersion != "" {
 		miseStep.Version(goPkg, envVersion, varName)
 	}
+
+	miseStep.UseMiseVersions(ctx, []string{"go"})
 }
 
 func (p *GoProvider) GetBuilder(ctx *generate.GenerateContext) *generate.MiseStepBuilder {

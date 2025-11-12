@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"runtime"
 
 	cowsay "github.com/Code-Hex/Neo-cowsay/v2"
 )
 
 func main() {
 	say, err := cowsay.Say(
-		"Hello from Go",
+		fmt.Sprintf("Hello from Go %s", runtime.Version()),
 		cowsay.Type("default"),
 		cowsay.BallonWidth(40),
 	)
