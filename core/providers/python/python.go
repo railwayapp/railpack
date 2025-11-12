@@ -302,10 +302,6 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(python, envVersion, varName)
 	}
 
-	if versionFile, err := ctx.App.ReadFile(".python-version"); err == nil {
-		miseStep.Version(python, utils.ExtractSemverVersion(string(versionFile)), ".python-version")
-	}
-
 	if runtimeFile, err := ctx.App.ReadFile("runtime.txt"); err == nil {
 		miseStep.Version(python, utils.ExtractSemverVersion(string(runtimeFile)), "runtime.txt")
 	}
