@@ -8,9 +8,8 @@ language-specific tools and frameworks.
 
 ## Detection
 
-Your project will be detected as a Ruby application if any of these conditions are met:
-
-- A `Gemfile` file is present
+Your project is detected as a Ruby application if a `Gemfile` is present in
+the root directory.
 
 ## Versions
 
