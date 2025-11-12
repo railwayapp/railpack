@@ -18,6 +18,7 @@ The Node.js version is determined in the following order:
 - Set via the `RAILPACK_NODE_VERSION` environment variable
 - Read from the `engines` field in `package.json`
 - Read from the `.nvmrc` file
+- Read from `mise.toml` or `.tool-versions` files
 - Defaults to `22`
 
 ### Bun
@@ -27,6 +28,7 @@ The Bun version is determined in the following order:
 - Set via the `RAILPACK_BUN_VERSION` environment variable
 - Read from the `.bun-version` file
 - Read from the `engines.bun` field in `package.json`
+- Read from `mise.toml` or `.tool-versions` files
 - Defaults to `latest`
 
 If Bun is used as the package manager, Node.js will still be installed in the
@@ -38,8 +40,8 @@ following cases:
 - If you're using Astro
 
 When Node.js isn't required in the final image but is needed during installation
-(for native modules), a basic Node.js version will be installed from apt
-packages.
+(for native modules), Node.js will be installed via mise and will respect
+version specifications in `mise.toml` and `.tool-versions` files.
 
 ## Runtime Variables
 
