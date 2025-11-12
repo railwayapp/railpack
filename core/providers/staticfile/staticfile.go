@@ -76,6 +76,8 @@ func (p *StaticfileProvider) Plan(ctx *generate.GenerateContext) error {
 	return nil
 }
 
+func (p *StaticfileProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
+
 func (p *StaticfileProvider) StartCommandHelp() string {
 	return ""
 }

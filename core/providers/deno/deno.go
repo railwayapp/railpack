@@ -53,6 +53,8 @@ func (p *DenoProvider) Plan(ctx *generate.GenerateContext) error {
 	return nil
 }
 
+func (p *DenoProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
+
 func (p *DenoProvider) StartCommandHelp() string {
 	return "To start your Deno application, Railpack will look for:\n\n" +
 		"1. A main.ts, main.js, main.mjs, or main.mts file in your project root\n\n" +

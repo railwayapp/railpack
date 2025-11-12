@@ -72,6 +72,8 @@ func (p *ElixirProvider) Plan(ctx *generate.GenerateContext) error {
 	return nil
 }
 
+func (p *ElixirProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
+
 func (p *ElixirProvider) StartCommandHelp() string {
 	return "To start your Elixir application, Railpack will look for:\n\n" +
 		"1. A mix.exs file in your project root\n\n" +

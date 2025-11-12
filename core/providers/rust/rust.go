@@ -66,6 +66,8 @@ func (p *RustProvider) Plan(ctx *generate.GenerateContext) error {
 	return nil
 }
 
+func (p *RustProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
+
 func (p *RustProvider) StartCommandHelp() string {
 	return "To start your Rust application, Railpack will look for:\n\n" +
 		"1. A Cargo.toml file in your project root\n\n" +
