@@ -1,5 +1,9 @@
 name: CI
 
+# Security: Actions are pinned to commit SHAs instead of tags/versions where possible.
+# Tags are mutable and can be force-pushed, allowing attackers to replace trusted
+# code with malicious code. SHAs are immutable and protect against supply chain attacks.
+
 on:
   push:
     branches: [main]
