@@ -322,12 +322,26 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			miseStep.Version(bun, string(bunVersionFile), ".bun-version")
 		}
 
-		// TODO why don't we install this via mise?
 		// If we don't need node in the final image, we still want to include it for the install steps
 		// since many packages need node-gyp to install native modules
-		// in this case, we don't need a specific version, so we'll just pull from apt
 		if !requiresNode && ctx.Config.Packages["node"] == "" {
-			miseStep.AddSupportingAptPackage("nodejs")
+			node := miseStep.Default("node", "latest")
+
+			if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
+				miseStep.Version(node, envVersion, varName)
+			}
+
+			if nvmrc, err := ctx.App.ReadFile(".nvmrc"); err == nil {
+				if len(nvmrc) > 0 && nvmrc[0] == 'v' {
+					nvmrc = nvmrc[1:]
+				}
+
+				miseStep.Version(node, string(nvmrc), ".nvmrc")
+			}
+
+			if nodeVersionFile, err := ctx.App.ReadFile(".node-version"); err == nil {
+				miseStep.Version(node, string(nodeVersionFile), ".node-version")
+			}
 		}
 	}
 
@@ -336,6 +350,9 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	if p.usesCorepack() {
 		miseStep.Variables["MISE_NODE_COREPACK"] = "true"
 	}
+
+	// Check for mise.toml and .tool-versions and use those versions if they exist
+	miseStep.UseMiseVersions(ctx, []string{"node", "bun"})
 }
 
 func (p *NodeProvider) GetNodeEnvVars(ctx *generate.GenerateContext) map[string]string {
