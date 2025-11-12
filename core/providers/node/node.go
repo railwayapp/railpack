@@ -324,24 +324,9 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 
 		// If we don't need node in the final image, we still want to include it for the install steps
 		// since many packages need node-gyp to install native modules
+		// TODO: use the same version detection logic as when bun is not in place (NODE_VERSION, package.json engines, .nvmrc, .node-version)
 		if !requiresNode && ctx.Config.Packages["node"] == "" {
-			node := miseStep.Default("node", "latest")
-
-			if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
-				miseStep.Version(node, envVersion, varName)
-			}
-
-			if nvmrc, err := ctx.App.ReadFile(".nvmrc"); err == nil {
-				if len(nvmrc) > 0 && nvmrc[0] == 'v' {
-					nvmrc = nvmrc[1:]
-				}
-
-				miseStep.Version(node, string(nvmrc), ".nvmrc")
-			}
-
-			if nodeVersionFile, err := ctx.App.ReadFile(".node-version"); err == nil {
-				miseStep.Version(node, string(nodeVersionFile), ".node-version")
-			}
+			miseStep.Default("node", "latest")
 		}
 	}
 
