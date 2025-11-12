@@ -1,13 +1,5 @@
 {
  "caches": {
-  "apt": {
-   "directory": "/var/cache/apt",
-   "type": "locked"
-  },
-  "apt-lists": {
-   "directory": "/var/lib/apt/lists",
-   "type": "locked"
-  },
   "bun-install": {
    "directory": "/root/.bun/install/cache",
    "type": "shared"
@@ -61,24 +53,6 @@
  },
  "steps": [
   {
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
-   "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y nodejs'",
-     "customName": "install apt packages: nodejs"
-    }
-   ],
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
-    }
-   ],
-   "name": "packages:apt:build"
-  },
-  {
    "assets": {
     "mise.toml": "[mise.toml]"
    },
@@ -93,12 +67,12 @@
     },
     {
      "cmd": "mise install",
-     "customName": "install mise packages: bun"
+     "customName": "install mise packages: bun, node"
     }
    ],
    "inputs": [
     {
-     "step": "packages:apt:build"
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
     }
    ],
    "name": "packages:mise",

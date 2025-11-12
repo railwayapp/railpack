@@ -73,8 +73,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y neofetch nodejs'",
-     "customName": "install apt packages: neofetch nodejs"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y neofetch'",
+     "customName": "install apt packages: neofetch"
     }
    ],
    "inputs": [
@@ -99,7 +99,7 @@
     },
     {
      "cmd": "mise install",
-     "customName": "install mise packages: bun, python"
+     "customName": "install mise packages: bun, node, python"
     }
    ],
    "inputs": [
