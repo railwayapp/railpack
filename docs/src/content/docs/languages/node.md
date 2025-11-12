@@ -136,10 +136,15 @@ These frameworks are supported:
 - **CRA**: Detected if `react-scripts` is in dependencies and build script
   contains `react-scripts build`
 - **Angular**: Detected if `angular.json` exists
+- **React Router**: Detected if `react-router.config.js` or
+  `react-router.config.ts` exists, or if the build script contains
+  `react-router build`. To enable SPA mode, set `ssr: false` in your React
+  Router config.
 
-For both frameworks, Railpack will try to detect the output directory and will
-default to `dist`. Set the `RAILPACK_SPA_OUTPUT_DIR` environment variable to
-specify a custom output directory.
+For all frameworks, Railpack will try to detect the output directory and will
+default to `dist` (or `build/client/` for React Router). Set the
+`RAILPACK_SPA_OUTPUT_DIR` environment variable to specify a custom output
+directory.
 
 Static sites are served using the [Caddy](https://caddyserver.com/) web server
 and a [default
