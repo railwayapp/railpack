@@ -85,3 +85,7 @@ CGO support:
 - Set the `CGO_ENABLED` environment variable to `1`
 - Railpack will include the necessary build dependencies (gcc, g++, libc6-dev)
 - The runtime image will include libc6 for dynamic linking
+
+## BuildKit Caching
+
+The Go provider will cache `~/.cache/go-build` under the cache key `go-build`.

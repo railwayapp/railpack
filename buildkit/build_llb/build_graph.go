@@ -393,11 +393,20 @@ func (g *BuildGraph) getSecretInvalidationMountOptions(node *StepNode, secretOpt
 	return opts
 }
 
+func isCacheDisabled(key string) bool {
+	disabled := os.Getenv("RAILPACK_DISABLE_CACHES")
+	return disabled == "*" || slices.Contains(strings.Split(disabled, " "), key)
+}
+
 // returns the llb.RunOption slice for the given cache keys
 func (g *BuildGraph) getCacheMountOptions(cacheKeys []string) ([]llb.RunOption, error) {
 	var opts []llb.RunOption
 
 	for _, cacheKey := range cacheKeys {
+		if isCacheDisabled(cacheKey) {
+			continue
+		}
+
 		if planCache, ok := g.Plan.Caches[cacheKey]; ok {
 			cache := g.CacheStore.GetCache(cacheKey, planCache)
 			cacheType := llb.CacheMountShared
