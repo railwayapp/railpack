@@ -1,0 +1,12 @@
+[
+  {
+    "expectedOutput": [
+      "Bash array test:",
+      "- apple",
+      "- banana",
+      "- cherry",
+      "Array length: 3",
+      "Test completed successfully"
+    ]
+  }
+]

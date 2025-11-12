@@ -1,3 +1,22 @@
+#!/usr/bin/env bun
+
+/**
+ * Development script to test building with the Railpack BuildKit frontend.
+ *
+ * This script validates the production BuildKit frontend flow by:
+ * 1. Generating a build plan using `railpack plan`
+ * 2. Invoking BuildKit with the frontend container image (ghcr.io/railwayapp/railpack:railpack-frontend)
+ * 3. Loading the resulting image into Docker
+ *
+ * This is useful for testing the frontend integration locally before publishing,
+ * as the frontend path is what production platforms use. The `railpack build` command
+ * uses a different approach (direct BuildKit client) for simplicity.
+ *
+ * Example:
+ *   bun scripts/run-with-frontend.ts examples/node-vite-react
+ *   bun scripts/run-with-frontend.ts examples/node-vite-react --env NODE_ENV=production
+ */
+
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -38,7 +57,7 @@ process.on("SIGINT", () => {
 console.log(`Generating build plan for ${dir}`);
 const planResult = spawnSync(
   "go",
-  ["run", "cmd/cli/main.go", "plan", dir, "--format", "json"],
+  ["run", "cmd/cli/main.go", "plan", dir, ...envArgs],
   {
     stdio: ["inherit", "pipe", "inherit"],
   }

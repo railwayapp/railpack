@@ -1,0 +1,2 @@
+[tools]
+"go:github.com/wagoodman/dive" = "latest"

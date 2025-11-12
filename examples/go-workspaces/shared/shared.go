@@ -1,7 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"runtime"
+)
 
 func main() {
-	fmt.Println("This is the shared package")
+	fmt.Printf("This is the shared package %s\n", runtime.Version())
 }

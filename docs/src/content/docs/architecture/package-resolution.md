@@ -12,6 +12,7 @@ latest package@version` command. Mise is also used for (most) package
 installations in the builds as well. However, this is not a requirement of
 Railpack and alternative installation methods are possible (for example php will
 use Mise to resolve a valid version and then start from a php base image).
+Railpack enables Mise paranoid mode for stricter security validation.
 
 ## Previous and default versions
 

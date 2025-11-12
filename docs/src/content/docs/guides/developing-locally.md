@@ -152,6 +152,39 @@ Or with multiple strings:
 }
 ```
 
+### Environment Variables
+
+You can pass environment variables to the container at runtime using the
+`envs` key. This is useful for testing with different configurations, secrets,
+or Railpack configuration variables:
+
+```json
+{
+  "expectedOutput": "Server running on port 3000",
+  "envs": {
+    "DATABASE_URL": "postgresql://user:password@postgres:5432/db",
+    "SECRET_KEY": "test-secret"
+  }
+}
+```
+
+You can also use `RAILPACK_*` configuration variables in `envs` to test
+different build configurations:
+
+```json
+{
+  "expectedOutput": "hello from Node",
+  "envs": {
+    "RAILPACK_PRUNE_DEPS": "true",
+    "RAILPACK_STATIC_FILE_ROOT": "/custom/path"
+  }
+}
+```
+
+See the [environment variables
+documentation](/config/environment-variables) for a complete list of available
+`RAILPACK_*` configuration options.
+
 ### Services
 
 Integation tests can define services (postgres, redis, anything with a docker image) that
@@ -165,11 +198,25 @@ docker compose up -d
 docker run -it --network python-django_default --env DATABASE_URL="postgresql://django_user:django_password@postgres:5432/django_db" python-django
 ```
 
-## Mise commands
+## Mise
+
+Mise is absolutely central to this entire project, so you'll have to dig into the details.
+
+* `mise trust` state is located in `~/.local/state/mise/trusted-configs`
+* There are two mise 'environments' to keep in mind: the host environment, which uses a specific version of mise downloaded
+  just for railpack, and the mise binary run during the build process. The mise version will be the same, but the environment
+  is different.
+
+### Mise Commands
+
+Some helpful commands for debugging issues with mise:
 
 ```bash
 # Lint and format
 mise run check
+
+# Where is a particular binary?
+mise where pipx:squawk-cli@
 
 # Run tests
 mise run test

@@ -139,6 +139,7 @@ export default defineConfig({
             { label: "PHP", link: "/languages/php" },
             { label: "Java", link: "/languages/java" },
             { label: "Ruby", link: "/languages/ruby" },
+            { label: "Dotnet", link: "/languages/dotnet" },
             { label: "Deno", link: "/languages/deno" },
             { label: "Rust", link: "/languages/rust" },
             { label: "Elixir", link: "/languages/elixir" },
