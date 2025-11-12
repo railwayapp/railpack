@@ -110,10 +110,6 @@
      "src": "prisma"
     },
     {
-     "dest": "node_modules/prisma",
-     "src": "node_modules/prisma"
-    },
-    {
      "cmd": "npm ci"
     }
    ],
