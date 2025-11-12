@@ -337,7 +337,16 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	}
 
 	// Check for mise.toml and .tool-versions and use those versions if they exist
-	miseStep.UseMiseVersions(ctx, []string{"node", "bun"})
+	packagesToCheck := []string{}
+	if requiresNode {
+		packagesToCheck = append(packagesToCheck, "node")
+	}
+	if p.requiresBun(ctx) {
+		packagesToCheck = append(packagesToCheck, "bun")
+	}
+	if len(packagesToCheck) > 0 {
+		miseStep.UseMiseVersions(ctx, packagesToCheck)
+	}
 }
 
 func (p *NodeProvider) GetNodeEnvVars(ctx *generate.GenerateContext) map[string]string {
