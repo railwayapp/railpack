@@ -141,6 +141,8 @@ func (p *RubyProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	return startCommand
 }
 
+func (p *RubyProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
+
 func (p *RubyProvider) StartCommandHelp() string {
 	return "To start your Ruby application, Railpack will automatically:\n\n" +
 		"1. Start the Rails server if a Rails application is detected\n" +

@@ -459,6 +459,8 @@ func (p *PhpProvider) readComposerJson(ctx *generate.GenerateContext) (map[strin
 	return composerJson, nil
 }
 
+func (p *PhpProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
+
 func (p *PhpProvider) StartCommandHelp() string {
 	return ""
 }

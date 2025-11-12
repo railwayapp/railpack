@@ -117,7 +117,9 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		return &BuildResult{Success: false, Logs: logger.Logs}
 	}
 
-	cleansePlanStructure(buildPlan, logger)
+	if providerToUse != nil {
+		providerToUse.CleansePlan(buildPlan)
+	}
 
 	if !ValidatePlan(buildPlan, app, logger, &ValidatePlanOptions{
 		ErrorMissingStartCommand: options.ErrorMissingStartCommand,
@@ -138,8 +140,6 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 
 	return buildResult
 }
-
-// cleansing logic moved to cleanse.go
 
 // GetConfig merges the options, environment, and file config into a single config
 func GetConfig(app *app.App, env *app.Environment, options *GenerateBuildPlanOptions, logger *logger.Logger) (*c.Config, error) {
