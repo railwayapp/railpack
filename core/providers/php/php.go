@@ -209,6 +209,8 @@ func (p *PhpProvider) DeployWithNode(ctx *generate.GenerateContext, nodeProvider
 	if isLaravel {
 		build.AddCommands([]plan.Command{
 			plan.NewExecShellCommand("mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs bootstrap/cache && chmod -R a+rw storage"),
+			// config values like APP_KEY are resolved and baked into bootstrap/cache/config.php. Runtime env vars are ignored
+			// for cached configs, leading to MissingAppKeyException if APP_KEY was unset at cache time.
 			plan.NewExecCommand("php artisan config:cache"),
 			plan.NewExecCommand("php artisan event:cache"),
 			plan.NewExecCommand("php artisan route:cache"),
