@@ -1,5 +1,8 @@
 [
-  {
-    "expectedOutput": "Hello from Ruby 3! YJIT is enabled."
-  }
+    {
+        "expectedOutput": [
+            "Hello from Ruby 3! YJIT is enabled.",
+            "Ruby version: 3.2.1"
+        ]
+    }
 ]
