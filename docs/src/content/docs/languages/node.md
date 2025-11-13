@@ -18,6 +18,7 @@ The Node.js version is determined in the following order:
 - Set via the `RAILPACK_NODE_VERSION` environment variable
 - Read from the `engines` field in `package.json`
 - Read from the `.nvmrc` file
+- Read from the `.node-version` file
 - Read from `mise.toml` or `.tool-versions` files
 - Defaults to `22`
 
@@ -160,8 +161,10 @@ Including:
 
 - Next.js: Caches `.next/cache` for each Next.js app in the workspace
 - Remix: Caches `.cache`
-- Vite (and Tanstack Start): Caches `.vite/cache`
-- Astro: Caches `.astro/cache`
+- Vite: Caches `node_modules/.vite`
+- Tanstack Start: Caches `node_modules/.vite`
+- Astro: Caches `node_modules/.astro`
+- React Router: Caches `.react-router`
 - Nuxt:
   - Start command defaults to `node .output/server/index.mjs`
   - Caches `node_modules/.cache`
@@ -169,3 +172,11 @@ Including:
 As well as a default cache for node modules:
 
 - Node modules: Caches `node_modules/.cache` (with the cache key `node-modules`)
+
+### System Dependencies
+
+Railpack automatically installs system dependencies for certain packages:
+
+- **Puppeteer**: When detected in workspace dependencies, Railpack installs
+  all necessary system packages for running headless Chrome, including
+  `xvfb`, `chromium` dependencies, and font libraries
