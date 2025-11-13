@@ -70,4 +70,4 @@ There are normal unit tests, snapshot tests, and integration tests. The integrat
 
 - Markdown files in @docs/src/content/docs/ should be limited to 80 columns
 - Do not fix indentation or formatting manually. This is corrected automatically using `mise run check`
-- NEVER commit language-specific cache or build artifacts (e.g. Python `__pycache__/`, `*.pyc`, `*.pyo` files). These are covered by .gitignore and should remain excluded from version control
+- NEVER commit language-specific cache or build artifacts (e.g. Python `__pycache__/`, `*.pyc`, `*.pyo` files). If you encounter build artifacts that are not excluded by .gitignore, add appropriate patterns to .gitignore to exclude them
