@@ -58,6 +58,10 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 	})
 
 	t.Run("inaccessible dockerignore", func(t *testing.T) {
+		if os.Getuid() == 0 {
+			t.Skip("Skipping test when running as root - chmod 0000 doesn't prevent root from reading files")
+		}
+
 		// Create a temporary directory and file
 		tempDir, err := os.MkdirTemp("", "dockerignore-test")
 		require.NoError(t, err)
@@ -175,19 +179,13 @@ func TestDockerignoreContext(t *testing.T) {
 			logCalls = append(logCalls, format)
 		}}
 
-		// Mock metadata setter
-		mockMetadata := &mockMetadataSetter{}
-
-		excludes, includes, err := ctx.ParseWithLogging(mockLogger, mockMetadata)
+		excludes, includes, err := ctx.ParseWithLogging(mockLogger)
 		require.NoError(t, err)
 		require.NotNil(t, excludes)
 		require.Nil(t, includes)
 
 		// Should have logged that dockerignore was found
 		require.Contains(t, logCalls, "Found .dockerignore file, applying filters")
-
-		// Should have set the metadata
-		require.True(t, mockMetadata.dockerIgnoreSet)
 	})
 
 	t.Run("parse nonexistent file", func(t *testing.T) {
@@ -208,6 +206,10 @@ func TestDockerignoreContext(t *testing.T) {
 	})
 
 	t.Run("parse error handling", func(t *testing.T) {
+		if os.Getuid() == 0 {
+			t.Skip("Skipping test when running as root - chmod 0000 doesn't prevent root from reading files")
+		}
+
 		// Create a temporary directory with an inaccessible .dockerignore
 		tempDir, err := os.MkdirTemp("", "dockerignore-test")
 		require.NoError(t, err)
@@ -243,16 +245,5 @@ type mockLogger struct {
 func (m *mockLogger) LogInfo(format string, args ...interface{}) {
 	if m.logFunc != nil {
 		m.logFunc(format, args...)
-	}
-}
-
-// Mock metadata setter for testing
-type mockMetadataSetter struct {
-	dockerIgnoreSet bool
-}
-
-func (m *mockMetadataSetter) SetBool(key string, value bool) {
-	if key == "dockerIgnore" && value {
-		m.dockerIgnoreSet = true
 	}
 }
