@@ -9,4 +9,6 @@ dependencies = [
     "gunicorn>=23.0.0",
     "psycopg2>=2.9.10",
     "whitenoise>=6.9.0",
+    "redis>=5.2.1",
+    "hiredis>=3.1.0",
 ]
