@@ -1,0 +1,5 @@
+[
+  {
+    "expectedOutput": "psycopg imported successfully - libpq is available"
+  }
+]
