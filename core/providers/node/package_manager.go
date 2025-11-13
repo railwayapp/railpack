@@ -101,14 +101,14 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 
 	switch p {
 	case PackageManagerNpm:
-		hasLockfile := ctx.App.HasMatch("package-lock.json")
+		hasLockfile := ctx.App.HasFile("package-lock.json")
 		if hasLockfile {
 			install.AddCommand(plan.NewExecCommand("npm ci"))
 		} else {
 			install.AddCommand(plan.NewExecCommand("npm install"))
 		}
 	case PackageManagerPnpm:
-		hasLockfile := ctx.App.HasMatch("pnpm-lock.yaml")
+		hasLockfile := ctx.App.HasFile("pnpm-lock.yaml")
 		if hasLockfile {
 			install.AddCommand(plan.NewExecCommand("pnpm install --frozen-lockfile --prefer-offline"))
 		} else {
@@ -183,7 +183,7 @@ func (p PackageManager) pruneYarnBerry(ctx *generate.GenerateContext, prune *gen
 
 func (p PackageManager) getPackageJsonFromContext(ctx *generate.GenerateContext) (*PackageJson, error) {
 	packageJson := NewPackageJson()
-	if !ctx.App.HasMatch("package.json") {
+	if !ctx.App.HasFile("package.json") {
 		return packageJson, nil
 	}
 

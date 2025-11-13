@@ -37,7 +37,7 @@ func NewWorkspace(app *app.App) (*Workspace, error) {
 	}
 
 	// Try to read PNPM workspace config first
-	if app.HasMatch("pnpm-workspace.yaml") {
+	if app.HasFile("pnpm-workspace.yaml") {
 		var pnpmWorkspace PnpmWorkspace
 		if err := app.ReadYAML("pnpm-workspace.yaml", &pnpmWorkspace); err == nil && len(pnpmWorkspace.Packages) > 0 {
 			workspace.Root.PackageJson.Workspaces = pnpmWorkspace.Packages

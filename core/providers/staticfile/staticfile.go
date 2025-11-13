@@ -120,7 +120,7 @@ func getRootDir(ctx *generate.GenerateContext) (string, error) {
 
 	if ctx.App.HasMatch("public") {
 		return "public", nil
-	} else if ctx.App.HasMatch("index.html") {
+	} else if ctx.App.HasFile("index.html") {
 		return ".", nil
 	}
 
@@ -128,7 +128,7 @@ func getRootDir(ctx *generate.GenerateContext) (string, error) {
 }
 
 func getStaticfileConfig(ctx *generate.GenerateContext) (*StaticfileConfig, error) {
-	if !ctx.App.HasMatch(StaticfileConfigName) {
+	if !ctx.App.HasFile(StaticfileConfigName) {
 		return nil, nil
 	}
 
