@@ -92,3 +92,16 @@ func TestGenerateConfigFromFile_Malformed(t *testing.T) {
 	require.Error(t, genErr, "expected an error for malformed JSON config file")
 	require.Nil(t, cfg, "config should be nil on error")
 }
+
+func TestGenerateBuildPlan_DockerignoreMetadata(t *testing.T) {
+	appPath := "../examples/dockerignore"
+	userApp, err := app.NewApp(appPath)
+	require.NoError(t, err)
+
+	env := app.NewEnvironment(nil)
+	buildResult := GenerateBuildPlan(userApp, env, &GenerateBuildPlanOptions{})
+
+	require.True(t, buildResult.Success)
+	require.NotNil(t, buildResult.Metadata)
+	require.Equal(t, "true", buildResult.Metadata["dockerIgnore"])
+}

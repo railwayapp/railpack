@@ -108,6 +108,9 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		// Verify dockerignore was parsed during context creation
 		require.NotNil(t, ctx.dockerignoreCtx)
 
+		// Verify metadata indicates dockerignore presence
+		require.Equal(t, "true", ctx.Metadata.Get("dockerIgnore"))
+
 		// Test NewLocalLayer with dockerignore patterns
 		layer := ctx.NewLocalLayer()
 		require.True(t, layer.Local)
@@ -128,6 +131,9 @@ func TestGenerateContextDockerignore(t *testing.T) {
 
 		// Verify dockerignore context exists but has no patterns
 		require.NotNil(t, ctx.dockerignoreCtx)
+
+		// Verify metadata does not indicate dockerignore presence
+		require.Empty(t, ctx.Metadata.Get("dockerIgnore"))
 
 		// Test NewLocalLayer without dockerignore patterns
 		layer := ctx.NewLocalLayer()
@@ -154,6 +160,10 @@ func TestGenerateContextDockerignore(t *testing.T) {
 	})
 
 	t.Run("context creation fails with invalid dockerignore", func(t *testing.T) {
+		if os.Getuid() == 0 {
+			t.Skip("Skipping test when running as root - chmod 0000 doesn't prevent root from reading files")
+		}
+
 		// Create a temporary directory with an inaccessible .dockerignore
 		tempDir, err := os.MkdirTemp("", "dockerignore-test")
 		require.NoError(t, err)
