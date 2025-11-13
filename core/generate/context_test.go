@@ -160,10 +160,6 @@ func TestGenerateContextDockerignore(t *testing.T) {
 	})
 
 	t.Run("context creation fails with invalid dockerignore", func(t *testing.T) {
-		if os.Getuid() == 0 {
-			t.Skip("Skipping test when running as root - chmod 0000 doesn't prevent root from reading files")
-		}
-
 		// Create a temporary directory with an inaccessible .dockerignore
 		tempDir, err := os.MkdirTemp("", "dockerignore-test")
 		require.NoError(t, err)

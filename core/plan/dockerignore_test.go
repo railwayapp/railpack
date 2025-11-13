@@ -58,10 +58,6 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 	})
 
 	t.Run("inaccessible dockerignore", func(t *testing.T) {
-		if os.Getuid() == 0 {
-			t.Skip("Skipping test when running as root - chmod 0000 doesn't prevent root from reading files")
-		}
-
 		// Create a temporary directory and file
 		tempDir, err := os.MkdirTemp("", "dockerignore-test")
 		require.NoError(t, err)
@@ -206,10 +202,6 @@ func TestDockerignoreContext(t *testing.T) {
 	})
 
 	t.Run("parse error handling", func(t *testing.T) {
-		if os.Getuid() == 0 {
-			t.Skip("Skipping test when running as root - chmod 0000 doesn't prevent root from reading files")
-		}
-
 		// Create a temporary directory with an inaccessible .dockerignore
 		tempDir, err := os.MkdirTemp("", "dockerignore-test")
 		require.NoError(t, err)
