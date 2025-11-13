@@ -48,6 +48,11 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 	install.Secrets = []string{}
 	install.UseSecretsWithPrefixes([]string{"PYTHON", "PIP", "PIPX", "UV", "PDM", "POETRY"})
 
+	if ctx.App.HasMatch(".venv") {
+		ctx.Logger.LogWarn(".venv directory found in project root, this is likely a mistake")
+		ctx.Logger.LogWarn("It is recommended to add .venv to the .gitignore file")
+	}
+
 	build := ctx.NewCommandStep("build")
 	installOutputs := []string{}
 
