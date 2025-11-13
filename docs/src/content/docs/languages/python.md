@@ -101,6 +101,12 @@ detected:
 ### FastAPI
 
 Railpack detects FastAPI projects when `fastapi` is listed as a dependency.
+Unlike Flask and FastHTML, FastAPI projects don't have an automatic start
+command configuration and will use the standard Python file execution
+(`python main.py` or equivalent).
+
+For production FastAPI deployments, you should define your own start command
+using a production ASGI server like uvicorn or gunicorn with uvicorn workers.
 
 ### Django
 
