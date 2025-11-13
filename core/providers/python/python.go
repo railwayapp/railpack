@@ -107,6 +107,10 @@ func (p *PythonProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 		startCommand = "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
 	}
 
+	if p.isFastapi(ctx) && hasMainPythonFile && p.usesDep(ctx, "uvicorn") {
+		startCommand = "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
+	}
+
 	if p.isFlask(ctx) && hasMainPythonFile && p.usesDep(ctx, "gunicorn") {
 		startCommand = "gunicorn --bind 0.0.0.0:${PORT:-8000} main:app"
 	}
@@ -131,9 +135,10 @@ func (p *PythonProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
 
 func (p *PythonProvider) StartCommandHelp() string {
 	return "To start your Python application, Railpack will automatically:\n\n" +
-		"1. Start FastAPI projects with uvicorn\n" +
-		"2. Start Flask projects with gunicorn\n" +
-		"3. Start Django projects with the gunicorn production server\n\n" +
+		"1. Start FastHTML projects with uvicorn\n" +
+		"2. Start FastAPI projects with uvicorn\n" +
+		"3. Start Flask projects with gunicorn\n" +
+		"4. Start Django projects with the gunicorn production server\n\n" +
 		"Otherwise, it will run the main.py or app.py file in your project root"
 }
 
@@ -515,12 +520,16 @@ func (p *PythonProvider) isFlask(ctx *generate.GenerateContext) bool {
 	return p.usesDep(ctx, "flask")
 }
 
+func (p *PythonProvider) isFastapi(ctx *generate.GenerateContext) bool {
+	return p.usesDep(ctx, "fastapi")
+}
+
 func (p *PythonProvider) getRuntime(ctx *generate.GenerateContext) string {
 	if p.isDjango(ctx) {
 		return "django"
 	} else if p.isFlask(ctx) {
 		return "flask"
-	} else if p.usesDep(ctx, "fastapi") {
+	} else if p.isFastapi(ctx) {
 		return "fastapi"
 	} else if p.isFasthtml(ctx) {
 		return "fasthtml"

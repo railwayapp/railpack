@@ -1,0 +1,10 @@
+[project]
+name = "python-fastapi"
+version = "0.1.0"
+description = "FastAPI example with uv"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.5",
+    "uvicorn[standard]>=0.32.1",
+]
