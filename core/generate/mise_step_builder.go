@@ -251,6 +251,8 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			"MISE_NODE_VERIFY": "false",
 			// Enforces HTTPS and stricter security
 			"MISE_PARANOID": "1",
+			// Enable mise to automatically read idiomatic version files
+			"MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS": "python,node,ruby,elixir,go,java,yarn",
 		})
 		maps.Copy(step.Variables, b.Variables)
 
