@@ -31,7 +31,7 @@ func (p *PythonProvider) Initialize(ctx *generate.GenerateContext) error {
 }
 
 func (p *PythonProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
-	hasPython := ctx.App.HasMatch("main.py") ||
+	hasPython := ctx.App.HasFile("main.py") ||
 		p.hasRequirements(ctx) ||
 		p.hasPyproject(ctx) ||
 		p.hasPipfile(ctx)
@@ -120,7 +120,7 @@ func (p *PythonProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 
 func (p *PythonProvider) getMainPythonFile(ctx *generate.GenerateContext) string {
 	for _, file := range []string{"main.py", "app.py", "bot.py", "hello.py", "server.py"} {
-		if ctx.App.HasMatch(file) {
+		if ctx.App.HasFile(file) {
 			return file
 		}
 	}
@@ -179,7 +179,7 @@ func (p *PythonProvider) InstallPipenv(ctx *generate.GenerateContext, install *g
 		plan.NewPathCommand(VENV_PATH + "/bin"),
 	})
 
-	if ctx.App.HasMatch("Pipfile.lock") {
+	if ctx.App.HasFile("Pipfile.lock") {
 		install.AddCommands([]plan.Command{
 			plan.NewCopyCommand("Pipfile"),
 			plan.NewCopyCommand("Pipfile.lock"),
@@ -484,27 +484,27 @@ func parseVersionFromPipfile(ctx *generate.GenerateContext) (string, string) {
 }
 
 func (p *PythonProvider) hasRequirements(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasMatch("requirements.txt")
+	return ctx.App.HasFile("requirements.txt")
 }
 
 func (p *PythonProvider) hasPyproject(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasMatch("pyproject.toml")
+	return ctx.App.HasFile("pyproject.toml")
 }
 
 func (p *PythonProvider) hasPipfile(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasMatch("Pipfile")
+	return ctx.App.HasFile("Pipfile")
 }
 
 func (p *PythonProvider) hasPoetry(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasMatch("poetry.lock")
+	return ctx.App.HasFile("poetry.lock")
 }
 
 func (p *PythonProvider) hasPdm(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasMatch("pdm.lock")
+	return ctx.App.HasFile("pdm.lock")
 }
 
 func (p *PythonProvider) hasUv(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasMatch("uv.lock")
+	return ctx.App.HasFile("uv.lock")
 }
 
 func (p *PythonProvider) isFasthtml(ctx *generate.GenerateContext) bool {
