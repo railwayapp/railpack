@@ -3,8 +3,7 @@
 
 set -euo pipefail
 
-echo "Fetching Node.js release index..."
-releases=$(curl -s https://nodejs.org/dist/index.json)
+echo "Fetching Node.js versions from mise..."
 
 echo "Checking releases for GPG signatures..."
 echo
@@ -12,10 +11,13 @@ echo
 latest_signed=""
 count=0
 
-# Parse JSON and check each version
+# Get versions from mise in descending order (newest first)
 while IFS= read -r version; do
+  # mise returns versions without 'v' prefix, add it for the URL
+  version_with_v="v${version}"
+
   # Check if SHASUMS256.txt.asc exists for this version
-  if curl -sf -I "https://nodejs.org/dist/${version}/SHASUMS256.txt.asc" > /dev/null 2>&1; then
+  if curl -sf -I "https://nodejs.org/dist/${version_with_v}/SHASUMS256.txt.asc" > /dev/null 2>&1; then
     echo "✓ ${version} has GPG signature"
     if [[ -z "$latest_signed" ]]; then
       latest_signed="$version"
@@ -29,13 +31,13 @@ while IFS= read -r version; do
   if [[ $count -ge 20 ]]; then
     break
   fi
-done < <(echo "$releases" | jq -r '.[].version')
+done < <(mise ls-remote node | tac)
 
 echo
 if [[ -n "$latest_signed" ]]; then
   echo "Latest Node.js version with GPG signature: $latest_signed"
   echo
-  echo "Update NODE_VERIFY_BEFORE to: ${latest_signed#v}"
+  echo "Update NODE_VERIFY_BEFORE to: ${latest_signed}"
 else
   echo "No GPG-signed versions found in recent releases"
 fi
