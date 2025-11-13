@@ -45,7 +45,7 @@ func (p *PythonProvider) getDjangoStartCommand(ctx *generate.GenerateContext) st
 }
 
 func (p *PythonProvider) isDjango(ctx *generate.GenerateContext) bool {
-	hasManage := ctx.App.HasMatch("manage.py")
+	hasManage := ctx.App.HasFile("manage.py")
 	importsDjango := p.usesDep(ctx, "django")
 
 	return hasManage && importsDjango
