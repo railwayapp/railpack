@@ -70,8 +70,9 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 		return nil, err
 	}
 
+	metadata := NewMetadata()
 	dockerignoreCtx := plan.NewDockerignoreContext(app)
-	excludes, includes, err := dockerignoreCtx.ParseWithLogging(logger)
+	excludes, includes, err := dockerignoreCtx.ParseWithLogging(logger, metadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse .dockerignore: %w", err)
 	}
@@ -89,17 +90,13 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 		Deploy:          NewDeployBuilder(),
 		Caches:          NewCacheContext(),
 		Secrets:         []string{},
-		Metadata:        NewMetadata(),
+		Metadata:        metadata,
 		Resolver:        resolver,
 		Logger:          logger,
 		dockerignoreCtx: dockerignoreCtx,
 	}
 
 	ctx.applyPackagesFromConfig()
-
-	if app.HasFile(".dockerignore") {
-		ctx.Metadata.SetBool("dockerIgnore", true)
-	}
 
 	return ctx, nil
 }

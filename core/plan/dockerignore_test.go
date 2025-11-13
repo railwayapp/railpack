@@ -175,13 +175,19 @@ func TestDockerignoreContext(t *testing.T) {
 			logCalls = append(logCalls, format)
 		}}
 
-		excludes, includes, err := ctx.ParseWithLogging(mockLogger)
+		// Mock metadata setter
+		mockMetadata := &mockMetadataSetter{}
+
+		excludes, includes, err := ctx.ParseWithLogging(mockLogger, mockMetadata)
 		require.NoError(t, err)
 		require.NotNil(t, excludes)
 		require.Nil(t, includes)
 
 		// Should have logged that dockerignore was found
 		require.Contains(t, logCalls, "Found .dockerignore file, applying filters")
+
+		// Should have set the metadata
+		require.True(t, mockMetadata.dockerIgnoreSet)
 	})
 
 	t.Run("parse nonexistent file", func(t *testing.T) {
@@ -237,5 +243,16 @@ type mockLogger struct {
 func (m *mockLogger) LogInfo(format string, args ...interface{}) {
 	if m.logFunc != nil {
 		m.logFunc(format, args...)
+	}
+}
+
+// Mock metadata setter for testing
+type mockMetadataSetter struct {
+	dockerIgnoreSet bool
+}
+
+func (m *mockMetadataSetter) SetBool(key string, value bool) {
+	if key == "dockerIgnore" && value {
+		m.dockerIgnoreSet = true
 	}
 }

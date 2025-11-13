@@ -72,7 +72,11 @@ func (d *DockerignoreContext) Parse() ([]string, []string, error) {
 	return d.excludes, d.includes, nil
 }
 
-func (d *DockerignoreContext) ParseWithLogging(logger interface{ LogInfo(string, ...interface{}) }) ([]string, []string, error) {
+type MetadataSetter interface {
+	SetBool(key string, value bool)
+}
+
+func (d *DockerignoreContext) ParseWithLogging(logger interface{ LogInfo(string, ...interface{}) }, metadata MetadataSetter) ([]string, []string, error) {
 	excludes, includes, err := d.Parse()
 	if err != nil {
 		return nil, nil, err
@@ -80,6 +84,9 @@ func (d *DockerignoreContext) ParseWithLogging(logger interface{ LogInfo(string,
 
 	if excludes != nil || includes != nil {
 		logger.LogInfo("Found .dockerignore file, applying filters")
+		if metadata != nil {
+			metadata.SetBool("dockerIgnore", true)
+		}
 	}
 
 	return excludes, includes, nil
