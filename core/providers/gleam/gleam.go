@@ -19,6 +19,8 @@ func (p *GleamProvider) Initialize(ctx *generate.GenerateContext) error {
 	return nil
 }
 
+func (p *GleamProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
+
 func (p *GleamProvider) StartCommandHelp() string {
 	return ""
 }

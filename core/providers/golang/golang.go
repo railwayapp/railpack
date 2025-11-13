@@ -263,6 +263,8 @@ func (p *GoProvider) isGoWorkspace(ctx *generate.GenerateContext) bool {
 	return ctx.App.HasMatch("go.work")
 }
 
+func (p *GoProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
+
 func (p *GoProvider) StartCommandHelp() string {
 	return "To configure your start command, Railpack will check:\n\n" +
 		"1. Create a main.go file in your project root\n\n" +

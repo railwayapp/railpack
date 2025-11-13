@@ -69,6 +69,8 @@ func (p *ShellProvider) Plan(ctx *generate.GenerateContext) error {
 	return nil
 }
 
+func (p *ShellProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
+
 func (p *ShellProvider) StartCommandHelp() string {
 	return ""
 }

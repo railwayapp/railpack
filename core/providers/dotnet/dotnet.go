@@ -68,6 +68,8 @@ func (p *DotnetProvider) Plan(ctx *generate.GenerateContext) error {
 	return nil
 }
 
+func (p *DotnetProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
+
 func (p *DotnetProvider) StartCommandHelp() string {
 	return "To start your Dotnet application, Railpack will look for:\n\n" +
 		"1. A .csproj file in your project root\n\n" +

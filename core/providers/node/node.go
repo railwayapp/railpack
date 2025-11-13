@@ -18,7 +18,9 @@ const (
 	DEFAULT_NODE_VERSION = "22"
 	DEFAULT_BUN_VERSION  = "latest"
 
-	COREPACK_HOME      = "/opt/corepack"
+	COREPACK_HOME = "/opt/corepack"
+
+	// not used by npm, but many other tools: next, jest, webpack, etc
 	NODE_MODULES_CACHE = "/app/node_modules/.cache"
 )
 
@@ -129,6 +131,7 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 
 	buildLayer := plan.NewStepLayer(build.Name(), plan.Filter{
 		Include: buildIncludeDirs,
+		// TODO we should just have a default dockerignore/exclusion list instead of hardcoding here
 		Exclude: []string{"node_modules", ".yarn"},
 	})
 
@@ -184,7 +187,7 @@ func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 		}
 	}
 
-	p.addCaches(ctx, build)
+	p.addCachesToBuildStep(ctx, build)
 }
 
 // adds framework-specific caches for packages that match the given framework check.
@@ -205,8 +208,10 @@ func (p *NodeProvider) addFrameworkCaches(ctx *generate.GenerateContext, build *
 	}
 }
 
-func (p *NodeProvider) addCaches(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
-	build.AddCache(ctx.Caches.AddCache("node-modules", "/app/node_modules/.cache"))
+// cache directories to add to the build step: if lock files are unchanged, these are pulled from cache, but cannot
+// be removed in future steps.
+func (p *NodeProvider) addCachesToBuildStep(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
+	build.AddCache(ctx.Caches.AddCache("node-modules", NODE_MODULES_CACHE))
 
 	p.addFrameworkCaches(ctx, build, "next", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
 		if pkg.PackageJson.HasScript("build") {
@@ -249,6 +254,7 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 	install.UseSecretsWithPrefixes([]string{"NODE", "NPM", "BUN", "PNPM", "YARN", "CI"})
 	install.AddPaths([]string{"/app/node_modules/.bin"})
 
+	// TODO once dockerignore is in place, we should remove this
 	if ctx.App.HasMatch("node_modules") {
 		ctx.Logger.LogWarn("node_modules directory found in project root, this is likely a mistake")
 		ctx.Logger.LogWarn("It is recommended to add node_modules to the .gitignore file")

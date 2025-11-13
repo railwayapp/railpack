@@ -21,6 +21,8 @@ func (p *JavaProvider) Initialize(ctx *generate.GenerateContext) error {
 	return nil
 }
 
+func (p *JavaProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
+
 func (p *JavaProvider) StartCommandHelp() string {
 	return ""
 }
