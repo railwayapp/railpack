@@ -1,0 +1,13 @@
+[
+  {
+    "expectedOutput": [
+      "Using psycopg3 - libpq is available",
+      "Successfully connected to PostgreSQL!",
+      "Test query result: 1 + 1 = 2",
+      "Connection closed successfully"
+    ],
+    "envs": {
+      "DATABASE_URL": "postgresql://test_user:test_password@postgres:5432/test_db"
+    }
+  }
+]
