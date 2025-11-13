@@ -49,7 +49,8 @@ Railpack builds your Python application based on your project structure. The bui
 The start command is determined by:
 
 1. Framework specific start command (see below)
-2. `main.py` file in the root directory
+2. Main Python file in the root directory (checked in order: `main.py`,
+   `app.py`, `bot.py`, `hello.py`, `server.py`)
 
 ### Package Managers
 
@@ -72,13 +73,34 @@ Railpack supports multiple Python package managers:
 
 Railpack installs system dependencies for common Python packages:
 
+- **pycairo**: Installs `libcairo2-dev` (build time) and `libcairo2` (runtime)
 - **pdf2image**: Installs `poppler-utils`
 - **pydub**: Installs `ffmpeg`
 - **pymovie**: Installs `ffmpeg`, `qt5-qmake`, and related Qt packages
 
 ## Framework Support
 
-Railpack detects and configures caches and commands for popular frameworks:
+Railpack detects and configures start commands for popular frameworks:
+
+### FastHTML
+
+Railpack detects FastHTML projects when `python-fasthtml` is listed as a
+dependency. When detected:
+
+- Starts with `uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}` if
+  `uvicorn` is a dependency
+
+### Flask
+
+Railpack detects Flask projects when `flask` is listed as a dependency. When
+detected:
+
+- Starts with `gunicorn --bind 0.0.0.0:${PORT:-8000} main:app` if `gunicorn`
+  is a dependency
+
+### FastAPI
+
+Railpack detects FastAPI projects when `fastapi` is listed as a dependency.
 
 ### Django
 
