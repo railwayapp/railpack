@@ -2,7 +2,13 @@ import os
 import psycopg
 
 print("psycopg version:", psycopg.__version__)
-print("psycopg imported successfully - libpq is available")
+
+major_version = int(psycopg.__version__.split('.')[0])
+if major_version != 3:
+    print(f"ERROR: Expected psycopg 3.x but got {psycopg.__version__}")
+    exit(1)
+
+print("Using psycopg3 - libpq is available")
 
 database_url = os.environ.get("DATABASE_URL")
 if not database_url:

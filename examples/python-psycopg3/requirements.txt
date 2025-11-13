@@ -1,1 +1,1 @@
-psycopg==3.2.3
+psycopg>=3.2,<4.0
