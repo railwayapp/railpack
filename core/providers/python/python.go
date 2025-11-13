@@ -50,7 +50,7 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 
 	if ctx.App.HasMatch(".venv") {
 		ctx.Logger.LogWarn(".venv directory found in project root, this is likely a mistake")
-		ctx.Logger.LogWarn("It is recommended to add .venv to the .gitignore file")
+		ctx.Logger.LogWarn("It is recommended to add .venv to the .gitignore and/or .dockerignore file")
 	}
 
 	build := ctx.NewCommandStep("build")
