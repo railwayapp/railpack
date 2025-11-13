@@ -253,9 +253,6 @@ func (c *GenerateContext) applyConfig() {
 func (c *GenerateContext) NewLocalLayer() plan.Layer {
 	layer := plan.NewLocalLayer()
 
-	defaultExcludes := []string{"node_modules", ".venv"}
-	layer.Filter.Exclude = append(layer.Filter.Exclude, defaultExcludes...)
-
 	excludes, includes, _ := c.dockerignoreCtx.Parse()
 	if len(includes) > 0 {
 		layer.Filter.Include = utils.RemoveDuplicates(append(layer.Filter.Include, includes...))

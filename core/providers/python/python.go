@@ -373,7 +373,9 @@ func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[str
 
 func (p *PythonProvider) copyInstallFiles(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
 	if p.installNeedsAllFiles(ctx) {
-		install.AddInput(ctx.NewLocalLayer())
+		layer := ctx.NewLocalLayer()
+		layer.Filter.Exclude = append(layer.Filter.Exclude, ".venv")
+		install.AddInput(layer)
 		return
 	}
 

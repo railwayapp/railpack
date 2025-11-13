@@ -113,10 +113,8 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		require.True(t, layer.Local)
 		require.NotNil(t, layer.Filter)
 
-		// Should have exclude patterns from .dockerignore plus defaults
+		// Should have exclude patterns from .dockerignore
 		require.NotEmpty(t, layer.Filter.Exclude)
-		require.Contains(t, layer.Filter.Exclude, "node_modules") // default exclusion
-		require.Contains(t, layer.Filter.Exclude, ".venv")        // default exclusion
 		require.Contains(t, layer.Filter.Exclude, ".vscode")
 		require.Contains(t, layer.Filter.Exclude, "*.log")
 		require.Contains(t, layer.Filter.Exclude, "__pycache__") // Trailing slash is stripped by parser
@@ -138,7 +136,7 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		// Should use default behavior when no dockerignore patterns exist
 		require.NotNil(t, layer.Filter)
 		require.Equal(t, []string{"."}, layer.Filter.Include)
-		require.Equal(t, []string{"node_modules", ".venv"}, layer.Filter.Exclude)
+		require.Empty(t, layer.Filter.Exclude)
 	})
 
 	t.Run("context creation with no dockerignore", func(t *testing.T) {
