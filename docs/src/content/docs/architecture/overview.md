@@ -17,8 +17,8 @@ Railpack is split up into three main components:
 
 The core can be thought of as a _compiler_. The build plan that is generated is
 independent from Docker, BuildKit, or any other tool that can be used to
-generate an image. At the moment, BuildKit is the only _backend_, but more could
-be added in the future.
+generate an image. BuildKit is currently the primary _backend_, though the
+architecture supports additional backends.
 
 ## Build Plan
 
