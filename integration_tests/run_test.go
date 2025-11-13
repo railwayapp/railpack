@@ -298,7 +298,12 @@ func runContainerWithTimeout(t *testing.T, imageName string, expectedOutputs []s
 		if err != nil {
 			return fmt.Errorf("%v\ncontainer output did not contain expected string:\n%v", err, expectedOutputs)
 		}
-		// if err == nil, then we found the expected output, and can exit successfully before the container exits
+		// if err == nil, then we found the expected output
+		// check that stderr is empty
+		stderr := stdErrOutput.String()
+		if stderr != "" {
+			return fmt.Errorf("expected stderr to be empty, but got:\n%s", stderr)
+		}
 		return nil
 	case err := <-cmdDoneChan(cmd):
 		if err != nil && !strings.Contains(err.Error(), "signal: killed") {
