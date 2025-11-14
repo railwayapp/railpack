@@ -19,10 +19,22 @@ const (
 	MisePackageStepName = "packages:mise"
 	// System-level config at /etc/mise/config.toml is auto-trusted by mise
 	MiseInstallCommand = "mise install"
-	// Last Node.js version that has GPG keys available. Versions after this require MISE_NODE_VERIFY=false
+	// NODE_VERIFY_BEFORE is the last Node.js version known to have GPG signatures available.
+	// When new Node.js versions are released, they may not have GPG keys immediately available
+	// for signature verification. This constant tracks the latest version that has been verified
+	// to have GPG signatures. Versions after this will have MISE_NODE_VERIFY=false to prevent
+	// build failures.
+	//
+	// To update this constant when new versions get GPG keys, run:
+	//   mise run update-latest-signed-node
+	//
+	// See: https://github.com/railwayapp/railpack/issues/207
 	NODE_VERIFY_BEFORE = "22.11.0"
 )
 
+// nodeVersionRequiresVerifyDisabled checks if a Node.js version needs GPG verification disabled.
+// Newer versions released without GPG keys yet will return true.
+// This prevents build failures while maintaining security for older, signed versions.
 func nodeVersionRequiresVerifyDisabled(version string) bool {
 	nodeVer, err := semver.NewVersion(version)
 	if err != nil {

@@ -41,6 +41,32 @@ When Node.js isn't required in the final image but is needed during installation
 (for native modules), a basic Node.js version will be installed from apt
 packages.
 
+## Security
+
+### GPG Verification
+
+Railpack uses [mise](https://mise.jdx.dev) to install Node.js versions, which
+supports GPG signature verification for downloaded binaries. However, when new
+Node.js versions are released, GPG signatures may not be immediately available.
+
+To prevent build failures for newly released Node.js versions, Railpack
+conditionally disables GPG verification (`MISE_NODE_VERIFY=false`) for versions
+newer than a tracked cutoff version. Once a version has GPG signatures
+available, the cutoff is updated.
+
+**Current behavior:**
+
+- Node.js versions ≤ 22.11.0: GPG verification **enabled** (secure)
+- Node.js versions > 22.11.0: GPG verification **disabled** (allows new
+  releases)
+
+All downloads still use HTTPS (`MISE_PARANOID=1`), providing transport security
+even when GPG verification is disabled.
+
+The cutoff version is updated periodically as new Node.js versions receive GPG
+signatures. See [issue
+#207](https://github.com/railwayapp/railpack/issues/207) for more details.
+
 ## Runtime Variables
 
 These variables are available at runtime:
