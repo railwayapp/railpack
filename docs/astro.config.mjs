@@ -144,6 +144,7 @@ export default defineConfig({
             { label: "Rust", link: "/languages/rust" },
             { label: "Elixir", link: "/languages/elixir" },
             { label: "Gleam", link: "/languages/gleam" },
+            { label: "C/C++", link: "/languages/cpp" },
             { label: "Staticfile", link: "/languages/staticfile" },
             { label: "Shell Scripts", link: "/languages/shell" },
           ],
