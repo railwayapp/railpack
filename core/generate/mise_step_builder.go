@@ -8,11 +8,11 @@ import (
 	"sort"
 	"strings"
 
+	semver "github.com/Masterminds/semver/v3"
 	a "github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/mise"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/resolver"
-	"github.com/railwayapp/railpack/internal/utils"
 )
 
 const (
@@ -24,27 +24,17 @@ const (
 )
 
 func nodeVersionRequiresVerifyDisabled(version string) bool {
-	nodeVer, err := utils.ParseSemver(version)
+	nodeVer, err := semver.NewVersion(version)
 	if err != nil {
 		return false
 	}
 
-	cutoffVer, err := utils.ParseSemver(NODE_VERIFY_BEFORE)
+	cutoffVer, err := semver.NewVersion(NODE_VERIFY_BEFORE)
 	if err != nil {
 		return false
 	}
 
-	if nodeVer.Major > cutoffVer.Major {
-		return true
-	}
-	if nodeVer.Major == cutoffVer.Major && nodeVer.Minor > cutoffVer.Minor {
-		return true
-	}
-	if nodeVer.Major == cutoffVer.Major && nodeVer.Minor == cutoffVer.Minor && nodeVer.Patch > cutoffVer.Patch {
-		return true
-	}
-
-	return false
+	return nodeVer.GreaterThan(cutoffVer)
 }
 
 // represents a app-local mise package
