@@ -317,6 +317,8 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			miseStep.Version(bun, envVersion, varName)
 		}
 
+		// .bun-version is a community convention for specifying the Bun version.
+		// It is not officially supported by Bun itself, but is recognized by version managers like mise.
 		if bunVersionFile, err := ctx.App.ReadFile(".bun-version"); err == nil {
 			miseStep.Version(bun, string(bunVersionFile), ".bun-version")
 		}

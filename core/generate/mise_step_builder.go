@@ -315,6 +315,7 @@ var miseConfigFiles = []string{
 	".python-version",
 	".node-version",
 	".nvmrc",
+	// .bun-version is a community convention, not officially supported by Bun
 	".bun-version",
 }
 
