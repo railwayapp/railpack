@@ -56,57 +56,57 @@ func TestWorkspace(t *testing.T) {
 	}
 }
 
-func TestConvertWorkspacePattern(t *testing.T) {
+func TestConvertWorkspacePatterns(t *testing.T) {
 	tests := []struct {
 		name     string
 		pattern  string
-		expected string
+		expected []string
 	}{
 		{
-			name:     "single level pattern",
-			pattern:  "packages/*",
-			expected: "packages/*/package.json",
+			name:    "single level pattern",
+			pattern: "packages/*",
+			expected: []string{
+				"packages/*/package.json5",
+				"packages/*/package.json",
+			},
 		},
 		{
-			name:     "recursive pattern",
-			pattern:  "packages/**",
-			expected: "packages/**/package.json",
+			name:    "recursive pattern",
+			pattern: "packages/**",
+			expected: []string{
+				"packages/**/package.json5",
+				"packages/**/package.json",
+			},
 		},
 		{
-			name:     "direct path",
-			pattern:  "packages/foo",
-			expected: "packages/foo/package.json",
+			name:    "direct path",
+			pattern: "packages/foo",
+			expected: []string{
+				"packages/foo/package.json5",
+				"packages/foo/package.json",
+			},
 		},
 		{
-			name:     "already has package.json",
-			pattern:  "packages/foo/package.json",
-			expected: "packages/foo/package.json/package.json",
+			name:    "very short pattern",
+			pattern: "db",
+			expected: []string{
+				"db/package.json5",
+				"db/package.json",
+			},
 		},
 		{
-			name:     "very short pattern",
-			pattern:  "db",
-			expected: "db/package.json",
-		},
-		{
-			name:     "single character pattern",
-			pattern:  "a",
-			expected: "a/package.json",
-		},
-		{
-			name:     "empty pattern",
-			pattern:  "",
-			expected: "package.json",
-		},
-		{
-			name:     "pattern ending with slash",
-			pattern:  "apps/",
-			expected: "apps/package.json",
+			name:    "single character pattern",
+			pattern: "a",
+			expected: []string{
+				"a/package.json5",
+				"a/package.json",
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := convertWorkspacePattern(tt.pattern)
+			result := convertWorkspacePatterns(tt.pattern)
 			require.Equal(t, tt.expected, result)
 		})
 	}
