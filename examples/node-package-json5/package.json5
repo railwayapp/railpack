@@ -1,0 +1,17 @@
+{
+  // Node.js package with JSON5 support
+  name: "node-package-json5",
+  version: "1.0.0",
+  description: "Test package.json5 support",
+  main: "index.js",
+  scripts: {
+    start: "node index.js",
+  },
+  dependencies: {
+    // Simple HTTP server
+    express: "^4.18.0",
+  },
+  engines: {
+    node: ">=18",
+  },
+}

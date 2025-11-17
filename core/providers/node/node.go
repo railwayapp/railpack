@@ -56,7 +56,14 @@ func (p *NodeProvider) Initialize(ctx *generate.GenerateContext) error {
 }
 
 func (p *NodeProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
-	return ctx.App.HasMatch("package.json"), nil
+	return ctx.App.HasMatch("package.json") || ctx.App.HasMatch("package.json5"), nil
+}
+
+func getPackageFileName(app *app.App) string {
+	if app.HasMatch("package.json5") {
+		return "package.json5"
+	}
+	return "package.json"
 }
 
 func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
@@ -261,8 +268,9 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 		})
 		ctx.Logger.LogInfo("Installing %s@%s with Corepack", pmName, pmVersion)
 
+		packageFileName := getPackageFileName(ctx.App)
 		install.AddCommands([]plan.Command{
-			plan.NewCopyCommand("package.json"),
+			plan.NewCopyCommand(packageFileName),
 			// corepack will detect the package manager version from package.json, safe to assume the user is properly
 			// specifying the version they want there, no need to check other version specifications.
 			plan.NewExecShellCommand("npm i -g corepack@latest && corepack enable && corepack prepare --activate"),
@@ -433,13 +441,15 @@ func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
 
 func (p *NodeProvider) GetPackageJson(app *app.App) (*PackageJson, error) {
 	packageJson := NewPackageJson()
-	if !app.HasMatch("package.json") {
+	packageFileName := getPackageFileName(app)
+
+	if !app.HasMatch("package.json") && !app.HasMatch("package.json5") {
 		return packageJson, nil
 	}
 
-	err := app.ReadJSON("package.json", packageJson)
+	err := app.ReadJSON(packageFileName, packageJson)
 	if err != nil {
-		return nil, fmt.Errorf("error reading package.json: %w", err)
+		return nil, fmt.Errorf("error reading %s: %w", packageFileName, err)
 	}
 
 	return packageJson, nil

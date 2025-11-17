@@ -23,9 +23,10 @@ type PnpmWorkspace struct {
 
 // NewWorkspace creates a new workspace from a package.json file
 func NewWorkspace(app *app.App) (*Workspace, error) {
-	packageJson, err := readPackageJson(app, "package.json")
+	packageFileName := getPackageFileName(app)
+	packageJson, err := readPackageJson(app, packageFileName)
 	if err != nil {
-		return nil, fmt.Errorf("error reading root package.json: %w", err)
+		return nil, fmt.Errorf("error reading root %s: %w", packageFileName, err)
 	}
 
 	workspace := &Workspace{
@@ -57,50 +58,55 @@ func NewWorkspace(app *app.App) (*Workspace, error) {
 func (w *Workspace) findWorkspacePackages(app *app.App) error {
 	for _, pattern := range w.Root.PackageJson.Workspaces {
 		// For each workspace pattern, we need to:
-		// 1. Find all package.json files in that pattern
-		// 2. Read each package.json file
+		// 1. Find all package.json and package.json5 files in that pattern
+		// 2. Read each package.json/package.json5 file
 		// 3. Add it to our list of packages
 
-		pattern = convertWorkspacePattern(pattern)
-		matches, err := app.FindFiles(pattern)
-		if err != nil {
-			continue
-		}
-
-		for _, match := range matches {
-			packageJson, err := readPackageJson(app, match)
+		for _, pkgPattern := range convertWorkspacePatterns(pattern) {
+			matches, err := app.FindFiles(pkgPattern)
 			if err != nil {
 				continue
 			}
 
-			dir := filepath.Dir(match)
-			w.Packages = append(w.Packages, &WorkspacePackage{
-				Path:        dir,
-				PackageJson: packageJson,
-			})
+			for _, match := range matches {
+				packageJson, err := readPackageJson(app, match)
+				if err != nil {
+					continue
+				}
+
+				dir := filepath.Dir(match)
+				w.Packages = append(w.Packages, &WorkspacePackage{
+					Path:        dir,
+					PackageJson: packageJson,
+				})
+			}
 		}
 	}
 
 	return nil
 }
 
-// convertWorkspacePattern converts npm/pnpm workspace patterns to glob patterns
-func convertWorkspacePattern(pattern string) string {
+// convertWorkspacePatterns converts npm/pnpm workspace patterns to glob patterns for both package.json and package.json5
+func convertWorkspacePatterns(pattern string) []string {
 	// npm/pnpm uses packages/* or packages/** for glob patterns
 	// - packages/* -> packages/*/package.json (single level)
 	// - packages/** -> packages/**/package.json (recursive)
+	var basePattern string
 	if len(pattern) >= 2 && pattern[len(pattern)-2:] == "/*" {
 		// Single level pattern (packages/*)
-		return pattern[:len(pattern)-1] + "*/package.json"
-	}
-
-	if len(pattern) >= 3 && pattern[len(pattern)-3:] == "/**" {
+		basePattern = pattern[:len(pattern)-1] + "*/"
+	} else if len(pattern) >= 3 && pattern[len(pattern)-3:] == "/**" {
 		// Recursive pattern (packages/**)
-		return pattern[:len(pattern)-2] + "**/package.json"
+		basePattern = pattern[:len(pattern)-2] + "**/"
+	} else {
+		// Direct path or other pattern
+		basePattern = pattern + "/"
 	}
 
-	// Direct path or other pattern, just append package.json
-	return filepath.Join(pattern, "package.json")
+	return []string{
+		filepath.Join(basePattern, "package.json5"),
+		filepath.Join(basePattern, "package.json"),
+	}
 }
 
 // readPackageJson reads a package.json file from the given path

@@ -183,11 +183,13 @@ func (p PackageManager) pruneYarnBerry(ctx *generate.GenerateContext, prune *gen
 
 func (p PackageManager) getPackageJsonFromContext(ctx *generate.GenerateContext) (*PackageJson, error) {
 	packageJson := NewPackageJson()
-	if !ctx.App.HasMatch("package.json") {
+	packageFileName := getPackageFileName(ctx.App)
+
+	if !ctx.App.HasMatch("package.json") && !ctx.App.HasMatch("package.json5") {
 		return packageJson, nil
 	}
 
-	err := ctx.App.ReadJSON("package.json", packageJson)
+	err := ctx.App.ReadJSON(packageFileName, packageJson)
 	if err != nil {
 		return nil, err
 	}
@@ -212,6 +214,7 @@ func (p PackageManager) GetInstallFolder(ctx *generate.GenerateContext) []string
 func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []string {
 	patterns := []string{
 		"**/package.json",
+		"**/package.json5",
 		"**/package-lock.json",
 		"**/pnpm-workspace.yaml",
 		"**/yarn.lock",
@@ -337,20 +340,24 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 
 // usesLocalFile returns true if the package.json has a local dependency (e.g. file:./path/to/package)
 func (p PackageManager) usesLocalFile(ctx *generate.GenerateContext) bool {
-	files, err := ctx.App.FindFiles("**/package.json")
-	if err != nil {
-		return false
-	}
+	patterns := []string{"**/package.json", "**/package.json5"}
 
-	for _, file := range files {
-		packageJson := &PackageJson{}
-		err := ctx.App.ReadJSON(file, packageJson)
+	for _, pattern := range patterns {
+		files, err := ctx.App.FindFiles(pattern)
 		if err != nil {
 			continue
 		}
 
-		if packageJson.hasLocalDependency() {
-			return true
+		for _, file := range files {
+			packageJson := &PackageJson{}
+			err := ctx.App.ReadJSON(file, packageJson)
+			if err != nil {
+				continue
+			}
+
+			if packageJson.hasLocalDependency() {
+				return true
+			}
 		}
 	}
 
