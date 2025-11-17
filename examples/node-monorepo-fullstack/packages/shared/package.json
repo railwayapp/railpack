@@ -1,0 +1,11 @@
+{
+  "name": "@monorepo/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./constants": "./constants.js",
+    "./utils": "./utils.js"
+  }
+}

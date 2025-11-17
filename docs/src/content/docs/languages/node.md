@@ -132,12 +132,18 @@ correctly.
 - **pnpm Workspaces**: Uses `pnpm-workspace.yaml` configuration
   ([example][pnpm-workspaces-example])
 - **yarn Workspaces**: Uses the `workspaces` field in `package.json`
+  ([example][yarn-workspaces-example])
 - **Turborepo**: Build system orchestration with intelligent caching
   ([example][turborepo-example])
 
+For a more realistic example, see the [full-stack monorepo][fullstack]
+with an Express API, frontend, and shared utilities package.
+
 [npm-workspaces-example]: https://github.com/railwayapp/railpack/tree/main/examples/node-npm-workspaces
 [pnpm-workspaces-example]: https://github.com/railwayapp/railpack/tree/main/examples/node-pnpm-workspaces
+[yarn-workspaces-example]: https://github.com/railwayapp/railpack/tree/main/examples/node-yarn-workspaces
 [turborepo-example]: https://github.com/railwayapp/railpack/tree/main/examples/node-turborepo
+[fullstack]: https://github.com/railwayapp/railpack/tree/main/examples/node-monorepo-fullstack
 
 When building a monorepo, Railpack will:
 

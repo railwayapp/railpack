@@ -1,0 +1,16 @@
+{
+  "name": "yarn-workspaces",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "dependencies": {
+    "cowsay": "^1.6.0"
+  },
+  "packageManager": "yarn@4.5.3"
+}
