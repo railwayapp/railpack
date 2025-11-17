@@ -1,5 +1,11 @@
 [
   {
-    "expectedOutput": "Hello from npm workspaces"
+    "expectedOutput": [
+      "Hello from npm workspaces",
+      "pkg-a loaded",
+      "pkg-b loaded",
+      "pkg-a says:",
+      "pkg-b says: hello from workspace!"
+    ]
   }
 ]
