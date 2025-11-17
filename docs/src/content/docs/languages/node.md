@@ -118,6 +118,38 @@ install the specified package manager version. When a package manager is
 detected via the `engines` field, the specified version constraint will be
 used.
 
+### Monorepo Support
+
+Railpack automatically supports monorepo configurations with all major
+package managers and build tools. No special configuration is required -
+Railpack will detect workspace configurations and build your application
+correctly.
+
+**Supported Approaches:**
+
+- **npm Workspaces**: Uses the `workspaces` field in `package.json`
+  ([example][npm-workspaces-example])
+- **pnpm Workspaces**: Uses `pnpm-workspace.yaml` configuration
+  ([example][pnpm-workspaces-example])
+- **yarn Workspaces**: Uses the `workspaces` field in `package.json`
+- **Turborepo**: Build system orchestration with intelligent caching
+  ([example][turborepo-example])
+
+[npm-workspaces-example]: https://github.com/railwayapp/railpack/tree/main/examples/node-npm-workspaces
+[pnpm-workspaces-example]: https://github.com/railwayapp/railpack/tree/main/examples/node-pnpm-workspaces
+[turborepo-example]: https://github.com/railwayapp/railpack/tree/main/examples/node-turborepo
+
+When building a monorepo, Railpack will:
+
+- Detect workspace configurations automatically
+- Install all workspace dependencies correctly
+- Respect workspace dependency links between packages
+- Cache workspace node_modules appropriately
+
+If your monorepo requires building a specific workspace package, ensure
+your build and start scripts are defined in the root `package.json` or use
+a [config file](/architecture/user-config) to specify custom commands.
+
 ### Install
 
 Railpack will only include the necessary files to install dependencies in order
