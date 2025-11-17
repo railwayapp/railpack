@@ -19,38 +19,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ansi-styles@npm:^3.2.1":
-  version: 3.2.1
-  resolution: "ansi-styles@npm:3.2.1"
-  dependencies:
-    color-convert: "npm:^1.9.0"
-  checksum: 10c0/ece5a8ef069fcc5298f67e3f4771a663129abd174ea2dfa87923a2f1db4681c8ca8d1dff8d681bfb8a718df3552b00c48d359e3f5d656cd8d4c0f129ff033ea0
-  languageName: node
-  linkType: hard
-
-"camelcase@npm:^5.3.1":
-  version: 5.3.1
-  resolution: "camelcase@npm:5.3.1"
-  checksum: 10c0/1ffe85c3b5e0e98fb8f4417d38b2e816c82e5d1a7f3f2f4e7f3c0b4c3f6e8f5e7e9c8b0e8d9e7e8c9e8f7e6e5e4e3e2e1e0e9e8e7e6e5e4e3e2e1e0f9e8e7e6e5e4e3
-  languageName: node
-  linkType: hard
-
-"color-convert@npm:^1.9.0":
-  version: 1.9.3
-  resolution: "color-convert@npm:1.9.3"
-  dependencies:
-    color-name: "npm:1.1.3"
-  checksum: 10c0/fd5e1d1e8ae3e73ea43c0f0cc0e0a8e0e4e5e6e7e8e9e0e1e2e3e4e5e6e7e8e9e0e1e2e3e4e5e6e7e8e9e0e1e2e3e4e5e6e7e8e9e0e1e2e3e4e5e6e7e8e9e0e1
-  languageName: node
-  linkType: hard
-
-"color-name@npm:1.1.3":
-  version: 1.1.3
-  resolution: "color-name@npm:1.1.3"
-  checksum: 10c0/78d785c6a0780e8c5e4e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5
-  languageName: node
-  linkType: hard
-
 "cowsay@npm:^1.6.0":
   version: 1.6.0
   resolution: "cowsay@npm:1.6.0"
@@ -72,7 +40,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pkg-a@workspace:packages/pkg-a":
+"pkg-a@workspace:*, pkg-a@workspace:packages/pkg-a":
   version: 0.0.0-use.local
   resolution: "pkg-a@workspace:packages/pkg-a"
   dependencies:
@@ -80,7 +48,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"pkg-b@workspace:packages/pkg-b":
+"pkg-b@workspace:*, pkg-b@workspace:packages/pkg-b":
   version: 0.0.0-use.local
   resolution: "pkg-b@workspace:packages/pkg-b"
   languageName: unknown
