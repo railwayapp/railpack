@@ -283,6 +283,20 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 	p.packageManager.installDependencies(ctx, p.workspace, install, p.usesCorepack())
 }
 
+// applyNodeVersionResolution applies the standard Node version resolution logic to a mise package.
+// This method exists to ensure consistent version resolution across different scenarios where Node is needed.
+//
+// Consistency is critical because:
+//  1. When Bun is the package manager, Node is still installed for native module compilation (node-gyp)
+//  2. Users expect their version specifications (.nvmrc, package.json engines, etc.) to be respected
+//     regardless of whether Node is the primary runtime or a build-time dependency
+//  3. Inconsistent versions between development and production can cause subtle bugs
+//
+// Version sources are checked in this priority order:
+// 1. NODE_VERSION environment variable (highest priority, explicit user override)
+// 2. package.json > engines > node (project-specific requirement)
+// 3. .nvmrc (common Node version manager convention)
+// 4. .node-version (alternative version manager convention)
 func (p *NodeProvider) applyNodeVersionResolution(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder, nodeToolRef resolver.PackageRef) {
 	if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
 		miseStep.Version(nodeToolRef, envVersion, varName)
