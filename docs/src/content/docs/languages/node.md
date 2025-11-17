@@ -13,13 +13,18 @@ exists in the root directory.
 
 ## Versions
 
-The Node.js version is determined in the following order:
+The Node.js version is determined in the following order of priority:
 
-- Set via the `RAILPACK_NODE_VERSION` environment variable
-- Read from the `engines` field in `package.json`
-- Read from the `.nvmrc` file
-- Read from `mise.toml` or `.tool-versions` files
-- Defaults to `22`
+1. Set via the `RAILPACK_NODE_VERSION` environment variable
+2. Read from the `engines.node` field in `package.json`
+3. Read from the `.nvmrc` file
+4. Read from the `.node-version` file
+5. Read from `mise.toml` or `.tool-versions` files
+6. Defaults to `22`
+
+This version resolution logic is applied consistently across all scenarios where
+Node is needed, including when Bun is the primary package manager but Node is
+required for native module compilation.
 
 ### Bun
 
@@ -37,11 +42,15 @@ following cases:
 - If you define a `packageManager` field in your `package.json` (for Corepack
   support)
 - If any script in your `package.json` contains `node`
-- If you're using Astro
+- If you're using Astro or Vite
+- During installation for native module compilation (node-gyp)
 
-When Node.js isn't required in the final image but is needed during installation
-(for native modules), Node.js will be installed via mise and will respect
-version specifications in `mise.toml` and `.tool-versions` files.
+**Important**: When Node.js is installed alongside Bun (either for the runtime
+or just for build-time compilation), the same version resolution logic applies
+as described in the [Versions](#versions) section above. This ensures
+consistency regardless of whether Node is the primary runtime or a build
+dependency. Your `.nvmrc`, `package.json` engines, and other version
+specifications will always be respected.
 
 ## Runtime Variables
 

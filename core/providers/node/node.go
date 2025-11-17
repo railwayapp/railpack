@@ -10,6 +10,7 @@ import (
 	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	"github.com/railwayapp/railpack/core/resolver"
 )
 
 type PackageManager string
@@ -278,6 +279,42 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 	p.packageManager.installDependencies(ctx, p.workspace, install)
 }
 
+// applyNodeVersionResolution applies the standard Node version resolution logic to a mise package.
+// This method exists to ensure consistent version resolution across different scenarios where Node is needed.
+//
+// Consistency is critical because:
+//  1. When Bun is the package manager, Node is still installed for native module compilation (node-gyp)
+//  2. Users expect their version specifications (.nvmrc, package.json engines, etc.) to be respected
+//     regardless of whether Node is the primary runtime or a build-time dependency
+//  3. Inconsistent versions between development and production can cause subtle bugs
+//
+// Version sources are checked in this priority order:
+// 1. NODE_VERSION environment variable (highest priority, explicit user override)
+// 2. package.json > engines > node (project-specific requirement)
+// 3. .nvmrc (common Node version manager convention)
+// 4. .node-version (alternative version manager convention)
+func (p *NodeProvider) applyNodeVersionResolution(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder, nodeToolRef resolver.PackageRef) {
+	if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
+		miseStep.Version(nodeToolRef, envVersion, varName)
+	}
+
+	if p.packageJson != nil && p.packageJson.Engines != nil && p.packageJson.Engines["node"] != "" {
+		miseStep.Version(nodeToolRef, p.packageJson.Engines["node"], "package.json > engines > node")
+	}
+
+	if nvmrc, err := ctx.App.ReadFile(".nvmrc"); err == nil {
+		if len(nvmrc) > 0 && nvmrc[0] == 'v' {
+			nvmrc = nvmrc[1:]
+		}
+
+		miseStep.Version(nodeToolRef, string(nvmrc), ".nvmrc")
+	}
+
+	if nodeVersionFile, err := ctx.App.ReadFile(".node-version"); err == nil {
+		miseStep.Version(nodeToolRef, string(nodeVersionFile), ".node-version")
+	}
+}
+
 func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	requiresNode := p.requiresNode(ctx)
 	misePackages := []string{}
@@ -287,25 +324,7 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		node := miseStep.Default("node", DEFAULT_NODE_VERSION)
 		misePackages = append(misePackages, "node")
 
-		if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
-			miseStep.Version(node, envVersion, varName)
-		}
-
-		if p.packageJson != nil && p.packageJson.Engines != nil && p.packageJson.Engines["node"] != "" {
-			miseStep.Version(node, p.packageJson.Engines["node"], "package.json > engines > node")
-		}
-
-		if nvmrc, err := ctx.App.ReadFile(".nvmrc"); err == nil {
-			if len(nvmrc) > 0 && nvmrc[0] == 'v' {
-				nvmrc = nvmrc[1:]
-			}
-
-			miseStep.Version(node, string(nvmrc), ".nvmrc")
-		}
-
-		if nodeVersionFile, err := ctx.App.ReadFile(".node-version"); err == nil {
-			miseStep.Version(node, string(nodeVersionFile), ".node-version")
-		}
+		p.applyNodeVersionResolution(ctx, miseStep, node)
 	}
 
 	// Bun
@@ -327,12 +346,11 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			miseStep.Version(bun, string(bunVersionFile), ".bun-version")
 		}
 
-		// If we don't need node in the final image, we still want to include it for the install steps
-		// since many packages need node-gyp to install native modules
-		// TODO: use the same version detection logic as when bun is not in place (NODE_VERSION, package.json engines, .nvmrc, .node-version)
 		if !requiresNode && ctx.Config.Packages["node"] == "" {
-			miseStep.Default("node", "latest")
+			node := miseStep.Default("node", DEFAULT_NODE_VERSION)
 			misePackages = append(misePackages, "node")
+
+			p.applyNodeVersionResolution(ctx, miseStep, node)
 		}
 	}
 
