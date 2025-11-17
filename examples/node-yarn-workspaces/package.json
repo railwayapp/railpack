@@ -10,7 +10,9 @@
     "packages/*"
   ],
   "dependencies": {
-    "cowsay": "^1.6.0"
+    "cowsay": "^1.6.0",
+    "pkg-a": "workspace:*",
+    "pkg-b": "workspace:*"
   },
   "packageManager": "yarn@4.5.3"
 }
