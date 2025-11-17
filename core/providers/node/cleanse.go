@@ -1,3 +1,7 @@
+// there are certain commands which `rm -rf node_modules`, which will cause a cache checksum docker error.
+// this cleanse operation imperfectly detects this case and removes node_modules from the cache keys to avoid this common user error.
+// more info here: https://github.com/railwayapp/railpack/pull/259
+
 package node
 
 import (
