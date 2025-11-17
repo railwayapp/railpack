@@ -11,5 +11,9 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "pkg-a": "workspace:*",
+    "pkg-b": "workspace:*"
+  }
 }
