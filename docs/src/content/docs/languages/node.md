@@ -21,6 +21,10 @@ The Node.js version is determined in the following order:
 - Read from `mise.toml` or `.tool-versions` files
 - Defaults to `22`
 
+We officially support actively maintained [Node.js LTS
+versions](https://nodejs.org/en/about/previous-releases). Older versions of Node.js will likely still
+work but are not officially supported.
+
 ### Bun
 
 The Bun version is determined in the following order:
