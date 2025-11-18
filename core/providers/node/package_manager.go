@@ -110,6 +110,11 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 	case PackageManagerPnpm:
 		// pnpm (standalone) does not bundle node-gyp like npm does, so we must install it globally
 		// to support packages with native dependencies (e.g., better-sqlite3, bcrypt, etc.)
+		// Set PNPM_HOME so pnpm can create a global bin directory for node-gyp
+		install.AddEnvVars(map[string]string{
+			"PNPM_HOME": "/pnpm",
+		})
+		install.AddPaths([]string{"/pnpm"})
 		install.AddCommand(plan.NewExecCommand("pnpm add -g node-gyp"))
 
 		hasLockfile := ctx.App.HasMatch("pnpm-lock.yaml")

@@ -16,6 +16,22 @@ with support for Node, Python, Go, PHP, and more.
   detects package.json) and generate appropriate build steps
 - **Runtime**: The built images are based on @images/debian/runtime/Dockerfile
 
+# Node.js / pnpm Specifics
+
+## Native Module Compilation
+
+Unlike npm (which bundles node-gyp internally), standalone pnpm does not include
+node-gyp. For projects with native dependencies (better-sqlite3, bcrypt, canvas,
+etc.), we must:
+
+1. Set `PNPM_HOME` environment variable to define where pnpm stores global packages
+2. Add `PNPM_HOME` to PATH so node-gyp is accessible
+3. Install node-gyp globally with `pnpm add -g node-gyp`
+
+This is handled automatically in the Node provider's `installDeps` method when
+pnpm is detected as the package manager. The PNPM_HOME directory is set to
+`/pnpm` in the container.
+
 # Code style
 
 - Follow Go conventions and existing patterns in the codebase
