@@ -377,7 +377,7 @@ func (p *NodeProvider) shouldPrune(ctx *generate.GenerateContext) bool {
 
 func (p *NodeProvider) PruneNodeDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
 	ctx.Logger.LogInfo("Pruning node dependencies")
-	prune.Variables["NPM_CONFIG_PRODUCTION"] = "true"
+	prune.Variables["NPM_CONFIG_OMIT"] = "dev,optional"
 	if p.packageManager == PackageManagerBun {
 		// Keep symlinks project-local in node_modules across container build layers
 		prune.Variables["BUN_INSTALL_GLOBAL_STORE"] = "0"
