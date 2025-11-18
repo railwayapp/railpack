@@ -243,7 +243,7 @@ func (p *NodeProvider) shouldPrune(ctx *generate.GenerateContext) bool {
 
 func (p *NodeProvider) PruneNodeDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
 	ctx.Logger.LogInfo("Pruning node dependencies")
-	prune.Variables["NPM_CONFIG_PRODUCTION"] = "true"
+	prune.Variables["NPM_CONFIG_OMIT"] = "dev,optional"
 	prune.Secrets = []string{}
 	p.packageManager.PruneDeps(ctx, prune)
 }
