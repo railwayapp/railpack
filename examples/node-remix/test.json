@@ -1,12 +1,18 @@
 [
   {
-    "expectedOutput": "[remix-serve]"
+    "expectedOutput": "[remix-serve]",
+    // TEMPORARY: Remove this once NPM_CONFIG_PRODUCTION is removed from node.go:241
+    // Currently causes: npm warn config production Use `--omit=dev` instead.
+    "stderrAllowed": true
   },
   {
     "httpCheck": {
       "path": "/",
       "expected": 200,
       "internalPort": 3000
-    }
+    },
+    // TEMPORARY: Remove this once NPM_CONFIG_PRODUCTION is removed from node.go:241
+    // Currently causes: npm warn config production Use `--omit=dev` instead.
+    "stderrAllowed": true
   }
 ]
