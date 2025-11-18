@@ -1,5 +1,5 @@
 {
-  "name": "node-npm-native-deps",
+  "name": "node-latest-npm-native-deps",
   "version": "1.0.0",
   "description": "Test npm with native dependencies (better-sqlite3)",
   "main": "index.js",
