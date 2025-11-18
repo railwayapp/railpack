@@ -1,5 +1,7 @@
 [
   {
-    "expectedOutput": "hello from Bun"
+    "expectedOutput": "hello from Bun",
+    // Bun routes console.log/console.error to stderr by default in script mode
+    "stderrAllowed": true
   }
 ]
