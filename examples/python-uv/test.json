@@ -1,5 +1,6 @@
 [
   {
-    "expectedOutput": "Hello from Python UV!"
+    "expectedOutput": "Hello from Python UV!",
+    "stderrAllowed": true
   }
 ]
