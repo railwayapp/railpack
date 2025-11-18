@@ -1,9 +1,8 @@
 {
-  "name": "node-latest-pnpm-native-deps",
+  "name": "node-latest-pnpm-mise-native-deps",
   "version": "1.0.0",
-  "description": "Test pnpm (via corepack) with native dependencies (better-sqlite3)",
+  "description": "Test pnpm (via mise) with native dependencies (better-sqlite3)",
   "main": "index.js",
-  "packageManager": "pnpm@10.22.0",
   "scripts": {
     "start": "node index.js"
   },

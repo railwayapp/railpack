@@ -1,4 +1,2 @@
 [tools]
 node = "latest"
-# Would like to use latest but can't because of https://github.com/jonathanmorley/asdf-pnpm/pull/41
-pnpm = "10.22.0"
