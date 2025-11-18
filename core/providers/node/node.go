@@ -282,7 +282,7 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 		plan.NewExecCommand(fmt.Sprintf("mkdir -p %s", NODE_MODULES_CACHE)),
 	})
 
-	p.packageManager.installDependencies(ctx, p.workspace, install)
+	p.packageManager.installDependencies(ctx, p.workspace, install, p.usesCorepack())
 }
 
 func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
