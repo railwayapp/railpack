@@ -108,6 +108,10 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 			install.AddCommand(plan.NewExecCommand("npm install"))
 		}
 	case PackageManagerPnpm:
+		// pnpm (standalone) does not bundle node-gyp like npm does, so we must install it globally
+		// to support packages with native dependencies (e.g., better-sqlite3, bcrypt, etc.)
+		install.AddCommand(plan.NewExecCommand("pnpm add -g node-gyp"))
+
 		hasLockfile := ctx.App.HasMatch("pnpm-lock.yaml")
 		if hasLockfile {
 			install.AddCommand(plan.NewExecCommand("pnpm install --frozen-lockfile --prefer-offline"))
