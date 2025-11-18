@@ -98,9 +98,6 @@ def get_redis_config():
     return {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
         'LOCATION': redis_url,
-        'OPTIONS': {
-            'parser_class': 'redis.connection.HiredisParser',
-        }
     }
 
 CACHES = {
