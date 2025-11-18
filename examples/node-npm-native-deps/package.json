@@ -1,0 +1,15 @@
+{
+  "name": "node-npm-native-deps",
+  "version": "1.0.0",
+  "description": "Test npm with native dependencies (better-sqlite3)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
