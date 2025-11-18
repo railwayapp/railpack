@@ -169,3 +169,20 @@ Including:
 As well as a default cache for node modules:
 
 - Node modules: Caches `node_modules/.cache` (with the cache key `node-modules`)
+
+## Cache & Removing `node_modules`
+
+When you add custom build commands that remove `node_modules` (such as
+`npm ci`), Railpack automatically detects this and
+removes the `node_modules/.cache` directory from the cache configuration for
+those steps. This prevents `EBUSY: resource busy or locked` [errors](https://github.com/railwayapp/railpack/issues/255)
+that would otherwise occur when trying to remove a cached directory.
+
+This automatic handling applies to build steps that contain commands like:
+
+- `npm ci`
+- `rm -rf node_modules`
+- `rimraf node_modules`
+
+The install step always retains its cache configuration regardless of the
+commands used.

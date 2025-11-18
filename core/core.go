@@ -109,10 +109,16 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		return &BuildResult{Success: false, Logs: logger.Logs}
 	}
 
+	// before `Generate()` any commands provided by railpack.json are *not* merged into the provider-generated
+	// buildPlan. This means providers can't view any of the custom structure provided by the user via a railpack.json
 	buildPlan, resolvedPackages, err := ctx.Generate()
 	if err != nil {
 		logger.LogError("%s", err.Error())
 		return &BuildResult{Success: false, Logs: logger.Logs}
+	}
+
+	if providerToUse != nil {
+		providerToUse.CleansePlan(buildPlan)
 	}
 
 	if !ValidatePlan(buildPlan, app, logger, &ValidatePlanOptions{
@@ -151,7 +157,6 @@ func GetConfig(app *app.App, env *app.Environment, options *GenerateBuildPlanOpt
 	return mergedConfig, nil
 }
 
-// GenerateConfigFromFile generates a config from the config file
 func GenerateConfigFromFile(app *app.App, env *app.Environment, options *GenerateBuildPlanOptions, logger *logger.Logger) (*c.Config, error) {
 	config := c.EmptyConfig()
 
@@ -233,7 +238,7 @@ func GenerateConfigFromEnvironment(env *app.Environment) *c.Config {
 	return config
 }
 
-// GenerateConfigFromOptions generates a config from the CLI options
+// generates a config from the CLI options
 func GenerateConfigFromOptions(options *GenerateBuildPlanOptions) *c.Config {
 	config := c.EmptyConfig()
 

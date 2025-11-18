@@ -127,6 +127,8 @@ func (p *PythonProvider) getMainPythonFile(ctx *generate.GenerateContext) string
 	return ""
 }
 
+func (p *PythonProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
+
 func (p *PythonProvider) StartCommandHelp() string {
 	return "To start your Python application, Railpack will automatically:\n\n" +
 		"1. Start FastAPI projects with uvicorn\n" +
