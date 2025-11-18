@@ -29,6 +29,29 @@ with support for Node, Python, Go, PHP, and more.
   `MISE_PIPX_UVX`) over TOML settings to maintain consistency with existing
   patterns in the codebase.
 
+# Mise Setup
+
+If mise is not available in your environment, you can install and activate it:
+
+```bash
+# Install mise
+curl https://mise.run | sh
+
+# Add mise to PATH
+export PATH="/root/.local/bin:$PATH"
+
+# Activate mise in your shell
+eval "$(mise activate bash)"
+
+# Trust the project configuration
+mise trust
+
+# Install all required tools
+mise install
+```
+
+After installation, mise will be available at `/root/.local/bin/mise` (or `~/.local/bin/mise` for non-root users).
+
 # Workflow
 
 - Take a careful look at @mise.toml to understand what commands should be run at different points in the project lifecycle
