@@ -1,0 +1,154 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.13"
+# dependencies = [
+#   "click"
+# ]
+# ///
+
+import sys
+import subprocess
+import os
+import click
+import shutil
+
+MASTER_BRANCH_REF = "main"
+
+def run_command(command, check=True, capture_output=False, text=True, cwd=None):
+    """Helper to run a shell command, exiting on failure."""
+    try:
+        return subprocess.run(command, shell=True, check=check, capture_output=capture_output, text=text, cwd=cwd)
+    except subprocess.CalledProcessError as e:
+        click.secho(f"Error running command: {e.cmd}", fg="red", err=True)
+        if e.stdout:
+            click.secho(f"STDOUT: {e.stdout}", fg="red", err=True)
+        if e.stderr:
+            click.secho(f"STDERR: {e.stderr}", fg="red", err=True)
+        sys.exit(1)
+
+@click.command()
+@click.argument('increment_type', type=click.Choice(['patch', 'minor', 'major']), required=False)
+@click.option('--auto', is_flag=True, help='Automatically determine the version bump from git history.')
+def main(increment_type, auto):
+    """Creates and pushes a new release tag."""
+    # TODO: Refactor to use GitPython for improved Git interaction.
+    try:
+        # Get repo root
+        repo_root_result = run_command("git rev-parse --show-toplevel", capture_output=True)
+        repo_root = repo_root_result.stdout.strip()
+
+        # Determine the remote to use
+        remote_name = "origin"
+        try:
+            run_command("git remote get-url upstream", capture_output=True, check=True, cwd=repo_root)
+            remote_name = "upstream"
+            click.secho("Using 'upstream' remote for operations.", fg="blue")
+        except subprocess.CalledProcessError:
+            click.secho("No 'upstream' remote found, using 'origin'.", fg="yellow")
+
+        # Fetch latest changes from remote and fetch tags
+        click.secho(f"Fetching latest changes from {remote_name}/{MASTER_BRANCH_REF} and tags...", fg="blue")
+        run_command(f"git fetch {remote_name} {MASTER_BRANCH_REF}", cwd=repo_root)
+        run_command(f"git fetch --tags {remote_name}", cwd=repo_root)
+
+        # Get latest tag (reachable from remote main)
+        latest_tag_result = run_command(f"git describe --tags --abbrev=0 {remote_name}/{MASTER_BRANCH_REF}", capture_output=True, check=False, cwd=repo_root)
+        if latest_tag_result.returncode != 0 or not latest_tag_result.stdout.strip():
+            latest_tag = "v0.0.0"
+            latest_tag_ref = ""
+        else:
+            latest_tag = latest_tag_result.stdout.strip()
+            latest_tag_ref = latest_tag
+
+        if auto:
+            if increment_type:
+                click.secho("Error: Cannot use --auto and specify an increment type at the same time.", fg="red", err=True)
+                sys.exit(1)
+            
+            click.secho("Automatically determining version bump from git history...", fg="blue")
+            
+            # Determine log range
+            if latest_tag_ref:
+                log_range = f"{latest_tag_ref}..{remote_name}/{MASTER_BRANCH_REF}"
+            else:
+                log_range = f"{remote_name}/{MASTER_BRANCH_REF}"
+                
+            click.secho(f"Analyzing git log for range: {log_range}", fg="cyan")
+
+            # Check for available AI tools
+            if shutil.which("gemini"):
+                ai_cmd = 'gemini'
+            elif shutil.which("claude"):
+                ai_cmd = 'claude -p'
+            else:
+                click.secho("Error: Could not find 'gemini' or 'claude' executable in PATH for auto-detection.", fg="red", err=True)
+                sys.exit(1)
+            
+            click.secho(f"Using '{ai_cmd.split()[0]}' for analysis...", fg="cyan")
+
+            # Use git log to get history of remote main
+            # Using a format that provides subject and body for better context
+            git_log_cmd = f'git log {log_range} --pretty=format:"Commit: %h%nSubject: %s%nBody: %b%n--%n"'
+            
+            auto_command = f'''{git_log_cmd} | {ai_cmd} "Analyze the git log from stdin. What is the recommended semanticversion bump? Respond with only one word: 'major', 'minor', or 'patch'." 2>/dev/null'''
+            
+            result = run_command(auto_command, capture_output=True, cwd=repo_root)
+            recommended_bump = result.stdout.strip().lower()
+
+            if recommended_bump not in ['major', 'minor', 'patch']:
+                click.secho(f"Error: Auto-detection returned an invalid choice: '{recommended_bump}'", fg="red", err=True)
+                sys.exit(1)
+            
+            click.secho(f"Recommended bump: '{recommended_bump}'", fg="green")
+            if not click.confirm("Do you want to proceed with this recommendation?"):
+                click.secho("Aborted by user.", fg="yellow")
+                sys.exit(0)
+            increment_type = recommended_bump
+        
+        # If --auto is not used, and increment_type is not provided, error out
+        if not auto and increment_type is None:
+            click.secho("Error: An increment type (patch, minor, or major) must be provided if --auto is not used.", fg="red", err=True)
+            sys.exit(1)
+
+        # Increment version
+        latest_version = latest_tag.lstrip('v')
+        try:
+            major, minor, patch = map(int, latest_version.split('.'))
+        except ValueError:
+            click.secho(f"Error: Could not parse version from tag '{latest_tag}'. Expected format 'vX.Y.Z'.", fg="red", err=True)
+            sys.exit(1)
+
+        if increment_type == "major":
+            major += 1
+            minor = 0
+            patch = 0
+        elif increment_type == "minor":
+            minor += 1
+            patch = 0
+        elif increment_type == "patch":
+            patch += 1
+
+        new_version = f"v{major}.{minor}.{patch}"
+
+        click.secho(f"Latest tag: {latest_tag}", fg="yellow")
+        click.secho(f"New version ({increment_type}): {new_version}\n", fg="green", bold=True) # Added \n for spacing
+
+        # Confirmation
+        if not click.confirm(f"This will create and push the tag {new_version}. Are you sure?"):
+            click.secho("Aborted by user.", fg="yellow")
+            sys.exit(0)
+
+        # Create and push tag
+        click.secho(f"Creating and pushing tag {new_version}...", fg="blue")
+        # Tag the remote main commit
+        run_command(f"git tag {new_version} {remote_name}/{MASTER_BRANCH_REF}", cwd=repo_root)
+        run_command(f"git push {remote_name} {new_version}", cwd=repo_root)
+
+        click.secho(f"Successfully created and pushed tag {new_version}.", fg="green", bold=True)
+
+    except Exception as e:
+        click.secho(f"An unexpected error occurred: {e}", fg="red", err=True)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
