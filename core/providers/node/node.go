@@ -271,6 +271,7 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 			plan.NewCopyCommand("package.json"),
 			// corepack will detect the package manager version from package.json, safe to assume the user is properly
 			// specifying the version they want there, no need to check other version specifications.
+			// corepack *used* to be bundled with node, but as of v25 it's not, so we install it explicitly
 			plan.NewExecShellCommand("npm i -g corepack@latest && corepack enable && corepack prepare --activate"),
 		})
 	}
@@ -378,7 +379,7 @@ func (p *NodeProvider) hasDependency(dependency string) bool {
 	return p.packageJson.hasDependency(dependency)
 }
 
-// if packageManager config exists in package.json, then assume corepack
+// if 'packageManager' field exists in package.json, then assume corepack unless using bun
 func (p *NodeProvider) usesCorepack() bool {
 	return p.packageJson != nil && p.packageJson.PackageManager != nil && p.packageManager != PackageManagerBun
 }
