@@ -21,10 +21,9 @@ The Node.js version is determined in the following order:
 - Read from `mise.toml` or `.tool-versions` files
 - Defaults to `22`
 
-We recommend using [Node.js LTS
-versions](https://nodejs.org/en/about/previous-releases) which receive
-long-term support for 30 months. As of November 2025, the supported LTS
-versions are v20 (Iron), v22 (Jod), and v24 (Krypton).
+We officially support actively maintained [Node.js LTS
+versions](https://nodejs.org/en/about/previous-releases). Older versions of Node.js will likely still
+work but are not officially supported.
 
 ### Bun
 

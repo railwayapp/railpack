@@ -1,8 +1,5 @@
 [
   {
-    "expectedOutput": [
-      "Hello from Node v20 (oldest supported LTS)!",
-      "Node version: v20"
-    ]
+    "expectedOutput": "Node version: v20"
   }
 ]
