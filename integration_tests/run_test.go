@@ -125,6 +125,8 @@ func TestExamplesIntegration(t *testing.T) {
 			t.Run(testName, func(t *testing.T) {
 				t.Parallel()
 
+				fmt.Printf("\033[32mRunning: examples/%s\033[0m\n", entry.Name())
+
 				userApp, err := app.NewApp(examplePath)
 				if err != nil {
 					t.Fatalf("failed to create app: %v", err)
