@@ -1,0 +1,14 @@
+{
+  "name": "node-oldest",
+  "version": "0.1.0",
+  "description": "Test legacy Node version support",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=15.0.0"
+  }
+}
