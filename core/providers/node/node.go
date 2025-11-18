@@ -282,7 +282,7 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 		plan.NewExecCommand(fmt.Sprintf("mkdir -p %s", NODE_MODULES_CACHE)),
 	})
 
-	p.packageManager.installDependencies(ctx, p.workspace, install)
+	p.packageManager.installDependencies(ctx, p.workspace, install, p.usesCorepack())
 }
 
 func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
@@ -293,6 +293,9 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	if requiresNode {
 		node := miseStep.Default("node", DEFAULT_NODE_VERSION)
 		misePackages = append(misePackages, "node")
+
+		// libatomic1 is required for Node.js v25+
+		ctx.Deploy.AddAptPackages([]string{"libatomic1"})
 
 		if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
 			miseStep.Version(node, envVersion, varName)
@@ -340,6 +343,9 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		if !requiresNode && ctx.Config.Packages["node"] == "" {
 			miseStep.Default("node", "latest")
 			misePackages = append(misePackages, "node")
+
+			// libatomic1 is required for Node.js v25+
+			ctx.Deploy.AddAptPackages([]string{"libatomic1"})
 		}
 	}
 

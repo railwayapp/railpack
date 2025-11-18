@@ -15,10 +15,6 @@
   "pnpm-install": {
    "directory": "/root/.local/share/pnpm/store/v3",
    "type": "shared"
-  },
-  "vite": {
-   "directory": "/app/node_modules/.vite",
-   "type": "shared"
   }
  },
  "deploy": {
@@ -28,24 +24,34 @@
   "inputs": [
    {
     "include": [
-     "/railpack/caddy"
+     "/mise/shims",
+     "/mise/installs",
+     "/usr/local/bin/mise",
+     "/etc/mise/config.toml",
+     "/root/.local/state/mise",
+     "mise.toml"
     ],
-    "step": "packages:caddy"
+    "step": "packages:mise"
    },
    {
     "include": [
-     "/Caddyfile"
+     "/app/node_modules"
     ],
-    "step": "caddy"
+    "step": "build"
    },
    {
+    "exclude": [
+     "node_modules",
+     ".yarn"
+    ],
     "include": [
-     "theoutput"
+     "/root/.cache",
+     "."
     ],
     "step": "build"
    }
   ],
-  "startCommand": "caddy run --config /Caddyfile --adapter caddyfile 2\u003e\u00261",
+  "startCommand": "pnpm run start",
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
@@ -62,6 +68,10 @@
    "commands": [
     {
      "path": "/mise/shims"
+    },
+    {
+     "dest": "mise.toml",
+     "src": "mise.toml"
     },
     {
      "customName": "create mise config",
@@ -136,13 +146,7 @@
   },
   {
    "caches": [
-    "node-modules",
-    "vite"
-   ],
-   "commands": [
-    {
-     "cmd": "pnpm run build"
-    }
+    "node-modules"
    ],
    "inputs": [
     {
@@ -156,48 +160,6 @@
     }
    ],
    "name": "build",
-   "secrets": [
-    "*"
-   ]
-  },
-  {
-   "commands": [
-    {
-     "cmd": "mise install-into caddy@2.10.2 /railpack/caddy"
-    },
-    {
-     "path": "/railpack/caddy"
-    },
-    {
-     "path": "/railpack/caddy/bin"
-    }
-   ],
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
-    }
-   ],
-   "name": "packages:caddy"
-  },
-  {
-   "assets": {
-    "Caddyfile": "# global options\n{\n\tadmin off\n\tpersist_config off\n\tauto_https off\n\n\tlog {\n\t\tformat json\n\t}\n\n\tservers {\n\t\ttrusted_proxies static private_ranges 100.0.0.0/8 # trust railway's proxy\n\t}\n}\n\n# site block, listens on the $PORT environment variable, automatically assigned by railway\n:{$PORT:80} {\n\tlog {\n\t\tformat json\n\t}\n\n\trespond /health 200\n\n\t# Security headers\n\theader {\n\t\t# Prevent some browsers from MIME-sniffing a response away from the declared Content-Type\n\t\tX-Content-Type-Options \"nosniff\"\n\t\t# Remove Server header\n\t\t-Server\n\t}\n\n\t# serve from the 'dist' folder (Vite builds into the 'dist' folder)\n\troot * /app/theoutput\n\n\t# Handle static files\n\tfile_server {\n\t\thide .git\n\t\thide .env*\n\t}\n\n\t# Compression with more formats\n\tencode {\n\t\tgzip\n\t\tzstd\n\t}\n\n\t# Try files with HTML extension and handle SPA routing\n\ttry_files {path} {path}.html {path}/index.html /index.html\n}\n"
-   },
-   "commands": [
-    {
-     "name": "Caddyfile",
-     "path": "/Caddyfile"
-    },
-    {
-     "cmd": "caddy fmt --overwrite /Caddyfile"
-    }
-   ],
-   "inputs": [
-    {
-     "step": "packages:caddy"
-    }
-   ],
-   "name": "caddy",
    "secrets": [
     "*"
    ]

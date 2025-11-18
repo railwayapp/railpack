@@ -29,6 +29,10 @@ with support for Node, Python, Go, PHP, and more.
   `MISE_PIPX_UVX`) over TOML settings to maintain consistency with existing
   patterns in the codebase.
 
+# Mise Setup
+
+If mise is not available in your environment, install it using the instructions at https://mise.jdx.dev/installing-mise.html.
+
 # Workflow
 
 - Take a careful look at @mise.toml to understand what commands should be run at different points in the project lifecycle

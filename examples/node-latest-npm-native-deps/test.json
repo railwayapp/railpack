@@ -1,0 +1,8 @@
+[
+  {
+    "expectedOutput": [
+      "Database test successful!",
+      "better-sqlite3 native module working correctly with npm"
+    ]
+  }
+]

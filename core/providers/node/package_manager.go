@@ -45,7 +45,7 @@ func (p PackageManager) RunScriptCommand(cmd string) string {
 	return "node " + cmd
 }
 
-func (p PackageManager) installDependencies(ctx *generate.GenerateContext, workspace *Workspace, install *generate.CommandStepBuilder) {
+func (p PackageManager) installDependencies(ctx *generate.GenerateContext, workspace *Workspace, install *generate.CommandStepBuilder, usingCorepack bool) {
 	packageJsons := workspace.AllPackageJson()
 
 	hasPreInstall := false
@@ -75,7 +75,7 @@ func (p PackageManager) installDependencies(ctx *generate.GenerateContext, works
 		}
 	}
 
-	p.installDeps(ctx, install)
+	p.installDeps(ctx, install, usingCorepack)
 }
 
 // GetCache returns the cache for the package manager
@@ -96,7 +96,7 @@ func (p PackageManager) GetInstallCache(ctx *generate.GenerateContext) string {
 	}
 }
 
-func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
+func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *generate.CommandStepBuilder, usingCorepack bool) {
 	install.AddCache(p.GetInstallCache(ctx))
 
 	switch p {
@@ -108,6 +108,18 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 			install.AddCommand(plan.NewExecCommand("npm install"))
 		}
 	case PackageManagerPnpm:
+		// pnpm (standalone) does not bundle node-gyp like npm does, so we must install it globally
+		// to support packages with native dependencies (e.g., better-sqlite3, bcrypt, etc.)
+		// Only needed when using mise to install pnpm (not corepack, which includes node-gyp)
+		if !usingCorepack {
+			// Set PNPM_HOME so pnpm can create a global bin directory for node-gyp
+			install.AddEnvVars(map[string]string{
+				"PNPM_HOME": "/pnpm",
+			})
+			install.AddPaths([]string{"/pnpm"})
+			install.AddCommand(plan.NewExecCommand("pnpm add -g node-gyp"))
+		}
+
 		hasLockfile := ctx.App.HasMatch("pnpm-lock.yaml")
 		if hasLockfile {
 			install.AddCommand(plan.NewExecCommand("pnpm install --frozen-lockfile --prefer-offline"))
