@@ -295,7 +295,7 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		misePackages = append(misePackages, "node")
 
 		// libatomic1 is required for Node.js v25+
-		miseStep.AddSupportingAptPackage("libatomic1")
+		ctx.Deploy.AddAptPackages([]string{"libatomic1"})
 
 		if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
 			miseStep.Version(node, envVersion, varName)
@@ -345,7 +345,7 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			misePackages = append(misePackages, "node")
 
 			// libatomic1 is required for Node.js v25+
-			miseStep.AddSupportingAptPackage("libatomic1")
+			ctx.Deploy.AddAptPackages([]string{"libatomic1"})
 		}
 	}
 
