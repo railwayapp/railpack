@@ -114,9 +114,9 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 		if !usingCorepack {
 			// Set PNPM_HOME so pnpm can create a global bin directory for node-gyp
 			install.AddEnvVars(map[string]string{
-				"PNPM_HOME": "/pnpm",
+				"PNPM_HOME": "/opt/pnpm",
 			})
-			install.AddPaths([]string{"/pnpm"})
+			install.AddPaths([]string{"/opt/pnpm"})
 			install.AddCommand(plan.NewExecCommand("pnpm add -g node-gyp"))
 		}
 

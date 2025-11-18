@@ -121,6 +121,9 @@ You can include additional files or directories to include by setting the
 separated list of patterns to include. Patterns will automatically be prefixed
 with `**/` to match nested files and directories.
 
+Railpack supports building native modules and automatically configures `node-gyp`
+when using pnpm.
+
 ## Static Sites
 
 Railpack can serve a statically built Node project with zero config. You can

@@ -135,9 +135,16 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 		Exclude: []string{"node_modules", ".yarn"},
 	})
 
+	miseLayer := miseStep.GetLayer()
+	if p.usesCorepack() {
+		miseLayer = plan.NewStepLayer(install.Name(), plan.Filter{
+			Include: miseStep.GetOutputPaths(),
+		})
+	}
+
 	ctx.Deploy.AddAptPackages(runtimeAptPackages)
 	ctx.Deploy.AddInputs([]plan.Layer{
-		miseStep.GetLayer(),
+		miseLayer,
 		nodeModulesLayer,
 		buildLayer,
 	})
@@ -275,6 +282,7 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 			plan.NewExecShellCommand("npm i -g corepack@latest && corepack enable && corepack prepare --activate"),
 		})
 	}
+
 	install.AddCommands([]plan.Command{
 		// it's possible for a package.json to exist without any dependencies, in which case node_modules is not generated
 		// and bun.lockb, etc are not generated either. However, this path is used to compute the cache key, so we ensure
