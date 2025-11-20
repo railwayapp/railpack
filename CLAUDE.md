@@ -47,7 +47,7 @@ If mise is not available in your environment, install it using the instructions 
   - Don't run tests manually using `go test` unless instructed to do so
   - If tests are failing that are unrelated to your changes, let me know and stop working.
 - Use the `cli` mise task to test your changes on a specific example project, i.e. `mise run cli -- --verbose build --show-plan examples/node-vite-react-router-spa/`
-- Do not run any write operations with `git`
+- Do not run any write operations with `git`!
 - Do not use `bin/railpack` instead use `mise run cli` (which is the development build of `railpack`)
   - Therefore do not run `mise build`, we don't need a `railpack` binary for local testing
 - Use a local `tmp/` directory for temporary files instead of the global `/tmp/`

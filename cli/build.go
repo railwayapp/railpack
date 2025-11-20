@@ -91,15 +91,16 @@ var BuildCommand = &cli.Command{
 
 		platformStr := cmd.String("platform")
 		err = buildkit.BuildWithBuildkitClient(app.Source, buildResult.Plan, buildkit.BuildWithBuildkitClientOptions{
-			ImageName:    cmd.String("name"),
-			DumpLLB:      cmd.Bool("dump-llb"),
-			OutputDir:    cmd.String("output"),
-			ProgressMode: cmd.String("progress"),
-			CacheKey:     cmd.String("cache-key"),
-			SecretsHash:  secretsHash,
-			Secrets:      env.Variables,
-			Platform:     platformStr,
-			GitHubToken:  os.Getenv("GITHUB_TOKEN"),
+			ImageName:           cmd.String("name"),
+			DumpLLB:             cmd.Bool("dump-llb"),
+			OutputDir:           cmd.String("output"),
+			ProgressMode:        cmd.String("progress"),
+			CacheKey:            cmd.String("cache-key"),
+			SecretsHash:         secretsHash,
+			Secrets:             env.Variables,
+			Platform:            platformStr,
+			GitHubToken:         os.Getenv("GITHUB_TOKEN"),
+			DockerignoreContext: buildResult.DockerignoreContext,
 		})
 		if err != nil {
 			return cli.Exit(err, 1)
