@@ -1,0 +1,201 @@
+{
+ "caches": {
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  },
+  "uv": {
+   "directory": "/opt/uv-cache",
+   "type": "shared"
+  }
+ },
+ "deploy": {
+  "base": {
+   "step": "packages:apt:runtime"
+  },
+  "inputs": [
+   {
+    "include": [
+     "/mise/shims",
+     "/mise/installs",
+     "/usr/local/bin/mise",
+     "/etc/mise/config.toml",
+     "/root/.local/state/mise",
+     ".python-version"
+    ],
+    "step": "packages:mise"
+   },
+   {
+    "include": [
+     "/app/.venv"
+    ],
+    "step": "build"
+   },
+   {
+    "exclude": [
+     ".venv"
+    ],
+    "include": [
+     "."
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "python main.py",
+  "variables": {
+   "PIP_DEFAULT_TIMEOUT": "100",
+   "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+   "PYTHONDONTWRITEBYTECODE": "1",
+   "PYTHONFAULTHANDLER": "1",
+   "PYTHONHASHSEED": "random",
+   "PYTHONUNBUFFERED": "1"
+  }
+ },
+ "steps": [
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libpq-dev'",
+     "customName": "install apt packages: libpq-dev"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:apt:build"
+  },
+  {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "commands": [
+    {
+     "path": "/mise/shims"
+    },
+    {
+     "dest": ".python-version",
+     "src": ".python-version"
+    },
+    {
+     "customName": "create mise config",
+     "name": "mise.toml",
+     "path": "/etc/mise/config.toml"
+    },
+    {
+     "cmd": "mise install",
+     "customName": "install mise packages: python, uv"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:apt:build"
+    }
+   ],
+   "name": "packages:mise",
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS": "python,node,ruby,elixir,go,java,yarn",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_VERIFY": "false",
+    "MISE_PARANOID": "1",
+    "MISE_PYTHON_COMPILE": "false",
+    "MISE_SHIMS_DIR": "/mise/shims"
+   }
+  },
+  {
+   "caches": [
+    "uv"
+   ],
+   "commands": [
+    {
+     "dest": "pyproject.toml",
+     "src": "pyproject.toml"
+    },
+    {
+     "dest": "uv.lock",
+     "src": "uv.lock"
+    },
+    {
+     "path": "/root/.local/bin"
+    },
+    {
+     "path": "/app/.venv/bin"
+    },
+    {
+     "cmd": "uv sync --locked --no-dev --no-install-project"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install",
+   "variables": {
+    "PIP_DEFAULT_TIMEOUT": "100",
+    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONFAULTHANDLER": "1",
+    "PYTHONHASHSEED": "random",
+    "PYTHONUNBUFFERED": "1",
+    "UV_CACHE_DIR": "/opt/uv-cache",
+    "UV_COMPILE_BYTECODE": "1",
+    "UV_LINK_MODE": "copy",
+    "UV_PYTHON_DOWNLOADS": "never",
+    "VIRTUAL_ENV": "/app/.venv"
+   }
+  },
+  {
+   "commands": [
+    {
+     "cmd": "uv sync --locked --no-dev --no-editable"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ]
+  },
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libpq5'",
+     "customName": "install apt packages: libpq5"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+    }
+   ],
+   "name": "packages:apt:runtime"
+  }
+ ]
+}
