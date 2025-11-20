@@ -109,7 +109,7 @@ var BuildCommand = &cli.Command{
 func validateSecrets(plan *plan.BuildPlan, env *app.Environment) error {
 	for _, secret := range plan.Secrets {
 		if _, ok := env.Variables[secret]; !ok {
-			return fmt.Errorf("missing environment variable: %s. Please set the envvar with --env %s=%s", secret, secret, "...")
+			return fmt.Errorf("missing environment variable: %s. Please set the envvar with --secret %s=%s", secret, secret, "...")
 		}
 	}
 	return nil
