@@ -14,6 +14,8 @@ func (p *CppProvider) Name() string {
 	return "cpp"
 }
 
+func (p *CppProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
+
 func (p *CppProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 	_, c := p.DetectCmake(ctx)
 	_, m := p.DetectMeson(ctx)
