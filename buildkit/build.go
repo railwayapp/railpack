@@ -62,9 +62,14 @@ type BuildWithBuildkitClientOptions struct {
 	CacheKey     string
 	GitHubToken  string
 	NoCache      bool
+	DockerignoreContext *plan.DockerignoreContext
 }
 
 func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWithBuildkitClientOptions) error {
+	if opts.DockerignoreContext == nil {
+		return fmt.Errorf("DockerignoreContext is required")
+	}
+
 	ctx := appcontext.Context()
 
 	imageName := opts.ImageName
@@ -105,6 +110,7 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		CacheKey:      opts.CacheKey,
 		GitHubToken:   opts.GitHubToken,
 		NoCache:       opts.NoCache,
+		DockerignoreContext: opts.DockerignoreContext,
 	})
 	if err != nil {
 		return fmt.Errorf("error converting plan to LLB: %w", err)

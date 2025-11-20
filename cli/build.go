@@ -120,6 +120,7 @@ var BuildCommand = &cli.Command{
 			Platform:    platformStr,
 			GitHubToken: os.Getenv("GITHUB_TOKEN"),
 			NoCache:     cmd.Bool("no-cache"),
+			DockerignoreContext: buildResult.DockerignoreContext,
 		})
 		if err != nil {
 			return cli.Exit(err, 1)
