@@ -28,7 +28,6 @@ node_modules
 bin
 test
 dist
-tmp
 
 .vscode/
 .DS_Store
