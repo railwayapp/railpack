@@ -97,7 +97,8 @@
     "MISE_INSTALLS_DIR": "/mise/installs",
     "MISE_NODE_VERIFY": "false",
     "MISE_PARANOID": "1",
-    "MISE_SHIMS_DIR": "/mise/shims"
+    "MISE_SHIMS_DIR": "/mise/shims",
+    "MISE_TRUSTED_CONFIG_PATHS": "/app"
    }
   },
   {
