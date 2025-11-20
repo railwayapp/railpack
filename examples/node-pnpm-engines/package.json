@@ -1,5 +1,6 @@
 {
   "name": "node-pnpm-engines",
+  "private": true,
   "version": "1.0.0",
   "description": "Example testing engines specification for Node.js and PNPM",
   "main": "main.js",

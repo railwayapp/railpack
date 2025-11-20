@@ -1,5 +1,6 @@
 {
   "name": "node-yarn-3",
+  "private": true,
   "packageManager": "yarn@3.8.7",
   "scripts": {
     "build": "tsc",
