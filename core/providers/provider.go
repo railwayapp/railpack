@@ -3,6 +3,7 @@ package providers
 import (
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	"github.com/railwayapp/railpack/core/providers/cpp"
 	"github.com/railwayapp/railpack/core/providers/deno"
 	"github.com/railwayapp/railpack/core/providers/dotnet"
 	"github.com/railwayapp/railpack/core/providers/elixir"
@@ -41,6 +42,7 @@ func GetLanguageProviders() []Provider {
 		&dotnet.DotnetProvider{},
 		&node.NodeProvider{},
 		&gleam.GleamProvider{},
+		&cpp.CppProvider{},
 		&staticfile.StaticfileProvider{},
 		&shell.ShellProvider{},
 	}
