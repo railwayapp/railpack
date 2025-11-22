@@ -5,5 +5,12 @@
       "Python version: 3.11"
     ],
     "stderrAllowed": true
+  },
+  {
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 8000
+    }
   }
 ]
