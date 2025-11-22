@@ -16,6 +16,11 @@ Your project will be detected as a Python application if any of these conditions
 
 ## Versions
 
+Railpack supports Python 3.10 and later. We only officially support Python
+versions that are actively maintained by the Python Software Foundation (not
+EOL). See [Python release status](https://endoflife.date/python) for current
+support status.
+
 The Python version is determined in the following order:
 
 - Set via the `RAILPACK_PYTHON_VERSION` environment variable

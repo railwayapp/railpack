@@ -1,0 +1,6 @@
+[project]
+name = "python-oldest"
+version = "0.1.0"
+description = "Test legacy Python version support"
+requires-python = ">=3.10"
+dependencies = []
