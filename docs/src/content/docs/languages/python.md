@@ -16,6 +16,9 @@ Your project will be detected as a Python application if any of these conditions
 
 ## Versions
 
+Railpack supports Python 3.10 and later. Python 3.10 is the oldest version
+currently supported by the Python Software Foundation with security updates.
+
 The Python version is determined in the following order:
 
 - Set via the `RAILPACK_PYTHON_VERSION` environment variable
