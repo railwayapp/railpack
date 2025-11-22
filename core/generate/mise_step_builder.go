@@ -325,7 +325,7 @@ func (b *MiseStepBuilder) GetSupportingMiseConfigFiles(path string) []string {
 	files := []string{}
 
 	for _, file := range miseConfigFiles {
-		if b.app.HasMatch(file) {
+		if b.app.HasFile(file) {
 			files = append(files, file)
 		}
 	}

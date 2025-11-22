@@ -29,7 +29,7 @@ func (p *ElixirProvider) Name() string {
 }
 
 func (p *ElixirProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
-	hasMixFile := ctx.App.HasMatch("mix.exs")
+	hasMixFile := ctx.App.HasFile("mix.exs")
 	return hasMixFile, nil
 }
 

@@ -18,11 +18,11 @@ const (
 func (p *NodeProvider) getReactRouterOutputDirectory(ctx *generate.GenerateContext) string {
 	configContent := ""
 
-	if ctx.App.HasMatch(ReactRouterConfigJS) {
+	if ctx.App.HasFile(ReactRouterConfigJS) {
 		if content, err := ctx.App.ReadFile(ReactRouterConfigJS); err == nil {
 			configContent = content
 		}
-	} else if ctx.App.HasMatch(ReactRouterConfigTS) {
+	} else if ctx.App.HasFile(ReactRouterConfigTS) {
 		if content, err := ctx.App.ReadFile(ReactRouterConfigTS); err == nil {
 			configContent = content
 		}
@@ -62,7 +62,7 @@ func (p *NodeProvider) isReactRouterPackage(pkg *WorkspacePackage, ctx *generate
 		rrConfigTS = pkg.Path + "/" + ReactRouterConfigTS
 	}
 
-	hasRRConfig := ctx.App.HasMatch(rrConfigJS) || ctx.App.HasMatch(rrConfigTS)
+	hasRRConfig := ctx.App.HasFile(rrConfigJS) || ctx.App.HasFile(rrConfigTS)
 	hasBuildCommand := pkg.PackageJson.HasScript("build")
 	hasRRBuildCommand := strings.Contains(strings.ToLower(pkg.PackageJson.GetScript("build")), "react-router build")
 	hasRRPackage := pkg.PackageJson.hasDependency("@react-router/dev")
