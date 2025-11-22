@@ -1,6 +1,9 @@
 [
   {
-    "expectedOutput": "Hello from Python UV!",
+    "expectedOutput": [
+      "Hello from Python UV!",
+      "Python version: 3.11"
+    ],
     "stderrAllowed": true
   }
 ]
