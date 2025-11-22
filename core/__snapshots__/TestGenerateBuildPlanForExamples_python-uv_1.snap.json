@@ -37,7 +37,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "gunicorn --bind 0.0.0.0:3333 main:app",
+  "startCommand": "gunicorn --bind 0.0.0.0:${PORT:-8000} main:app",
   "variables": {
    "PIP_DEFAULT_TIMEOUT": "100",
    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
