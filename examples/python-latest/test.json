@@ -1,6 +1,5 @@
 [
   {
-    "expectedOutput": "Python version: 3.",
-    "stderrAllowed": true
+    "expectedOutput": "Python version: 3."
   }
 ]
