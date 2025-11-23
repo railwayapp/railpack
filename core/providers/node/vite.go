@@ -23,7 +23,7 @@ func (p *NodeProvider) isVitePackage(pkg *WorkspacePackage, ctx *generate.Genera
 		viteConfigTS = pkg.Path + "/vite.config.ts"
 	}
 
-	hasViteConfig := ctx.App.HasMatch(viteConfigJS) || ctx.App.HasMatch(viteConfigTS)
+	hasViteConfig := ctx.App.HasFile(viteConfigJS) || ctx.App.HasFile(viteConfigTS)
 
 	// SvelteKit does not build as a static site by default
 	if p.isSvelteKitPackage(pkg) {
@@ -44,12 +44,12 @@ func (p *NodeProvider) isVite(ctx *generate.GenerateContext) bool {
 func (p *NodeProvider) getViteOutputDirectory(ctx *generate.GenerateContext) string {
 	configContent := ""
 
-	if ctx.App.HasMatch("vite.config.js") {
+	if ctx.App.HasFile("vite.config.js") {
 		content, err := ctx.App.ReadFile("vite.config.js")
 		if err == nil {
 			configContent = content
 		}
-	} else if ctx.App.HasMatch("vite.config.ts") {
+	} else if ctx.App.HasFile("vite.config.ts") {
 		content, err := ctx.App.ReadFile("vite.config.ts")
 		if err == nil {
 			configContent = content

@@ -14,7 +14,7 @@ const (
 
 func (p *NodeProvider) isAngular(ctx *generate.GenerateContext) bool {
 	hasAngularDep := p.hasDependency("@angular/core")
-	hasAngularConfig := ctx.App.HasMatch("angular.json")
+	hasAngularConfig := ctx.App.HasFile("angular.json")
 	hasAngularBuildCommand := strings.Contains(strings.ToLower(p.packageJson.GetScript("build")), "ng build")
 
 	return hasAngularDep && hasAngularConfig && hasAngularBuildCommand

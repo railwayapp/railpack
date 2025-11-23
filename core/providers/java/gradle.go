@@ -13,7 +13,7 @@ const (
 )
 
 func (p *JavaProvider) usesGradle(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasMatch("gradlew")
+	return ctx.App.HasFile("gradlew")
 }
 
 func (p *JavaProvider) setGradleVersion(ctx *generate.GenerateContext) {
@@ -24,7 +24,7 @@ func (p *JavaProvider) setGradleVersion(ctx *generate.GenerateContext) {
 		miseStep.Version(gradle, envVersion, envName)
 	}
 
-	if !ctx.App.HasMatch("gradle/wrapper/gradle-wrapper.properties") {
+	if !ctx.App.HasFile("gradle/wrapper/gradle-wrapper.properties") {
 		return
 	}
 
@@ -65,7 +65,7 @@ func (p *JavaProvider) gradleCache(ctx *generate.GenerateContext) string {
 
 func (p *JavaProvider) readBuildGradle(ctx *generate.GenerateContext) string {
 	filePath := "build.gradle"
-	if !ctx.App.HasMatch(filePath) {
+	if !ctx.App.HasFile(filePath) {
 		filePath = "build.gradle.kts"
 	}
 	result, err := ctx.App.ReadFile(filePath)

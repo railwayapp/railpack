@@ -27,7 +27,7 @@ func (p *RustProvider) Name() string {
 }
 
 func (p *RustProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
-	hasCargoToml := ctx.App.HasMatch("Cargo.toml")
+	hasCargoToml := ctx.App.HasFile("Cargo.toml")
 	return hasCargoToml, nil
 }
 
@@ -252,7 +252,7 @@ func (p *RustProvider) getBins(ctx *generate.GenerateContext) ([]string, error) 
 
 	name := p.getAppName(ctx)
 	if name != "" {
-		if ctx.App.HasMatch("src/main.rs") {
+		if ctx.App.HasFile("src/main.rs") {
 			bins = append(bins, name)
 		}
 	}
@@ -409,7 +409,7 @@ func (p *RustProvider) findBinaryInWorkspace(ctx *generate.GenerateContext, work
 		}
 
 		// Check for src/main.rs which definitely indicates a binary
-		hasMainRs := ctx.App.HasMatch(fmt.Sprintf("%s/src/main.rs", member))
+		hasMainRs := ctx.App.HasFile(fmt.Sprintf("%s/src/main.rs", member))
 		if hasMainRs {
 			return manifest.Package.Name, nil
 		}
@@ -426,7 +426,7 @@ func (p *RustProvider) findBinaryInWorkspace(ctx *generate.GenerateContext, work
 		}
 
 		// If no lib.rs exists, it might be a binary
-		hasLibRs := ctx.App.HasMatch(fmt.Sprintf("%s/src/lib.rs", member))
+		hasLibRs := ctx.App.HasFile(fmt.Sprintf("%s/src/lib.rs", member))
 		if !hasLibRs {
 			return manifest.Package.Name, nil
 		}

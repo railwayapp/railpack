@@ -58,7 +58,7 @@ func (p *NodeProvider) Initialize(ctx *generate.GenerateContext) error {
 }
 
 func (p *NodeProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
-	return ctx.App.HasMatch("package.json"), nil
+	return ctx.App.HasFile("package.json"), nil
 }
 
 func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
@@ -413,13 +413,13 @@ func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
 	}
 
 	// Fall back to file-based detection
-	if app.HasMatch("pnpm-lock.yaml") {
+	if app.HasFile("pnpm-lock.yaml") {
 		return PackageManagerPnpm
-	} else if app.HasMatch("bun.lockb") || app.HasMatch("bun.lock") {
+	} else if app.HasFile("bun.lockb") || app.HasFile("bun.lock") {
 		return PackageManagerBun
-	} else if app.HasMatch(".yarnrc.yml") || app.HasMatch(".yarnrc.yaml") {
+	} else if app.HasFile(".yarnrc.yml") || app.HasFile(".yarnrc.yaml") {
 		return PackageManagerYarnBerry
-	} else if app.HasMatch("yarn.lock") {
+	} else if app.HasFile("yarn.lock") {
 		return PackageManagerYarn1
 	}
 
@@ -446,7 +446,7 @@ func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
 
 func (p *NodeProvider) GetPackageJson(app *app.App) (*PackageJson, error) {
 	packageJson := NewPackageJson()
-	if !app.HasMatch("package.json") {
+	if !app.HasFile("package.json") {
 		return packageJson, nil
 	}
 

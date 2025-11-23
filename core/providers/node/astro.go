@@ -19,7 +19,7 @@ func (p *NodeProvider) isAstroPackage(pkg *WorkspacePackage, ctx *generate.Gener
 		astroConfigTs = pkg.Path + "/astro.config.ts"
 	}
 
-	hasAstroConfig := ctx.App.HasMatch(astroConfigMjs) || ctx.App.HasMatch(astroConfigTs)
+	hasAstroConfig := ctx.App.HasFile(astroConfigMjs) || ctx.App.HasFile(astroConfigTs)
 	hasAstroBuildCommand := strings.Contains(strings.ToLower(pkg.PackageJson.GetScript("build")), "astro build")
 
 	return hasAstroConfig && hasAstroBuildCommand
@@ -58,12 +58,12 @@ func (p *NodeProvider) getAstroOutputDirectory(ctx *generate.GenerateContext) st
 func (p *NodeProvider) getAstroConfigFileContents(ctx *generate.GenerateContext) string {
 	configFile := ""
 
-	if ctx.App.HasMatch("astro.config.mjs") {
+	if ctx.App.HasFile("astro.config.mjs") {
 		contents, err := ctx.App.ReadFile("astro.config.mjs")
 		if err == nil {
 			configFile = contents
 		}
-	} else if ctx.App.HasMatch("astro.config.ts") {
+	} else if ctx.App.HasFile("astro.config.ts") {
 		contents, err := ctx.App.ReadFile("astro.config.ts")
 		if err == nil {
 			configFile = contents

@@ -18,7 +18,7 @@ func (c *GenerateContext) TemplateFiles(potentialFiles []string, defaultContents
 	filename := ""
 
 	for _, potentialFilename := range potentialFiles {
-		if c.App.HasMatch(potentialFilename) {
+		if c.App.HasFile(potentialFilename) {
 			c, err := c.App.ReadFile(potentialFilename)
 			if err != nil {
 				return nil, err

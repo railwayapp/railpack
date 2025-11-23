@@ -28,7 +28,7 @@ func (p *RubyProvider) Initialize(ctx *generate.GenerateContext) error {
 }
 
 func (p *RubyProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
-	hasRuby := ctx.App.HasMatch("Gemfile")
+	hasRuby := ctx.App.HasFile("Gemfile")
 	return hasRuby, nil
 }
 
@@ -121,20 +121,20 @@ func (p *RubyProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	// TODO we auto-run migrations for django, but not for rails, why the difference?
 
 	if p.usesRails(ctx) {
-		if app.HasMatch("rails") {
+		if app.HasFile("rails") {
 			return "bundle exec rails server -b 0.0.0.0 -p ${PORT:-3000}"
 		} else {
-			if !app.HasMatch("bin/rails") {
+			if !app.HasFile("bin/rails") {
 				ctx.Logger.LogWarn("bin/rails not found, run `bundle binstubs railties` to avoid potential startup problems")
 			}
 
 			return "bundle exec bin/rails server -b 0.0.0.0 -p ${PORT:-3000} -e $RAILS_ENV"
 		}
-	} else if app.HasMatch("config/environment.rb") && app.HasMatch("script") {
+	} else if app.HasFile("config/environment.rb") && app.HasMatch("script") {
 		return "bundle exec ruby script/server -p ${PORT:-3000}"
-	} else if app.HasMatch("config.ru") {
+	} else if app.HasFile("config.ru") {
 		return "bundle exec rackup config.ru -p ${PORT:-3000}"
-	} else if app.HasMatch("Rakefile") {
+	} else if app.HasFile("Rakefile") {
 		return "bundle exec rake"
 	}
 
