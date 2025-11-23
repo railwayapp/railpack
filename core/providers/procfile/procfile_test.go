@@ -8,11 +8,11 @@ import (
 )
 
 func TestProcfile(t *testing.T) {
-	ctx := testingUtils.CreateGenerateContext(t, "../../../examples/python-uv")
+	ctx := testingUtils.CreateGenerateContext(t, "../../../examples/ruby-vanilla")
 	provider := ProcfileProvider{}
 
 	_, err := provider.Plan(ctx)
 	require.NoError(t, err)
 
-	require.Equal(t, "gunicorn --bind 0.0.0.0:3333 main:app", ctx.Deploy.StartCmd)
+	require.Equal(t, "ruby app.rb", ctx.Deploy.StartCmd)
 }
