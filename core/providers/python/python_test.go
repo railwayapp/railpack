@@ -69,6 +69,11 @@ func TestUsesBinaryPsycopg(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "psycopg[binary]",
+			path: "../../../examples/python-psycopg-binary",
+			want: true,
+		},
+		{
 			name: "psycopg (non-binary)",
 			path: "../../../examples/python-latest-psycopg",
 			want: false,
@@ -99,6 +104,11 @@ func TestUsesPostgres(t *testing.T) {
 		{
 			name: "psycopg2-binary should not need apt packages",
 			path: "../../../examples/python-system-deps",
+			want: false,
+		},
+		{
+			name: "psycopg[binary] should not need apt packages",
+			path: "../../../examples/python-psycopg-binary",
 			want: false,
 		},
 		{
