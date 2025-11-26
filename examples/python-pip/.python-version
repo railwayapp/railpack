@@ -1,1 +1,2 @@
-3.11.14
+# Using 3.11.11 (not default 3.13) to test that .python-version is properly detected
+3.11.11

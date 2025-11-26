@@ -1,8 +1,8 @@
 [
   {
     "expectedOutput": [
-      "Python version: 3.11.14",
-      "Hello from UV"
+      "Python version: 3.11.11",
+      "Hello from pip"
     ]
   }
 ]

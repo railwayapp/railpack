@@ -10,4 +10,4 @@ print(f"Python version: {sys.version.split()[0]}")
 print("numpy", np.__version__)
 print("pandas", pd.__version__)
 
-print("Hello from UV")
+print("Hello from pip")
