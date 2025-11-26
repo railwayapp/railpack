@@ -143,7 +143,6 @@ func (m *Mise) GetCurrentList(appDir string) (string, error) {
 		trustedConfigEnv,
 		ceilingPathsEnv,
 		"MISE_PARANOID=1",
-		"MISE_EXPERIMENTAL=1",
 		fmt.Sprintf("MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS=%s", IdiomaticVersionFileTools),
 	}, "--cd", appDir, "list", "--current", "--json")
 }
