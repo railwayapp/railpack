@@ -21,6 +21,9 @@ import (
 const (
 	InstallDir     = "/tmp/railpack/mise"
 	TestInstallDir = "/tmp/railpack/mise-test"
+	// IdiomaticVersionFileTools is the list of tools for which idiomatic version files
+	// (.python-version, .node-version, etc.) should be enabled in mise
+	IdiomaticVersionFileTools = "python,node,ruby,elixir,go,java,yarn"
 )
 
 type Mise struct {
@@ -141,7 +144,7 @@ func (m *Mise) GetCurrentList(appDir string) (string, error) {
 		ceilingPathsEnv,
 		"MISE_PARANOID=1",
 		"MISE_EXPERIMENTAL=1",
-		"MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS=python,node,ruby",
+		fmt.Sprintf("MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS=%s", IdiomaticVersionFileTools),
 	}, "--cd", appDir, "list", "--current", "--json")
 }
 
