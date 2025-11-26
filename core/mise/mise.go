@@ -132,9 +132,17 @@ func (m *Mise) GetCurrentList(appDir string) (string, error) {
 	// MISE_CEILING_PATHS prevents mise from searching parent directories, isolating it to the app directory
 	// We set the ceiling to the parent dir so mise can still read configs in appDir itself
 	// MISE_PARANOID enables stricter security validation
+	// Enable idiomatic version files (.python-version, .node-version, .ruby-version) via environment
+	// since MISE_CEILING_PATHS prevents reading the root mise.toml settings
 	trustedConfigEnv := fmt.Sprintf("MISE_TRUSTED_CONFIG_PATHS=%s", appDir)
 	ceilingPathsEnv := fmt.Sprintf("MISE_CEILING_PATHS=%s", filepath.Dir(appDir))
-	return m.runCmdWithEnv([]string{trustedConfigEnv, ceilingPathsEnv, "MISE_PARANOID=1"}, "--cd", appDir, "list", "--current", "--json")
+	return m.runCmdWithEnv([]string{
+		trustedConfigEnv,
+		ceilingPathsEnv,
+		"MISE_PARANOID=1",
+		"MISE_EXPERIMENTAL=1",
+		"MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS=python,node,ruby",
+	}, "--cd", appDir, "list", "--current", "--json")
 }
 
 // runCmdWithEnv runs a mise command with additional environment variables
