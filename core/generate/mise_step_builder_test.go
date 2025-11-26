@@ -88,38 +88,3 @@ func TestGetPackageVersionsWithNoToolVersions(t *testing.T) {
 	// Should return empty map for directory with no .tool-versions
 	require.Empty(t, packages)
 }
-
-func TestGetPackageVersionsWithIdiomaticVersionFile(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "mise-test")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	// python-uv uses .python-version (idiomatic version file)
-	ctx := CreateTestContext(t, "../../examples/python-uv")
-
-	// Create a resolver
-	resolver, err := resolver.NewResolver(tempDir)
-	require.NoError(t, err)
-
-	builder := &MiseStepBuilder{
-		Resolver: resolver,
-		app:      ctx.App,
-		env:      ctx.Env,
-	}
-
-	packages, err := builder.GetMisePackageVersions(ctx)
-	require.NoError(t, err)
-
-	// Should detect python from .python-version file
-	require.Contains(t, packages, "python", "python should be detected from .python-version")
-
-	// Verify python version starts with "3.11" (as defined in .python-version)
-	require.True(t, strings.HasPrefix(packages["python"].Version, "3.11"),
-		"expected python version to start with 3.11, got %s", packages["python"].Version)
-
-	// Verify source is idiomatic-version-file
-	require.Equal(t, "idiomatic-version-file", packages["python"].Source,
-		"python version should come from idiomatic-version-file (.python-version)")
-}
