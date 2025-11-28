@@ -137,11 +137,6 @@
    "caches": [
     "node-modules"
    ],
-   "commands": [
-    {
-     "cmd": "npm run build"
-    }
-   ],
    "inputs": [
     {
      "step": "install"
