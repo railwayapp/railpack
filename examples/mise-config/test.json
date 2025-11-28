@@ -1,0 +1,5 @@
+[
+  {
+    "expectedOutput": "go version go1.25"
+  }
+]

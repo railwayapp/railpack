@@ -4,8 +4,7 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "start": "bun run index.ts",
-    "build": "tsc --noEmit"
+    "start": "bun run index.ts"
   },
   "engines": {
     "node": "22"
