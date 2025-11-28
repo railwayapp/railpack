@@ -201,10 +201,7 @@ func (b *MiseStepBuilder) GetOutputPaths() []string {
 		return []string{}
 	}
 
-	supportingMiseConfigFiles := b.GetSupportingMiseConfigFiles(b.app.Source)
-	files := []string{"/mise/shims", "/mise/installs", "/usr/local/bin/mise", "/etc/mise/config.toml", "/root/.local/state/mise"}
-	files = append(files, supportingMiseConfigFiles...)
-	return files
+	return []string{"/mise/shims", "/mise/installs", "/usr/local/bin/mise", "/etc/mise/config.toml", "/root/.local/state/mise"}
 }
 
 func (b *MiseStepBuilder) GetLayer() plan.Layer {

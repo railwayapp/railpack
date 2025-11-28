@@ -28,8 +28,7 @@
      "/mise/installs",
      "/usr/local/bin/mise",
      "/etc/mise/config.toml",
-     "/root/.local/state/mise",
-     "mise.toml"
+     "/root/.local/state/mise"
     ],
     "step": "packages:mise"
    },

@@ -24,8 +24,7 @@
      "/mise/installs",
      "/usr/local/bin/mise",
      "/etc/mise/config.toml",
-     "/root/.local/state/mise",
-     ".python-version"
+     "/root/.local/state/mise"
     ],
     "step": "packages:mise"
    },
