@@ -48,12 +48,6 @@
      "."
     ],
     "step": "build"
-   },
-   {
-    "include": [
-     "."
-    ],
-    "step": "build"
    }
   ],
   "startCommand": "npm run start",
