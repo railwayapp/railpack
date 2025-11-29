@@ -10,8 +10,7 @@
      "/mise/installs",
      "/usr/local/bin/mise",
      "/etc/mise/config.toml",
-     "/root/.local/state/mise",
-     ".tool-versions"
+     "/root/.local/state/mise"
     ],
     "step": "packages:mise:runtime"
    },
