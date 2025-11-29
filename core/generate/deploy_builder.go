@@ -32,6 +32,21 @@ func (b *DeployBuilder) AddInputs(layers []plan.Layer) {
 	b.DeployInputs = append(b.DeployInputs, layers...)
 }
 
+func (b *DeployBuilder) HasIncludeForStep(stepName string, path string) bool {
+	for _, layer := range b.DeployInputs {
+		if layer.Step != stepName {
+			continue
+		}
+		for _, inc := range layer.Include {
+			// exact match, or existing include is "." which covers everything
+			if inc == path || inc == "." {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (b *DeployBuilder) AddAptPackages(packages []string) {
 	b.AptPackages = append(b.AptPackages, packages...)
 }

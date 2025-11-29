@@ -48,12 +48,6 @@
      "."
     ],
     "step": "build"
-   },
-   {
-    "include": [
-     "."
-    ],
-    "step": "build"
    }
   ],
   "startCommand": "python --version \u0026\u0026 neofetch $HELLO",
