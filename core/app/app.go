@@ -16,7 +16,8 @@ import (
 )
 
 type App struct {
-	Source string
+	Source    string
+	globCache map[string][]string
 }
 
 func NewApp(path string) (*App, error) {
@@ -42,7 +43,10 @@ func NewApp(path string) (*App, error) {
 		return nil, fmt.Errorf("failed to check directory %s: %w", source, err)
 	}
 
-	return &App{Source: source}, nil
+	return &App{
+		Source:    source,
+		globCache: make(map[string][]string),
+	}, nil
 }
 
 // findMatches returns a list of paths matching a glob pattern, filtered by isDir
@@ -79,14 +83,18 @@ func (a *App) FindDirectories(pattern string) ([]string, error) {
 	return a.findMatches(pattern, true)
 }
 
-// findGlob finds paths matching a glob pattern
+// findGlob finds paths matching a glob pattern, with caching
 func (a *App) findGlob(pattern string) ([]string, error) {
-	matches, err := doublestar.Glob(os.DirFS(a.Source), pattern)
+	if cached, ok := a.globCache[pattern]; ok {
+		return cached, nil
+	}
 
+	matches, err := doublestar.Glob(os.DirFS(a.Source), pattern)
 	if err != nil {
 		return nil, err
 	}
 
+	a.globCache[pattern] = matches
 	return matches, nil
 }
 

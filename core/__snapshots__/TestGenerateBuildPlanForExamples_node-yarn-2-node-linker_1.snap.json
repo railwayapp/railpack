@@ -110,16 +110,16 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
+     "dest": ".yarnrc.yml",
+     "src": ".yarnrc.yml"
+    },
+    {
      "dest": "package.json",
      "src": "package.json"
     },
     {
      "dest": "yarn.lock",
      "src": "yarn.lock"
-    },
-    {
-     "dest": ".yarnrc.yml",
-     "src": ".yarnrc.yml"
     },
     {
      "cmd": "yarn install --check-cache"

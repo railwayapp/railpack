@@ -67,7 +67,6 @@ func readConfigJSON(path string, v interface{}) error {
 func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuildPlanOptions) *BuildResult {
 	logger := logger.NewLogger()
 
-	// Get the full user config based on file config, env config, and options
 	config, err := GetConfig(app, env, options, logger)
 	if err != nil {
 		logger.LogError("%s", err.Error())

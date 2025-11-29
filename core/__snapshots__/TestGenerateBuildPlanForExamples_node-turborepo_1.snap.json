@@ -125,8 +125,8 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
-     "dest": "package.json",
-     "src": "package.json"
+     "dest": ".npmrc",
+     "src": ".npmrc"
     },
     {
      "dest": "apps/docs/package.json",
@@ -135,6 +135,14 @@
     {
      "dest": "apps/web/package.json",
      "src": "apps/web/package.json"
+    },
+    {
+     "dest": "package-lock.json",
+     "src": "package-lock.json"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
     },
     {
      "dest": "packages/eslint-config/package.json",
@@ -147,14 +155,6 @@
     {
      "dest": "packages/ui/package.json",
      "src": "packages/ui/package.json"
-    },
-    {
-     "dest": "package-lock.json",
-     "src": "package-lock.json"
-    },
-    {
-     "dest": ".npmrc",
-     "src": ".npmrc"
     },
     {
      "cmd": "npm ci"
