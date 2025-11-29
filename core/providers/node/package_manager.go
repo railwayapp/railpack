@@ -51,14 +51,14 @@ func (p PackageManager) installDependencies(ctx *generate.GenerateContext, works
 	hasPreInstall := false
 	hasPostInstall := false
 	hasPrepare := false
-	usesLocalFile := false
 
 	for _, packageJson := range packageJsons {
 		hasPreInstall = hasPreInstall || (packageJson.Scripts != nil && packageJson.Scripts["preinstall"] != "")
 		hasPostInstall = hasPostInstall || (packageJson.Scripts != nil && packageJson.Scripts["postinstall"] != "")
 		hasPrepare = hasPrepare || (packageJson.Scripts != nil && packageJson.Scripts["prepare"] != "")
-		usesLocalFile = usesLocalFile || p.usesLocalFile(ctx)
 	}
+
+	usesLocalFile := p.usesLocalFile(ctx)
 
 	// If there are any pre/post install scripts, we need the entire app to be copied
 	// This is to handle things like patch-package
