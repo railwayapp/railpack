@@ -79,12 +79,10 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	miseStep := ctx.GetMiseStepBuilder()
 	p.InstallMisePackages(ctx, miseStep)
 
-	// Install
 	install := ctx.NewCommandStep("install")
 	install.AddInput(plan.NewStepLayer(miseStep.Name()))
 	p.InstallNodeDeps(ctx, install)
 
-	// Prune
 	prune := ctx.NewCommandStep("prune")
 	prune.AddInput(plan.NewStepLayer(install.Name()))
 	prune.Secrets = []string{}
@@ -92,7 +90,6 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 		p.PruneNodeDeps(ctx, prune)
 	}
 
-	// Build
 	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewStepLayer(install.Name()))
 	p.Build(ctx, build)
