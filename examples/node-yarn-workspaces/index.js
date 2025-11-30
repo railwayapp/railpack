@@ -3,7 +3,7 @@ import { greet as greetA } from "pkg-a";
 import { greet as greetB } from "pkg-b";
 
 console.log(cowsay.say({
-  text: "Hello from npm workspaces",
+  text: "Hello from yarn workspaces",
 }));
 
 console.log(greetA());
