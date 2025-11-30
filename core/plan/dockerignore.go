@@ -84,3 +84,8 @@ func (d *DockerignoreContext) ParseWithLogging(logger interface{ LogInfo(string,
 
 	return excludes, includes, nil
 }
+
+func (d *DockerignoreContext) GetExcludePatterns() []string {
+	excludes, _, _ := d.Parse()
+	return excludes
+}
