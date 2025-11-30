@@ -1,6 +1,8 @@
 package generate
 
 import (
+	"maps"
+
 	"github.com/railwayapp/railpack/core/plan"
 )
 
@@ -47,6 +49,10 @@ func (b *DeployBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) {
 		})
 		runtimeAptStep.Caches = options.Caches.GetAptCaches()
 		runtimeAptStep.Secrets = []string{}
+
+		// Add user variables to the runtime apt step
+		maps.Copy(runtimeAptStep.Variables, options.UserVariables)
+
 		p.Steps = append(p.Steps, *runtimeAptStep)
 		baseLayer = plan.NewStepLayer(runtimeAptStep.Name)
 	}
@@ -57,4 +63,7 @@ func (b *DeployBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) {
 	p.Deploy.StartCmd = b.StartCmd
 	p.Deploy.Variables = b.Variables
 	p.Deploy.Paths = b.Paths
+
+	// Add user variables to the deploy step (in addition to config-based merging)
+	maps.Copy(p.Deploy.Variables, options.UserVariables)
 }
