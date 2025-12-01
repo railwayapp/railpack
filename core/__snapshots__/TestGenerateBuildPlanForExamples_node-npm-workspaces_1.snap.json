@@ -108,6 +108,10 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
+     "dest": "package-lock.json",
+     "src": "package-lock.json"
+    },
+    {
      "dest": "package.json",
      "src": "package.json"
     },
@@ -118,10 +122,6 @@
     {
      "dest": "packages/pkg-b/package.json",
      "src": "packages/pkg-b/package.json"
-    },
-    {
-     "dest": "package-lock.json",
-     "src": "package-lock.json"
     },
     {
      "cmd": "npm ci"

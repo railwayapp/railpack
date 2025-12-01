@@ -126,12 +126,12 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
-     "dest": "package.json",
-     "src": "package.json"
-    },
-    {
      "dest": "bun.lockb",
      "src": "bun.lockb"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
     },
     {
      "cmd": "bun install --frozen-lockfile"
