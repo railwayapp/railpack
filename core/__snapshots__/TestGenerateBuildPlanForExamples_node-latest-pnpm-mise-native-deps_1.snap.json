@@ -116,12 +116,12 @@
      "src": "package.json"
     },
     {
-     "dest": "pnpm-workspace.yaml",
-     "src": "pnpm-workspace.yaml"
-    },
-    {
      "dest": "pnpm-lock.yaml",
      "src": "pnpm-lock.yaml"
+    },
+    {
+     "dest": "pnpm-workspace.yaml",
+     "src": "pnpm-workspace.yaml"
     },
     {
      "path": "/pnpm"

@@ -109,6 +109,10 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
+     "dest": ".yarnrc.yml",
+     "src": ".yarnrc.yml"
+    },
+    {
      "dest": "package.json",
      "src": "package.json"
     },
@@ -119,10 +123,6 @@
     {
      "dest": ".yarn",
      "src": ".yarn"
-    },
-    {
-     "dest": ".yarnrc.yml",
-     "src": ".yarnrc.yml"
     },
     {
      "cmd": "yarn install --check-cache"

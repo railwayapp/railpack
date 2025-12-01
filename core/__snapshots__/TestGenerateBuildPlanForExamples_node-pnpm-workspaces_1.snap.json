@@ -112,6 +112,10 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
+     "dest": ".nvmrc",
+     "src": ".nvmrc"
+    },
+    {
      "dest": "package.json",
      "src": "package.json"
     },
@@ -124,16 +128,12 @@
      "src": "packages/pkg-b/package.json"
     },
     {
-     "dest": "pnpm-workspace.yaml",
-     "src": "pnpm-workspace.yaml"
-    },
-    {
      "dest": "pnpm-lock.yaml",
      "src": "pnpm-lock.yaml"
     },
     {
-     "dest": ".nvmrc",
-     "src": ".nvmrc"
+     "dest": "pnpm-workspace.yaml",
+     "src": "pnpm-workspace.yaml"
     },
     {
      "path": "/pnpm"
