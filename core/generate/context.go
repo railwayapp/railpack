@@ -238,13 +238,24 @@ func (c *GenerateContext) applyConfig() {
 		commandStepBuilder.AddEnvVars(configStep.Variables)
 		maps.Copy(commandStepBuilder.Assets, configStep.Assets)
 
-		// Convert the deploy outputs into layers that will be added to the deploy
+		// Convert the deploy outputs into layers that will be added to the deploy.
+		// Skip if the path is already covered by existing inputs from this step
+		// (e.g. provider already added "." so we don't duplicate it from --build-cmd).
 		outputFilters := []plan.Filter{plan.NewIncludeFilter([]string{"."})}
 		if configStep.DeployOutputs != nil {
 			outputFilters = configStep.DeployOutputs
 		}
 		for _, filter := range outputFilters {
-			c.Deploy.AddInputs([]plan.Layer{plan.NewStepLayer(name, filter)})
+			alreadyCovered := false
+			for _, inc := range filter.Include {
+				if c.Deploy.HasIncludeForStep(name, inc) {
+					alreadyCovered = true
+					break
+				}
+			}
+			if !alreadyCovered {
+				c.Deploy.AddInputs([]plan.Layer{plan.NewStepLayer(name, filter)})
+			}
 		}
 	}
 }
