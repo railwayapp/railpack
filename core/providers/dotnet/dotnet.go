@@ -108,8 +108,9 @@ func (p *DotnetProvider) Build(ctx *generate.GenerateContext, build *generate.Co
 func (p *DotnetProvider) GetEnvVars(ctx *generate.GenerateContext) map[string]string {
 	version := p.getDotnetVersion(ctx)
 	return map[string]string{
-		"ASPNETCORE_ENVIRONMENT":      "production",
+		"ASPNETCORE_ENVIRONMENT":      "Production",
 		"ASPNETCORE_URLS":             "http://0.0.0.0:3000",
+		"ASPNETCORE_CONTENTROOT":      "/app/out",
 		"DOTNET_CLI_TELEMETRY_OPTOUT": "1",
 		"DOTNET_ROOT":                 path.Join(DOTNET_ROOT, version),
 	}
