@@ -2,7 +2,8 @@
     {
         "expectedOutput": [
             "Hello from Ruby",
-            "Ruby version: 3.3.0"
+            "Ruby version: 3.3.0",
+            "YJIT: enabled"
         ]
     }
 ]
