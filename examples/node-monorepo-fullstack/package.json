@@ -1,0 +1,13 @@
+{
+  "name": "node-monorepo-fullstack",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node packages/api/index.js"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "packageManager": "npm@10.9.2"
+}
