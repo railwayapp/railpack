@@ -41,7 +41,7 @@ func EmptyConfig() *Config {
 		Steps:    make(map[string]*StepConfig),
 		Packages: make(map[string]string),
 		Caches:   make(map[string]*plan.Cache),
-		Deploy:   &DeployConfig{},
+		Deploy:   &DeployConfig{Variables: make(map[string]string)},
 	}
 }
 
