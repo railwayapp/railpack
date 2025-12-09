@@ -108,8 +108,8 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
-     "dest": "bun.lockb",
-     "src": "bun.lockb"
+     "dest": "bun.lock",
+     "src": "bun.lock"
     },
     {
      "dest": "package.json",
