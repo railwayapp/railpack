@@ -1,3 +1,4 @@
+# syntax=docker.io/docker/dockerfile:1
 FROM buildpack-deps:bookworm-scm
 
 ENV DEBIAN_FRONTEND=noninteractive
