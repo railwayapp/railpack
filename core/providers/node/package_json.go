@@ -58,6 +58,23 @@ func (p *PackageJson) hasDependency(dependency string) bool {
 	return false
 }
 
+// getDependencyVersion returns the version string for a dependency, or empty string if not found
+func (p *PackageJson) getDependencyVersion(dependency string) string {
+	if p.Dependencies != nil {
+		if version, ok := p.Dependencies[dependency]; ok {
+			return version
+		}
+	}
+
+	if p.DevDependencies != nil {
+		if version, ok := p.DevDependencies[dependency]; ok {
+			return version
+		}
+	}
+
+	return ""
+}
+
 func (p *PackageJson) hasLocalDependency() bool {
 	allDeps := make(map[string]string)
 	maps.Copy(allDeps, p.Dependencies)

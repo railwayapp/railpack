@@ -257,6 +257,9 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 		ctx.Logger.LogWarn("It is recommended to add node_modules to the .gitignore file")
 	}
 
+	// Check for RSC (React Server Components) vulnerabilities and add overrides
+	p.mitigateRSCVulnerabilities(ctx, install)
+
 	if p.usesCorepack() {
 		pmName, pmVersion := p.packageJson.GetPackageManagerInfo()
 		install.AddVariables(map[string]string{
