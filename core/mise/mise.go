@@ -151,6 +151,7 @@ func (m *Mise) runCmdWithEnv(extraEnv []string, args ...string) (string, error) 
 	// https://github.com/jdx/mise/blob/main/src/dirs.rs
 	// MISE_SYSTEM_DIR ensures any local config on the host does not interfere with mise commands
 	cmd.Env = append(cmd.Env,
+		fmt.Sprintf("HOME=%s", m.cacheDir),
 		fmt.Sprintf("MISE_CACHE_DIR=%s", cacheDir),
 		fmt.Sprintf("MISE_DATA_DIR=%s", dataDir),
 		fmt.Sprintf("MISE_STATE_DIR=%s", stateDir),
