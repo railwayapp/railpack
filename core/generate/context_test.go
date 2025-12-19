@@ -108,6 +108,9 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		// Verify dockerignore was parsed during context creation
 		require.NotNil(t, ctx.dockerignoreCtx)
 
+		// Verify metadata indicates dockerignore presence
+		require.Equal(t, "true", ctx.Metadata.Get("dockerIgnore"))
+
 		// Test NewLocalLayer with dockerignore patterns
 		layer := ctx.NewLocalLayer()
 		require.True(t, layer.Local)
@@ -128,6 +131,9 @@ func TestGenerateContextDockerignore(t *testing.T) {
 
 		// Verify dockerignore context exists but has no patterns
 		require.NotNil(t, ctx.dockerignoreCtx)
+
+		// Verify metadata does not indicate dockerignore presence
+		require.Empty(t, ctx.Metadata.Get("dockerIgnore"))
 
 		// Test NewLocalLayer without dockerignore patterns
 		layer := ctx.NewLocalLayer()
