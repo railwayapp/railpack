@@ -15,10 +15,13 @@ import (
 )
 
 const (
+	// default elixir and erlang versions should be receiving security updates
+	// https://hexdocs.pm/elixir/compatibility-and-deprecations.html
 	DEFAULT_ERLANG_VERSION = "27.3"
 	DEFAULT_ELIXIR_VERSION = "1.18"
-	APP_BIN_PATH           = "/app/bin/server"
-	MIX_ROOT               = "/root/.mix"
+
+	APP_BIN_PATH = "/app/bin/server"
+	MIX_ROOT     = "/root/.mix"
 )
 
 type ElixirProvider struct {
