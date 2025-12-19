@@ -239,6 +239,8 @@ func (p *ElixirProvider) GetEnvVars(ctx *generate.GenerateContext) map[string]st
 		"LC_ALL":             "en_US.UTF-8",
 		"ELIXIR_ERL_OPTIONS": "+fnu",
 		"MIX_ENV":            "prod",
+		"MIX_HOME":           MIX_ROOT,
+		"MIX_ARCHIVES":       MIX_ROOT + "/archives",
 	}
 }
 
