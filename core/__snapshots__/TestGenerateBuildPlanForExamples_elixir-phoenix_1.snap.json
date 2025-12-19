@@ -17,7 +17,9 @@
    "LANG": "en_US.UTF-8",
    "LANGUAGE": "en_US:en",
    "LC_ALL": "en_US.UTF-8",
-   "MIX_ENV": "prod"
+   "MIX_ARCHIVES": "/root/.mix/archives",
+   "MIX_ENV": "prod",
+   "MIX_HOME": "/root/.mix"
   }
  },
  "steps": [
@@ -109,7 +111,9 @@
     "LANG": "en_US.UTF-8",
     "LANGUAGE": "en_US:en",
     "LC_ALL": "en_US.UTF-8",
-    "MIX_ENV": "prod"
+    "MIX_ARCHIVES": "/root/.mix/archives",
+    "MIX_ENV": "prod",
+    "MIX_HOME": "/root/.mix"
    }
   },
   {
@@ -169,7 +173,9 @@
     "LANG": "en_US.UTF-8",
     "LANGUAGE": "en_US:en",
     "LC_ALL": "en_US.UTF-8",
-    "MIX_ENV": "prod"
+    "MIX_ARCHIVES": "/root/.mix/archives",
+    "MIX_ENV": "prod",
+    "MIX_HOME": "/root/.mix"
    }
   }
  ]
