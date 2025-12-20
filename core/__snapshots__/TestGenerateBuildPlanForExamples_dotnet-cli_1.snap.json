@@ -29,7 +29,8 @@
   ],
   "startCommand": "./out/csharp-cli",
   "variables": {
-   "ASPNETCORE_ENVIRONMENT": "production",
+   "ASPNETCORE_CONTENTROOT": "/app/out",
+   "ASPNETCORE_ENVIRONMENT": "Production",
    "ASPNETCORE_URLS": "http://0.0.0.0:3000",
    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
    "DOTNET_ROOT": "/mise/installs/dotnet/6.0"
@@ -103,7 +104,8 @@
     "*"
    ],
    "variables": {
-    "ASPNETCORE_ENVIRONMENT": "production",
+    "ASPNETCORE_CONTENTROOT": "/app/out",
+    "ASPNETCORE_ENVIRONMENT": "Production",
     "ASPNETCORE_URLS": "http://0.0.0.0:3000",
     "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
     "DOTNET_ROOT": "/mise/installs/dotnet/6.0"
@@ -138,7 +140,8 @@
     "*"
    ],
    "variables": {
-    "ASPNETCORE_ENVIRONMENT": "production",
+    "ASPNETCORE_CONTENTROOT": "/app/out",
+    "ASPNETCORE_ENVIRONMENT": "Production",
     "ASPNETCORE_URLS": "http://0.0.0.0:3000",
     "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
     "DOTNET_ROOT": "/mise/installs/dotnet/6.0"
