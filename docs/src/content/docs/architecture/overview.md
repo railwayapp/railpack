@@ -84,7 +84,7 @@ will:
 
 ## Config
 
-The build plan can be customized throuhg [environment
+The build plan can be customized through [environment
 variables](/config/environment-variables) (typically prefixed with `RAILPACK_`)
 or through a [configuration file](/config/file). The configuration is applied to
 the generate context after the providers have run.
