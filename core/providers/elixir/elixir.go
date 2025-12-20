@@ -89,13 +89,20 @@ func (p *ElixirProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 }
 
 func (p *ElixirProvider) Install(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
+	// it's possible, but rare, for an elixir project to have no mix.lock
+	// https://github.com/elixir-lang/elixir/issues/13506
+	// errors when these are occur are cryptic (cache key errors), so we warn the user
+	if !ctx.App.HasFile("mix.lock") {
+		ctx.Logger.LogWarn("No mix.lock found. Add mix.lock or customize build to avoid failure.")
+	}
+
 	install.AddCommands([]plan.Command{
+		plan.NewExecCommand("mkdir -p config deps _build"),
 		plan.NewExecCommand("mix local.hex --force"),
 		plan.NewExecCommand("mix local.rebar --force"),
 		plan.NewCopyCommand("mix.exs"),
 		plan.NewCopyCommand("mix.lock"),
 		plan.NewExecCommand("mix deps.get --only prod"),
-		plan.NewExecCommand("mkdir -p config"),
 		plan.NewCopyCommand("config/config.exs*", "config/"),
 		plan.NewCopyCommand("config/prod.exs*", "config/"),
 		plan.NewExecCommand("mix deps.compile"),
