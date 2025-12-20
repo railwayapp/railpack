@@ -1,3 +1,4 @@
+# This image is used to build a custom mise binary which is then included in the railpack-builder image
 FROM rust:1-slim-bookworm AS builder
 
 ARG MISE_VERSION

@@ -206,6 +206,7 @@ Mise is absolutely central to this entire project, so you'll have to dig into th
 * There are two mise 'environments' to keep in mind: the host environment, which uses a specific version of mise downloaded
   just for railpack, and the mise binary run during the build process. The mise version will be the same, but the environment
   is different.
+* If `mise tool erlang` reports a `core:` plugin it means this plugin is compiled into the mise binary and it's source is available with the mise monorepo. This can be confusing since there are often open source shell-based repos available for a tool as well, but they are unused by default.
 
 ### Mise Commands
 
