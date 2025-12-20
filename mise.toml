@@ -21,7 +21,22 @@ run = "dlv debug github.com/railwayapp/railpack/cmd/cli --"
 run = "go build -o bin/railpack cmd/cli/main.go"
 
 [tasks.clean]
-run = "rm -rf bin dist docs/dist"
+run = [
+  "rm -rf bin dist docs/dist",
+  "docker exec buildkit buildctl prune",
+  "rm -f *.test",
+  # remove all images created by the integration test suite
+  "docker images 'railpack-test-*' -q | xargs -r docker rmi -f",
+  # remove images created by manually running `railpack build` against a project example
+  "find examples -name test.json -exec dirname {} \\; | xargs -n 1 basename | xargs -r -I {} docker rmi -f {}",
+  "go clean -testcache",
+  "mise cache clear",
+  "rm -rf /tmp/railpack",
+]
+
+# if a example folder does not have a test.json file, it will be skipped
+[tasks.examples-without-tests]
+run = "find examples -mindepth 1 -maxdepth 1 -type d ! -exec [ -f \"{}/test.json\" ] \\; -print "
 
 # run unit tests
 [tasks.test]
@@ -39,11 +54,7 @@ run = "UPDATE_SNAPS=true go test -short ./..."
 
 # linting, formatting, and static analysis
 [tasks.check]
-run = """
-go vet ./...
-go fmt ./...
-golangci-lint run
-"""
+run = ["go vet ./...", "go fmt ./...", "golangci-lint run"]
 
 [tasks.tidy]
 run = "go mod tidy"
