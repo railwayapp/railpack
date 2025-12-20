@@ -15,6 +15,7 @@ on:
     # something changes in the package ecosystem that breaks one of our build tests.
     - cron: "0 0 * * *"
 jobs:
+  # generate a JSON array of all entries in examples/ to shard out example into a separate job that can be run in parallel
   find-examples:
     runs-on: ubuntu-latest
     outputs:
@@ -37,6 +38,7 @@ jobs:
       packages: read
     strategy:
       matrix:
+        # create a separate job for each entry in examples/. i.e. gleam, elixir-ecto, etc
         example: ${{ fromJson(needs.find-examples.outputs.examples) }}
       fail-fast: false
 
@@ -79,11 +81,12 @@ jobs:
         env:
           # without the GITHUB_TOKEN, mise will 403 us
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # each test should be run with an exact match otherwise `gleam` will also match `gleam-custom` causing duplicate test runs
         run: |
-          # Add cache import/export flags to the test command
           go test -v ./integration_tests \
-            -run "TestExamplesIntegration/${{ matrix.example }}" \
+            -run "^TestExamplesIntegration/${{ matrix.example }}$" \
             -timeout 20m
+        # TODO Add cache import/export flags to the test command
         # -buildkit-cache-import="type=gha,url=${{ env.ACTIONS_CACHE_URL }},token=${{ env.ACTIONS_RUNTIME_TOKEN }},scope=${{ matrix.example }}" \
         # -buildkit-cache-export="type=gha,url=${{ env.ACTIONS_CACHE_URL }},token=${{ env.ACTIONS_RUNTIME_TOKEN }},mode=max,scope=${{ matrix.example }},error=ignore,compression=zstd"
 

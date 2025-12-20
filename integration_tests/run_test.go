@@ -103,6 +103,7 @@ func TestExamplesIntegration(t *testing.T) {
 				t.Fatalf("%s: justBuild can only be used alone (no other test cases allowed in the same file)", entry.Name())
 			}
 		}
+
 		// Start docker-compose services for this example if they exist
 		examplePath := filepath.Join(examplesDir, entry.Name())
 		composeConfig, err := detectAndStartCompose(examplePath, t)
