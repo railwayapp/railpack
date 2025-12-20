@@ -151,9 +151,13 @@ func TestExamplesIntegration(t *testing.T) {
 				if !buildResult.Success {
 					t.Fatalf("failed to generate build plan: %v", buildResult.Logs)
 				}
+
 				if buildResult == nil {
 					t.Fatal("build result is nil")
 				}
+
+				// strictly for debugging when attempting to reproduce and compare a build locally
+				core.PrettyPrintBuildResult(buildResult)
 
 				imageName := uniqueContainerName(
 					strings.ToLower(strings.ReplaceAll(testName, "/", "-")),
