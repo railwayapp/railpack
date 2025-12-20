@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-# Description: one-click command to check for a new mise version and create a PR to update it.
+# Description: one-click command to check for a new mise version and create a PR to update core/mise/version.txt.
 
 set -euo pipefail
 
@@ -28,11 +28,6 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! command -v perl >/dev/null 2>&1; then
-  echo "Error: perl is required." >&2
-  exit 1
-fi
-
 # Get latest mise tag via GitHub API
 latest_tag="$(gh release view --repo jdx/mise --json tagName --jq .tagName)"
 if [[ -z "$latest_tag" ]]; then
@@ -41,13 +36,11 @@ if [[ -z "$latest_tag" ]]; then
 fi
 latest="${latest_tag#v}"
 
-file="$repo_root/core/mise/install.go"
+file="$repo_root/core/mise/version.txt"
 if [[ ! -f "$file" ]]; then
   echo "Error: $file not found" >&2
   exit 1
 fi
-
-# Proceed regardless of current miseVersion; we'll set githubReleaseBase to the latest version string
 
 branch="chore/update-mise-$latest"
 if git show-ref --verify --quiet "refs/heads/$branch"; then
@@ -57,12 +50,12 @@ fi
 
 git switch -c "$branch"
 
-# Replace the miseVersion line with the version string
-perl -i -pe 's/^(\s*)miseVersion\s*=.*$/\1miseVersion = "'"$latest"'"/' "$file"
+# Write the new version to version.txt
+echo "$latest" > "$file"
 
-new="$(awk -F'"' '/miseVersion[[:space:]]*=/{print $2; exit}' "$file")"
+new="$(cat "$file")"
 if [[ "$new" != "$latest" ]]; then
-  echo "Error: failed to update miseVersion in $file" >&2
+  echo "Error: failed to update version in $file" >&2
   exit 1
 fi
 
@@ -70,7 +63,7 @@ mise run check
 
 # If nothing changed, stop early
 if git diff --quiet -- "$file"; then
-  echo "miseVersion already set to $latest. Nothing to do."
+  echo "mise version already set to $latest. Nothing to do."
   exit 0
 fi
 
