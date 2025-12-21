@@ -1,0 +1,6 @@
+[
+  {
+    "expectedOutput": "hello from elixir",
+    "stderrAllowed": true
+  }
+]
