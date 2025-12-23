@@ -9,5 +9,17 @@
       "PHX_SERVER": "true",
       "SECRET_KEY_BASE": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     }
+  },
+  {
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 4000
+    },
+    "envs": {
+      "RAILPACK_MIX_ENV": "staging",
+      "PHX_SERVER": "true",
+      "SECRET_KEY_BASE": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
   }
 ]

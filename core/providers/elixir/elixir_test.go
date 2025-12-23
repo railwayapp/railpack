@@ -15,7 +15,7 @@ func TestElixir(t *testing.T) {
 		expectedMain string
 	}{
 		{
-			name:     "deno project with main.ts",
+			name:     "elixir project with phoenix",
 			path:     "../../../examples/elixir-phoenix",
 			detected: true,
 		},
