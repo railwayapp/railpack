@@ -425,10 +425,18 @@ func (p *PythonProvider) installNeedsAllFiles(ctx *generate.GenerateContext) boo
 	return false
 }
 
+func (p *PythonProvider) usesBinaryPsycopg(ctx *generate.GenerateContext) bool {
+	return p.usesDep(ctx, "psycopg2-binary") || p.usesDep(ctx, "psycopg[binary]")
+}
+
 func (p *PythonProvider) usesPostgres(ctx *generate.GenerateContext) bool {
+	if p.usesBinaryPsycopg(ctx) {
+		return false
+	}
+
 	djangoPythonRe := regexp.MustCompile(`django.db.backends.postgresql`)
 	containsDjangoPostgres := len(ctx.App.FindFilesWithContent("**/*.py", djangoPythonRe)) > 0
-	return p.usesDep(ctx, "psycopg2") || p.usesDep(ctx, "psycopg2-binary") || p.usesDep(ctx, "psycopg") || containsDjangoPostgres
+	return p.usesDep(ctx, "psycopg2") || p.usesDep(ctx, "psycopg") || containsDjangoPostgres
 }
 
 func (p *PythonProvider) usesMysql(ctx *generate.GenerateContext) bool {
