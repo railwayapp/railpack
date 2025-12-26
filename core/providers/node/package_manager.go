@@ -146,7 +146,7 @@ func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate
 
 	switch p {
 	case PackageManagerNpm:
-		prune.AddCommand(plan.NewExecCommand("npm prune --omit=dev --ignore-scripts"))
+		prune.AddCommand(plan.NewExecCommand("npm prune --ignore-scripts"))
 	case PackageManagerPnpm:
 		p.prunePnpm(ctx, prune)
 	case PackageManagerBun:
