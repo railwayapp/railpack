@@ -279,7 +279,8 @@ func getImageName(appDir string) string {
 	if name == "" {
 		name = "railpack-app" // Fallback if path ends in separator
 	}
-	return name
+	// Docker requires image names to be lowercase
+	return strings.ToLower(name)
 }
 
 // Helper function to parse key=value strings into a map
