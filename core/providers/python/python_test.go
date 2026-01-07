@@ -35,6 +35,11 @@ func TestDetect(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "bot.py only",
+			path: "../../../examples/python-bot-only",
+			want: true,
+		},
+		{
 			name: "no python",
 			path: "../../../examples/go-mod",
 			want: false,

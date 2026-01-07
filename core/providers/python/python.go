@@ -31,7 +31,7 @@ func (p *PythonProvider) Initialize(ctx *generate.GenerateContext) error {
 }
 
 func (p *PythonProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
-	hasPython := ctx.App.HasFile("main.py") ||
+	hasPython := p.getMainPythonFile(ctx) != "" ||
 		p.hasRequirements(ctx) ||
 		p.hasPyproject(ctx) ||
 		p.hasPipfile(ctx)
@@ -123,7 +123,7 @@ func (p *PythonProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 }
 
 func (p *PythonProvider) getMainPythonFile(ctx *generate.GenerateContext) string {
-	for _, file := range []string{"main.py", "app.py", "bot.py", "hello.py", "server.py"} {
+	for _, file := range []string{"main.py", "app.py", "start.py", "bot.py", "hello.py", "server.py"} {
 		if ctx.App.HasFile(file) {
 			return file
 		}
