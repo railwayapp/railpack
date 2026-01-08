@@ -90,12 +90,12 @@ func (p *ElixirProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 
 func (p *ElixirProvider) Install(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
 	install.AddCommands([]plan.Command{
+		plan.NewExecCommand("mkdir -p config deps _build"),
 		plan.NewExecCommand("mix local.hex --force"),
 		plan.NewExecCommand("mix local.rebar --force"),
 		plan.NewCopyCommand("mix.exs"),
 		plan.NewCopyCommand("mix.lock"),
 		plan.NewExecCommand("mix deps.get --only prod"),
-		plan.NewExecCommand("mkdir -p config"),
 		plan.NewCopyCommand("config/config.exs*", "config/"),
 		plan.NewCopyCommand("config/prod.exs*", "config/"),
 		plan.NewExecCommand("mix deps.compile"),

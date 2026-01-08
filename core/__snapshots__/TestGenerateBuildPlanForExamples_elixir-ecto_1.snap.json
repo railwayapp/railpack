@@ -62,6 +62,9 @@
   {
    "commands": [
     {
+     "cmd": "mkdir -p config deps _build"
+    },
+    {
      "cmd": "mix local.hex --force"
     },
     {
@@ -77,9 +80,6 @@
     },
     {
      "cmd": "mix deps.get --only prod"
-    },
-    {
-     "cmd": "mkdir -p config"
     },
     {
      "dest": "config/",

@@ -11,7 +11,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "/app/_build/prod/rel/hello/bin/hello start",
+  "startCommand": "/app/_build/prod/rel/friends/bin/friends start",
   "variables": {
    "ELIXIR_ERL_OPTIONS": "+fnu",
    "LANG": "en_US.UTF-8",
@@ -95,9 +95,6 @@
     },
     {
      "cmd": "mix deps.compile"
-    },
-    {
-     "cmd": "mix assets.setup"
     }
    ],
    "inputs": [
@@ -136,9 +133,6 @@
     },
     {
      "cmd": "mix compile"
-    },
-    {
-     "cmd": "mix assets.deploy"
     },
     {
      "dest": ".",
