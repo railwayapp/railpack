@@ -19,6 +19,7 @@ const (
 	// https://hexdocs.pm/elixir/compatibility-and-deprecations.html
 	DEFAULT_ERLANG_VERSION = "27.3"
 	DEFAULT_ELIXIR_VERSION = "1.18"
+	DEFAULT_MIX_ENV        = "prod"
 
 	APP_BIN_PATH = "/app/bin/server"
 	MIX_ROOT     = "/root/.mix"
@@ -48,8 +49,8 @@ func (p *ElixirProvider) Plan(ctx *generate.GenerateContext) error {
 	install.AddInput(plan.NewStepLayer(miseStep.Name()))
 	install.Secrets = []string{}
 	install.UseSecretsWithPrefixes([]string{"MIX", "ERL", "ELIXIR", "OTP"})
-	installOutputPaths := p.Install(ctx, install)
 	maps.Copy(install.Variables, p.GetEnvVars(ctx))
+	installOutputPaths := p.Install(ctx, install)
 
 	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewStepLayer(miseStep.Name()))
@@ -85,19 +86,20 @@ func (p *ElixirProvider) StartCommandHelp() string {
 
 func (p *ElixirProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	binName := p.findBinName(ctx)
-	return fmt.Sprintf("/app/_build/prod/rel/%s/bin/%s start", binName, binName)
+	return fmt.Sprintf("/app/_build/%s/rel/%s/bin/%s start", ctx.Deploy.Variables["MIX_ENV"], binName, binName)
 }
 
 func (p *ElixirProvider) Install(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
+	mixEnv := install.Variables["MIX_ENV"]
 	install.AddCommands([]plan.Command{
 		plan.NewExecCommand("mix local.hex --force"),
 		plan.NewExecCommand("mix local.rebar --force"),
 		plan.NewCopyCommand("mix.exs"),
 		plan.NewCopyCommand("mix.lock"),
-		plan.NewExecCommand("mix deps.get --only prod"),
+		plan.NewExecCommand(fmt.Sprintf("mix deps.get --only %s", mixEnv)),
 		plan.NewExecCommand("mkdir -p config"),
 		plan.NewCopyCommand("config/config.exs*", "config/"),
-		plan.NewCopyCommand("config/prod.exs*", "config/"),
+		plan.NewCopyCommand(fmt.Sprintf("config/%s.exs*", mixEnv), "config/"),
 		plan.NewExecCommand("mix deps.compile"),
 	})
 	if matches := ctx.App.FindFilesWithContent("mix.exs", regexp.MustCompile(`assets\.setup`)); len(matches) > 0 {
@@ -174,7 +176,7 @@ func (p *ElixirProvider) Build(ctx *generate.GenerateContext, build *generate.Co
 		plan.NewExecCommand("mix release"),
 	})
 
-	return []string{"_build/prod/rel"}
+	return []string{fmt.Sprintf("_build/%s/rel", build.Variables["MIX_ENV"])}
 }
 
 var elixirVersionRegex = regexp.MustCompile(`(elixir:[\s].*[> ])([\w|\.]*)`)
@@ -236,12 +238,17 @@ func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 }
 
 func (p *ElixirProvider) GetEnvVars(ctx *generate.GenerateContext) map[string]string {
+	mixEnv := DEFAULT_MIX_ENV
+	if providedMixEnv, _ := ctx.Env.GetConfigVariable("MIX_ENV"); providedMixEnv != "" {
+		mixEnv = providedMixEnv
+	}
+
 	return map[string]string{
 		"LANG":               "en_US.UTF-8",
 		"LANGUAGE":           "en_US:en",
 		"LC_ALL":             "en_US.UTF-8",
 		"ELIXIR_ERL_OPTIONS": "+fnu",
-		"MIX_ENV":            "prod",
+		"MIX_ENV":            mixEnv,
 		"MIX_HOME":           MIX_ROOT,
 		"MIX_ARCHIVES":       MIX_ROOT + "/archives",
 	}
