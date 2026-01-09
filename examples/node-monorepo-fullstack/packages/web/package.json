@@ -1,0 +1,8 @@
+{
+  "name": "@monorepo/web",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@monorepo/shared": "*"
+  }
+}
