@@ -44,20 +44,25 @@ Use 'railpack --verbose' to view more error details.
 )
 
 type BuildWithBuildkitClientOptions struct {
-	ImageName    string
-	DumpLLB      bool
-	OutputDir    string
-	ProgressMode string
-	SecretsHash  string
-	Secrets      map[string]string
-	Platform     string
-	ImportCache  string
-	ExportCache  string
-	CacheKey     string
-	GitHubToken  string
+	ImageName           string
+	DumpLLB             bool
+	OutputDir           string
+	ProgressMode        string
+	SecretsHash         string
+	Secrets             map[string]string
+	Platform            string
+	ImportCache         string
+	ExportCache         string
+	CacheKey            string
+	GitHubToken         string
+	DockerignoreContext *plan.DockerignoreContext
 }
 
 func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWithBuildkitClientOptions) error {
+	if opts.DockerignoreContext == nil {
+		return fmt.Errorf("DockerignoreContext is required")
+	}
+
 	ctx := appcontext.Context()
 
 	imageName := opts.ImageName
@@ -93,10 +98,11 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 	}
 
 	llbState, image, err := ConvertPlanToLLB(plan, ConvertPlanOptions{
-		BuildPlatform: buildPlatform,
-		SecretsHash:   opts.SecretsHash,
-		CacheKey:      opts.CacheKey,
-		GitHubToken:   opts.GitHubToken,
+		BuildPlatform:       buildPlatform,
+		SecretsHash:         opts.SecretsHash,
+		CacheKey:            opts.CacheKey,
+		GitHubToken:         opts.GitHubToken,
+		DockerignoreContext: opts.DockerignoreContext,
 	})
 	if err != nil {
 		return fmt.Errorf("error converting plan to LLB: %w", err)
