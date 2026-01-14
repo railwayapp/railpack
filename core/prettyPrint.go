@@ -270,8 +270,10 @@ func getStepsToPrint(br *BuildResult) []*plan.Step {
 	return execSteps
 }
 
+// TODO we should really just mark a command as skippable on the ExecCommand instead
 var skippableCommands = []string{
 	"mkdir -p /app/node_modules/.cache",
+	"mkdir -p config deps _build",
 }
 
 func getCommandsToPrint(commands []plan.Command) []plan.ExecCommand {
