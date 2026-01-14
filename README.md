@@ -28,7 +28,7 @@ railpack build .
 docker run -p 3000:3000 -it my-app
 ```
 
-Railpack automatically detects the project type (next, in this case, but many languages & frameworks are supported!) and generates an optimized
+Railpack automatically detects the project type (Next.js, in this case, but many languages & frameworks are supported!) and generates an optimized
 container image.
 
 **Note:** The above steps are for running Railpack locally to experiment and

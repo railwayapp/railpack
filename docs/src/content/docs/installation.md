@@ -11,7 +11,7 @@ GHCR](https://github.com/railwayapp/railpack/pkgs/container/railpack-frontend).
 
 ## Mise
 
-We love mise, and you can install railpack using mise:
+We love mise, and you can install Railpack using mise:
 
 ```sh
 mise use github:railwayapp/railpack@latest

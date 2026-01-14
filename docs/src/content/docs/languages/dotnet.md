@@ -7,7 +7,7 @@ Railpack builds and deploys Dotnet applications with zero configuration.
 
 ## Detection
 
-Your project will be detected as a Dotnet application if a `*.csproj` file
+Your project will be detected as a Dotnet application if a `*.csproj` file exists in the root directory.
 
 ## Versions
 

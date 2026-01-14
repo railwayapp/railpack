@@ -58,8 +58,8 @@ in CI. You can run them locally with:
 mise run test-integration
 ```
 
-The `test.json` file contains an array of build configuration and expected
-output. See [this
+The `test.json` file contains an array of build configurations and expected
+outputs. See [this
 file](https://github.com/railwayapp/railpack/blob/main/integration_tests/run_test.go#L26)
 for the schema.
 

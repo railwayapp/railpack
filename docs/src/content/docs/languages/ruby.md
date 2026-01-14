@@ -28,7 +28,7 @@ These variables are available at runtime:
 ```sh
 BUNDLE_GEMFILE="/app/Gemfile"
 GEM_PATH="/usr/local/bundle"
-GEM_HOME= "/usr/local/bundle"
+GEM_HOME="/usr/local/bundle"
 MALLOC_ARENA_MAX="2"
 ```
 

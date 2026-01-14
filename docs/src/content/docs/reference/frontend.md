@@ -3,7 +3,7 @@ title: BuildKit Frontend Reference
 description: Complete reference for the Railpack BuildKit frontend
 ---
 
-Complete reference documentation for the Railpack BuildKit frontend. For a full example of how to use the frontend for a production build, see the [running railpack in production](../guides/running-railpack-in-production) guide.
+Complete reference documentation for the Railpack BuildKit frontend. For a full example of how to use the frontend for a production build, see the [running Railpack in production](../guides/running-railpack-in-production) guide.
 
 ## Expected
 

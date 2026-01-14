@@ -45,7 +45,7 @@ following cases:
 - If you're using Astro
 
 When Node.js isn't required in the final image but is needed during installation
-(for native modules), Node.js will be installed via mise and will respect
+(for native modules), Node.js will be installed via Mise and will respect
 version specifications in `mise.toml` and `.tool-versions` files.
 
 ## Runtime Variables
@@ -118,7 +118,7 @@ used.
 Railpack will only include the necessary files to install dependencies in order
 to improve cache hit rates. This includes the `package.json` and relevant lock
 files, but there are also a few additional framework specific files that are
-included if they exist in your app. This behaviour is disabled if a `preinstall`
+included if they exist in your app. This behavior is disabled if a `preinstall`
 or `postinstall` script is detected in the `package.json` file.
 
 You can include additional files or directories to include by setting the
@@ -129,7 +129,7 @@ with `**/` to match nested files and directories.
 ## Static Sites
 
 Railpack can serve a statically built Node project with zero config. You can
-disable this behaviour by either:
+disable this behavior by either:
 
 - Setting the `RAILPACK_NO_SPA=1` environment variable
 - Setting a custom start command

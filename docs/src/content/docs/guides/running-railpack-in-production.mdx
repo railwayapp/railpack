@@ -80,7 +80,7 @@ railpack prepare /dir/to/build --env STRIPE_LIVE_KEY=sk_live_asdf
 
 These secrets can be used to configure the plan, but the names will also be
 included in the build plan itself (not the values). This is important so that
-the frontend knowns what secrets to mount as environment variables when
+the frontend knows what secrets to mount as environment variables when
 generating the LLB.
 
 To include the values of the secrets for the build, you can pass them as [Docker
@@ -101,7 +101,7 @@ through the `--secret` flag._
 
 By default, layers will not be invalidated when a secret value changes. To get
 around this, Railpack uses a hash of the secret values and mounts this as a file
-in the layer. When using the railpack CLI to build, this happens automatically,
+in the layer. When using the Railpack CLI to build, this happens automatically,
 but if you are using the frontend directly, calculate the hash yourself and pass
 it as a build arg.
 
