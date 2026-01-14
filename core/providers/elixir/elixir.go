@@ -98,7 +98,6 @@ func (p *ElixirProvider) Install(ctx *generate.GenerateContext, install *generat
 
 	install.AddCommands([]plan.Command{
 		plan.NewExecCommand("mkdir -p config deps _build"),
-		plan.NewExecCommand("touch mix.lock"),
 		plan.NewExecCommand("mix local.hex --force"),
 		plan.NewExecCommand("mix local.rebar --force"),
 		plan.NewCopyCommand("mix.exs"),
