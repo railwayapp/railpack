@@ -60,10 +60,6 @@ func (m *Mise) GetLatestVersion(pkg, version string) (string, error) {
 	semverVersion := utils.ExtractSemverVersion(version)
 	query := fmt.Sprintf("%s@%s", pkg, semverVersion)
 
-	// TODO remove this once mise is fixed
-	// running this command twice to work around this issue: https://github.com/jdx/mise/pull/7467/changes
-	_, _ = m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1", "MISE_PARANOID=1"}, "latest", query)
-
 	// Try with extracted semver version first
 	output, err := m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1", "MISE_PARANOID=1"}, "latest", query)
 
