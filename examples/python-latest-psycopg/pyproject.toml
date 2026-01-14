@@ -1,0 +1,9 @@
+[project]
+name = "python-psycopg3"
+version = "0.1.0"
+description = "Test psycopg3 with PostgreSQL"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "psycopg>=3.2,<4.0",
+]

@@ -7,7 +7,7 @@ Railpack is split up into three main components:
 
 - Core
   - The main logic that analyzes the app and generates the build plan
-- Buildkit
+- BuildKit
   - Takes the build plan and generates [BuildKit
     LLB](https://github.com/moby/buildkit?tab=readme-ov-file#exploring-llb)
   - Starts a custom frontend or creates a BuildKit client to execute the build
@@ -84,7 +84,7 @@ will:
 
 ## Config
 
-The build plan can be customized throuhg [environment
+The build plan can be customized through [environment
 variables](/config/environment-variables) (typically prefixed with `RAILPACK_`)
 or through a [configuration file](/config/file). The configuration is applied to
 the generate context after the providers have run.

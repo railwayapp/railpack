@@ -48,12 +48,6 @@
      "."
     ],
     "step": "build"
-   },
-   {
-    "include": [
-     "."
-    ],
-    "step": "build"
    }
   ],
   "startCommand": "python --version \u0026\u0026 neofetch $HELLO",
@@ -116,7 +110,8 @@
     "MISE_INSTALLS_DIR": "/mise/installs",
     "MISE_NODE_VERIFY": "false",
     "MISE_PARANOID": "1",
-    "MISE_SHIMS_DIR": "/mise/shims"
+    "MISE_SHIMS_DIR": "/mise/shims",
+    "MISE_TRUSTED_CONFIG_PATHS": "/app"
    }
   },
   {
@@ -131,12 +126,12 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
-     "dest": "package.json",
-     "src": "package.json"
-    },
-    {
      "dest": "bun.lockb",
      "src": "bun.lockb"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
     },
     {
      "cmd": "bun install --frozen-lockfile"

@@ -9,7 +9,7 @@ import (
 const MAVEN_CACHE_KEY = "maven"
 
 func (p *JavaProvider) getMavenExe(ctx *generate.GenerateContext) string {
-	if ctx.App.HasMatch("mvnw") && ctx.App.HasMatch(".mvn/wrapper/maven-wrapper.properties") {
+	if ctx.App.HasFile("mvnw") && ctx.App.HasFile(".mvn/wrapper/maven-wrapper.properties") {
 		return "./mvnw"
 	}
 

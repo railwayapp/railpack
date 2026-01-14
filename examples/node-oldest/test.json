@@ -1,0 +1,6 @@
+[
+  {
+    "expectedOutput": "Node version: v20",
+    "stderrAllowed": true
+  }
+]

@@ -68,6 +68,8 @@ func (p *DotnetProvider) Plan(ctx *generate.GenerateContext) error {
 	return nil
 }
 
+func (p *DotnetProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
+
 func (p *DotnetProvider) StartCommandHelp() string {
 	return "To start your Dotnet application, Railpack will look for:\n\n" +
 		"1. A .csproj file in your project root\n\n" +
@@ -81,7 +83,7 @@ func (p *DotnetProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	}
 	projFile := projFiles[0]
 	projName := strings.TrimSuffix(projFile, ".csproj")
-	return fmt.Sprintf("./out/%s", projName)
+	return fmt.Sprintf("ASPNETCORE_URLS=http://0.0.0.0:${PORT:-3000} ./out/%s", projName)
 }
 
 func (p *DotnetProvider) Install(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
@@ -106,8 +108,8 @@ func (p *DotnetProvider) Build(ctx *generate.GenerateContext, build *generate.Co
 func (p *DotnetProvider) GetEnvVars(ctx *generate.GenerateContext) map[string]string {
 	version := p.getDotnetVersion(ctx)
 	return map[string]string{
-		"ASPNETCORE_ENVIRONMENT":      "production",
-		"ASPNETCORE_URLS":             "http://0.0.0.0:3000",
+		"ASPNETCORE_ENVIRONMENT":      "Production",
+		"ASPNETCORE_CONTENTROOT":      "/app/out",
 		"DOTNET_CLI_TELEMETRY_OPTOUT": "1",
 		"DOTNET_ROOT":                 path.Join(DOTNET_ROOT, version),
 	}

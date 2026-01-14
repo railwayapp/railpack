@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	_ "embed"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,10 +17,16 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-const (
-	miseVersion       = "2025.11.3"
-	githubReleaseBase = "https://github.com/jdx/mise/releases/download"
-)
+//go:embed version.txt
+var miseVersionRaw string
+
+var miseVersion string
+
+const githubReleaseBase = "https://github.com/jdx/mise/releases/download"
+
+func init() {
+	miseVersion = strings.TrimSpace(miseVersionRaw)
+}
 
 // returns name of the mise binary based on the operating system
 func getBinaryName() string {

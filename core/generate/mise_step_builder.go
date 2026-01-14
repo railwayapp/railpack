@@ -201,10 +201,7 @@ func (b *MiseStepBuilder) GetOutputPaths() []string {
 		return []string{}
 	}
 
-	supportingMiseConfigFiles := b.GetSupportingMiseConfigFiles(b.app.Source)
-	files := []string{"/mise/shims", "/mise/installs", "/usr/local/bin/mise", "/etc/mise/config.toml", "/root/.local/state/mise"}
-	files = append(files, supportingMiseConfigFiles...)
-	return files
+	return []string{"/mise/shims", "/mise/installs", "/usr/local/bin/mise", "/etc/mise/config.toml", "/root/.local/state/mise"}
 }
 
 func (b *MiseStepBuilder) GetLayer() plan.Layer {
@@ -251,6 +248,8 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			"MISE_NODE_VERIFY": "false",
 			// Enforces HTTPS and stricter security
 			"MISE_PARANOID": "1",
+			// Trust config files in the app directory to avoid trust warnings during build
+			"MISE_TRUSTED_CONFIG_PATHS": "/app",
 			// Enable mise to automatically read idiomatic version files
 			"MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS": "python,node,ruby,elixir,go,java,yarn",
 		})
@@ -315,6 +314,7 @@ var miseConfigFiles = []string{
 	".python-version",
 	".node-version",
 	".nvmrc",
+	// .bun-version is a community convention, not officially supported by Bun
 	".bun-version",
 }
 
@@ -322,7 +322,7 @@ func (b *MiseStepBuilder) GetSupportingMiseConfigFiles(path string) []string {
 	files := []string{}
 
 	for _, file := range miseConfigFiles {
-		if b.app.HasMatch(file) {
+		if b.app.HasFile(file) {
 			files = append(files, file)
 		}
 	}

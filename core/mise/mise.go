@@ -57,9 +57,10 @@ func (m *Mise) GetLatestVersion(pkg, version string) (string, error) {
 	}
 	defer unlock()
 
-	// Try with extracted semver version first
 	semverVersion := utils.ExtractSemverVersion(version)
 	query := fmt.Sprintf("%s@%s", pkg, semverVersion)
+
+	// Try with extracted semver version first
 	output, err := m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1", "MISE_PARANOID=1"}, "latest", query)
 
 	// If semver extraction fails, try with original version
@@ -151,12 +152,16 @@ func (m *Mise) runCmdWithEnv(extraEnv []string, args ...string) (string, error) 
 	// https://github.com/jdx/mise/blob/main/src/dirs.rs
 	// MISE_SYSTEM_DIR ensures any local config on the host does not interfere with mise commands
 	cmd.Env = append(cmd.Env,
+		fmt.Sprintf("HOME=%s", m.cacheDir),
 		fmt.Sprintf("MISE_CACHE_DIR=%s", cacheDir),
 		fmt.Sprintf("MISE_DATA_DIR=%s", dataDir),
 		fmt.Sprintf("MISE_STATE_DIR=%s", stateDir),
 		fmt.Sprintf("MISE_SYSTEM_DIR=%s", systemDir),
-		"MISE_HTTP_TIMEOUT=120s",
-		"MISE_FETCH_REMOTE_VERSIONS_TIMEOUT=120s",
+		// TODO doesn't HTTP timeout apply to fetch remote versions too?
+		"MISE_HTTP_TIMEOUT=60s",
+		"MISE_FETCH_REMOTE_VERSIONS_TIMEOUT=60s",
+		// allows for a 2m outage on mise (10ms base backoff retry)
+		"MISE_HTTP_RETRIES=5",
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
 	)
 

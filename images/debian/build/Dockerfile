@@ -66,7 +66,7 @@ ENV MISE_INSTALL_PATH=/usr/local/bin/mise \
     PATH=/mise/shims:$PATH
 
 # Copy mise binary from builder
-COPY --from=ghcr.io/railwayapp/railpack-mise:latest /tmp/mise/target/serious/mise /usr/local/bin/
+COPY --from=ghcr.io/railwayapp/railpack-mise:latest /usr/local/bin/mise /usr/local/bin/
 RUN chmod +x /usr/local/bin/mise
 
 # Make sure the cache directory exists

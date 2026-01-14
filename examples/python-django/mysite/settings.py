@@ -93,6 +93,18 @@ DATABASES = {
 }
 
 
+def get_redis_config():
+    redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+    return {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': redis_url,
+    }
+
+CACHES = {
+    'default': get_redis_config()
+}
+
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 

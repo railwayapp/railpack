@@ -1,0 +1,11 @@
+{
+    "$schema": "https://schema.railpack.com",
+    "steps": {
+      "build": {
+      	// npm ci is generally run in the install phase, running it during build causes
+      	// node_modules to be removed, which causes a buildkit error if node_modules/.cache
+      	// is included as a cache folder.
+        "commands": ["...", "npm ci"]
+      }
+    }
+}

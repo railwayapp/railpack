@@ -25,7 +25,7 @@ func (p *DenoProvider) Name() string {
 }
 
 func (p *DenoProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
-	hasDenoJson := ctx.App.HasMatch("deno.json") || ctx.App.HasMatch("deno.jsonc")
+	hasDenoJson := ctx.App.HasFile("deno.json") || ctx.App.HasFile("deno.jsonc")
 	return hasDenoJson, nil
 }
 
@@ -52,6 +52,8 @@ func (p *DenoProvider) Plan(ctx *generate.GenerateContext) error {
 
 	return nil
 }
+
+func (p *DenoProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
 
 func (p *DenoProvider) StartCommandHelp() string {
 	return "To start your Deno application, Railpack will look for:\n\n" +
@@ -92,7 +94,7 @@ func (p *DenoProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 func (p *DenoProvider) findMainFile(ctx *generate.GenerateContext) string {
 	files := []string{"main.ts", "main.js", "main.mjs", "main.mts"}
 	for _, file := range files {
-		if ctx.App.HasMatch(file) {
+		if ctx.App.HasFile(file) {
 			return file
 		}
 	}

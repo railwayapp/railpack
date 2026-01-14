@@ -3,7 +3,7 @@ title: Static Sites
 description: Deploy static websites with Railpack
 ---
 
-Railpack can automatically build and setup a server for static sites that
+Railpack can automatically build and set up a server for static sites that
 require no build steps. The [Caddy](https://caddyserver.com/) server is used as
 the underlying web server.
 

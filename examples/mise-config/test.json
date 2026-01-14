@@ -1,0 +1,6 @@
+[
+  {
+    "expectedOutput": "go version go1.25",
+    "stderrAllowed": true
+  }
+]

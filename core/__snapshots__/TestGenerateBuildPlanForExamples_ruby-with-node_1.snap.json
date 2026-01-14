@@ -121,7 +121,8 @@
     "MISE_INSTALLS_DIR": "/mise/installs",
     "MISE_NODE_VERIFY": "false",
     "MISE_PARANOID": "1",
-    "MISE_SHIMS_DIR": "/mise/shims"
+    "MISE_SHIMS_DIR": "/mise/shims",
+    "MISE_TRUSTED_CONFIG_PATHS": "/app"
    }
   },
   {
@@ -170,12 +171,12 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
-     "dest": "package.json",
-     "src": "package.json"
-    },
-    {
      "dest": "package-lock.json",
      "src": "package-lock.json"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
     },
     {
      "cmd": "npm ci"
@@ -273,8 +274,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libjemalloc-dev libyaml-dev'",
-     "customName": "install apt packages: libjemalloc-dev libyaml-dev"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libatomic1 libjemalloc-dev libyaml-dev'",
+     "customName": "install apt packages: libatomic1 libjemalloc-dev libyaml-dev"
     }
    ],
    "inputs": [

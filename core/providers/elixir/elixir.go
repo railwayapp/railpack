@@ -15,10 +15,13 @@ import (
 )
 
 const (
+	// default elixir and erlang versions should be receiving security updates
+	// https://hexdocs.pm/elixir/compatibility-and-deprecations.html
 	DEFAULT_ERLANG_VERSION = "27.3"
 	DEFAULT_ELIXIR_VERSION = "1.18"
-	APP_BIN_PATH           = "/app/bin/server"
-	MIX_ROOT               = "/root/.mix"
+
+	APP_BIN_PATH = "/app/bin/server"
+	MIX_ROOT     = "/root/.mix"
 )
 
 type ElixirProvider struct {
@@ -29,7 +32,7 @@ func (p *ElixirProvider) Name() string {
 }
 
 func (p *ElixirProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
-	hasMixFile := ctx.App.HasMatch("mix.exs")
+	hasMixFile := ctx.App.HasFile("mix.exs")
 	return hasMixFile, nil
 }
 
@@ -71,6 +74,8 @@ func (p *ElixirProvider) Plan(ctx *generate.GenerateContext) error {
 
 	return nil
 }
+
+func (p *ElixirProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
 
 func (p *ElixirProvider) StartCommandHelp() string {
 	return "To start your Elixir application, Railpack will look for:\n\n" +
@@ -237,6 +242,8 @@ func (p *ElixirProvider) GetEnvVars(ctx *generate.GenerateContext) map[string]st
 		"LC_ALL":             "en_US.UTF-8",
 		"ELIXIR_ERL_OPTIONS": "+fnu",
 		"MIX_ENV":            "prod",
+		"MIX_HOME":           MIX_ROOT,
+		"MIX_ARCHIVES":       MIX_ROOT + "/archives",
 	}
 }
 

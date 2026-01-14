@@ -19,30 +19,29 @@ Install and use all versions of tools needed for Railpack
 mise run setup
 ```
 
-This command will also start a buildkit container (check out `mise.toml` in the root directory for more information).
+This command will also start a BuildKit container (check out `mise.toml` in the root directory for more information).
 
-Use the `cli` task to run the railpack CLI (this is like `railpack --help`)
+Use the `cli` task to run the Railpack CLI (this is like `railpack --help`)
 
 ```bash
 mise run cli --help
 ```
 
-If you want to compile a development build of railpack to use elsewhere on your machine:
+If you want to compile a development build of Railpack to use elsewhere on your machine:
 
 ```bash
 mise run build
 
-# add the railpack repo `bin/` directory to your path to use the newly-compiled railpack on your machine
+# add the Railpack repo `bin/` directory to your path to use the newly-compiled Railpack on your machine
 export PATH="$PWD/bin:$PATH"
 ```
 
-## Building directly with Buildkit
+## Building directly with BuildKit
 
-**👋 Requirement**: an instance of Buildkit must be running locally.
-Instructions in "[Run BuildKit Locally](#run-buildkit-locally)" at the bottom of
-the readme.
+**👋 Requirement**: an instance of BuildKit must be running locally.
+Run `mise run setup` to start a BuildKit container.
 
-Railpack will instantiate a BuildKit client and communicate to over GRPC in
+Railpack will instantiate a BuildKit client and communicate over GRPC in
 order to build the generated LLB.
 
 ```bash
@@ -187,7 +186,7 @@ documentation](/config/environment-variables) for a complete list of available
 
 ### Services
 
-Integation tests can define services (postgres, redis, anything with a docker image) that
+Integration tests can define services (postgres, redis, anything with a docker image) that
 are required for the application to run. Create a `docker-compose.yml` in a test directory
 and it will automatically be picked up and run before the project container is run.
 
@@ -204,8 +203,9 @@ Mise is absolutely central to this entire project, so you'll have to dig into th
 
 * `mise trust` state is located in `~/.local/state/mise/trusted-configs`
 * There are two mise 'environments' to keep in mind: the host environment, which uses a specific version of mise downloaded
-  just for railpack, and the mise binary run during the build process. The mise version will be the same, but the environment
+  just for Railpack, and the mise binary run during the build process. The mise version will be the same, but the environment
   is different.
+* If `mise tool erlang` reports a `core:` plugin it means this plugin is compiled into the mise binary and its source is available with the mise monorepo. This can be confusing since there are often open source shell-based repos available for a tool as well, but they are unused by default.
 
 ### Mise Commands
 
@@ -233,7 +233,23 @@ mise tool poetry
 Here's some helpful debugging tricks:
 
 * `URFAVE_CLI_TRACING=on` for debugging CLI argument parsing
-* `mise run cli --verbose build --show-plan --progress plain examples/node-bun`
+* `mise run cli -- --verbose build --show-plan --progress plain examples/node-bun`
 * `mise run build`, add `./bin/` to your `$PATH`, and then run `railpack` in a separate local directory
-* `NO_COLOR=1`
 * `docker exec buildkit buildctl prune` to clean the builder cache
+* `NO_COLOR=1`
+
+### Interactive Debugging with Delve
+
+```sh
+mise run debug-cli build $(pwd)
+```
+
+Then, set some breakpoints:
+
+```
+break core/providers/node/node.go:177
+continue
+```
+
+The commands you probably want: `ls`, `print build.Commands`, `continue`, `next`, `locals`,
+

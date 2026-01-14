@@ -7,7 +7,7 @@ Railpack builds and deploys Dotnet applications with zero configuration.
 
 ## Detection
 
-Your project will be detected as a Dotnet application if a `*.csproj` file
+Your project will be detected as a Dotnet application if a `*.csproj` file exists in the root directory.
 
 ## Versions
 
@@ -36,3 +36,12 @@ Railpack builds your Dotnet application based on your project structure. The bui
 ### Runtime Packages
 
 The `libicu-dev` package is installed to support internationalization in your Dotnet applications.
+
+## Port Binding
+
+Railpack automatically configures your application to listen on the port specified by the `PORT` environment variable (defaulting to 3000).
+
+This is achieved by setting the `ASPNETCORE_URLS` environment variable in the start command:
+`ASPNETCORE_URLS=http://0.0.0.0:${PORT:-3000}`.
+
+This ensures the application listens on all network interfaces (`0.0.0.0`) rather than just `localhost`, making it accessible externally.

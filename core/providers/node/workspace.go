@@ -37,7 +37,7 @@ func NewWorkspace(app *app.App) (*Workspace, error) {
 	}
 
 	// Try to read PNPM workspace config first
-	if app.HasMatch("pnpm-workspace.yaml") {
+	if app.HasFile("pnpm-workspace.yaml") {
 		var pnpmWorkspace PnpmWorkspace
 		if err := app.ReadYAML("pnpm-workspace.yaml", &pnpmWorkspace); err == nil && len(pnpmWorkspace.Packages) > 0 {
 			workspace.Root.PackageJson.Workspaces = pnpmWorkspace.Packages
@@ -56,11 +56,6 @@ func NewWorkspace(app *app.App) (*Workspace, error) {
 // findWorkspacePackages finds all packages in the workspace using the workspace patterns
 func (w *Workspace) findWorkspacePackages(app *app.App) error {
 	for _, pattern := range w.Root.PackageJson.Workspaces {
-		// For each workspace pattern, we need to:
-		// 1. Find all package.json files in that pattern
-		// 2. Read each package.json file
-		// 3. Add it to our list of packages
-
 		pattern = convertWorkspacePattern(pattern)
 		matches, err := app.FindFiles(pattern)
 		if err != nil {

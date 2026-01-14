@@ -26,7 +26,8 @@ defmodule Friends.MixProject do
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
       {:ecto_sql, "~> 3.8.3"},
       {:postgrex, ">= 0.16.4"},
-      {:plug_cowboy, "~> 2.7"}
+      {:plug_cowboy, "~> 2.7"},
+      {:plug, "~> 1.18.0"}
     ]
   end
 end

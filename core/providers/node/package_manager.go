@@ -45,20 +45,20 @@ func (p PackageManager) RunScriptCommand(cmd string) string {
 	return "node " + cmd
 }
 
-func (p PackageManager) installDependencies(ctx *generate.GenerateContext, workspace *Workspace, install *generate.CommandStepBuilder) {
+func (p PackageManager) installDependencies(ctx *generate.GenerateContext, workspace *Workspace, install *generate.CommandStepBuilder, usingCorepack bool) {
 	packageJsons := workspace.AllPackageJson()
 
 	hasPreInstall := false
 	hasPostInstall := false
 	hasPrepare := false
-	usesLocalFile := false
 
 	for _, packageJson := range packageJsons {
 		hasPreInstall = hasPreInstall || (packageJson.Scripts != nil && packageJson.Scripts["preinstall"] != "")
 		hasPostInstall = hasPostInstall || (packageJson.Scripts != nil && packageJson.Scripts["postinstall"] != "")
 		hasPrepare = hasPrepare || (packageJson.Scripts != nil && packageJson.Scripts["prepare"] != "")
-		usesLocalFile = usesLocalFile || p.usesLocalFile(ctx)
 	}
+
+	usesLocalFile := p.usesLocalFile(ctx)
 
 	// If there are any pre/post install scripts, we need the entire app to be copied
 	// This is to handle things like patch-package
@@ -68,14 +68,15 @@ func (p PackageManager) installDependencies(ctx *generate.GenerateContext, works
 		// Use all secrets for the install step if there are any pre/post install scripts
 		install.UseSecrets([]string{"*"})
 	} else {
-		for _, file := range p.SupportingInstallFiles(ctx) {
+		files := p.SupportingInstallFiles(ctx)
+		for _, file := range files {
 			install.AddCommands([]plan.Command{
 				plan.NewCopyCommand(file, file),
 			})
 		}
 	}
 
-	p.installDeps(ctx, install)
+	p.installDeps(ctx, install, usingCorepack)
 }
 
 // GetCache returns the cache for the package manager
@@ -96,19 +97,31 @@ func (p PackageManager) GetInstallCache(ctx *generate.GenerateContext) string {
 	}
 }
 
-func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
+func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *generate.CommandStepBuilder, usingCorepack bool) {
 	install.AddCache(p.GetInstallCache(ctx))
 
 	switch p {
 	case PackageManagerNpm:
-		hasLockfile := ctx.App.HasMatch("package-lock.json")
+		hasLockfile := ctx.App.HasFile("package-lock.json")
 		if hasLockfile {
 			install.AddCommand(plan.NewExecCommand("npm ci"))
 		} else {
 			install.AddCommand(plan.NewExecCommand("npm install"))
 		}
 	case PackageManagerPnpm:
-		hasLockfile := ctx.App.HasMatch("pnpm-lock.yaml")
+		// pnpm (standalone) does not bundle node-gyp like npm does, so we must install it globally
+		// to support packages with native dependencies (e.g., better-sqlite3, bcrypt, etc.)
+		// Only needed when using mise to install pnpm (not corepack, which includes node-gyp)
+		if !usingCorepack {
+			// Set PNPM_HOME so pnpm can create a global bin directory for node-gyp
+			install.AddEnvVars(map[string]string{
+				"PNPM_HOME": "/pnpm",
+			})
+			install.AddPaths([]string{"/pnpm"})
+			install.AddCommand(plan.NewExecCommand("pnpm add -g node-gyp"))
+		}
+
+		hasLockfile := ctx.App.HasFile("pnpm-lock.yaml")
 		if hasLockfile {
 			install.AddCommand(plan.NewExecCommand("pnpm install --frozen-lockfile --prefer-offline"))
 		} else {
@@ -183,7 +196,7 @@ func (p PackageManager) pruneYarnBerry(ctx *generate.GenerateContext, prune *gen
 
 func (p PackageManager) getPackageJsonFromContext(ctx *generate.GenerateContext) (*PackageJson, error) {
 	packageJson := NewPackageJson()
-	if !ctx.App.HasMatch("package.json") {
+	if !ctx.App.HasFile("package.json") {
 		return packageJson, nil
 	}
 
@@ -210,49 +223,31 @@ func (p PackageManager) GetInstallFolder(ctx *generate.GenerateContext) []string
 
 // SupportingInstallFiles returns a list of files that are needed to install dependencies
 func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []string {
-	patterns := []string{
-		"**/package.json",
-		"**/package-lock.json",
-		"**/pnpm-workspace.yaml",
-		"**/yarn.lock",
-		"**/pnpm-lock.yaml",
-		"**/bun.lockb",
-		"**/bun.lock",
-		"**/.yarn",
-		"**/.pnp.*",        // Yarn Plug'n'Play files
-		"**/.yarnrc.yml",   // Yarn 2+ config
-		"**/.npmrc",        // NPM config
-		"**/.node-version", // Node version file
-		"**/.nvmrc",        // NVM config
-		"**/patches",       // PNPM patches
-		"**/.pnpm-patches",
-		"**/prisma", // To generate Prisma client on install
-	}
-
-	if customInstallPatterns, _ := ctx.Env.GetConfigVariable("NODE_INSTALL_PATTERNS"); customInstallPatterns != "" {
-		ctx.Logger.LogInfo("Using custom install patterns: %s", customInstallPatterns)
-		for _, pattern := range strings.Split(customInstallPatterns, " ") {
-			patterns = append(patterns, "**/"+pattern)
-		}
-	}
+	// Use brace expansion for single filesystem traversal instead of 16 separate globs
+	pattern := "**/{package.json,package-lock.json,pnpm-workspace.yaml,yarn.lock,pnpm-lock.yaml,bun.lockb,bun.lock,.yarn,.pnp.*,.yarnrc.yml,.npmrc,.node-version,.nvmrc,patches,.pnpm-patches,prisma}"
 
 	var allFiles []string
-	for _, pattern := range patterns {
-		files, err := ctx.App.FindFiles(pattern)
-		if err != nil {
-			continue
-		}
+
+	files, err := ctx.App.FindFiles(pattern)
+	if err == nil {
 		for _, file := range files {
 			if !strings.HasPrefix(file, "node_modules/") {
 				allFiles = append(allFiles, file)
 			}
 		}
+	}
 
-		dirs, err := ctx.App.FindDirectories(pattern)
-		if err != nil {
-			continue
-		}
+	dirs, err := ctx.App.FindDirectories(pattern)
+	if err == nil {
 		allFiles = append(allFiles, dirs...)
+	}
+
+	if customInstallPatterns, _ := ctx.Env.GetConfigVariable("NODE_INSTALL_PATTERNS"); customInstallPatterns != "" {
+		ctx.Logger.LogInfo("Using custom install patterns: %s", customInstallPatterns)
+		for _, pat := range strings.Split(customInstallPatterns, " ") {
+			customFiles, _ := ctx.App.FindFiles("**/" + pat)
+			allFiles = append(allFiles, customFiles...)
+		}
 	}
 
 	return allFiles

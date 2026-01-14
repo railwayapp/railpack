@@ -1,5 +1,6 @@
 {
   "name": "node-yarn-2-node-modules",
+  "private": true,
   "scripts": {
     "start": "node src/index.js"
   },

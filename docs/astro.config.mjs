@@ -64,6 +64,11 @@ export default defineConfig({
               paths: ["config/**"],
             },
             {
+              label: "Deploying",
+              description: "Deployment guides for Railway and GitHub Actions",
+              paths: ["deploying/**"],
+            },
+            {
               label: "Reference",
               description: "CLI commands and BuildKit frontend reference",
               paths: ["reference/**"],
@@ -144,8 +149,16 @@ export default defineConfig({
             { label: "Rust", link: "/languages/rust" },
             { label: "Elixir", link: "/languages/elixir" },
             { label: "Gleam", link: "/languages/gleam" },
+            { label: "C/C++", link: "/languages/cpp" },
             { label: "Staticfile", link: "/languages/staticfile" },
             { label: "Shell Scripts", link: "/languages/shell" },
+          ],
+        },
+        {
+          label: "Deploying",
+          items: [
+            { label: "Railway", link: "/deploying/railway" },
+            { label: "GitHub Actions", link: "/deploying/github-actions" },
           ],
         },
         {

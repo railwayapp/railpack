@@ -11,10 +11,10 @@ GHCR](https://github.com/railwayapp/railpack/pkgs/container/railpack-frontend).
 
 ## Mise
 
-We love mise, and you can install railpack using mise:
+We love mise, and you can install Railpack using mise:
 
 ```sh
-mise use ubi:railwayapp/railpack@latest
+mise use github:railwayapp/railpack@latest
 ```
 
 ## Curl
@@ -45,3 +45,9 @@ go build -o railpack ./cmd/...
 
 ./railpack --help
 ```
+
+## Supported Platforms
+
+Linux and MacOS are supported.
+
+Windows builds are generated but not officially supported. That being said, PRs are welcome to fix any Windows-specific bugs.

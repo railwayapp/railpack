@@ -27,10 +27,10 @@
     "step": "build"
    }
   ],
-  "startCommand": "./out/csharp-cli",
+  "startCommand": "ASPNETCORE_URLS=http://0.0.0.0:${PORT:-3000} ./out/csharp-cli",
   "variables": {
-   "ASPNETCORE_ENVIRONMENT": "production",
-   "ASPNETCORE_URLS": "http://0.0.0.0:3000",
+   "ASPNETCORE_CONTENTROOT": "/app/out",
+   "ASPNETCORE_ENVIRONMENT": "Production",
    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
    "DOTNET_ROOT": "/mise/installs/dotnet/6.0"
   }
@@ -68,7 +68,8 @@
     "MISE_INSTALLS_DIR": "/mise/installs",
     "MISE_NODE_VERIFY": "false",
     "MISE_PARANOID": "1",
-    "MISE_SHIMS_DIR": "/mise/shims"
+    "MISE_SHIMS_DIR": "/mise/shims",
+    "MISE_TRUSTED_CONFIG_PATHS": "/app"
    }
   },
   {
@@ -102,8 +103,8 @@
     "*"
    ],
    "variables": {
-    "ASPNETCORE_ENVIRONMENT": "production",
-    "ASPNETCORE_URLS": "http://0.0.0.0:3000",
+    "ASPNETCORE_CONTENTROOT": "/app/out",
+    "ASPNETCORE_ENVIRONMENT": "Production",
     "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
     "DOTNET_ROOT": "/mise/installs/dotnet/6.0"
    }
@@ -137,8 +138,8 @@
     "*"
    ],
    "variables": {
-    "ASPNETCORE_ENVIRONMENT": "production",
-    "ASPNETCORE_URLS": "http://0.0.0.0:3000",
+    "ASPNETCORE_CONTENTROOT": "/app/out",
+    "ASPNETCORE_ENVIRONMENT": "Production",
     "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
     "DOTNET_ROOT": "/mise/installs/dotnet/6.0"
    }

@@ -7,7 +7,7 @@ Railpack builds and deploys Elixir and Phoenix applications with zero configurat
 
 ## Detection
 
-Your project will be detected as a Elixir application if a `mix.exs` file exists in the root directory.
+Your project will be detected as an Elixir application if a `mix.exs` file exists in the root directory.
 
 ## Versions
 

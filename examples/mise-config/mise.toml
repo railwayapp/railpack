@@ -1,4 +1,5 @@
 [tools]
+node = "24"
 bun = "latest"
-python = "latest"
-go = "latest"
+python = "3.13"
+go = "1.25"

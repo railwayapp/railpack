@@ -23,7 +23,7 @@ func (p *GoProvider) Name() string {
 }
 
 func (p *GoProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
-	return p.isGoMod(ctx) || p.isGoWorkspace(ctx) || ctx.App.HasMatch("main.go"), nil
+	return p.isGoMod(ctx) || p.isGoWorkspace(ctx) || ctx.App.HasFile("main.go"), nil
 }
 
 func (p *GoProvider) Initialize(ctx *generate.GenerateContext) error {
@@ -91,13 +91,13 @@ func (p *GoProvider) Build(ctx *generate.GenerateContext, build *generate.Comman
 		// For workspaces without explicit module selection, try to find a module with main package
 		packages := p.GoWorkspacePackages(ctx)
 		for _, pkg := range packages {
-			if ctx.App.HasMatch(filepath.Join(pkg, "main.go")) {
+			if ctx.App.HasFile(filepath.Join(pkg, "main.go")) {
 				ctx.Logger.LogInfo("Building workspace module: %s", pkg)
 				buildCmd = fmt.Sprintf("%s ./%s", baseBuildCmd, pkg)
 				break
 			}
 		}
-	} else if ctx.App.HasMatch("main.go") {
+	} else if ctx.App.HasFile("main.go") {
 		// Fallback to building the main package if no other build command is specified
 		buildCmd = fmt.Sprintf("%s main.go", baseBuildCmd)
 	}
@@ -131,14 +131,14 @@ func (p *GoProvider) InstallGoDeps(ctx *generate.GenerateContext, install *gener
 
 	if p.isGoMod(ctx) {
 		install.AddCommand(plan.NewCopyCommand("go.mod"))
-		if ctx.App.HasMatch("go.sum") {
+		if ctx.App.HasFile("go.sum") {
 			install.AddCommand(plan.NewCopyCommand("go.sum"))
 		}
 	}
 
 	if p.isGoWorkspace(ctx) {
 		install.AddCommand(plan.NewCopyCommand("go.work"))
-		if ctx.App.HasMatch("go.work.sum") {
+		if ctx.App.HasFile("go.work.sum") {
 			install.AddCommand(plan.NewCopyCommand("go.work.sum"))
 		}
 	}
@@ -146,7 +146,7 @@ func (p *GoProvider) InstallGoDeps(ctx *generate.GenerateContext, install *gener
 	workspacePackages := p.GoWorkspacePackages(ctx)
 	for _, pkgPath := range workspacePackages {
 		install.AddCommand(plan.NewCopyCommand(filepath.Join(pkgPath, "go.mod")))
-		if ctx.App.HasMatch(filepath.Join(pkgPath, "go.sum")) {
+		if ctx.App.HasFile(filepath.Join(pkgPath, "go.sum")) {
 			install.AddCommand(plan.NewCopyCommand(filepath.Join(pkgPath, "go.sum")))
 		}
 	}
@@ -236,7 +236,7 @@ func (p *GoProvider) hasCGOEnabled(ctx *generate.GenerateContext) bool {
 }
 
 func (p *GoProvider) isGoMod(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasMatch("go.mod")
+	return ctx.App.HasFile("go.mod")
 }
 
 func (p *GoProvider) GoWorkspacePackages(ctx *generate.GenerateContext) []string {
@@ -260,8 +260,10 @@ func (p *GoProvider) GoWorkspacePackages(ctx *generate.GenerateContext) []string
 }
 
 func (p *GoProvider) isGoWorkspace(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasMatch("go.work")
+	return ctx.App.HasFile("go.work")
 }
+
+func (p *GoProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
 
 func (p *GoProvider) StartCommandHelp() string {
 	return "To configure your start command, Railpack will check:\n\n" +

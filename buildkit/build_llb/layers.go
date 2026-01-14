@@ -122,7 +122,7 @@ func copyLayerPaths(destState, srcState llb.State, filter plan.Filter, isLocal b
 // - The non-first layer has no include filters
 // - Any layer includes the root path "/"
 // - Any layer pulls from a local filesystem
-// - Any layer has overlapping paths with subsequent layers
+// - Any layer has overlapping paths with subsequent layers (unless excluded)
 func shouldLLBMerge(layers []plan.Layer) bool {
 	for i, layer := range layers {
 		if i != 0 && layer.Include == nil {
@@ -138,12 +138,95 @@ func shouldLLBMerge(layers []plan.Layer) bool {
 		}
 
 		for j := i + 1; j < len(layers); j++ {
-			if hasPathOverlap(layer.Include, layers[j].Include) {
+			if hasSignificantOverlap(layer, layers[j]) {
 				return false
 			}
 		}
 	}
 	return true
+}
+
+// hasSignificantOverlap checks if two layers have paths that would result in
+// actual data duplication. Overlaps that are covered by exclude patterns are not significant.
+func hasSignificantOverlap(layer1, layer2 plan.Layer) bool {
+	for _, p1 := range layer1.Include {
+		p1Clean := path.Clean(p1)
+		if p1Clean == "." {
+			p1Clean = "/app"
+		} else if !strings.HasPrefix(p1Clean, "/") {
+			p1Clean = path.Join("/app", p1Clean)
+		}
+
+		for _, p2 := range layer2.Include {
+			p2Clean := path.Clean(p2)
+			if p2Clean == "." {
+				p2Clean = "/app"
+			} else if !strings.HasPrefix(p2Clean, "/") {
+				p2Clean = path.Join("/app", p2Clean)
+			}
+
+			// Check if paths overlap
+			p1WithSlash := p1Clean + "/"
+			p2WithSlash := p2Clean + "/"
+
+			var overlap bool
+			var innerPath, outerPath string
+			var outerExcludes []string
+
+			if p1Clean == p2Clean {
+				// Exact match - always overlap
+				return true
+			} else if strings.HasPrefix(p1WithSlash, p2WithSlash) {
+				// p1 is inside p2 (e.g., /app/.nvmrc inside /app)
+				overlap = true
+				innerPath = p1Clean
+				outerPath = p2Clean
+				outerExcludes = layer2.Exclude
+			} else if strings.HasPrefix(p2WithSlash, p1WithSlash) {
+				// p2 is inside p1
+				overlap = true
+				innerPath = p2Clean
+				outerPath = p1Clean
+				outerExcludes = layer1.Exclude
+			}
+
+			if overlap {
+				// Get the relative path from outer to inner
+				relPath := strings.TrimPrefix(innerPath, outerPath)
+				relPath = strings.TrimPrefix(relPath, "/")
+
+				// Check if this relative path would be excluded
+				if isPathExcluded(relPath, outerExcludes) {
+					continue // Not a significant overlap
+				}
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// isPathExcluded checks if a path matches any of the exclude patterns.
+// Patterns can match directory names at any level.
+func isPathExcluded(relPath string, excludes []string) bool {
+	if len(excludes) == 0 {
+		return false
+	}
+
+	// Split the path into components
+	parts := strings.Split(relPath, "/")
+
+	for _, exclude := range excludes {
+		// Check if any path component matches the exclude pattern
+		if slices.Contains(parts, exclude) {
+			return true
+		}
+		// Also check if the full relative path starts with the exclude
+		if strings.HasPrefix(relPath, exclude+"/") || relPath == exclude {
+			return true
+		}
+	}
+	return false
 }
 
 // hasPathOverlap checks if two slices of paths have any overlapping paths.

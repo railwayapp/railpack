@@ -1,5 +1,13 @@
 {
  "caches": {
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  },
   "node-modules": {
    "directory": "/app/node_modules/.cache",
    "type": "shared"
@@ -19,7 +27,7 @@
  },
  "deploy": {
   "base": {
-   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+   "step": "packages:apt:runtime"
   },
   "inputs": [
    {
@@ -92,7 +100,8 @@
     "MISE_INSTALLS_DIR": "/mise/installs",
     "MISE_NODE_VERIFY": "false",
     "MISE_PARANOID": "1",
-    "MISE_SHIMS_DIR": "/mise/shims"
+    "MISE_SHIMS_DIR": "/mise/shims",
+    "MISE_TRUSTED_CONFIG_PATHS": "/app"
    }
   },
   {
@@ -115,6 +124,12 @@
      "src": "pnpm-lock.yaml"
     },
     {
+     "path": "/pnpm"
+    },
+    {
+     "cmd": "pnpm add -g node-gyp"
+    },
+    {
      "cmd": "pnpm install --frozen-lockfile --prefer-offline"
     }
    ],
@@ -129,7 +144,8 @@
     "NODE_ENV": "production",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",
-    "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+    "NPM_CONFIG_UPDATE_NOTIFIER": "false",
+    "PNPM_HOME": "/pnpm"
    }
   },
   {
@@ -164,6 +180,24 @@
    "secrets": [
     "*"
    ]
+  },
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libatomic1'",
+     "customName": "install apt packages: libatomic1"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+    }
+   ],
+   "name": "packages:apt:runtime"
   }
  ]
 }

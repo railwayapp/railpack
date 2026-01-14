@@ -36,8 +36,8 @@ func (p *PhpProvider) Name() string {
 }
 
 func (p *PhpProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
-	return ctx.App.HasMatch("index.php") ||
-		ctx.App.HasMatch("composer.json"), nil
+	return ctx.App.HasFile("index.php") ||
+		ctx.App.HasFile("composer.json"), nil
 }
 
 func (p *PhpProvider) Initialize(ctx *generate.GenerateContext) error {
@@ -350,7 +350,7 @@ func (p *PhpProvider) needsRedisExtension(ctx *generate.GenerateContext, compose
 }
 
 func (p *PhpProvider) usesLaravel(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasMatch("artisan")
+	return ctx.App.HasFile("artisan")
 }
 
 type ConfigFiles struct {
@@ -458,6 +458,8 @@ func (p *PhpProvider) readComposerJson(ctx *generate.GenerateContext) (map[strin
 
 	return composerJson, nil
 }
+
+func (p *PhpProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
 
 func (p *PhpProvider) StartCommandHelp() string {
 	return ""
