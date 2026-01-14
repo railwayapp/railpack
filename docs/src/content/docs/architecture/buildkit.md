@@ -21,5 +21,5 @@ several advantages:
 
 1. **Secret Management**: LLB provides more secure and flexible secret mounting.
 
-1. **Type Safety and Compile-Time Validation**: The build defintion is checked
+1. **Type Safety and Compile-Time Validation**: The build definition is checked
    at compile-time using the first party Go library.

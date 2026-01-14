@@ -187,7 +187,7 @@ documentation](/config/environment-variables) for a complete list of available
 
 ### Services
 
-Integation tests can define services (postgres, redis, anything with a docker image) that
+Integration tests can define services (postgres, redis, anything with a docker image) that
 are required for the application to run. Create a `docker-compose.yml` in a test directory
 and it will automatically be picked up and run before the project container is run.
 
