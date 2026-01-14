@@ -10,7 +10,7 @@ builds.
 
 Railpack takes advantage of BuildKit's layer cache and avoids busting the cache
 when possible. Cache busting events are defined in a granular way as part of the
-[steps commands list](/architecture/overview/#build-step). These include
+[steps commands list](/architecture/overview/#build-step). These include:
 
 - Copying files from the local context to the build context
 - Changing environment variables

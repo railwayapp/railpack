@@ -56,7 +56,7 @@ If mise is not available in your environment, install it using the instructions 
 There are normal unit tests, snapshot tests, and integration tests. The integration tests are most unique to this project:
 
 * They represent example projects that would be built using the `railpack` CLI
-* On CI, they are build and run to make sure `railpack` properly builds *and* runs the project
+* On CI, they are built and run to make sure `railpack` properly builds *and* runs the project
 * `test.json` and `docker-compose.yml` are used to help determine what assertions should be made and what services should be run for the test
 
 ## Integration Tests

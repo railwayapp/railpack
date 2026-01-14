@@ -30,4 +30,4 @@ The Java version is determined in the following order:
 
 ## BuildKit Caching
 
-The Java provider will cache the build cache &mdash; for Gradle, `~/.gradle` under the key `gradle`, and, for Maven, `.m2/repository` under `maven`.
+The Java provider will cache build artifacts &mdash; for Gradle, `~/.gradle` under the key `gradle`, and, for Maven, `.m2/repository` under `maven`.
