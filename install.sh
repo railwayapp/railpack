@@ -51,6 +51,8 @@ SUPPORTED_TARGETS="x86_64-apple-darwin arm64-apple-darwin \
                   x86_64-unknown-linux-musl arm64-unknown-linux-musl \
                   x86_64-pc-windows-msvc arm64-pc-windows-msvc"
 
+CURL_RETRY_OPTS="--retry 3 --retry-all-errors --retry-delay 2"
+
 info() {
   printf '%s\n' "${BOLD}${GREY}>${NO_COLOR} $*"
 }
@@ -106,7 +108,7 @@ download() {
   touch "$file"
 
   if has curl; then
-    cmd="curl --fail --silent --location --output $file $url"
+    cmd="curl --fail --silent --location ${CURL_RETRY_OPTS} --output $file $url"
   elif has wget; then
     cmd="wget --quiet --output-document=$file $url"
   elif has fetch; then
@@ -310,11 +312,15 @@ is_build_available() {
 UNINSTALL=0
 HELP=0
 
-DEFAULT_VERSION=$(curl --fail --silent --show-error ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest" | grep -o '"tag_name": "v.*"' | cut -d'"' -f4 | cut -c2-)
-
 # defaults
 if [ -z "${RAILPACK_VERSION-}" ]; then
-  RAILPACK_VERSION="$DEFAULT_VERSION"
+  RAILPACK_VERSION=$(curl --fail --silent --show-error ${CURL_RETRY_OPTS} ${GITHUB_TOKEN:+-H "Authorization: Bearer $GITHUB_TOKEN"} "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest" | grep -o '"tag_name": "v.*"' | cut -d'"' -f4 | cut -c2-)
+
+  if [ -z "${RAILPACK_VERSION}" ]; then
+    error "Failed to detect latest version from GitHub API"
+    info "You can set RAILPACK_VERSION=x.y.z to specify a version manually"
+    exit 1
+  fi
 fi
 
 if [ -z "${RAILPACK_PLATFORM-}" ]; then
