@@ -4,7 +4,7 @@
       "path": "/",
       "expected": 200,
       "internalPort": 3000,
-      "expectedOutput": "OK"
+      "expectedOutput": "Hello from Ruby: 3.2.1"
     },
     "envs": {
       "DATABASE_URL": "postgresql://rails_user:rails_password@postgres:5432/rails_db"

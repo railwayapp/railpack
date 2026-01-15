@@ -1,5 +1,5 @@
 [
   {
-    "expectedOutput": "Hello from Ruby 2"
+    "expectedOutput": "Hello from Ruby: 2.6.6"
   }
 ]
