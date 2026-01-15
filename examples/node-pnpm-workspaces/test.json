@@ -1,5 +1,5 @@
 [
   {
-    "expectedOutput": "Hello from pnpm workspaces"
+    "expectedOutput": ["Node v: v22.2.0", "Hello from pnpm workspaces"]
   }
 ]
