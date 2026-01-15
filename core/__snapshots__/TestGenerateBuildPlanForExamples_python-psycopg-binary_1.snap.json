@@ -1,4 +1,10 @@
 {
+ "caches": {
+  "uv": {
+   "directory": "/opt/uv-cache",
+   "type": "shared"
+  }
+ },
  "deploy": {
   "base": {
    "image": "ghcr.io/railwayapp/railpack-runtime:latest"
@@ -15,6 +21,9 @@
     "step": "packages:mise"
    },
    {
+    "include": [
+     "/app/.venv"
+    ],
     "step": "build"
    },
    {
@@ -57,7 +66,7 @@
     },
     {
      "cmd": "mise install",
-     "customName": "install mise packages: python"
+     "customName": "install mise packages: python, uv"
     }
    ],
    "inputs": [
@@ -80,14 +89,54 @@
    }
   },
   {
+   "caches": [
+    "uv"
+   ],
+   "commands": [
+    {
+     "dest": "pyproject.toml",
+     "src": "pyproject.toml"
+    },
+    {
+     "dest": "uv.lock",
+     "src": "uv.lock"
+    },
+    {
+     "path": "/root/.local/bin"
+    },
+    {
+     "path": "/app/.venv/bin"
+    },
+    {
+     "cmd": "uv sync --locked --no-dev --no-install-project"
+    }
+   ],
    "inputs": [
     {
      "step": "packages:mise"
     }
    ],
-   "name": "install"
+   "name": "install",
+   "variables": {
+    "PIP_DEFAULT_TIMEOUT": "100",
+    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONFAULTHANDLER": "1",
+    "PYTHONHASHSEED": "random",
+    "PYTHONUNBUFFERED": "1",
+    "UV_CACHE_DIR": "/opt/uv-cache",
+    "UV_COMPILE_BYTECODE": "1",
+    "UV_LINK_MODE": "copy",
+    "UV_PYTHON_DOWNLOADS": "never",
+    "VIRTUAL_ENV": "/app/.venv"
+   }
   },
   {
+   "commands": [
+    {
+     "cmd": "uv sync --locked --no-dev --no-editable"
+    }
+   ],
    "inputs": [
     {
      "step": "install"
