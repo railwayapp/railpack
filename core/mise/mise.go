@@ -19,10 +19,8 @@ import (
 )
 
 const (
-	InstallDir     = "/tmp/railpack/mise"
-	TestInstallDir = "/tmp/railpack/mise-test"
-	// IdiomaticVersionFileTools is the list of tools for which idiomatic version files
-	// (.python-version, .node-version, etc.) should be enabled in mise
+	InstallDir                = "/tmp/railpack/mise"
+	TestInstallDir            = "/tmp/railpack/mise-test"
 	IdiomaticVersionFileTools = "python,node,ruby,elixir,go,java,yarn"
 )
 
@@ -129,21 +127,28 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 	return versions, nil
 }
 
-// returns the JSON output of 'mise list --current --json' for a specific app directory
+// returns the JSON output of 'mise list --current --json' for the app
 func (m *Mise) GetCurrentList(appDir string) (string, error) {
-	// MISE_TRUSTED_CONFIG_PATHS allows mise to use configs in the app directory
-	// MISE_CEILING_PATHS prevents mise from searching parent directories, isolating it to the app directory
-	// We set the ceiling to the parent dir so mise can still read configs in appDir itself
-	// MISE_PARANOID enables stricter security validation
-	// Enable idiomatic version files (.python-version, .node-version, .ruby-version) via environment
-	// since MISE_CEILING_PATHS prevents reading the root mise.toml settings
+	// MISE_TRUSTED_CONFIG_PATHS allows mise to use configs in the app directory without a trust warning
 	trustedConfigEnv := fmt.Sprintf("MISE_TRUSTED_CONFIG_PATHS=%s", appDir)
+
+	// MISE_CEILING_PATHS prevents mise from searching parent directories, isolating it to the app directory
+	// This eliminates the risk of local configuration (when running on a dev machine, for instance) polluting the mise
+	// configuration (and therefore packages) that are bundled into the image.
+
+	// We set the ceiling to the parent dir so mise can still read configs in appDir itself
+	// since MISE_CEILING_PATHS prevents reading the root mise.toml settings
 	ceilingPathsEnv := fmt.Sprintf("MISE_CEILING_PATHS=%s", filepath.Dir(appDir))
+
+	// eliminates the need to have custom .python-version, etc parsing logic for each provider
+	enabledIdiomaticEnv := fmt.Sprintf("MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS=%s", IdiomaticVersionFileTools)
+
 	return m.runCmdWithEnv([]string{
 		trustedConfigEnv,
 		ceilingPathsEnv,
+		enabledIdiomaticEnv,
+		// MISE_PARANOID enables stricter security validation
 		"MISE_PARANOID=1",
-		fmt.Sprintf("MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS=%s", IdiomaticVersionFileTools),
 	}, "--cd", appDir, "list", "--current", "--json")
 }
 
