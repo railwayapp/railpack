@@ -1,5 +1,5 @@
 import { greetFromB } from "pkg-b";
 
-console.log("hello from Bun " + Bun.version);
-console.log("Hello from bun workspaces");
-console.log(greetFromB());
+process.stdout.write("hello from Bun " + Bun.version + "\n");
+process.stdout.write("Hello from bun workspaces\n");
+process.stdout.write(greetFromB() + "\n");

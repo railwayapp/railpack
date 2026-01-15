@@ -6,8 +6,6 @@
     ],
     "env": {
       "NODE_VERSION": "22.22.0"
-    },
-    // Bun routes console.log/console.error to stderr by default in script mode
-    "stderrAllowed": true,
+    }
   }
 ]

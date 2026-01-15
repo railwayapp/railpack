@@ -5,7 +5,7 @@
   "description": "stuff goes here...",
   "main": "app.js",
   "scripts": {
-    "start": "bun run app.js",
+    "start": "bun app.js",
     "dev": "bun --watch app.js"
   },
   "dependencies": {},
