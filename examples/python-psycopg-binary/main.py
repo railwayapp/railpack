@@ -1,7 +1,15 @@
 import os
 import psycopg
+import ctypes.util
 
 print(f"psycopg version: {psycopg.__version__}")
+
+# Verify libpq is not installed on the system
+libpq_path = ctypes.util.find_library('pq')
+if libpq_path:
+    print(f"ERROR: Found system libpq at {libpq_path}. It should not be present.")
+    exit(1)
+print("System libpq not found")
 
 database_url = os.environ["DATABASE_URL"]
 
