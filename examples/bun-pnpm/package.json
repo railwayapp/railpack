@@ -1,0 +1,12 @@
+{
+  "name": "bun-pnpm",
+  "private": true,
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun index.ts"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0"
+  }
+}
