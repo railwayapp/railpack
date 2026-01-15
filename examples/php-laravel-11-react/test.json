@@ -3,7 +3,8 @@
         "httpCheck": {
             "path": "/",
             "expected": 200,
-            "internalPort": 80
+            "internalPort": 80,
+            "expectedOutput": "laravel.com"
         },
         "envs": {
             "APP_KEY": "base64:2J87nDd1Z6c5VJh6PsFy1EJ2aEhRNVMW8h3Vw/QM0PI="

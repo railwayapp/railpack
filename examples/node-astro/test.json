@@ -6,7 +6,8 @@
     "httpCheck": {
       "path": "/",
       "expected": 200,
-      "internalPort": 80
+      "internalPort": 80,
+      "expectedOutput": "Astro"
     }
   }
 ]

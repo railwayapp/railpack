@@ -9,7 +9,8 @@
         "httpCheck": {
             "path": "/",
             "expected": 200,
-            "internalPort": 4567
+            "internalPort": 4567,
+            "expectedOutput": "Choo Choo! Welcome to your Sinatra server"
         }
     }
 ]

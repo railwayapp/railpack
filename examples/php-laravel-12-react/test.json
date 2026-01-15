@@ -6,7 +6,8 @@
         "httpCheck": {
             "path": "/",
             "expected": 200,
-            "internalPort": 80
+            "internalPort": 80,
+            "expectedOutput": "Laravel"
         },
         "envs": {
             "APP_KEY": "base64:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa="

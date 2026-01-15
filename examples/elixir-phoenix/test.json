@@ -3,7 +3,8 @@
     "httpCheck": {
       "path": "/",
       "expected": 200,
-      "internalPort": 4000
+      "internalPort": 4000,
+      "expectedOutput": "Peace of mind from prototype to production"
     },
     "envs": {
       "PHX_SERVER": "true",

@@ -6,7 +6,8 @@
     "httpCheck": {
       "path": "/WeatherForecast",
       "expected": 200,
-      "internalPort": 8080
+      "internalPort": 8080,
+      "expectedOutput": "temperatureC"
     }
   }
 ]
