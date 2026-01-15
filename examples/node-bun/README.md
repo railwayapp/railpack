@@ -1,15 +1,1 @@
-# node-bun
-
-To install dependencies:
-
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.1.42. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+this example uses the `.lockb` intentionally to ensure this older format is properly detected by railpack.
