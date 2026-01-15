@@ -251,7 +251,7 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			// Trust config files in the app directory to avoid trust warnings during build
 			"MISE_TRUSTED_CONFIG_PATHS": "/app",
 			// Enable mise to automatically read idiomatic version files
-			"MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS": "python,node,ruby,elixir,go,java,yarn",
+			"MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS": mise.IdiomaticVersionFileTools,
 		})
 		maps.Copy(step.Variables, b.Variables)
 
