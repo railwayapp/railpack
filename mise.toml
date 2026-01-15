@@ -48,6 +48,18 @@ run = "go test -short ./..."
 [tasks.test-integration]
 run = "go test -v ./integration_tests"
 
+# run integration test for the example directory you're currently in
+[tasks.test-integration-cwd]
+run = """
+if [[ ! "$MISE_ORIGINAL_CWD" =~ /examples/ ]]; then
+  echo "Error: must be run from within an examples/ directory"
+  exit 1
+fi
+example_name=$(basename "$MISE_ORIGINAL_CWD")
+echo "Running integration test for: $example_name"
+go test -v ./integration_tests -run "TestExamplesIntegration/$example_name"
+"""
+
 # update all test snapshots, if you've updated a example/ project, run this to update the snapshots
 [tasks.test-update-snapshots]
 run = "UPDATE_SNAPS=true go test -short ./..."

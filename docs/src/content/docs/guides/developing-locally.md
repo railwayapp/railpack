@@ -110,6 +110,10 @@ mise run test-integration
 
 # Run specific test
 mise run test-integration -- -run "TestExamplesIntegration/python-uv-tool-versions"
+
+# Or, from within an examples/ directory, run the test for that example
+cd examples/python-uv-tool-versions
+mise run test-integration-cwd
 ```
 
 The `test.json` file contains an array of test cases. Each case builds and runs the same
