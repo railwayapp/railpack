@@ -3,7 +3,8 @@
     "httpCheck": {
       "path": "/",
       "expected": 200,
-      "internalPort": 3000
+      "internalPort": 3000,
+      "expectedOutput": "OK"
     },
     "envs": {
       "DATABASE_URL": "postgresql://rails_user:rails_password@postgres:5432/rails_db"

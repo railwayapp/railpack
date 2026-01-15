@@ -3,7 +3,8 @@
     "httpCheck": {
       "path": "/",
       "expected": 200,
-      "internalPort": 3000
+      "internalPort": 3000,
+      "expectedOutput": "Get started by editing"
     }
   }
 ]
