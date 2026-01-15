@@ -249,10 +249,6 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		miseStep.Version(ruby, envVersion, varName)
 	}
 
-	if versionFile, err := ctx.App.ReadFile(".ruby-version"); err == nil {
-		miseStep.Version(ruby, utils.ExtractSemverVersion(string(versionFile)), ".ruby-version")
-	}
-
 	if gemfileVersion := parseVersionFromGemfile(ctx); gemfileVersion != "" {
 		miseStep.Version(ruby, gemfileVersion, "Gemfile")
 	}
