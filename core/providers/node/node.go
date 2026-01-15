@@ -319,7 +319,6 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	requiresNode := p.requiresNode(ctx)
 	misePackages := []string{}
 
-	// Node
 	if requiresNode {
 		node := miseStep.Default("node", DEFAULT_NODE_VERSION)
 		misePackages = append(misePackages, "node")
@@ -330,8 +329,12 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		p.applyNodeVersionResolution(ctx, miseStep, node)
 	}
 
-	// Bun
 	if p.requiresBun(ctx) {
+		// there isn't a bun provider, it's mixed into the node provider
+		// users will see a message that indicates that railpack detected node, but not that bun is selected as the runtime
+		// let's at least add a note the plan so users understand that the bun runtime is being used.
+		ctx.Logger.LogInfo("Bun runtime detected")
+
 		bun := miseStep.Default("bun", DEFAULT_BUN_VERSION)
 		misePackages = append(misePackages, "bun")
 
@@ -364,7 +367,6 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		miseStep.Variables["MISE_NODE_COREPACK"] = "true"
 	}
 
-	// Check for mise.toml and .tool-versions and use those versions if they exist
 	if len(misePackages) > 0 {
 		miseStep.UseMiseVersions(ctx, misePackages)
 	}
@@ -537,7 +539,7 @@ func (p *NodeProvider) requiresNode(ctx *generate.GenerateContext) bool {
 	return p.isAstro(ctx) || p.isVite(ctx)
 }
 
-// packageJsonRequiresBun checks if a package.json's scripts use bun commands
+// checks if a package.json's scripts use bun commands
 func packageJsonRequiresBun(packageJson *PackageJson) bool {
 	if packageJson == nil || packageJson.Scripts == nil {
 		return false
@@ -552,7 +554,7 @@ func packageJsonRequiresBun(packageJson *PackageJson) bool {
 	return false
 }
 
-// requiresBun checks if bun should be installed and available for the build and final image
+// checks if bun should be installed and available for the build and final image
 func (p *NodeProvider) requiresBun(ctx *generate.GenerateContext) bool {
 	if p.packageManager == PackageManagerBun {
 		return true
