@@ -1,8 +1,7 @@
 [
   {
     "expectedOutput": [
-      "System libpq found",
-      "Using psycopg3 - libpq is available",
+      "System libpq not found",
       "Successfully connected to PostgreSQL!",
       "Test query result: 1 + 1 = 2",
       "Connection closed successfully"

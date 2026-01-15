@@ -61,6 +61,7 @@ There are normal unit tests, snapshot tests, and integration tests. The integrat
 
 ## Integration Tests
 
+* Run `mise run test-integration-cwd` from within an `examples/` directory to run the integration test for that example.
 * `test.json` files are JSONC format and support comments. Use comments to explain temporary workarounds or special test conditions.
 * In `test.json` we should avoid using `justBuild` for all but the most simple projects. `justBuild` does not test `expectedOutput` or any other assertions.
 * If the project has a server component, we should use a `httpCheck` test. Read the @docs/src/content/docs/guides/developing-locally.md guide, specifically the `### HTTP Checks` section for more information.
