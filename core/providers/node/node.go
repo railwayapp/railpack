@@ -293,19 +293,6 @@ func (p *NodeProvider) applyNodeVersionResolution(ctx *generate.GenerateContext,
 	if p.packageJson != nil && p.packageJson.Engines != nil && p.packageJson.Engines["node"] != "" {
 		miseStep.Version(nodeToolRef, p.packageJson.Engines["node"], "package.json > engines > node")
 	}
-
-	// TODO both nvmrc and node-version should be parsed via mise idiomatic version parsing
-	if nvmrc, err := ctx.App.ReadFile(".nvmrc"); err == nil {
-		if len(nvmrc) > 0 && nvmrc[0] == 'v' {
-			nvmrc = nvmrc[1:]
-		}
-
-		miseStep.Version(nodeToolRef, string(nvmrc), ".nvmrc")
-	}
-
-	if nodeVersionFile, err := ctx.App.ReadFile(".node-version"); err == nil {
-		miseStep.Version(nodeToolRef, string(nodeVersionFile), ".node-version")
-	}
 }
 
 func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
