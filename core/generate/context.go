@@ -97,6 +97,10 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 
 	ctx.applyPackagesFromConfig()
 
+	if excludes != nil || includes != nil {
+		ctx.Metadata.SetBool("dockerIgnore", true)
+	}
+
 	return ctx, nil
 }
 
