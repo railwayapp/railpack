@@ -1,10 +1,10 @@
 [
   {
+    // No expectedOutput because content is rendered client-side
     "httpCheck": {
       "path": "/",
       "expected": 200,
-      "internalPort": 80,
-      "expectedOutput": "React Router"
+      "internalPort": 80
     }
   }
 ]
