@@ -1,0 +1,9 @@
+{
+  "name": "pkg-b",
+  "version": "1.0.0",
+  "module": "index.ts",
+  "type": "module",
+  "dependencies": {
+    "pkg-a": "workspace:*"
+  }
+}

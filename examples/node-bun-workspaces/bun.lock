@@ -1,0 +1,33 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "node-bun-workspaces",
+      "dependencies": {
+        "pkg-b": "workspace:*",
+      },
+    },
+    "packages/pkg-a": {
+      "name": "pkg-a",
+      "version": "1.0.0",
+      "dependencies": {
+        "abbrev": "^3.0.0",
+      },
+    },
+    "packages/pkg-b": {
+      "name": "pkg-b",
+      "version": "1.0.0",
+      "dependencies": {
+        "pkg-a": "workspace:*",
+      },
+    },
+  },
+  "packages": {
+    "abbrev": ["abbrev@3.0.1", "", {}, "sha512-AO2ac6pjRB3SJmGJo+v5/aK6Omggp6fsLrs6wN9bd35ulu4cCwaAU9+7ZhXjeqHVkaHThLuzH0nZr0YpCDhygg=="],
+
+    "pkg-a": ["pkg-a@workspace:packages/pkg-a"],
+
+    "pkg-b": ["pkg-b@workspace:packages/pkg-b"],
+  }
+}

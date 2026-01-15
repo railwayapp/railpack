@@ -1,0 +1,6 @@
+[
+  {
+    "expectedOutput": "pkg-b depends on: pkg-a",
+    "stderrAllowed": true
+  }
+]
