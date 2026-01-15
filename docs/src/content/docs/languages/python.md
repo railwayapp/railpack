@@ -9,7 +9,7 @@ Railpack builds and deploys Python applications with support for various package
 
 Your project will be detected as a Python application if any of these conditions are met:
 
-- A `main.py` file exists in the root directory
+- One of `main.py`, `app.py`, `start.py`, `bot.py`, `hello.py`, or `server.py` exists in the root directory
 - A `requirements.txt` file exists
 - A `pyproject.toml` file exists
 - A `Pipfile` exists
@@ -55,7 +55,7 @@ The start command is determined by:
 
 1. Framework specific start command (see below)
 2. Main Python file in the root directory (checked in order: `main.py`,
-   `app.py`, `bot.py`, `hello.py`, `server.py`)
+   `app.py`, `start.py`, `bot.py`, `hello.py`, `server.py`)
 
 ### Package Managers
 
