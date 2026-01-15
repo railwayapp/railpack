@@ -56,6 +56,10 @@
      "path": "/mise/shims"
     },
     {
+     "dest": ".python-version",
+     "src": ".python-version"
+    },
+    {
      "customName": "create mise config",
      "name": "mise.toml",
      "path": "/etc/mise/config.toml"
