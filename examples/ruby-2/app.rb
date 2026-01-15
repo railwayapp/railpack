@@ -1,1 +1,1 @@
-puts "Hello from Ruby 2"
+puts "Hello from Ruby: #{RUBY_VERSION}"
