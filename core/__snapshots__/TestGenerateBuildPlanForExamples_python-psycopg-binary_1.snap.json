@@ -1,21 +1,7 @@
 {
- "caches": {
-  "apt": {
-   "directory": "/var/cache/apt",
-   "type": "locked"
-  },
-  "apt-lists": {
-   "directory": "/var/lib/apt/lists",
-   "type": "locked"
-  },
-  "pip": {
-   "directory": "/opt/pip-cache",
-   "type": "shared"
-  }
- },
  "deploy": {
   "base": {
-   "step": "packages:apt:runtime"
+   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
   },
   "inputs": [
    {
@@ -29,9 +15,6 @@
     "step": "packages:mise"
    },
    {
-    "include": [
-     "/app/.venv"
-    ],
     "step": "build"
    },
    {
@@ -56,24 +39,6 @@
  },
  "steps": [
   {
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
-   "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libcairo2-dev'",
-     "customName": "install apt packages: libcairo2-dev"
-    }
-   ],
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
-    }
-   ],
-   "name": "packages:apt:build"
-  },
-  {
    "assets": {
     "mise.toml": "[mise.toml]"
    },
@@ -97,7 +62,7 @@
    ],
    "inputs": [
     {
-     "step": "packages:apt:build"
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
     }
    ],
    "name": "packages:mise",
@@ -115,40 +80,12 @@
    }
   },
   {
-   "caches": [
-    "pip"
-   ],
-   "commands": [
-    {
-     "cmd": "python -m venv /app/.venv"
-    },
-    {
-     "path": "/app/.venv/bin"
-    },
-    {
-     "dest": "requirements.txt",
-     "src": "requirements.txt"
-    },
-    {
-     "cmd": "pip install -r requirements.txt"
-    }
-   ],
    "inputs": [
     {
      "step": "packages:mise"
     }
    ],
-   "name": "install",
-   "variables": {
-    "PIP_CACHE_DIR": "/opt/pip-cache",
-    "PIP_DEFAULT_TIMEOUT": "100",
-    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
-    "PYTHONDONTWRITEBYTECODE": "1",
-    "PYTHONFAULTHANDLER": "1",
-    "PYTHONHASHSEED": "random",
-    "PYTHONUNBUFFERED": "1",
-    "VIRTUAL_ENV": "/app/.venv"
-   }
+   "name": "install"
   },
   {
    "inputs": [
@@ -166,24 +103,6 @@
    "secrets": [
     "*"
    ]
-  },
-  {
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
-   "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y ffmpeg libcairo2 poppler-utils'",
-     "customName": "install apt packages: ffmpeg libcairo2 poppler-utils"
-    }
-   ],
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
-    }
-   ],
-   "name": "packages:apt:runtime"
   }
  ]
 }
