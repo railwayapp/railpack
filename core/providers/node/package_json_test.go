@@ -161,6 +161,12 @@ func TestGetPackageManagerInfo(t *testing.T) {
 			wantVersion:    "1.0.25",
 		},
 		{
+			name:           "package manager with latest keyword",
+			packageManager: "bun@latest",
+			wantName:       "bun",
+			wantVersion:    "latest",
+		},
+		{
 			name:           "valid package manager field with yarn and SHA",
 			packageManager: "yarn@3.2.3+sha224.953c8233f7a92884eee2de69a1b92d1f2ec1655e66d08071ba9a02fa",
 			wantName:       "yarn",
@@ -183,6 +189,12 @@ func TestGetPackageManagerInfo(t *testing.T) {
 			packageManager: "pnpm@8.15.4@extra",
 			wantName:       "",
 			wantVersion:    "",
+		},
+		{
+			name:           "extra whitespace in the version",
+			packageManager: "  yarn@1.22.10  ",
+			wantName:       "yarn",
+			wantVersion:    "1.22.10",
 		},
 	}
 

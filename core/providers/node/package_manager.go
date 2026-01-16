@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	semver "github.com/Masterminds/semver/v3"
+	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 )
@@ -30,6 +31,7 @@ func (p PackageManager) Name() string {
 	case PackageManagerYarn1, PackageManagerYarnBerry:
 		return "yarn"
 	default:
+		log.Warnf("unknown package manager: %s", p)
 		return ""
 	}
 }

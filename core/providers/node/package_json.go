@@ -80,11 +80,11 @@ func (p *PackageJson) GetPackageManagerInfo() (string, string) {
 		return "", ""
 	}
 
-	pmString := *p.PackageManager
+	pmString := strings.TrimSpace(*p.PackageManager)
 	parts := strings.Split(pmString, "@")
 	if len(parts) == 2 {
 		versionParts := strings.Split(parts[1], "+")
-		return parts[0], versionParts[0]
+		return strings.TrimSpace(parts[0]), strings.TrimSpace(versionParts[0])
 	}
 
 	return "", ""

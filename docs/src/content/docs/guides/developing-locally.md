@@ -257,3 +257,13 @@ continue
 
 The commands you probably want: `ls`, `print build.Commands`, `continue`, `next`, `locals`,
 
+
+## Maintenance
+
+There are some manual maintenance tasks that need to be done periodically:
+
+* Mise versions need to updated
+* Test snapshots which use `latest` for runtime versions need to be updated periodically.
+* Elixir<>OTP version map needs to be updated as new major versions come out.
+* Pnpm default version needs to be updated as LTS versions are released.
+* Node default version needs to be updated as LTS versions are released.
