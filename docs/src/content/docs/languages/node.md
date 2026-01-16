@@ -120,30 +120,14 @@ used.
 
 ### Monorepo Support
 
-Railpack automatically supports monorepo configurations with all major
-package managers and build tools. No special configuration is required -
-Railpack will detect workspace configurations and build your application
-correctly.
+Railpack automatically supports monorepo (workspaces) configurations with all major
+package managers. No special configuration is required. 
 
 **Supported Approaches:**
 
-- **npm Workspaces**: Uses the `workspaces` field in `package.json`
-  ([example][npm-workspaces-example])
-- **pnpm Workspaces**: Uses `pnpm-workspace.yaml` configuration
+- **npm, bun, yarn**: Uses the `workspaces` field in `package.json`
+- **pnpm**: Uses `pnpm-workspace.yaml` configuration
   ([example][pnpm-workspaces-example])
-- **yarn Workspaces**: Uses the `workspaces` field in `package.json`
-  ([example][yarn-workspaces-example])
-- **Turborepo**: Build system orchestration with intelligent caching
-  ([example][turborepo-example])
-
-For a more realistic example, see the [full-stack monorepo][fullstack]
-with an Express API, frontend, and shared utilities package.
-
-[npm-workspaces-example]: https://github.com/railwayapp/railpack/tree/main/examples/node-npm-workspaces
-[pnpm-workspaces-example]: https://github.com/railwayapp/railpack/tree/main/examples/node-pnpm-workspaces
-[yarn-workspaces-example]: https://github.com/railwayapp/railpack/tree/main/examples/node-yarn-workspaces
-[turborepo-example]: https://github.com/railwayapp/railpack/tree/main/examples/node-turborepo
-[fullstack]: https://github.com/railwayapp/railpack/tree/main/examples/node-monorepo-fullstack
 
 When building a monorepo, Railpack will:
 
