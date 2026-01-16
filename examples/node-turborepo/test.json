@@ -5,5 +5,17 @@
       "expected": 200,
       "internalPort": 3000
     }
+  },
+  {
+    "httpCheck": {
+      "path": "/api/health",
+      "expected": 200,
+      "internalPort": 3000,
+      "expectedOutput": [
+        "Turborepo Example",
+        "1.0.0",
+        "ok"
+      ]
+    }
   }
 ]
