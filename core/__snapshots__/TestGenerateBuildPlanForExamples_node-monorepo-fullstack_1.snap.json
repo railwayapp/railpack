@@ -45,7 +45,8 @@
     ],
     "include": [
      "/root/.cache",
-     "."
+     ".",
+     "/opt/corepack"
     ],
     "step": "build"
    }
@@ -90,6 +91,7 @@
     "MISE_DATA_DIR": "/mise",
     "MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS": "python,node,ruby,elixir,go,java,yarn",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_COREPACK": "true",
     "MISE_NODE_VERIFY": "false",
     "MISE_PARANOID": "1",
     "MISE_SHIMS_DIR": "/mise/shims",
@@ -105,26 +107,34 @@
      "path": "/app/node_modules/.bin"
     },
     {
-     "cmd": "mkdir -p /app/node_modules/.cache"
+     "dest": "package.json",
+     "src": "package.json"
     },
     {
-     "dest": "package-lock.json",
-     "src": "package-lock.json"
+     "cmd": "sh -c 'npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate'",
+     "customName": "npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate"
+    },
+    {
+     "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
      "dest": "package.json",
      "src": "package.json"
     },
     {
-     "dest": "packages/pkg-a/package.json",
-     "src": "packages/pkg-a/package.json"
+     "dest": "packages/api/package.json",
+     "src": "packages/api/package.json"
     },
     {
-     "dest": "packages/pkg-b/package.json",
-     "src": "packages/pkg-b/package.json"
+     "dest": "packages/shared/package.json",
+     "src": "packages/shared/package.json"
     },
     {
-     "cmd": "npm ci"
+     "dest": "packages/web/package.json",
+     "src": "packages/web/package.json"
+    },
+    {
+     "cmd": "npm install"
     }
    ],
    "inputs": [
@@ -135,6 +145,7 @@
    "name": "install",
    "variables": {
     "CI": "true",
+    "COREPACK_HOME": "/opt/corepack",
     "NODE_ENV": "production",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",

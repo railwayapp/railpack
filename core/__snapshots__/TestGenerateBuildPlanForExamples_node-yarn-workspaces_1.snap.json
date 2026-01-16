@@ -12,8 +12,8 @@
    "directory": "/app/node_modules/.cache",
    "type": "shared"
   },
-  "npm-install": {
-   "directory": "/root/.npm",
+  "yarn-install": {
+   "directory": "/app/.yarn/cache",
    "type": "shared"
   }
  },
@@ -34,7 +34,8 @@
    },
    {
     "include": [
-     "/app/node_modules"
+     "/app/.yarn",
+     "/root/.yarn"
     ],
     "step": "build"
    },
@@ -45,12 +46,13 @@
     ],
     "include": [
      "/root/.cache",
-     "."
+     ".",
+     "/opt/corepack"
     ],
     "step": "build"
    }
   ],
-  "startCommand": "npm run start",
+  "startCommand": "yarn run start",
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
@@ -90,6 +92,7 @@
     "MISE_DATA_DIR": "/mise",
     "MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS": "python,node,ruby,elixir,go,java,yarn",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_COREPACK": "true",
     "MISE_NODE_VERIFY": "false",
     "MISE_PARANOID": "1",
     "MISE_SHIMS_DIR": "/mise/shims",
@@ -98,18 +101,22 @@
   },
   {
    "caches": [
-    "npm-install"
+    "yarn-install"
    ],
    "commands": [
     {
      "path": "/app/node_modules/.bin"
     },
     {
-     "cmd": "mkdir -p /app/node_modules/.cache"
+     "dest": "package.json",
+     "src": "package.json"
     },
     {
-     "dest": "package-lock.json",
-     "src": "package-lock.json"
+     "cmd": "sh -c 'npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate'",
+     "customName": "npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate"
+    },
+    {
+     "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
      "dest": "package.json",
@@ -124,7 +131,11 @@
      "src": "packages/pkg-b/package.json"
     },
     {
-     "cmd": "npm ci"
+     "dest": "yarn.lock",
+     "src": "yarn.lock"
+    },
+    {
+     "cmd": "yarn install --check-cache"
     }
    ],
    "inputs": [
@@ -135,6 +146,7 @@
    "name": "install",
    "variables": {
     "CI": "true",
+    "COREPACK_HOME": "/opt/corepack",
     "NODE_ENV": "production",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",
