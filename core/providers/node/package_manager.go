@@ -244,9 +244,9 @@ func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []
 		allFiles = append(allFiles, dirs...)
 	}
 
-	if customInstallPatterns, _ := ctx.Env.GetConfigVariable("NODE_INSTALL_PATTERNS"); customInstallPatterns != "" {
-		ctx.Logger.LogInfo("Using custom install patterns: %s", customInstallPatterns)
-		for _, pat := range strings.Split(customInstallPatterns, " ") {
+	if customInstallPatterns, _ := ctx.Env.GetConfigVariableList("NODE_INSTALL_PATTERNS"); len(customInstallPatterns) > 0 {
+		ctx.Logger.LogInfo("Using custom install patterns: %s", strings.Join(customInstallPatterns, " "))
+		for _, pat := range customInstallPatterns {
 			customFiles, _ := ctx.App.FindFiles("**/" + pat)
 			allFiles = append(allFiles, customFiles...)
 		}

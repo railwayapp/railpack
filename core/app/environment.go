@@ -73,9 +73,14 @@ func (e *Environment) GetConfigVariable(name string) (string, string) {
 	return "", ""
 }
 
-// ConfigVariableToList splits a space-separated config variable into a list
-func ConfigVariableToList(rawEnv string) []string {
-	return strings.Split(rawEnv, " ")
+// GetConfigVariableList returns a space-separated config variable as a list
+// Returns both the list and the name of the config variable
+func (e *Environment) GetConfigVariableList(name string) ([]string, string) {
+	val, configVar := e.GetConfigVariable(name)
+	if val == "" {
+		return nil, ""
+	}
+	return strings.Split(val, " "), configVar
 }
 
 // checks if a RAILPACK_ prefixed variable is set to "1" or "true"
