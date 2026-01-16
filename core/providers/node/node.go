@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
@@ -396,21 +397,34 @@ func (p *NodeProvider) usesPuppeteer() bool {
 	return p.workspace.HasDependency("puppeteer")
 }
 
+// determine the major version of yarn from a version string. These major versions are installed and managed quite
+// differently which is why we need to distinguish them here.
+func parseYarnPackageManager(pmVersion string) PackageManager {
+	if strings.Split(pmVersion, ".")[0] == "1" {
+		return PackageManagerYarn1
+	}
+
+	// versions 2-4 are all considered part of the "Yarn Berry" release line
+	return PackageManagerYarnBerry
+}
+
 func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
 	// Check packageManager field first
 	if packageJson, err := p.GetPackageJson(app); err == nil && packageJson.PackageManager != nil {
 		pmName, pmVersion := packageJson.GetPackageManagerInfo()
 		if pmName == "yarn" && pmVersion != "" {
-			majorVersion := strings.Split(pmVersion, ".")[0]
-			if majorVersion == "1" {
-				return PackageManagerYarn1
-			} else {
-				return PackageManagerYarnBerry
-			}
+			return parseYarnPackageManager(pmVersion)
 		} else if pmName == "pnpm" {
 			return PackageManagerPnpm
+		} else if pmName == "npm" {
+			return PackageManagerNpm
 		} else if pmName == "bun" {
 			return PackageManagerBun
+		} else if pmName == "" {
+			// this is mostly likely a user configuration bug, so let's at least log it in case someone is stuck
+			log.Info("Package manager name is empty in package.json")
+		} else {
+			log.Warnf("Unknown package manager `%s` specified in package.json, defaulting to npm", pmName)
 		}
 	}
 
@@ -435,13 +449,11 @@ func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
 		}
 		if engine := strings.TrimSpace(packageJson.Engines["yarn"]); engine != "" {
 			// Decide yarn major: 1 -> yarn1, otherwise default to berry
-			major := strings.Split(engine, ".")[0]
-			if major == "1" {
-				return PackageManagerYarn1
-			}
-			return PackageManagerYarnBerry
+			return parseYarnPackageManager(engine)
 		}
 	}
+
+	log.Info("No package manager inferred, using npm default")
 
 	return PackageManagerNpm
 }
