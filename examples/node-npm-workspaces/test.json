@@ -1,11 +1,16 @@
 [
   {
-    "expectedOutput": [
-      "Hello from npm workspaces",
-      "pkg-a loaded",
-      "pkg-b loaded",
-      "pkg-a says:",
-      "pkg-b says: hello from workspace!"
-    ]
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 3000
+    }
+  },
+  {
+    "httpCheck": {
+      "path": "/api/users",
+      "expected": 200,
+      "internalPort": 3000
+    }
   }
 ]

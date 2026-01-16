@@ -1,22 +1,13 @@
 {
   "name": "npm-workspaces",
-  "private": true,
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node packages/api/index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "workspaces": [
-    "packages/pkg-a",
-    "packages/pkg-b"
+    "packages/*"
   ],
-  "dependencies": {
-    "cowsay": "^1.6.0"
-  }
+  "packageManager": "npm@10.9.2"
 }
