@@ -70,6 +70,10 @@
      "path": "/mise/shims"
     },
     {
+     "dest": ".node-version",
+     "src": ".node-version"
+    },
+    {
      "customName": "create mise config",
      "name": "mise.toml",
      "path": "/etc/mise/config.toml"
@@ -107,6 +111,10 @@
     },
     {
      "cmd": "mkdir -p /app/node_modules/.cache"
+    },
+    {
+     "dest": ".node-version",
+     "src": ".node-version"
     },
     {
      "dest": ".yarnrc.yml",
