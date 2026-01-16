@@ -15,6 +15,14 @@
  },
  "steps": [
   {
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:mise"
+  },
+  {
    "commands": [
     {
      "cmd": "chmod +x start.sh"
@@ -22,7 +30,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+     "step": "packages:mise"
     },
     {
      "include": [
