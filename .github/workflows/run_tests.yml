@@ -59,6 +59,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Start BuildKit
+        env:
+          # in rare cases, docker hub can timeout
+          DOCKER_CLIENT_TIMEOUT: 300
         run: |
           docker run --rm --privileged -d \
             --name buildkit \
