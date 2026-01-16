@@ -47,3 +47,4 @@ tmp/
 
 ### AI Tooling ###
 .claude/settings.local.json
+examples/**/.claude
