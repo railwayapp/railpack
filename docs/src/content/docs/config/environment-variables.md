@@ -13,7 +13,7 @@ often prefixed with `RAILPACK_`.
 | `RAILPACK_BUILD_CMD`           | Set the command to run for the build step. This overwrites any commands that come from providers                                                                                |
 | `RAILPACK_INSTALL_CMD`         | Set the command to run for the install step. This overwrites any commands that come from providers. All files are copied to the root of the project before running the command. |
 | `RAILPACK_START_CMD`           | Set the command to run when the container starts                                                                                                                                |
-| `RAILPACK_PACKAGES`            | Install additional Mise packages. In the format `pkg@version`. The latest version is used if not provided. Allows list.                                                         |
+| `RAILPACK_PACKAGES`            | Install additional Mise packages. In the format `pkg[@version]`. The version is optional; if not provided, the latest version is used. Allows list.                             |
 | `RAILPACK_BUILD_APT_PACKAGES`  | Install additional Apt packages during build. Allows list.                                                                                                                      |
 | `RAILPACK_DEPLOY_APT_PACKAGES` | Install additional Apt packages in the final image. Allows list.                                                                                                                |
 | `RAILPACK_DISABLE_CACHES`      | Specify specific BuildKit cache keys to disable, or `*` to disable all caches. Allows list.                                                                                     |
@@ -21,7 +21,7 @@ often prefixed with `RAILPACK_`.
 Variables which allow a list use space-separated values. For example:
 
 ```sh
-RAILPACK_PACKAGES="pipx:httpie@latest jq@latest"
+RAILPACK_PACKAGES="pipx:httpie jq@latest"
 ```
 
 To configure more parts of the build, it is recommended to use a [config file](/config/file).
