@@ -1,3 +1,4 @@
+// converts a railpack build plan to a BuildKit LLB state and image config
 package buildkit
 
 import (

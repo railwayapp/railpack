@@ -230,6 +230,9 @@ mise run docs-dev
 
 # Inspect what backend is being used for a given tool
 mise tool poetry
+
+# test a tool out without adding it to your environment
+mise exec pipx:httpie -- http google.com
 ```
 
 ## Debugging

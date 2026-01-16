@@ -1,3 +1,6 @@
+// entrypoint to the `build` subcommand
+// Primarily bundles CLI options into the structure that `BuildWithBuildkitClient` expects
+
 package cli
 
 import (
@@ -115,6 +118,7 @@ func validateSecrets(plan *plan.BuildPlan, env *app.Environment) error {
 	return nil
 }
 
+// generate a hash all of build secrets to invalidate all caches when any secret changes
 func getSecretsHash(env *app.Environment) string {
 	secretsValue := ""
 	for _, v := range env.Variables {
