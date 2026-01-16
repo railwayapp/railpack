@@ -120,10 +120,6 @@
      "src": "package.json"
     },
     {
-     "dest": "node_modules/better-sqlite3/deps/patches",
-     "src": "node_modules/better-sqlite3/deps/patches"
-    },
-    {
      "cmd": "npm ci"
     }
    ],
