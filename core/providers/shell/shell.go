@@ -51,8 +51,26 @@ func (p *ShellProvider) Plan(ctx *generate.GenerateContext) error {
 
 	ctx.Logger.LogInfo("Using shell script: %s with interpreter: %s", p.scriptName, interpreter)
 
+	miseStepName := ctx.GetMiseStepBuilder().Name()
+	var buildBaseLayer plan.Layer
+
+	// If install step is configured (e.g. via RAILPACK_INSTALL_CMD) we add it so the user-supplied install config is run properly
+	if _, ok := ctx.Config.Steps["install"]; ok {
+		install := ctx.NewCommandStep("install")
+		// Install step needs mise base to access any tools installed in the mise step (e.g. via RAILPACK_PACKAGES)
+		install.AddInput(plan.NewStepLayer(miseStepName))
+		install.AddInput(ctx.NewLocalLayer())
+
+		// If we have an install step, the build step should be based on the result of the install step
+		// so that artifacts from the install step are available during the build.
+		buildBaseLayer = plan.NewStepLayer(install.Name())
+	} else {
+		// If no install step is configured, the build step is based directly on the mise step.
+		buildBaseLayer = plan.NewStepLayer(miseStepName)
+	}
+
 	build := ctx.NewCommandStep("build")
-	build.AddInput(plan.NewImageLayer(plan.RailpackRuntimeImage))
+	build.AddInput(buildBaseLayer)
 	build.AddInput(ctx.NewLocalLayer())
 	build.AddCommands(
 		[]plan.Command{
@@ -61,6 +79,7 @@ func (p *ShellProvider) Plan(ctx *generate.GenerateContext) error {
 	)
 
 	ctx.Deploy.AddInputs([]plan.Layer{
+		ctx.GetMiseStepBuilder().GetLayer(),
 		plan.NewStepLayer(build.Name(), plan.Filter{
 			Include: []string{"."},
 		}),
