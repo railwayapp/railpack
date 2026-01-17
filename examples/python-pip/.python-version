@@ -1,1 +1,2 @@
+# a comment in the version file should not trigger an error
 3.11.11
