@@ -68,6 +68,15 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 		installOutputs = p.InstallPipenv(ctx, install)
 	}
 
+	if p.usesDep(ctx, "playwright") {
+		ctx.Logger.LogInfo("Installing Playwright chromium browser")
+		// --only-shell installs only the headless shell version (chromium_headless_shell)
+		// This is smaller and more appropriate for server environments than full chromium
+		install.AddCommand(plan.NewExecCommand("playwright install --only-shell"))
+		// Include Playwright browser cache so browsers are available in deploy stage
+		installOutputs = append(installOutputs, PLAYWRIGHT_CACHE_DIR)
+	}
+
 	p.addMetadata(ctx)
 
 	build.AddInput(plan.NewStepLayer(install.Name()))
@@ -167,23 +176,9 @@ func (p *PythonProvider) InstallUv(ctx *generate.GenerateContext, install *gener
 		plan.NewExecCommand("uv sync --locked --no-dev --no-install-project"),
 	}
 
-	// Note: playwright install appears in each package manager's install function because only ONE
-	// package manager is detected and used per build. This code runs once, not multiple times.
-	if p.usesDep(ctx, "playwright") {
-		ctx.Logger.LogInfo("Installing Playwright chromium browser")
-		// --only-shell installs only the headless shell version (chromium_headless_shell)
-		// This is smaller and more appropriate for server environments than full chromium
-		installCommands = append(installCommands, plan.NewExecCommand("playwright install --only-shell"))
-	}
-
 	install.AddCommands(installCommands)
 
-	outputs := []string{VENV_PATH}
-	if p.usesDep(ctx, "playwright") {
-		// Include Playwright browser cache so browsers are available in deploy stage
-		outputs = append(outputs, PLAYWRIGHT_CACHE_DIR)
-	}
-	return outputs
+	return []string{VENV_PATH}
 }
 
 func (p *PythonProvider) InstallPipenv(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
@@ -214,16 +209,7 @@ func (p *PythonProvider) InstallPipenv(ctx *generate.GenerateContext, install *g
 		})
 	}
 
-	if p.usesDep(ctx, "playwright") {
-		ctx.Logger.LogInfo("Installing Playwright chromium browser")
-		install.AddCommand(plan.NewExecCommand("playwright install --only-shell"))
-	}
-
-	outputs := []string{VENV_PATH}
-	if p.usesDep(ctx, "playwright") {
-		outputs = append(outputs, PLAYWRIGHT_CACHE_DIR)
-	}
-	return outputs
+	return []string{VENV_PATH}
 }
 
 func (p *PythonProvider) InstallPDM(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
@@ -241,18 +227,9 @@ func (p *PythonProvider) InstallPDM(ctx *generate.GenerateContext, install *gene
 		plan.NewExecCommand("pdm install --check --prod --no-editable"),
 	}
 
-	if p.usesDep(ctx, "playwright") {
-		ctx.Logger.LogInfo("Installing Playwright chromium browser")
-		installCommands = append(installCommands, plan.NewExecCommand("playwright install --only-shell"))
-	}
-
 	install.AddCommands(installCommands)
 
-	outputs := []string{VENV_PATH}
-	if p.usesDep(ctx, "playwright") {
-		outputs = append(outputs, PLAYWRIGHT_CACHE_DIR)
-	}
-	return outputs
+	return []string{VENV_PATH}
 }
 
 func (p *PythonProvider) InstallPoetry(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
@@ -272,18 +249,9 @@ func (p *PythonProvider) InstallPoetry(ctx *generate.GenerateContext, install *g
 		plan.NewExecCommand("poetry install --no-interaction --no-ansi --only main --no-root"),
 	}
 
-	if p.usesDep(ctx, "playwright") {
-		ctx.Logger.LogInfo("Installing Playwright chromium browser")
-		installCommands = append(installCommands, plan.NewExecCommand("playwright install --only-shell"))
-	}
-
 	install.AddCommands(installCommands)
 
-	outputs := []string{VENV_PATH}
-	if p.usesDep(ctx, "playwright") {
-		outputs = append(outputs, PLAYWRIGHT_CACHE_DIR)
-	}
-	return outputs
+	return []string{VENV_PATH}
 }
 
 func (p *PythonProvider) InstallPip(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
@@ -305,16 +273,7 @@ func (p *PythonProvider) InstallPip(ctx *generate.GenerateContext, install *gene
 		plan.NewExecCommand("pip install -r requirements.txt"),
 	})
 
-	if p.usesDep(ctx, "playwright") {
-		ctx.Logger.LogInfo("Installing Playwright chromium browser")
-		install.AddCommand(plan.NewExecCommand("playwright install --only-shell"))
-	}
-
-	outputs := []string{VENV_PATH}
-	if p.usesDep(ctx, "playwright") {
-		outputs = append(outputs, PLAYWRIGHT_CACHE_DIR)
-	}
-	return outputs
+	return []string{VENV_PATH}
 }
 
 func (p *PythonProvider) AddRuntimeDeps(ctx *generate.GenerateContext) {
