@@ -18,6 +18,7 @@ const (
 	PIP_CACHE_DIR          = "/opt/pip-cache"
 	VENV_PATH              = "/app/.venv"
 	LOCAL_BIN_PATH         = "/root/.local/bin"
+	PLAYWRIGHT_CACHE_DIR   = "/root/.cache/ms-playwright"
 )
 
 type PythonProvider struct{}
@@ -157,16 +158,32 @@ func (p *PythonProvider) InstallUv(ctx *generate.GenerateContext, install *gener
 	install.AddEnvVars(p.GetPythonEnvVars(ctx))
 
 	p.copyInstallFiles(ctx, install)
-	install.AddCommands([]plan.Command{
+	installCommands := []plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
 		// if we exclude workspace packages, uv.lock will fail the frozen test and the user will get an error
 		// to avoid this, we (a) detect if workspace packages are required (b) if they aren't, we don't include project
 		// source in order to optimize layer caching (c) install project in the build phase.
 		plan.NewExecCommand("uv sync --locked --no-dev --no-install-project"),
-	})
+	}
 
-	return []string{VENV_PATH}
+	// Note: playwright install appears in each package manager's install function because only ONE
+	// package manager is detected and used per build. This code runs once, not multiple times.
+	if p.usesDep(ctx, "playwright") {
+		ctx.Logger.LogInfo("Installing Playwright chromium browser")
+		// --only-shell installs only the headless shell version (chromium_headless_shell)
+		// This is smaller and more appropriate for server environments than full chromium
+		installCommands = append(installCommands, plan.NewExecCommand("playwright install --only-shell"))
+	}
+
+	install.AddCommands(installCommands)
+
+	outputs := []string{VENV_PATH}
+	if p.usesDep(ctx, "playwright") {
+		// Include Playwright browser cache so browsers are available in deploy stage
+		outputs = append(outputs, PLAYWRIGHT_CACHE_DIR)
+	}
+	return outputs
 }
 
 func (p *PythonProvider) InstallPipenv(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
@@ -197,7 +214,16 @@ func (p *PythonProvider) InstallPipenv(ctx *generate.GenerateContext, install *g
 		})
 	}
 
-	return []string{VENV_PATH}
+	if p.usesDep(ctx, "playwright") {
+		ctx.Logger.LogInfo("Installing Playwright chromium browser")
+		install.AddCommand(plan.NewExecCommand("playwright install --only-shell"))
+	}
+
+	outputs := []string{VENV_PATH}
+	if p.usesDep(ctx, "playwright") {
+		outputs = append(outputs, PLAYWRIGHT_CACHE_DIR)
+	}
+	return outputs
 }
 
 func (p *PythonProvider) InstallPDM(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
@@ -209,13 +235,24 @@ func (p *PythonProvider) InstallPDM(ctx *generate.GenerateContext, install *gene
 	})
 
 	p.copyInstallFiles(ctx, install)
-	install.AddCommands([]plan.Command{
+	installCommands := []plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
 		plan.NewExecCommand("pdm install --check --prod --no-editable"),
-	})
+	}
 
-	return []string{VENV_PATH}
+	if p.usesDep(ctx, "playwright") {
+		ctx.Logger.LogInfo("Installing Playwright chromium browser")
+		installCommands = append(installCommands, plan.NewExecCommand("playwright install --only-shell"))
+	}
+
+	install.AddCommands(installCommands)
+
+	outputs := []string{VENV_PATH}
+	if p.usesDep(ctx, "playwright") {
+		outputs = append(outputs, PLAYWRIGHT_CACHE_DIR)
+	}
+	return outputs
 }
 
 func (p *PythonProvider) InstallPoetry(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
@@ -229,13 +266,24 @@ func (p *PythonProvider) InstallPoetry(ctx *generate.GenerateContext, install *g
 	})
 
 	p.copyInstallFiles(ctx, install)
-	install.AddCommands([]plan.Command{
+	installCommands := []plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
 		plan.NewExecCommand("poetry install --no-interaction --no-ansi --only main --no-root"),
-	})
+	}
 
-	return []string{VENV_PATH}
+	if p.usesDep(ctx, "playwright") {
+		ctx.Logger.LogInfo("Installing Playwright chromium browser")
+		installCommands = append(installCommands, plan.NewExecCommand("playwright install --only-shell"))
+	}
+
+	install.AddCommands(installCommands)
+
+	outputs := []string{VENV_PATH}
+	if p.usesDep(ctx, "playwright") {
+		outputs = append(outputs, PLAYWRIGHT_CACHE_DIR)
+	}
+	return outputs
 }
 
 func (p *PythonProvider) InstallPip(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
@@ -257,7 +305,16 @@ func (p *PythonProvider) InstallPip(ctx *generate.GenerateContext, install *gene
 		plan.NewExecCommand("pip install -r requirements.txt"),
 	})
 
-	return []string{VENV_PATH}
+	if p.usesDep(ctx, "playwright") {
+		ctx.Logger.LogInfo("Installing Playwright chromium browser")
+		install.AddCommand(plan.NewExecCommand("playwright install --only-shell"))
+	}
+
+	outputs := []string{VENV_PATH}
+	if p.usesDep(ctx, "playwright") {
+		outputs = append(outputs, PLAYWRIGHT_CACHE_DIR)
+	}
+	return outputs
 }
 
 func (p *PythonProvider) AddRuntimeDeps(ctx *generate.GenerateContext) {
@@ -557,4 +614,8 @@ var pythonRuntimeDepRequirements = map[string][]string{
 	"pdf2image": {"poppler-utils"},
 	"pydub":     {"ffmpeg"},
 	"pymovie":   {"ffmpeg", "qt5-qmake", "qtbase5-dev", "qtbase5-dev-tools", "qttools5-dev-tools", "libqt5core5a", "python3-pyqt5"},
+	// Playwright runtime dependencies for Chromium browser
+	// To find the latest list: run `playwright install-deps chromium` and inspect the apt-get install output
+	// Or check: https://github.com/microsoft/playwright/blob/main/packages/playwright-core/browsers.json
+	"playwright": {"libglib2.0-0", "libatk1.0-0", "libatk-bridge2.0-0", "libcups2", "libxkbcommon0", "libatspi2.0-0", "libxcomposite1", "libxdamage1", "libxfixes3", "libxrandr2", "libgbm1", "libcairo2", "libpango-1.0-0", "libasound2", "libnspr4", "libnss3"},
 }
