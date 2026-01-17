@@ -1,3 +1,4 @@
+// for platforms: used by `ghcr.io/railwayapp/railpack-frontend` to accept railpack plans via BuildKit
 package buildkit
 
 import (

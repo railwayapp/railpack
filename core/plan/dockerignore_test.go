@@ -137,55 +137,26 @@ func TestDockerignoreContext(t *testing.T) {
 		testApp, err := app.NewApp(tempDir)
 		require.NoError(t, err)
 
-		ctx := NewDockerignoreContext(testApp)
+		ctx, err := NewDockerignoreContext(testApp)
+		require.NoError(t, err)
 		require.NotNil(t, ctx)
-		require.Equal(t, testApp, ctx.app)
-		require.False(t, ctx.parsed)
-		require.Nil(t, ctx.excludes)
-		require.Nil(t, ctx.includes)
+		require.False(t, ctx.HasFile)
+		require.Nil(t, ctx.Excludes)
+		require.Nil(t, ctx.Includes)
 	})
 
-	t.Run("parse caching", func(t *testing.T) {
+	t.Run("context with dockerignore file", func(t *testing.T) {
 		examplePath := filepath.Join("..", "..", "examples", "dockerignore")
 		testApp, err := app.NewApp(examplePath)
 		require.NoError(t, err)
 
-		ctx := NewDockerignoreContext(testApp)
-
-		// First parse
-		excludes1, includes1, err1 := ctx.Parse()
-		require.NoError(t, err1)
-		require.True(t, ctx.parsed)
-
-		// Second parse should return cached results
-		excludes2, includes2, err2 := ctx.Parse()
-		require.NoError(t, err2)
-		require.Equal(t, excludes1, excludes2)
-		require.Equal(t, includes1, includes2)
-	})
-
-	t.Run("parse with logging", func(t *testing.T) {
-		examplePath := filepath.Join("..", "..", "examples", "dockerignore")
-		testApp, err := app.NewApp(examplePath)
+		ctx, err := NewDockerignoreContext(testApp)
 		require.NoError(t, err)
-
-		ctx := NewDockerignoreContext(testApp)
-
-		// Mock logger that captures calls
-		logCalls := []string{}
-		mockLogger := &mockLogger{logFunc: func(format string, args ...interface{}) {
-			logCalls = append(logCalls, format)
-		}}
-
-		excludes, includes, err := ctx.ParseWithLogging(mockLogger)
-		require.NoError(t, err)
-		require.NotNil(t, excludes)
-		require.NotNil(t, includes)
-		require.Contains(t, includes, "negation_test/should_exist.txt")
-		require.Contains(t, includes, "negation_test/existing_folder")
-
-		// Should have logged that dockerignore was found
-		require.Contains(t, logCalls, "Found .dockerignore file, applying filters")
+		require.True(t, ctx.HasFile)
+		require.NotNil(t, ctx.Excludes)
+		require.NotNil(t, ctx.Includes)
+		require.Contains(t, ctx.Includes, "negation_test/should_exist.txt")
+		require.Contains(t, ctx.Includes, "negation_test/existing_folder")
 	})
 
 	t.Run("parse nonexistent file", func(t *testing.T) {
@@ -196,13 +167,11 @@ func TestDockerignoreContext(t *testing.T) {
 		testApp, err := app.NewApp(tempDir)
 		require.NoError(t, err)
 
-		ctx := NewDockerignoreContext(testApp)
-
-		excludes, includes, err := ctx.Parse()
+		ctx, err := NewDockerignoreContext(testApp)
 		require.NoError(t, err)
-		require.Nil(t, excludes)
-		require.Nil(t, includes)
-		require.True(t, ctx.parsed) // Should still mark as parsed
+		require.False(t, ctx.HasFile)
+		require.Nil(t, ctx.Excludes)
+		require.Nil(t, ctx.Includes)
 	})
 
 	t.Run("parse error handling", func(t *testing.T) {
@@ -223,25 +192,62 @@ func TestDockerignoreContext(t *testing.T) {
 		testApp, err := app.NewApp(tempDir)
 		require.NoError(t, err)
 
-		ctx := NewDockerignoreContext(testApp)
-		excludes, includes, err := ctx.Parse()
-
+		ctx, err := NewDockerignoreContext(testApp)
 		require.Error(t, err)
-		require.Nil(t, excludes)
-		require.Nil(t, includes)
-		require.False(t, ctx.parsed) // Should not mark as parsed on error
+		require.Nil(t, ctx)
 	})
 }
 
-// Mock logger for testing
-type mockLogger struct {
-	logFunc func(string, ...interface{})
-}
+func TestDockerignoreDuplicatePatterns(t *testing.T) {
+	t.Run("duplicate patterns removed", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "dockerignore-test")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
 
-func (m *mockLogger) LogInfo(format string, args ...interface{}) {
-	if m.logFunc != nil {
-		m.logFunc(format, args...)
-	}
+		// Create test files
+		err = os.WriteFile(filepath.Join(tempDir, "keep.txt"), []byte("exists"), 0644)
+		require.NoError(t, err)
+
+		// Create .dockerignore with duplicate patterns
+		dockerignoreContent := `*.log
+*.log
+node_modules
+!keep.txt
+!keep.txt
+`
+		err = os.WriteFile(filepath.Join(tempDir, ".dockerignore"), []byte(dockerignoreContent), 0644)
+		require.NoError(t, err)
+
+		testApp, err := app.NewApp(tempDir)
+		require.NoError(t, err)
+
+		ctx, err := NewDockerignoreContext(testApp)
+		require.NoError(t, err)
+
+		// Count occurrences of each pattern
+		logCount := 0
+		nodeModulesCount := 0
+		for _, pattern := range ctx.Excludes {
+			if pattern == "*.log" {
+				logCount++
+			}
+			if pattern == "node_modules" {
+				nodeModulesCount++
+			}
+		}
+
+		keepCount := 0
+		for _, pattern := range ctx.Includes {
+			if pattern == "keep.txt" {
+				keepCount++
+			}
+		}
+
+		// Verify no duplicates exist
+		require.LessOrEqual(t, logCount, 1, "*.log pattern should appear at most once")
+		require.LessOrEqual(t, nodeModulesCount, 1, "node_modules pattern should appear at most once")
+		require.LessOrEqual(t, keepCount, 1, "keep.txt pattern should appear at most once")
+	})
 }
 
 func TestCheckAndParseDockerignoreWithNegation(t *testing.T) {
@@ -259,7 +265,7 @@ func TestCheckAndParseDockerignoreWithNegation(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create .dockerignore with mixed negation cases
-	dockerignoreContent := `
+		dockerignoreContent := `
 negation_test/*
 !negation_test/should_exist.txt
 !negation_test/should_not_exist.txt
