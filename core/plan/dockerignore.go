@@ -3,8 +3,11 @@ package plan
 import (
 	"strings"
 
-	"github.com/moby/patternmatcher/ignorefile"
 	"github.com/railwayapp/railpack/core/app"
+
+	// this is the native dockerignore parser used by buildkit
+	// https://github.com/moby/buildkit/blob/master/frontend/dockerfile/dockerignore/dockerignore_deprecated.go
+	"github.com/moby/patternmatcher/ignorefile"
 )
 
 // checks if a .dockerignore file exists in the app directory and parses it
