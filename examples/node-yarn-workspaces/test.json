@@ -1,12 +1,11 @@
 [
   {
     "expectedOutput": [
-      "Node v: v22.2.0",
-      "Hello from pnpm workspaces",
+      "Hello from yarn workspaces",
       "pkg-a loaded",
       "pkg-b loaded",
       "pkg-a says:",
-      "pkg-b says: hello from workspace!"
+      "pkg-b says: hello from yarn workspace!"
     ]
   }
 ]

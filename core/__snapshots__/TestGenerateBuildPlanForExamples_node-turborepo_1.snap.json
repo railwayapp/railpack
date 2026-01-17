@@ -8,10 +8,6 @@
    "directory": "/var/lib/apt/lists",
    "type": "locked"
   },
-  "next-apps-docs": {
-   "directory": "/app/apps/docs/.next/cache",
-   "type": "shared"
-  },
   "next-apps-web": {
    "directory": "/app/apps/web/.next/cache",
    "type": "shared"
@@ -59,6 +55,7 @@
     "step": "build"
    }
   ],
+  "startCommand": "npm run start",
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
@@ -129,10 +126,6 @@
      "src": ".npmrc"
     },
     {
-     "dest": "apps/docs/package.json",
-     "src": "apps/docs/package.json"
-    },
-    {
      "dest": "apps/web/package.json",
      "src": "apps/web/package.json"
     },
@@ -157,6 +150,10 @@
      "src": "packages/ui/package.json"
     },
     {
+     "dest": "packages/utils/package.json",
+     "src": "packages/utils/package.json"
+    },
+    {
      "cmd": "npm ci"
     }
    ],
@@ -178,7 +175,6 @@
   {
    "caches": [
     "node-modules",
-    "next-apps-docs",
     "next-apps-web"
    ],
    "commands": [

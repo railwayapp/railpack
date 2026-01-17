@@ -28,6 +28,10 @@ with support for Node, Python, Go, PHP, and more.
 - When configuring Mise settings, prefer environment variables (e.g.
   `MISE_PIPX_UVX`) over TOML settings to maintain consistency with existing
   patterns in the codebase.
+- **Never manually update lockfiles** (yarn.lock, package-lock.json,
+  pnpm-lock.yaml, etc.). Always use the respective package manager to generate
+  or update lockfiles. Manual edits can result in invalid checksums and broken
+  builds.
 
 # Mise Setup
 

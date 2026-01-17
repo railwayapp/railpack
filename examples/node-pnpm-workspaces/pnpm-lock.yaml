@@ -6,22 +6,29 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    dependencies:
+      pkg-a:
+        specifier: workspace:*
+        version: link:packages/pkg-a
+      pkg-b:
+        specifier: workspace:*
+        version: link:packages/pkg-b
 
   packages/pkg-a:
     dependencies:
       abbrev:
         specifier: ^3.0.0
-        version: 3.0.0
+        version: 3.0.1
 
   packages/pkg-b: {}
 
 packages:
 
-  abbrev@3.0.0:
-    resolution: {integrity: sha512-+/kfrslGQ7TNV2ecmQwMJj/B65g5KVq1/L3SGVZ3tCYGqlzFuFCGBZJtMP99wH3NpEUyAjn0zPdPUg0D+DwrOA==}
+  abbrev@3.0.1:
+    resolution: {integrity: sha512-AO2ac6pjRB3SJmGJo+v5/aK6Omggp6fsLrs6wN9bd35ulu4cCwaAU9+7ZhXjeqHVkaHThLuzH0nZr0YpCDhygg==}
     engines: {node: ^18.17.0 || >=20.5.0}
 
 snapshots:
 
-  abbrev@3.0.0: {}
+  abbrev@3.0.1: {}

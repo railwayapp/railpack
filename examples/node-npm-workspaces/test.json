@@ -1,5 +1,16 @@
 [
   {
-    "expectedOutput": "Hello from npm workspaces"
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 3000
+    }
+  },
+  {
+    "httpCheck": {
+      "path": "/api/users",
+      "expected": 200,
+      "internalPort": 3000
+    }
   }
 ]

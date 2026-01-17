@@ -18,7 +18,7 @@ func TestWorkspace(t *testing.T) {
 			name:          "npm workspaces",
 			path:          "../../../examples/node-npm-workspaces",
 			hasWorkspaces: true,
-			numPackages:   2,
+			numPackages:   3,
 		},
 		{
 			name:          "pnpm workspaces",
@@ -43,7 +43,19 @@ func TestWorkspace(t *testing.T) {
 			require.Equal(t, tt.hasWorkspaces, workspace.HasWorkspaces())
 			require.Equal(t, tt.numPackages, len(workspace.Packages))
 
-			if tt.hasWorkspaces {
+			if tt.hasWorkspaces && tt.name == "npm workspaces" {
+				api := workspace.GetPackage("packages/api")
+				require.NotNil(t, api)
+				require.Equal(t, "@monorepo/api", api.PackageJson.Name)
+
+				shared := workspace.GetPackage("packages/shared")
+				require.NotNil(t, shared)
+				require.Equal(t, "@monorepo/shared", shared.PackageJson.Name)
+
+				web := workspace.GetPackage("packages/web")
+				require.NotNil(t, web)
+				require.Equal(t, "@monorepo/web", web.PackageJson.Name)
+			} else if tt.hasWorkspaces && tt.name == "pnpm workspaces" {
 				pkgA := workspace.GetPackage("packages/pkg-a")
 				require.NotNil(t, pkgA)
 				require.Equal(t, "pkg-a", pkgA.PackageJson.Name)
@@ -121,7 +133,7 @@ func TestWorkspaceAllPackageJson(t *testing.T) {
 		{
 			name:        "npm workspaces",
 			path:        "../../../examples/node-npm-workspaces",
-			numExpected: 3,
+			numExpected: 4,
 		},
 		{
 			name:        "pnpm workspaces",

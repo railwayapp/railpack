@@ -50,7 +50,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "node index.js",
+  "startCommand": "pnpm run start",
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",

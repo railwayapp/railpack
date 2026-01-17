@@ -12,8 +12,8 @@
    "directory": "/app/node_modules/.cache",
    "type": "shared"
   },
-  "npm-install": {
-   "directory": "/root/.npm",
+  "yarn-install": {
+   "directory": "/app/.yarn/cache",
    "type": "shared"
   }
  },
@@ -34,7 +34,8 @@
    },
    {
     "include": [
-     "/app/node_modules"
+     "/app/.yarn",
+     "/root/.yarn"
     ],
     "step": "build"
    },
@@ -51,7 +52,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "npm run start",
+  "startCommand": "yarn run start",
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
@@ -100,7 +101,7 @@
   },
   {
    "caches": [
-    "npm-install"
+    "yarn-install"
    ],
    "commands": [
     {
@@ -118,27 +119,23 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
-     "dest": "package-lock.json",
-     "src": "package-lock.json"
-    },
-    {
      "dest": "package.json",
      "src": "package.json"
     },
     {
-     "dest": "packages/api/package.json",
-     "src": "packages/api/package.json"
+     "dest": "packages/pkg-a/package.json",
+     "src": "packages/pkg-a/package.json"
     },
     {
-     "dest": "packages/shared/package.json",
-     "src": "packages/shared/package.json"
+     "dest": "packages/pkg-b/package.json",
+     "src": "packages/pkg-b/package.json"
     },
     {
-     "dest": "packages/web/package.json",
-     "src": "packages/web/package.json"
+     "dest": "yarn.lock",
+     "src": "yarn.lock"
     },
     {
-     "cmd": "npm ci"
+     "cmd": "yarn install --check-cache"
     }
    ],
    "inputs": [
