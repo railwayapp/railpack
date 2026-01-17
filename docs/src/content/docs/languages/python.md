@@ -82,6 +82,8 @@ Railpack installs system dependencies for common Python packages:
 - **pdf2image**: Installs `poppler-utils`
 - **pydub**: Installs `ffmpeg`
 - **pymovie**: Installs `ffmpeg`, `qt5-qmake`, and related Qt packages
+- **Playwright**: When detected in dependencies, Railpack installs the necessary
+  system packages and the headless shell version of Chromium
 
 ## Framework Support
 
