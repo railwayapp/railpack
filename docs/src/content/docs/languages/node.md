@@ -228,3 +228,5 @@ Railpack automatically installs system dependencies for certain packages:
 - **Puppeteer**: When detected in workspace dependencies, Railpack installs
   all necessary system packages for running headless Chrome, including
   `xvfb`, `chromium` dependencies, and font libraries
+- **Playwright**: When detected in workspace dependencies, Railpack installs
+  the necessary system packages and the headless shell version of Chromium
