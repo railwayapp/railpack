@@ -154,9 +154,8 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		require.NotNil(t, ctx.dockerignoreCtx)
 
 		// Verify parsing works with no file present
-		excludes, includes, _ := ctx.dockerignoreCtx.Parse()
-		require.Nil(t, excludes)
-		require.Nil(t, includes)
+		patterns, _ := ctx.dockerignoreCtx.Parse()
+		require.Nil(t, patterns)
 	})
 
 	t.Run("context creation fails with invalid dockerignore", func(t *testing.T) {

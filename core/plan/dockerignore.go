@@ -8,45 +8,28 @@ import (
 )
 
 // checks if a .dockerignore file exists in the app directory and parses it
-func CheckAndParseDockerignore(app *app.App) ([]string, []string, error) {
+func CheckAndParseDockerignore(app *app.App) ([]string, error) {
 	if !app.HasFile(".dockerignore") {
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	content, err := app.ReadFile(".dockerignore")
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	reader := strings.NewReader(content)
 	patterns, err := ignorefile.ReadAll(reader)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	excludePatterns, includePatterns := separatePatterns(patterns)
-
-	return excludePatterns, includePatterns, nil
-}
-
-// separatePatterns separates patterns into exclude and include lists
-// Include patterns are those starting with '!' (negation)
-func separatePatterns(patterns []string) (excludes []string, includes []string) {
-	for _, pattern := range patterns {
-		if len(pattern) > 0 && pattern[0] == '!' {
-			// Remove the '!' prefix for include patterns
-			includes = append(includes, pattern[1:])
-		} else {
-			excludes = append(excludes, pattern)
-		}
-	}
-	return excludes, includes
+	return patterns, nil
 }
 
 type DockerignoreContext struct {
 	parsed   bool
-	excludes []string
-	includes []string
+	patterns []string
 	app      *app.App
 }
 
@@ -57,30 +40,29 @@ func NewDockerignoreContext(app *app.App) *DockerignoreContext {
 }
 
 // Parse parses the .dockerignore file and caches the results
-func (d *DockerignoreContext) Parse() ([]string, []string, error) {
+func (d *DockerignoreContext) Parse() ([]string, error) {
 	if !d.parsed {
-		excludes, includes, err := CheckAndParseDockerignore(d.app)
+		patterns, err := CheckAndParseDockerignore(d.app)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
-		d.excludes = excludes
-		d.includes = includes
+		d.patterns = patterns
 		d.parsed = true
 	}
 
-	return d.excludes, d.includes, nil
+	return d.patterns, nil
 }
 
-func (d *DockerignoreContext) ParseWithLogging(logger interface{ LogInfo(string, ...interface{}) }) ([]string, []string, error) {
-	excludes, includes, err := d.Parse()
+func (d *DockerignoreContext) ParseWithLogging(logger interface{ LogInfo(string, ...interface{}) }) ([]string, error) {
+	patterns, err := d.Parse()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	if excludes != nil || includes != nil {
+	if patterns != nil {
 		logger.LogInfo("Found .dockerignore file, applying filters")
 	}
 
-	return excludes, includes, nil
+	return patterns, nil
 }

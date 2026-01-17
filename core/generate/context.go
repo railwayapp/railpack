@@ -71,14 +71,13 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 	}
 
 	dockerignoreCtx := plan.NewDockerignoreContext(app)
-	excludes, includes, err := dockerignoreCtx.ParseWithLogging(logger)
+	patterns, err := dockerignoreCtx.ParseWithLogging(logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse .dockerignore: %w", err)
 	}
 
-	if excludes != nil || includes != nil {
-		log.Debugf("Dockerignore exclude patterns: %v", excludes)
-		log.Debugf("Dockerignore include patterns: %v", includes)
+	if patterns != nil {
+		log.Debugf("Dockerignore patterns: %v", patterns)
 	}
 
 	ctx := &GenerateContext{
@@ -97,7 +96,7 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 
 	ctx.applyPackagesFromConfig()
 
-	if excludes != nil || includes != nil {
+	if patterns != nil {
 		ctx.Metadata.SetBool("dockerIgnore", true)
 	}
 
@@ -268,12 +267,9 @@ func (c *GenerateContext) applyConfig() {
 func (c *GenerateContext) NewLocalLayer() plan.Layer {
 	layer := plan.NewLocalLayer()
 
-	excludes, includes, _ := c.dockerignoreCtx.Parse()
-	if len(includes) > 0 {
-		layer.Filter.Include = utils.RemoveDuplicates(append(layer.Filter.Include, includes...))
-	}
-	if len(excludes) > 0 {
-		layer.Filter.Exclude = utils.RemoveDuplicates(append(layer.Filter.Exclude, excludes...))
+	patterns, _ := c.dockerignoreCtx.Parse()
+	if len(patterns) > 0 {
+		layer.Filter.Exclude = utils.RemoveDuplicates(append(layer.Filter.Exclude, patterns...))
 	}
 
 	return layer

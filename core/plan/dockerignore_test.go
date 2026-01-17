@@ -18,10 +18,9 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 		testApp, err := app.NewApp(tempDir)
 		require.NoError(t, err)
 
-		excludes, includes, err := CheckAndParseDockerignore(testApp)
+		patterns, err := CheckAndParseDockerignore(testApp)
 		require.NoError(t, err)
-		require.Nil(t, excludes)
-		require.Nil(t, includes)
+		require.Nil(t, patterns)
 	})
 
 	t.Run("valid dockerignore file", func(t *testing.T) {
@@ -29,11 +28,10 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 		testApp, err := app.NewApp(examplePath)
 		require.NoError(t, err)
 
-		excludes, includes, err := CheckAndParseDockerignore(testApp)
+		patterns, err := CheckAndParseDockerignore(testApp)
 
 		require.NoError(t, err)
-		require.NotNil(t, excludes)
-		require.Nil(t, includes) // No include patterns (starting with !) in the test file
+		require.NotNil(t, patterns)
 
 		// Verify some expected patterns from examples/dockerignore/.dockerignore
 		// Note: patterns are parsed by the moby/patternmatcher library
@@ -53,8 +51,26 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 		}
 
 		for _, expected := range expectedPatterns {
-			require.Contains(t, excludes, expected, "Expected pattern %s not found in excludes", expected)
+			require.Contains(t, patterns, expected, "Expected pattern %s not found in patterns", expected)
 		}
+	})
+
+	t.Run("dockerignore with negation", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "dockerignore-test")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		dockerignorePath := filepath.Join(tempDir, ".dockerignore")
+		err = os.WriteFile(dockerignorePath, []byte("node_modules\n!/.vscode/tasks.json\n"), 0644)
+		require.NoError(t, err)
+
+		testApp, err := app.NewApp(tempDir)
+		require.NoError(t, err)
+
+		patterns, err := CheckAndParseDockerignore(testApp)
+		require.NoError(t, err)
+		require.Contains(t, patterns, "node_modules")
+		require.Contains(t, patterns, "!.vscode/tasks.json")
 	})
 
 	t.Run("inaccessible dockerignore", func(t *testing.T) {
@@ -76,53 +92,10 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 		require.NoError(t, err)
 
 		// This should fail with a permission error
-		excludes, includes, err := CheckAndParseDockerignore(testApp)
+		patterns, err := CheckAndParseDockerignore(testApp)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "error reading .dockerignore")
-		require.Nil(t, excludes)
-		require.Nil(t, includes)
-	})
-}
-
-func TestSeparatePatterns(t *testing.T) {
-	t.Run("only exclude patterns", func(t *testing.T) {
-		patterns := []string{"*.log", "node_modules", "/tmp"}
-		excludes, includes := separatePatterns(patterns)
-
-		require.Equal(t, patterns, excludes)
-		require.Empty(t, includes)
-	})
-
-	t.Run("only include patterns", func(t *testing.T) {
-		patterns := []string{"!important.log", "!keep/this"}
-		excludes, includes := separatePatterns(patterns)
-
-		require.Empty(t, excludes)
-		require.Equal(t, []string{"important.log", "keep/this"}, includes)
-	})
-
-	t.Run("mixed patterns", func(t *testing.T) {
-		patterns := []string{"*.log", "!important.log", "node_modules", "!node_modules/keep"}
-		excludes, includes := separatePatterns(patterns)
-
-		require.Equal(t, []string{"*.log", "node_modules"}, excludes)
-		require.Equal(t, []string{"important.log", "node_modules/keep"}, includes)
-	})
-
-	t.Run("empty patterns", func(t *testing.T) {
-		patterns := []string{}
-		excludes, includes := separatePatterns(patterns)
-
-		require.Empty(t, excludes)
-		require.Empty(t, includes)
-	})
-
-	t.Run("empty string patterns", func(t *testing.T) {
-		patterns := []string{"", "*.log", "", "!keep.log"}
-		excludes, includes := separatePatterns(patterns)
-
-		require.Equal(t, []string{"", "*.log", ""}, excludes)
-		require.Equal(t, []string{"keep.log"}, includes)
+		require.Nil(t, patterns)
 	})
 }
 
@@ -139,8 +112,7 @@ func TestDockerignoreContext(t *testing.T) {
 		require.NotNil(t, ctx)
 		require.Equal(t, testApp, ctx.app)
 		require.False(t, ctx.parsed)
-		require.Nil(t, ctx.excludes)
-		require.Nil(t, ctx.includes)
+		require.Nil(t, ctx.patterns)
 	})
 
 	t.Run("parse caching", func(t *testing.T) {
@@ -151,15 +123,14 @@ func TestDockerignoreContext(t *testing.T) {
 		ctx := NewDockerignoreContext(testApp)
 
 		// First parse
-		excludes1, includes1, err1 := ctx.Parse()
+		patterns1, err1 := ctx.Parse()
 		require.NoError(t, err1)
 		require.True(t, ctx.parsed)
 
 		// Second parse should return cached results
-		excludes2, includes2, err2 := ctx.Parse()
+		patterns2, err2 := ctx.Parse()
 		require.NoError(t, err2)
-		require.Equal(t, excludes1, excludes2)
-		require.Equal(t, includes1, includes2)
+		require.Equal(t, patterns1, patterns2)
 	})
 
 	t.Run("parse with logging", func(t *testing.T) {
@@ -175,10 +146,9 @@ func TestDockerignoreContext(t *testing.T) {
 			logCalls = append(logCalls, format)
 		}}
 
-		excludes, includes, err := ctx.ParseWithLogging(mockLogger)
+		patterns, err := ctx.ParseWithLogging(mockLogger)
 		require.NoError(t, err)
-		require.NotNil(t, excludes)
-		require.Nil(t, includes)
+		require.NotNil(t, patterns)
 
 		// Should have logged that dockerignore was found
 		require.Contains(t, logCalls, "Found .dockerignore file, applying filters")
@@ -194,10 +164,9 @@ func TestDockerignoreContext(t *testing.T) {
 
 		ctx := NewDockerignoreContext(testApp)
 
-		excludes, includes, err := ctx.Parse()
+		patterns, err := ctx.Parse()
 		require.NoError(t, err)
-		require.Nil(t, excludes)
-		require.Nil(t, includes)
+		require.Nil(t, patterns)
 		require.True(t, ctx.parsed) // Should still mark as parsed
 	})
 
@@ -220,11 +189,10 @@ func TestDockerignoreContext(t *testing.T) {
 		require.NoError(t, err)
 
 		ctx := NewDockerignoreContext(testApp)
-		excludes, includes, err := ctx.Parse()
+		patterns, err := ctx.Parse()
 
 		require.Error(t, err)
-		require.Nil(t, excludes)
-		require.Nil(t, includes)
+		require.Nil(t, patterns)
 		require.False(t, ctx.parsed) // Should not mark as parsed on error
 	})
 }
