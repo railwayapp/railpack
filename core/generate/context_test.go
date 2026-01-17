@@ -123,7 +123,7 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		require.Contains(t, layer.Filter.Exclude, "__pycache__") // Trailing slash is stripped by parser
 
 		// Should have default include pattern
-		require.Equal(t, []string{"."}, layer.Filter.Include)
+		require.Equal(t, []string{".", "negation_test/should_exist.txt", "negation_test/existing_folder"}, layer.Filter.Include)
 	})
 
 	t.Run("context without dockerignore", func(t *testing.T) {
