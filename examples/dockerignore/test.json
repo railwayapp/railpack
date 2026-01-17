@@ -1,5 +1,5 @@
 [
   {
-    "expectedOutput": "start.sh"
+    "expectedOutput": ["start.sh", "should_exist.txt"]
   }
 ]

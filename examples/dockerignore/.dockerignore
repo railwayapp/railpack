@@ -36,3 +36,8 @@ Justfile
 
 # should hide docker-compose{-2}.yml files
 docker-compose*.yml
+
+# Test negation
+negation_test/*
+!negation_test/should_exist.txt
+!negation_test/should_not_exist.txt
