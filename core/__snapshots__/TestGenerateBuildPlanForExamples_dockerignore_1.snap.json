@@ -45,10 +45,13 @@
       "Justfile",
       "TODO*",
       "README.md",
-      "docker-compose*.yml"
+      "docker-compose*.yml",
+      "negation_test/*"
      ],
      "include": [
-      "."
+      ".",
+      "negation_test/should_exist.txt",
+      "negation_test/existing_folder"
      ],
      "local": true
     }
