@@ -33,7 +33,9 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, excludes)
-		require.Nil(t, includes) // No include patterns (starting with !) in the test file
+		require.NotNil(t, includes)
+		require.Contains(t, includes, "negation_test/should_exist.txt")
+		require.Contains(t, includes, "negation_test/existing_folder")
 
 		// Verify some expected patterns from examples/dockerignore/.dockerignore
 		// Note: patterns are parsed by the moby/patternmatcher library
@@ -178,7 +180,9 @@ func TestDockerignoreContext(t *testing.T) {
 		excludes, includes, err := ctx.ParseWithLogging(mockLogger)
 		require.NoError(t, err)
 		require.NotNil(t, excludes)
-		require.Nil(t, includes)
+		require.NotNil(t, includes)
+		require.Contains(t, includes, "negation_test/should_exist.txt")
+		require.Contains(t, includes, "negation_test/existing_folder")
 
 		// Should have logged that dockerignore was found
 		require.Contains(t, logCalls, "Found .dockerignore file, applying filters")
@@ -238,4 +242,48 @@ func (m *mockLogger) LogInfo(format string, args ...interface{}) {
 	if m.logFunc != nil {
 		m.logFunc(format, args...)
 	}
+}
+
+func TestCheckAndParseDockerignoreWithNegation(t *testing.T) {
+	t.Run("negated patterns with existing and non-existing files and folders", func(t *testing.T) {
+		tempDir, err := os.MkdirTemp("", "dockerignore-test")
+		require.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		// Create test files
+		err = os.MkdirAll(filepath.Join(tempDir, "negation_test", "existing_folder"), 0755)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(tempDir, "negation_test", "should_exist.txt"), []byte("exists"), 0644)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(tempDir, "negation_test", "existing_folder", "file.txt"), []byte("exists"), 0644)
+		require.NoError(t, err)
+
+		// Create .dockerignore with mixed negation cases
+	dockerignoreContent := `
+negation_test/*
+!negation_test/should_exist.txt
+!negation_test/should_not_exist.txt
+!negation_test/folder_does_not_exist/
+!negation_test/existing_folder/
+`
+		err = os.WriteFile(filepath.Join(tempDir, ".dockerignore"), []byte(dockerignoreContent), 0644)
+		require.NoError(t, err)
+
+		testApp, err := app.NewApp(tempDir)
+		require.NoError(t, err)
+
+		excludes, includes, err := CheckAndParseDockerignore(testApp)
+		require.NoError(t, err)
+
+		// Check excludes
+		require.Contains(t, excludes, "negation_test/*")
+
+		// Check includes - should only contain the file/folder that actually exists
+		require.Contains(t, includes, "negation_test/should_exist.txt")
+		require.Contains(t, includes, "negation_test/existing_folder")
+		require.Contains(t, includes, "negation_test/existing_folder")
+		require.NotContains(t, includes, "negation_test/should_not_exist.txt")
+		require.NotContains(t, includes, "negation_test/folder_does_not_exist/")
+		require.Len(t, includes, 2)
+	})
 }
