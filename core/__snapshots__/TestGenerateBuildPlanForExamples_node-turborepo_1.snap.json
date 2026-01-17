@@ -8,10 +8,6 @@
    "directory": "/var/lib/apt/lists",
    "type": "locked"
   },
-  "next-apps-docs": {
-   "directory": "/app/apps/docs/.next/cache",
-   "type": "shared"
-  },
   "next-apps-web": {
    "directory": "/app/apps/web/.next/cache",
    "type": "shared"
@@ -126,44 +122,18 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
-     "dest": ".npmrc",
-     "src": ".npmrc"
-    },
-    {
-     "dest": "apps/docs/package.json",
-     "src": "apps/docs/package.json"
-    },
-    {
-     "dest": "apps/web/package.json",
-     "src": "apps/web/package.json"
-    },
-    {
-     "dest": "package-lock.json",
-     "src": "package-lock.json"
-    },
-    {
-     "dest": "package.json",
-     "src": "package.json"
-    },
-    {
-     "dest": "packages/eslint-config/package.json",
-     "src": "packages/eslint-config/package.json"
-    },
-    {
-     "dest": "packages/typescript-config/package.json",
-     "src": "packages/typescript-config/package.json"
-    },
-    {
-     "dest": "packages/ui/package.json",
-     "src": "packages/ui/package.json"
-    },
-    {
      "cmd": "npm ci"
     }
    ],
    "inputs": [
     {
      "step": "packages:mise"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
     }
    ],
    "name": "install",
@@ -179,7 +149,6 @@
   {
    "caches": [
     "node-modules",
-    "next-apps-docs",
     "next-apps-web"
    ],
    "commands": [
