@@ -10,15 +10,10 @@ determine how your application should start. This is compatible with
 Heroku-style Procfiles and provides a simple way to specify different process
 types for your application.
 
-<Aside>
-  Procfiles are deprecated and natively setting the start command with
-  `RAILPACK_START_CMD` or in the `railpack.json` config file is recommended.
-</Aside>
-
 ## Detection
 
 Railpack will automatically detect a `Procfile` in your project root directory.
-No additional configuration is required - if a `Procfile` exists, Railpack will
+No additional configuration is required: if a `Procfile` exists, Railpack will
 use it to set the container start command.
 
 ## Format
