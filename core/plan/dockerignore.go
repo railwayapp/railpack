@@ -26,7 +26,16 @@ func CheckAndParseDockerignore(app *app.App) ([]string, []string, error) {
 
 	excludePatterns, includePatterns := separatePatterns(patterns)
 
-	return excludePatterns, includePatterns, nil
+	// Filter include patterns that don't match any files
+	// This prevents build errors when a negated pattern in .dockerignore refers to a missing file
+	var validIncludes []string
+	for _, pattern := range includePatterns {
+		if app.HasMatch(pattern) {
+			validIncludes = append(validIncludes, pattern)
+		}
+	}
+
+	return excludePatterns, validIncludes, nil
 }
 
 // separatePatterns separates patterns into exclude and include lists
