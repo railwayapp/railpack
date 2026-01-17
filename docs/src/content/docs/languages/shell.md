@@ -43,8 +43,35 @@ Non-POSIX shells like `fish`, `mksh`, and `ksh` cannot be automatically
 detected and will fall back to `bash`. If you need to use these shells, you
 may need to install them manually in your script or use a supported shell.
 
+## Custom Installation
+
+You can use the `RAILPACK_INSTALL_CMD` environment variable to run a custom installation command before the build step. This is useful for creating configuration files, downloading artifacts, or setting up the environment.
+
+```bash
+RAILPACK_INSTALL_CMD="mkdir -p config && echo 'production=true' > config/settings.conf"
+```
+
+You can also execute a custom script from your repository:
+
+```bash
+RAILPACK_INSTALL_CMD="bash setup.sh"
+```
+
+Files created during this step are available in the build step and the final image.
+
+## Additional Packages
+
+You can install additional packages using the `RAILPACK_PACKAGES` environment variable for Mise-supported tools, and `RAILPACK_BUILD_APT_PACKAGES` or `RAILPACK_DEPLOY_APT_PACKAGES` for system packages.
+
+```bash
+RAILPACK_PACKAGES="jq@latest python@3.11"
+RAILPACK_DEPLOY_APT_PACKAGES="ffmpeg"
+```
+
+For more details, see the [environment variables documentation](/config/environment-variables).
+
 ## Config Variables
 
-| Variable                | Description                              | Example     |
-| ----------------------- | ---------------------------------------- | ----------- |
+| Variable | Description | Example |
+| :--- | :--- | :--- |
 | `RAILPACK_SHELL_SCRIPT` | Specify a custom shell script to execute | `deploy.sh` |

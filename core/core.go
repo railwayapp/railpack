@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/app"
@@ -220,16 +219,16 @@ func GenerateConfigFromEnvironment(env *app.Environment) *c.Config {
 		config.Deploy.StartCmd = startCmdVar
 	}
 
-	if envPackages, _ := env.GetConfigVariable("PACKAGES"); envPackages != "" {
-		config.Packages = utils.ParsePackageWithVersion(strings.Split(envPackages, " "))
+	if packages, _ := env.GetConfigVariableList("PACKAGES"); len(packages) > 0 {
+		config.Packages = utils.ParsePackageWithVersion(packages)
 	}
 
-	if envAptPackages, _ := env.GetConfigVariable("BUILD_APT_PACKAGES"); envAptPackages != "" {
-		config.BuildAptPackages = strings.Split(envAptPackages, " ")
+	if aptPackages, _ := env.GetConfigVariableList("BUILD_APT_PACKAGES"); len(aptPackages) > 0 {
+		config.BuildAptPackages = aptPackages
 	}
 
-	if envAptPackages, _ := env.GetConfigVariable("DEPLOY_APT_PACKAGES"); envAptPackages != "" {
-		config.Deploy.AptPackages = strings.Split(envAptPackages, " ")
+	if aptPackages, _ := env.GetConfigVariableList("DEPLOY_APT_PACKAGES"); len(aptPackages) > 0 {
+		config.Deploy.AptPackages = aptPackages
 	}
 
 	config.Secrets = append(config.Secrets, slices.Sorted(maps.Keys(env.Variables))...)

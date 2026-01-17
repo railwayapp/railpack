@@ -75,6 +75,23 @@ func TestGenerateConfigFromEnvironment(t *testing.T) {
 					"RAILPACK_INSTALL_CMD", "RAILPACK_PACKAGES", "RAILPACK_START_CMD"]
 			}`,
 		},
+
+		{
+			name: "unversioned packages",
+			envVars: map[string]string{
+				"RAILPACK_PACKAGES": "jq pipx:httpie@3.2.4",
+			},
+			expected: `{
+				"steps": {},
+				"packages": {
+					"jq": "latest",
+					"pipx:httpie": "3.2.4"
+				},
+				"caches": {},
+				"deploy": {},
+				"secrets": ["RAILPACK_PACKAGES"]
+			}`,
+		},
 	}
 
 	for _, tt := range tests {
