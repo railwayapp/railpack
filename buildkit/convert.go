@@ -28,7 +28,6 @@ type ConvertPlanOptions struct {
 
 	// Token used to make authenticated API requests to GitHub to increase rate limits
 	GitHubToken string
-
 	// Do not use cache when building
 	NoCache bool
 	// Dockerignore context for filtering local files
@@ -49,9 +48,8 @@ func ConvertPlanToLLB(plan *p.BuildPlan, opts ConvertPlanOptions) (*llb.State, *
 		llb.FollowPaths([]string{"."}),
 	}
 
-	excludePatterns := opts.DockerignoreContext.GetExcludePatterns()
-	if len(excludePatterns) > 0 {
-		localOpts = append(localOpts, llb.ExcludePatterns(excludePatterns))
+	if len(plan.ExcludePatterns) > 0 {
+		localOpts = append(localOpts, llb.ExcludePatterns(plan.ExcludePatterns))
 	}
 
 	localState := llb.Local("context", localOpts...)

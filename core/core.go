@@ -41,7 +41,6 @@ type BuildResult struct {
 	DetectedProviders   []string                             `json:"detectedProviders,omitempty"`
 	Logs                []logger.Msg                         `json:"logs,omitempty"`
 	Success             bool                                 `json:"success,omitempty"`
-	DockerignoreContext *plan.DockerignoreContext            `json:"-"`
 }
 
 func readConfigJSON(path string, v any) error {
@@ -132,6 +131,11 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		ProviderToUse:            providerToUse,
 	}) {
 		return &BuildResult{Success: false, Logs: logger.Logs}
+	}
+
+	// Parse .dockerignore and add to build plan
+	if excludes, _, err := plan.NewDockerignoreContext(app).ParseWithLogging(logger); err == nil {
+		buildPlan.ExcludePatterns = excludes
 	}
 
 	buildResult := &BuildResult{
