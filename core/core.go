@@ -41,7 +41,6 @@ type BuildResult struct {
 	DetectedProviders   []string                             `json:"detectedProviders,omitempty"`
 	Logs                []logger.Msg                         `json:"logs,omitempty"`
 	Success             bool                                 `json:"success,omitempty"`
-	DockerignoreContext *plan.DockerignoreContext            `json:"-"`
 }
 
 func readConfigJSON(path string, v interface{}) error {
@@ -127,15 +126,19 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		return &BuildResult{Success: false, Logs: logger.Logs}
 	}
 
+	// Parse .dockerignore and add to build plan
+	if excludes, _, err := plan.NewDockerignoreContext(app).ParseWithLogging(logger); err == nil {
+		buildPlan.ExcludePatterns = excludes
+	}
+
 	buildResult := &BuildResult{
-		RailpackVersion:     options.RailpackVersion,
-		Plan:                buildPlan,
-		ResolvedPackages:    resolvedPackages,
-		Metadata:            ctx.Metadata.Properties,
-		DetectedProviders:   []string{detectedProviderName},
-		Logs:                logger.Logs,
-		Success:             true,
-		DockerignoreContext: plan.NewDockerignoreContext(app),
+		RailpackVersion:   options.RailpackVersion,
+		Plan:              buildPlan,
+		ResolvedPackages:  resolvedPackages,
+		Metadata:          ctx.Metadata.Properties,
+		DetectedProviders: []string{detectedProviderName},
+		Logs:              logger.Logs,
+		Success:           true,
 	}
 
 	return buildResult
