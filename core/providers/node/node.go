@@ -76,14 +76,14 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 		ctx.Logger.LogInfo("Found workspace with %d packages", len(p.workspace.Packages))
 	}
 
-	isSPA := p.isSPA(ctx)
-
 	miseStep := ctx.GetMiseStepBuilder()
 	p.InstallMisePackages(ctx, miseStep)
 
 	install := ctx.NewCommandStep("install")
 	install.AddInput(plan.NewStepLayer(miseStep.Name()))
 	p.InstallNodeDeps(ctx, install)
+
+	isSPA := p.isSPA(ctx)
 
 	prune := ctx.NewCommandStep("prune")
 	prune.AddInput(plan.NewStepLayer(install.Name()))
@@ -113,7 +113,10 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 		buildIncludeDirs = append(buildIncludeDirs, COREPACK_HOME)
 	}
 
-	runtimeAptPackages := []string{"libatomic1"} // Required for Node.js 25+
+	// determine additional Apt packages needed
+
+	// Required for Node.js 25+
+	runtimeAptPackages := []string{"libatomic1"}
 
 	if p.usesPuppeteer() {
 		ctx.Logger.LogInfo("Installing puppeteer dependencies")
@@ -121,9 +124,13 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	}
 
 	if p.usesPlaywright() {
-		ctx.Logger.LogInfo("Installing playwright dependencies")
+		ctx.Logger.LogInfo("Installing playwright dependencies and chromium headless shell")
+
 		// To find the latest list: run `playwright install-deps chromium` and inspect the apt-get install output
 		runtimeAptPackages = append(runtimeAptPackages, "libglib2.0-0", "libatk1.0-0", "libatk-bridge2.0-0", "libcups2", "libxkbcommon0", "libatspi2.0-0", "libxcomposite1", "libxdamage1", "libxfixes3", "libxrandr2", "libgbm1", "libcairo2", "libpango-1.0-0", "libasound2", "libnspr4", "libnss3")
+
+		// --only-shell is smaller and more appropriate for server environments than full chromium
+		install.AddCommand(plan.NewExecCommand(p.packageManager.ExecCommand("playwright install --only-shell")))
 	}
 
 	nodeModulesLayer := plan.NewStepLayer(build.Name(), plan.Filter{
