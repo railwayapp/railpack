@@ -172,8 +172,7 @@ func TestExamplesIntegration(t *testing.T) {
 					CacheKey:    imageName,
 					// Pass through GITHUB_TOKEN if it exists, this avoids mise timeouts during build
 					// this can easily occur since we run all integration tests in parallel via GHA
-					GitHubToken:         os.Getenv("GITHUB_TOKEN"),
-					DockerignoreContext: buildResult.DockerignoreContext,
+					GitHubToken: os.Getenv("GITHUB_TOKEN"),
 				}); err != nil {
 					t.Fatalf("failed to build image: %v", err)
 				}
