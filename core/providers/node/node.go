@@ -26,6 +26,14 @@ const (
 	PLAYWRIGHT_CACHE_DIR = "/root/.cache/ms-playwright"
 )
 
+var nodeRuntimeDepRequirements = map[string][]string{
+	// To find the latest list: run `npx puppeteer@latest install --help` and inspect docs
+	"puppeteer": {"xvfb", "gconf-service", "libasound2", "libatk1.0-0", "libc6", "libcairo2", "libcups2", "libdbus-1-3", "libexpat1", "libfontconfig1", "libgbm1", "libgcc1", "libgconf-2-4", "libgdk-pixbuf2.0-0", "libglib2.0-0", "libgtk-3-0", "libnspr4", "libpango-1.0-0", "libpangocairo-1.0-0", "libstdc++6", "libx11-6", "libx11-xcb1", "libxcb1", "libxcomposite1", "libxcursor1", "libxdamage1", "libxext6", "libxfixes3", "libxi6", "libxrandr2", "libxrender1", "libxss1", "libxtst6", "ca-certificates", "fonts-liberation", "libappindicator1", "libnss3", "lsb-release", "xdg-utils", "wget"},
+	// To find the latest list: run `playwright install-deps chromium` and inspect the apt-get install output
+	// Or check: https://github.com/microsoft/playwright/blob/main/packages/playwright-core/browsers.json
+	"playwright": {"libglib2.0-0", "libatk1.0-0", "libatk-bridge2.0-0", "libcups2", "libxkbcommon0", "libatspi2.0-0", "libxcomposite1", "libxdamage1", "libxfixes3", "libxrandr2", "libgbm1", "libcairo2", "libpango-1.0-0", "libasound2", "libnspr4", "libnss3"},
+}
+
 var (
 	// bunCommandRegex matches "bun" or "bunx" as a command (not part of another word)
 	bunCommandRegex = regexp.MustCompile(`(^|\s|;|&|&&|\||\|\|)bunx?\s`)
@@ -119,16 +127,13 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	runtimeAptPackages := []string{"libatomic1"}
 
 	if p.usesPuppeteer() {
-		ctx.Logger.LogInfo("Installing puppeteer dependencies")
-		runtimeAptPackages = append(runtimeAptPackages, "xvfb", "gconf-service", "libasound2", "libatk1.0-0", "libc6", "libcairo2", "libcups2", "libdbus-1-3", "libexpat1", "libfontconfig1", "libgbm1", "libgcc1", "libgconf-2-4", "libgdk-pixbuf2.0-0", "libglib2.0-0", "libgtk-3-0", "libnspr4", "libpango-1.0-0", "libpangocairo-1.0-0", "libstdc++6", "libx11-6", "libx11-xcb1", "libxcb1", "libxcomposite1", "libxcursor1", "libxdamage1", "libxext6", "libxfixes3", "libxi6", "libxrandr2", "libxrender1", "libxss1", "libxtst6", "ca-certificates", "fonts-liberation", "libappindicator1", "libnss3", "lsb-release", "xdg-utils", "wget")
+		ctx.Logger.LogInfo("Installing puppeteer packages")
+		runtimeAptPackages = append(runtimeAptPackages, nodeRuntimeDepRequirements["puppeteer"]...)
 	}
 
 	if p.usesPlaywright() {
-		ctx.Logger.LogInfo("Installing playwright dependencies and chromium headless shell")
-
-		// To find the latest list: run `playwright install-deps chromium` and inspect the apt-get install output
-		runtimeAptPackages = append(runtimeAptPackages, "libglib2.0-0", "libatk1.0-0", "libatk-bridge2.0-0", "libcups2", "libxkbcommon0", "libatspi2.0-0", "libxcomposite1", "libxdamage1", "libxfixes3", "libxrandr2", "libgbm1", "libcairo2", "libpango-1.0-0", "libasound2", "libnspr4", "libnss3")
-
+		ctx.Logger.LogInfo("Installing playwright packages and headless browser")
+		runtimeAptPackages = append(runtimeAptPackages, nodeRuntimeDepRequirements["playwright"]...)
 		// --only-shell is smaller and more appropriate for server environments than full chromium
 		install.AddCommand(plan.NewExecCommand(p.packageManager.ExecCommand("playwright install --only-shell")))
 	}
