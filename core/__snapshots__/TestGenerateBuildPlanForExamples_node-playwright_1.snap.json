@@ -127,6 +127,9 @@
     },
     {
      "cmd": "pnpm install --frozen-lockfile --prefer-offline"
+    },
+    {
+     "cmd": "pnpm exec playwright install --only-shell"
     }
    ],
    "inputs": [
