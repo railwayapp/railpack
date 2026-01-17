@@ -122,18 +122,44 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
+     "dest": ".npmrc",
+     "src": ".npmrc"
+    },
+    {
+     "dest": "apps/web/package.json",
+     "src": "apps/web/package.json"
+    },
+    {
+     "dest": "package-lock.json",
+     "src": "package-lock.json"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
+    },
+    {
+     "dest": "packages/eslint-config/package.json",
+     "src": "packages/eslint-config/package.json"
+    },
+    {
+     "dest": "packages/typescript-config/package.json",
+     "src": "packages/typescript-config/package.json"
+    },
+    {
+     "dest": "packages/ui/package.json",
+     "src": "packages/ui/package.json"
+    },
+    {
+     "dest": "packages/utils/package.json",
+     "src": "packages/utils/package.json"
+    },
+    {
      "cmd": "npm ci"
     }
    ],
    "inputs": [
     {
      "step": "packages:mise"
-    },
-    {
-     "include": [
-      "."
-     ],
-     "local": true
     }
    ],
    "name": "install",
