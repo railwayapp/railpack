@@ -1,0 +1,5 @@
+[
+  {
+    "expectedOutput": ["JEMALLOC_AVAILABLE", "JEMALLOC_STATS_ACCESSIBLE"]
+  }
+]
