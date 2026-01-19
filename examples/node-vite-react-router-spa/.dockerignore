@@ -2,3 +2,6 @@
 build
 node_modules
 README.md
+
+# not required, but this is to test the .dockerignore parsing logic
+!app
