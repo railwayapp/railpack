@@ -44,17 +44,17 @@ Use 'railpack --verbose' to view more error details.
 )
 
 type BuildWithBuildkitClientOptions struct {
-	ImageName           string
-	DumpLLB             bool
-	OutputDir           string
-	ProgressMode        string
-	SecretsHash         string
-	Secrets             map[string]string
-	Platform            string
-	ImportCache         string
-	ExportCache         string
-	CacheKey            string
-	GitHubToken string
+	ImageName    string
+	DumpLLB      bool
+	OutputDir    string
+	ProgressMode string
+	SecretsHash  string
+	Secrets      map[string]string
+	Platform     string
+	ImportCache  string
+	ExportCache  string
+	CacheKey     string
+	GitHubToken  string
 }
 
 func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWithBuildkitClientOptions) error {
