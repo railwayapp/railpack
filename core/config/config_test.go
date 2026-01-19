@@ -309,8 +309,59 @@ func TestGetJsonSchema(t *testing.T) {
 	require.NotEmpty(t, schema)
 
 	require.NotContains(t, schema.Required, "provider")
-	
+
 	schemaJson, err := json.MarshalIndent(schema, "", "  ")
 	require.NoError(t, err)
 	require.NotEmpty(t, schemaJson)
+}
+
+func TestConfigExcludeInclude(t *testing.T) {
+	configJSON := `{
+		"exclude": [
+			"node_modules",
+			"*.log",
+			".env"
+		],
+		"include": [
+			"important.log"
+		]
+	}`
+
+	var config Config
+	require.NoError(t, json.Unmarshal([]byte(configJSON), &config))
+
+	require.Equal(t, []string{"node_modules", "*.log", ".env"}, config.Exclude)
+	require.Equal(t, []string{"important.log"}, config.Include)
+}
+
+func TestMergeConfigExcludeInclude(t *testing.T) {
+	config1JSON := `{
+		"exclude": ["node_modules", ".env"],
+		"include": ["important.log"]
+	}`
+
+	config2JSON := `{
+		"exclude": ["*.tmp"],
+		"include": ["keep.tmp"]
+	}`
+
+	expectedJSON := `{
+		"exclude": ["*.tmp"],
+		"include": ["keep.tmp"],
+		"steps": {},
+		"packages": {},
+		"caches": {},
+		"deploy": {}
+	}`
+
+	var config1, config2, expected Config
+	require.NoError(t, json.Unmarshal([]byte(config1JSON), &config1))
+	require.NoError(t, json.Unmarshal([]byte(config2JSON), &config2))
+	require.NoError(t, json.Unmarshal([]byte(expectedJSON), &expected))
+
+	result := Merge(&config1, &config2)
+
+	if diff := cmp.Diff(expected, *result); diff != "" {
+		t.Errorf("configs mismatch (-want +got):\n%s", diff)
+	}
 }
