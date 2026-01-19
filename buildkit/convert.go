@@ -44,8 +44,12 @@ func ConvertPlanToLLB(plan *p.BuildPlan, opts ConvertPlanOptions) (*llb.State, *
 		llb.FollowPaths([]string{"."}),
 	}
 
-	if len(plan.ExcludePatterns) > 0 {
-		localOpts = append(localOpts, llb.ExcludePatterns(plan.ExcludePatterns))
+	if len(plan.Exclude) > 0 {
+		localOpts = append(localOpts, llb.ExcludePatterns(plan.Exclude))
+	}
+
+	if len(plan.Include) > 0 {
+		localOpts = append(localOpts, llb.IncludePatterns(plan.Include))
 	}
 
 	localState := llb.Local("context", localOpts...)

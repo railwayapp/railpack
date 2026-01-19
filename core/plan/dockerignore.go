@@ -80,8 +80,3 @@ func NewDockerignoreContext(app *app.App) (*DockerignoreContext, error) {
 		HasFile:  hasFile,
 	}, nil
 }
-
-func (d *DockerignoreContext) GetExcludePatterns() []string {
-	excludes, _, _ := d.Parse()
-	return excludes
-}
