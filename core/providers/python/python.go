@@ -18,7 +18,6 @@ const (
 	PIP_CACHE_DIR          = "/opt/pip-cache"
 	VENV_PATH              = "/app/.venv"
 	LOCAL_BIN_PATH         = "/root/.local/bin"
-	PLAYWRIGHT_CACHE_DIR   = "/root/.cache/ms-playwright"
 )
 
 type PythonProvider struct{}
@@ -66,15 +65,6 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 		installOutputs = p.InstallPDM(ctx, install)
 	} else if p.hasPipfile(ctx) {
 		installOutputs = p.InstallPipenv(ctx, install)
-	}
-
-	if p.usesDep(ctx, "playwright") {
-		ctx.Logger.LogInfo("Installing Playwright chromium browser")
-		// --only-shell installs only the headless shell version (chromium_headless_shell)
-		// This is smaller and more appropriate for server environments than full chromium
-		install.AddCommand(plan.NewExecCommand("playwright install --only-shell"))
-		// Include Playwright browser cache so browsers are available in deploy stage
-		installOutputs = append(installOutputs, PLAYWRIGHT_CACHE_DIR)
 	}
 
 	p.addMetadata(ctx)
@@ -167,16 +157,14 @@ func (p *PythonProvider) InstallUv(ctx *generate.GenerateContext, install *gener
 	install.AddEnvVars(p.GetPythonEnvVars(ctx))
 
 	p.copyInstallFiles(ctx, install)
-	installCommands := []plan.Command{
+	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
 		// if we exclude workspace packages, uv.lock will fail the frozen test and the user will get an error
 		// to avoid this, we (a) detect if workspace packages are required (b) if they aren't, we don't include project
 		// source in order to optimize layer caching (c) install project in the build phase.
 		plan.NewExecCommand("uv sync --locked --no-dev --no-install-project"),
-	}
-
-	install.AddCommands(installCommands)
+	})
 
 	return []string{VENV_PATH}
 }
@@ -221,13 +209,11 @@ func (p *PythonProvider) InstallPDM(ctx *generate.GenerateContext, install *gene
 	})
 
 	p.copyInstallFiles(ctx, install)
-	installCommands := []plan.Command{
+	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
 		plan.NewExecCommand("pdm install --check --prod --no-editable"),
-	}
-
-	install.AddCommands(installCommands)
+	})
 
 	return []string{VENV_PATH}
 }
@@ -243,13 +229,11 @@ func (p *PythonProvider) InstallPoetry(ctx *generate.GenerateContext, install *g
 	})
 
 	p.copyInstallFiles(ctx, install)
-	installCommands := []plan.Command{
+	install.AddCommands([]plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
 		plan.NewExecCommand("poetry install --no-interaction --no-ansi --only main --no-root"),
-	}
-
-	install.AddCommands(installCommands)
+	})
 
 	return []string{VENV_PATH}
 }
@@ -573,8 +557,4 @@ var pythonRuntimeDepRequirements = map[string][]string{
 	"pdf2image": {"poppler-utils"},
 	"pydub":     {"ffmpeg"},
 	"pymovie":   {"ffmpeg", "qt5-qmake", "qtbase5-dev", "qtbase5-dev-tools", "qttools5-dev-tools", "libqt5core5a", "python3-pyqt5"},
-	// Playwright runtime dependencies for Chromium browser
-	// To find the latest list: run `playwright install-deps chromium` and inspect the apt-get install output
-	// Or check: https://github.com/microsoft/playwright/blob/main/packages/playwright-core/browsers.json
-	"playwright": {"libglib2.0-0", "libatk1.0-0", "libatk-bridge2.0-0", "libcups2", "libxkbcommon0", "libatspi2.0-0", "libxcomposite1", "libxdamage1", "libxfixes3", "libxrandr2", "libgbm1", "libcairo2", "libpango-1.0-0", "libasound2", "libnspr4", "libnss3"},
 }

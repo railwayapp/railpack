@@ -32,10 +32,6 @@ run = [
   "go clean -testcache",
   "mise cache clear",
   "rm -rf /tmp/railpack",
-  # delete all top-level node_modules in examples/, this can cause state issues which cause snapshots to generate incorrectly
-  "find examples -maxdepth 2 -type d -name node_modules -exec rm -rf {} +",
-  # same goes for python .venv folders
-  "find examples -maxdepth 2 -type d -name .venv -exec rm -rf {} +",
 ]
 
 # if a example folder does not have a test.json file, it will be skipped

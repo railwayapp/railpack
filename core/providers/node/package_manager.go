@@ -47,17 +47,6 @@ func (p PackageManager) RunScriptCommand(cmd string) string {
 	return "node " + cmd
 }
 
-func (p PackageManager) ExecCommand(cmd string) string {
-	switch p {
-	case PackageManagerPnpm:
-		return fmt.Sprintf("pnpm exec %s", cmd)
-	case PackageManagerBun:
-		return fmt.Sprintf("bunx %s", cmd)
-	default:
-		return fmt.Sprintf("npx %s", cmd)
-	}
-}
-
 func (p PackageManager) installDependencies(ctx *generate.GenerateContext, workspace *Workspace, install *generate.CommandStepBuilder, usingCorepack bool) {
 	packageJsons := workspace.AllPackageJson()
 
