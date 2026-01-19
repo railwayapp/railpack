@@ -274,7 +274,7 @@ func (c *GenerateContext) applyConfig() {
 	}
 }
 
-func (c *GenerateContext) applyBuildAptPackages() {
+	func (c *GenerateContext) applyBuildAptPackages() {
 	configuredPackages := c.Config.BuildAptPackages
 	if configuredPackages == nil {
 		return
@@ -307,13 +307,14 @@ func (c *GenerateContext) NewLocalLayer() plan.Layer {
 	layer := plan.NewLocalLayer()
 
 	if len(c.dockerignoreCtx.Includes) > 0 {
-		layer.Include = append(layer.Include, c.dockerignoreCtx.Includes...)
+		layer.Include = append(layer.Filter.Include, c.dockerignoreCtx.Includes...)
 	}
 	if len(c.dockerignoreCtx.Excludes) > 0 {
-		layer.Exclude = append(layer.Exclude, c.dockerignoreCtx.Excludes...)
+		layer.Exclude = append(layer.Filter.Exclude, c.dockerignoreCtx.Excludes...)
 	}
 
-	return layer
+
+	return plan.NewLocalLayer()
 }
 
 // in order to get around a circular dependency issue, we need to define discrete getters to interface with

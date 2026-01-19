@@ -134,11 +134,6 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		return &BuildResult{Success: false, Logs: logger.Logs}
 	}
 
-	// Parse .dockerignore and add to build plan
-	if excludes, _, err := plan.NewDockerignoreContext(app).ParseWithLogging(logger); err == nil {
-		buildPlan.ExcludePatterns = excludes
-	}
-
 	buildResult := &BuildResult{
 		RailpackVersion:   railpackVersion,
 		Plan:              buildPlan,
