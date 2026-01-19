@@ -74,10 +74,10 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse .dockerignore: %w", err)
 	}
-	
+
 	if dockerignoreCtx.HasFile {
 		logger.LogInfo("Found .dockerignore file, applying filters")
-		
+
 		log.Debugf("Dockerignore exclude patterns: %v", dockerignoreCtx.Excludes)
 		log.Debugf("Dockerignore include patterns: %v", dockerignoreCtx.Includes)
 	}
@@ -155,6 +155,22 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 
 	// Create the actual build plan
 	buildPlan := plan.NewBuildPlan()
+
+	// Merge exclude patterns from .dockerignore and railpack.json
+	excludePatterns := []string{}
+	excludePatterns = append(excludePatterns, c.dockerignoreCtx.Excludes...)
+	excludePatterns = append(excludePatterns, c.Config.Exclude...)
+	if len(excludePatterns) > 0 {
+		buildPlan.Exclude = utils.RemoveDuplicates(excludePatterns)
+	}
+
+	// Merge include patterns from .dockerignore and railpack.json
+	includePatterns := []string{}
+	includePatterns = append(includePatterns, c.dockerignoreCtx.Includes...)
+	includePatterns = append(includePatterns, c.Config.Include...)
+	if len(includePatterns) > 0 {
+		buildPlan.Include = utils.RemoveDuplicates(includePatterns)
+	}
 
 	buildStepOptions := &BuildStepOptions{
 		ResolvedPackages: resolvedPackages,
