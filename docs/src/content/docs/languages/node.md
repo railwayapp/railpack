@@ -127,7 +127,12 @@ package managers. No special configuration is required.
 
 - **npm, bun, yarn**: Uses the `workspaces` field in `package.json`
 - **pnpm**: Uses `pnpm-workspace.yaml` configuration
-  ([example][pnpm-workspaces-example])
+
+See the [examples
+folder](https://github.com/railwayapp/railpack/tree/main/examples) in the
+repository for workspace examples across different package managers (e.g.,
+`node-pnpm-workspaces`, `node-npm-workspaces`, `node-yarn-workspaces`,
+`node-bun-workspaces`).
 
 When building a monorepo, Railpack will:
 
