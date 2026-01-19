@@ -248,6 +248,8 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			"MISE_NODE_VERIFY": "false",
 			// Enforces HTTPS and stricter security
 			"MISE_PARANOID": "1",
+			// Verify GPG signatures when available
+			"MISE_GPG_VERIFY": "1",
 			// Trust config files in the app directory to avoid trust warnings during build
 			"MISE_TRUSTED_CONFIG_PATHS": "/app",
 			// Enable mise to automatically read idiomatic version files
