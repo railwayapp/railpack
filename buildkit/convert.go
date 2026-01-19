@@ -41,15 +41,16 @@ func ConvertPlanToLLB(plan *p.BuildPlan, opts ConvertPlanOptions) (*llb.State, *
 		llb.SharedKeyHint("local"),
 		llb.SessionID(opts.SessionID),
 		llb.WithCustomName("loading ."),
-		llb.FollowPaths([]string{"."}),
+		// llb.FollowPaths([]string{"."}),
 	}
 
-	if len(plan.Exclude) > 0 {
-		localOpts = append(localOpts, llb.ExcludePatterns(plan.Exclude))
-	}
-
+	excludePatterns := make([]string, 0, len(plan.Exclude)+len(plan.Include))
+	excludePatterns = append(excludePatterns, plan.Exclude...)
 	if len(plan.Include) > 0 {
-		localOpts = append(localOpts, llb.IncludePatterns(plan.Include))
+		excludePatterns = append(excludePatterns, negatePatterns(plan.Include)...)
+	}
+	if len(excludePatterns) > 0 {
+		localOpts = append(localOpts, llb.ExcludePatterns(excludePatterns))
 	}
 
 	localState := llb.Local("context", localOpts...)
@@ -121,4 +122,16 @@ func getImageEnv(graphOutput *build_llb.BuildGraphOutput, plan *p.BuildPlan) []s
 	}
 
 	return envVars
+}
+
+func negatePatterns(patterns []string) []string {
+	negated := make([]string, 0, len(patterns))
+	for _, pattern := range patterns {
+		if strings.HasPrefix(pattern, "!") {
+			negated = append(negated, pattern)
+			continue
+		}
+		negated = append(negated, "!"+pattern)
+	}
+	return negated
 }
