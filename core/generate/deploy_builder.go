@@ -37,7 +37,7 @@ func (b *DeployBuilder) HasIncludeForStep(stepName string, path string) bool {
 		if layer.Step != stepName {
 			continue
 		}
-		for _, inc := range layer.Include {
+		for _, inc := range layer.Filter.Include {
 			// exact match, or existing include is "." which covers everything
 			if inc == path || inc == "." {
 				return true
