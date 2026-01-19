@@ -34,13 +34,13 @@ type GenerateBuildPlanOptions struct {
 }
 
 type BuildResult struct {
-	RailpackVersion     string                               `json:"railpackVersion,omitempty"`
-	Plan                *plan.BuildPlan                      `json:"plan,omitempty"`
-	ResolvedPackages    map[string]*resolver.ResolvedPackage `json:"resolvedPackages,omitempty"`
-	Metadata            map[string]string                    `json:"metadata,omitempty"`
-	DetectedProviders   []string                             `json:"detectedProviders,omitempty"`
-	Logs                []logger.Msg                         `json:"logs,omitempty"`
-	Success             bool                                 `json:"success,omitempty"`
+	RailpackVersion   string                               `json:"railpackVersion,omitempty"`
+	Plan              *plan.BuildPlan                      `json:"plan,omitempty"`
+	ResolvedPackages  map[string]*resolver.ResolvedPackage `json:"resolvedPackages,omitempty"`
+	Metadata          map[string]string                    `json:"metadata,omitempty"`
+	DetectedProviders []string                             `json:"detectedProviders,omitempty"`
+	Logs              []logger.Msg                         `json:"logs,omitempty"`
+	Success           bool                                 `json:"success,omitempty"`
 }
 
 func readConfigJSON(path string, v interface{}) error {
