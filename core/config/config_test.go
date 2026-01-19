@@ -199,7 +199,8 @@ func TestMergeConfig(t *testing.T) {
 		"deploy": {
 			"aptPackages": ["curl"],
 			"startCommand": "node server.js",
-			"paths": ["/usr/local/bin", "/app/bin"]
+			"paths": ["/usr/local/bin", "/app/bin"],
+			"variables": {}
 		}
 	}`
 
@@ -252,7 +253,8 @@ func TestMergeConfig(t *testing.T) {
 		"deploy": {
 			"aptPackages": ["curl"],
 			"startCommand": "node server.js",
-			"paths": ["/usr/local/bin", "/app/bin"]
+			"paths": ["/usr/local/bin", "/app/bin"],
+			"variables": {}
 		}
 	}`
 
@@ -286,7 +288,8 @@ func TestMergeConfigStart(t *testing.T) {
 			"node": "23"
 		},
 		"deploy": {
-			"startCommand": "python app.py"
+			"startCommand": "python app.py",
+			"variables": {}
 		},
 		"steps": {},
 		"caches": {}
