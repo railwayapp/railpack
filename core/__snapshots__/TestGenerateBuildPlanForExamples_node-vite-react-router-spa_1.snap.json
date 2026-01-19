@@ -58,6 +58,12 @@
    "NPM_CONFIG_UPDATE_NOTIFIER": "false"
   }
  },
+ "exclude": [
+  ".react-router",
+  "build",
+  "node_modules",
+  "README.md"
+ ],
  "steps": [
   {
    "assets": {
@@ -155,12 +161,6 @@
      "step": "install"
     },
     {
-     "exclude": [
-      ".react-router",
-      "build",
-      "node_modules",
-      "README.md"
-     ],
      "include": [
       "."
      ],
