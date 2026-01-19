@@ -13,6 +13,25 @@
   ],
   "startCommand": "sh start.sh"
  },
+ "exclude": [
+  ".vscode",
+  ".copier",
+  ".env-specific",
+  ".env*",
+  "__pycache__",
+  "test",
+  "tmp/*",
+  "*.log",
+  "Justfile",
+  "TODO*",
+  "README.md",
+  "docker-compose*.yml",
+  "negation_test/*"
+ ],
+ "include": [
+  "negation_test/should_exist.txt",
+  "negation_test/existing_folder"
+ ],
  "steps": [
   {
    "inputs": [
@@ -33,25 +52,8 @@
      "step": "packages:mise"
     },
     {
-     "exclude": [
-      ".vscode",
-      ".copier",
-      ".env-specific",
-      ".env*",
-      "__pycache__",
-      "test",
-      "tmp/*",
-      "*.log",
-      "Justfile",
-      "TODO*",
-      "README.md",
-      "docker-compose*.yml",
-      "negation_test/*"
-     ],
      "include": [
-      ".",
-      "negation_test/should_exist.txt",
-      "negation_test/existing_folder"
+      "."
      ],
      "local": true
     }

@@ -34,6 +34,8 @@ type Config struct {
 	Packages         map[string]string      `json:"packages,omitempty" jsonschema:"description=Map of package name to package version"`
 	Caches           map[string]*plan.Cache `json:"caches,omitempty" jsonschema:"description=Map of cache name to cache definitions. The cache key can be referenced in an exec command"`
 	Secrets          []string               `json:"secrets,omitempty" jsonschema:"description=Secrets that should be made available to commands that have useSecrets set to true"`
+	Exclude          []string               `json:"exclude,omitempty" jsonschema:"description=File patterns to exclude from the build context (alternative to .dockerignore)"`
+	Include          []string               `json:"include,omitempty" jsonschema:"description=File patterns to include in the build context (negations of exclude patterns)"`
 }
 
 func EmptyConfig() *Config {
