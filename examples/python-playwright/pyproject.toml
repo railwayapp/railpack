@@ -1,0 +1,8 @@
+[project]
+name = "python-playwright"
+version = "0.1.0"
+description = "Python Playwright example"
+requires-python = ">=3.11"
+dependencies = [
+    "playwright>=1.49",
+]

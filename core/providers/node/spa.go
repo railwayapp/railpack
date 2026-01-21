@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 )
@@ -56,6 +57,9 @@ func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
 		return "CRA"
 	} else if p.isAngular(ctx) {
 		return "Angular"
+	} else {
+		// this should never happen!
+		log.Error("SPA framework expected, but could not determine type")
 	}
 
 	return ""
