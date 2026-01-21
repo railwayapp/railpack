@@ -1,0 +1,189 @@
+{
+ "caches": {
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  },
+  "node-modules": {
+   "directory": "/app/node_modules/.cache",
+   "type": "shared"
+  },
+  "pnpm-install": {
+   "directory": "/root/.local/share/pnpm/store/v3",
+   "type": "shared"
+  }
+ },
+ "deploy": {
+  "base": {
+   "step": "packages:apt:runtime"
+  },
+  "inputs": [
+   {
+    "include": [
+     "/mise/shims",
+     "/mise/installs",
+     "/usr/local/bin/mise",
+     "/etc/mise/config.toml",
+     "/root/.local/state/mise"
+    ],
+    "step": "packages:mise"
+   },
+   {
+    "include": [
+     "/app/node_modules"
+    ],
+    "step": "build"
+   },
+   {
+    "exclude": [
+     "node_modules",
+     ".yarn"
+    ],
+    "include": [
+     "/root/.cache",
+     "."
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "node index.js",
+  "variables": {
+   "CI": "true",
+   "NODE_ENV": "production",
+   "NPM_CONFIG_FUND": "false",
+   "NPM_CONFIG_PRODUCTION": "false",
+   "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+  }
+ },
+ "steps": [
+  {
+   "assets": {
+    "mise.toml": "[mise.toml]"
+   },
+   "commands": [
+    {
+     "path": "/mise/shims"
+    },
+    {
+     "dest": "mise.toml",
+     "src": "mise.toml"
+    },
+    {
+     "customName": "create mise config",
+     "name": "mise.toml",
+     "path": "/etc/mise/config.toml"
+    },
+    {
+     "cmd": "mise install",
+     "customName": "install mise packages: node, pnpm"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+    }
+   ],
+   "name": "packages:mise",
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS": "python,node,ruby,elixir,go,java,yarn",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_VERIFY": "false",
+    "MISE_PARANOID": "1",
+    "MISE_SHIMS_DIR": "/mise/shims",
+    "MISE_TRUSTED_CONFIG_PATHS": "/app"
+   }
+  },
+  {
+   "caches": [
+    "pnpm-install"
+   ],
+   "commands": [
+    {
+     "path": "/app/node_modules/.bin"
+    },
+    {
+     "cmd": "mkdir -p /app/node_modules/.cache"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
+    },
+    {
+     "dest": "pnpm-lock.yaml",
+     "src": "pnpm-lock.yaml"
+    },
+    {
+     "path": "/pnpm"
+    },
+    {
+     "cmd": "pnpm add -g node-gyp"
+    },
+    {
+     "cmd": "pnpm install --frozen-lockfile --prefer-offline"
+    },
+    {
+     "cmd": "pnpm exec playwright install --only-shell"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install",
+   "variables": {
+    "CI": "true",
+    "NODE_ENV": "production",
+    "NPM_CONFIG_FUND": "false",
+    "NPM_CONFIG_PRODUCTION": "false",
+    "NPM_CONFIG_UPDATE_NOTIFIER": "false",
+    "PNPM_HOME": "/pnpm"
+   }
+  },
+  {
+   "caches": [
+    "node-modules"
+   ],
+   "inputs": [
+    {
+     "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ]
+  },
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libasound2 libatk-bridge2.0-0 libatk1.0-0 libatomic1 libatspi2.0-0 libcairo2 libcups2 libgbm1 libglib2.0-0 libnspr4 libnss3 libpango-1.0-0 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 libxrandr2'",
+     "customName": "install apt packages: libasound2 libatk-bridge2.0-0 libatk1.0-0 libatomic1 libatspi2.0-0 libcairo2 libcups2 libgbm1 libglib2.0-0 libnspr4 libnss3 libpango-1.0-0 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 libxrandr2"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+    }
+   ],
+   "name": "packages:apt:runtime"
+  }
+ ]
+}
