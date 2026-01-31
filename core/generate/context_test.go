@@ -219,9 +219,9 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		require.Contains(t, ctx.dockerignoreCtx.Excludes, "*.log")
 		require.Contains(t, ctx.dockerignoreCtx.Excludes, "__pycache__")
 
-		require.NotEmpty(t, ctx.dockerignoreCtx.Includes)
-		require.Contains(t, ctx.dockerignoreCtx.Includes, "negation_test/should_exist.txt")
-		require.Contains(t, ctx.dockerignoreCtx.Includes, "negation_test/existing_folder")
+		// Negation patterns are also in Excludes (with ! prefix)
+		require.Contains(t, ctx.dockerignoreCtx.Excludes, "!negation_test/should_exist.txt")
+		require.Contains(t, ctx.dockerignoreCtx.Excludes, "!negation_test/existing_folder")
 
 		// NewLocalLayer should return a basic layer without dockerignore patterns
 		layer := ctx.NewLocalLayer()
@@ -267,7 +267,6 @@ func TestGenerateContextDockerignore(t *testing.T) {
 
 		// Verify parsing works with no file present
 		require.Nil(t, ctx.dockerignoreCtx.Excludes)
-		require.Nil(t, ctx.dockerignoreCtx.Includes)
 	})
 
 	t.Run("context creation fails with invalid dockerignore", func(t *testing.T) {
