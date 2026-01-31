@@ -309,7 +309,7 @@ func TestGetJsonSchema(t *testing.T) {
 	require.NotEmpty(t, schema)
 
 	require.NotContains(t, schema.Required, "provider")
-	
+
 	schemaJson, err := json.MarshalIndent(schema, "", "  ")
 	require.NoError(t, err)
 	require.NotEmpty(t, schemaJson)

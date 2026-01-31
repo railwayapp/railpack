@@ -74,10 +74,10 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse .dockerignore: %w", err)
 	}
-	
+
 	if dockerignoreCtx.HasFile {
 		logger.LogInfo("Found .dockerignore file, applying filters")
-		
+
 		log.Debugf("Dockerignore exclude patterns: %v", dockerignoreCtx.Excludes)
 		log.Debugf("Dockerignore include patterns: %v", dockerignoreCtx.Includes)
 	}
