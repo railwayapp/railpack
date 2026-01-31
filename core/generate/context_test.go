@@ -111,19 +111,22 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		// Verify metadata indicates dockerignore presence
 		require.Equal(t, "true", ctx.Metadata.Get("dockerIgnore"))
 
-		// Test NewLocalLayer with dockerignore patterns
+		// Verify dockerignore patterns are in the context
+		require.NotEmpty(t, ctx.dockerignoreCtx.Excludes)
+		require.Contains(t, ctx.dockerignoreCtx.Excludes, ".vscode")
+		require.Contains(t, ctx.dockerignoreCtx.Excludes, "*.log")
+		require.Contains(t, ctx.dockerignoreCtx.Excludes, "__pycache__")
+
+		require.NotEmpty(t, ctx.dockerignoreCtx.Includes)
+		require.Contains(t, ctx.dockerignoreCtx.Includes, "negation_test/should_exist.txt")
+		require.Contains(t, ctx.dockerignoreCtx.Includes, "negation_test/existing_folder")
+
+		// NewLocalLayer should return a basic layer without dockerignore patterns
 		layer := ctx.NewLocalLayer()
 		require.True(t, layer.Local)
 		require.NotNil(t, layer.Filter)
-
-		// Should have exclude patterns from .dockerignore
-		require.NotEmpty(t, layer.Filter.Exclude)
-		require.Contains(t, layer.Filter.Exclude, ".vscode")
-		require.Contains(t, layer.Filter.Exclude, "*.log")
-		require.Contains(t, layer.Filter.Exclude, "__pycache__") // Trailing slash is stripped by parser
-
-		// Should have default include pattern
-		require.Equal(t, []string{".", "negation_test/should_exist.txt", "negation_test/existing_folder"}, layer.Filter.Include)
+		require.Equal(t, []string{"."}, layer.Filter.Include)
+		require.Empty(t, layer.Filter.Exclude)
 	})
 
 	t.Run("context without dockerignore", func(t *testing.T) {
@@ -135,11 +138,10 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		// Verify metadata does not indicate dockerignore presence
 		require.Empty(t, ctx.Metadata.Get("dockerIgnore"))
 
-		// Test NewLocalLayer without dockerignore patterns
+		// NewLocalLayer should return a basic layer
 		layer := ctx.NewLocalLayer()
 		require.True(t, layer.Local)
 
-		// Should use default behavior when no dockerignore patterns exist
 		require.NotNil(t, layer.Filter)
 		require.Equal(t, []string{"."}, layer.Filter.Include)
 		require.Empty(t, layer.Filter.Exclude)

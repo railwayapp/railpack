@@ -156,6 +156,22 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 	// Create the actual build plan
 	buildPlan := plan.NewBuildPlan()
 
+	// Merge exclude patterns from .dockerignore and railpack.json
+	excludePatterns := []string{}
+	excludePatterns = append(excludePatterns, c.dockerignoreCtx.Excludes...)
+	excludePatterns = append(excludePatterns, c.Config.Exclude...)
+	if len(excludePatterns) > 0 {
+		buildPlan.Exclude = utils.RemoveDuplicates(excludePatterns)
+	}
+
+	// Merge include patterns from .dockerignore and railpack.json
+	includePatterns := []string{}
+	includePatterns = append(includePatterns, c.dockerignoreCtx.Includes...)
+	includePatterns = append(includePatterns, c.Config.Include...)
+	if len(includePatterns) > 0 {
+		buildPlan.Include = utils.RemoveDuplicates(includePatterns)
+	}
+
 	buildStepOptions := &BuildStepOptions{
 		ResolvedPackages: resolvedPackages,
 		Caches:           c.Caches,
@@ -265,18 +281,8 @@ func (c *GenerateContext) applyConfig() {
 	}
 }
 
-// creates a local layer with dockerignore patterns applied
 func (c *GenerateContext) NewLocalLayer() plan.Layer {
-	layer := plan.NewLocalLayer()
-
-	if len(c.dockerignoreCtx.Includes) > 0 {
-		layer.Filter.Include = append(layer.Filter.Include, c.dockerignoreCtx.Includes...)
-	}
-	if len(c.dockerignoreCtx.Excludes) > 0 {
-		layer.Filter.Exclude = append(layer.Filter.Exclude, c.dockerignoreCtx.Excludes...)
-	}
-
-	return layer
+	return plan.NewLocalLayer()
 }
 
 // in order to get around a circular dependency issue, we need to define discrete getters to interface with
