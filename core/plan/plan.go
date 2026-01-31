@@ -33,7 +33,7 @@ type Deploy struct {
 func NewBuildPlan() *BuildPlan {
 	return &BuildPlan{
 		Steps:   []Step{},
-		Deploy:  Deploy{},
+		Deploy:  Deploy{Variables: make(map[string]string)},
 		Caches:  make(map[string]*Cache),
 		Secrets: []string{},
 	}
