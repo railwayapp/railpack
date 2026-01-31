@@ -78,8 +78,7 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 	if dockerignoreCtx.HasFile {
 		logger.LogInfo("Found .dockerignore file, applying filters")
 
-		log.Debugf("Dockerignore exclude patterns: %v", dockerignoreCtx.Excludes)
-		log.Debugf("Dockerignore include patterns: %v", dockerignoreCtx.Includes)
+		log.Debugf("Dockerignore patterns: %v", dockerignoreCtx.Excludes)
 	}
 
 	ctx := &GenerateContext{
@@ -161,15 +160,7 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 	excludePatterns = append(excludePatterns, c.dockerignoreCtx.Excludes...)
 	excludePatterns = append(excludePatterns, c.Config.Exclude...)
 	if len(excludePatterns) > 0 {
-		buildPlan.Exclude = utils.RemoveDuplicates(excludePatterns)
-	}
-
-	// Merge include patterns from .dockerignore and railpack.json
-	includePatterns := []string{}
-	includePatterns = append(includePatterns, c.dockerignoreCtx.Includes...)
-	includePatterns = append(includePatterns, c.Config.Include...)
-	if len(includePatterns) > 0 {
-		buildPlan.Include = utils.RemoveDuplicates(includePatterns)
+		buildPlan.Exclude = excludePatterns
 	}
 
 	buildStepOptions := &BuildStepOptions{

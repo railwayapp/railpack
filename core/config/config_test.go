@@ -320,34 +320,28 @@ func TestConfigExcludeInclude(t *testing.T) {
 		"exclude": [
 			"node_modules",
 			"*.log",
-			".env"
-		],
-		"include": [
-			"important.log"
+			".env",
+			"!important.log"
 		]
 	}`
 
 	var config Config
 	require.NoError(t, json.Unmarshal([]byte(configJSON), &config))
 
-	require.Equal(t, []string{"node_modules", "*.log", ".env"}, config.Exclude)
-	require.Equal(t, []string{"important.log"}, config.Include)
+	require.Equal(t, []string{"node_modules", "*.log", ".env", "!important.log"}, config.Exclude)
 }
 
 func TestMergeConfigExcludeInclude(t *testing.T) {
 	config1JSON := `{
-		"exclude": ["node_modules", ".env"],
-		"include": ["important.log"]
+		"exclude": ["node_modules", ".env", "!important.log"]
 	}`
 
 	config2JSON := `{
-		"exclude": ["*.tmp"],
-		"include": ["keep.tmp"]
+		"exclude": ["*.tmp", "!keep.tmp"]
 	}`
 
 	expectedJSON := `{
-		"exclude": ["*.tmp"],
-		"include": ["keep.tmp"],
+		"exclude": ["*.tmp", "!keep.tmp"],
 		"steps": {},
 		"packages": {},
 		"caches": {},

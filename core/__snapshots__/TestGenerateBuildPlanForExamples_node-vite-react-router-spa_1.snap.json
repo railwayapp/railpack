@@ -62,7 +62,8 @@
   ".react-router",
   "build",
   "node_modules",
-  "README.md"
+  "README.md",
+  "!app"
  ],
  "steps": [
   {

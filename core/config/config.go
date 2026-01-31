@@ -29,13 +29,13 @@ type StepConfig struct {
 type Config struct {
 	Provider         *string                `json:"provider,omitempty" jsonschema:"description=The provider to use"`
 	BuildAptPackages []string               `json:"buildAptPackages,omitempty" jsonschema:"description=List of apt packages to install during the build step"`
+	Packages         map[string]string      `json:"packages,omitempty" jsonschema:"description=Map of mise package names to package version to install"`
 	Steps            map[string]*StepConfig `json:"steps,omitempty" jsonschema:"description=Map of step names to step definitions"`
 	Deploy           *DeployConfig          `json:"deploy,omitempty" jsonschema:"description=Deploy configuration"`
-	Packages         map[string]string      `json:"packages,omitempty" jsonschema:"description=Map of package name to package version"`
 	Caches           map[string]*plan.Cache `json:"caches,omitempty" jsonschema:"description=Map of cache name to cache definitions. The cache key can be referenced in an exec command"`
-	Secrets          []string               `json:"secrets,omitempty" jsonschema:"description=Secrets that should be made available to commands that have useSecrets set to true"`
-	Exclude          []string               `json:"exclude,omitempty" jsonschema:"description=File patterns to exclude from the build context (alternative to .dockerignore)"`
-	Include          []string               `json:"include,omitempty" jsonschema:"description=File patterns to include in the build context (negations of exclude patterns)"`
+	// TODO we need to document this useSecrets field
+	Secrets []string `json:"secrets,omitempty" jsonschema:"description=Secrets that should be made available to commands that have useSecrets set to true"`
+	Exclude []string `json:"exclude,omitempty" jsonschema:"description=File patterns to exclude from the build context (alternative to .dockerignore). Supports negation patterns starting with ! to include files that would otherwise be excluded"`
 }
 
 func EmptyConfig() *Config {
