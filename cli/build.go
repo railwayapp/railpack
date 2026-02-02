@@ -62,14 +62,16 @@ var BuildCommand = &cli.Command{
 			return cli.Exit(err, 1)
 		}
 
-		core.PrettyPrintBuildResult(buildResult, core.PrintOptions{Version: Version})
+		if !cmd.Bool("dump-llb") {
+			core.PrettyPrintBuildResult(buildResult, core.PrintOptions{Version: Version})
+		}
 
 		if !buildResult.Success {
 			os.Exit(1)
 			return nil
 		}
 
-		if cmd.Bool("show-plan") {
+		if cmd.Bool("show-plan") && !cmd.Bool("dump-llb") {
 			planMap, err := addSchemaToPlanMap(buildResult.Plan)
 			if err != nil {
 				return cli.Exit(err, 1)
