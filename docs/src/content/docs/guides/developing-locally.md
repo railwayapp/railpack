@@ -245,6 +245,39 @@ Here's some helpful debugging tricks:
 * `docker exec buildkit buildctl prune` to clean the builder cache
 * `NO_COLOR=1`
 
+### Inspecting LLB Output
+
+The `--dump-llb` flag outputs the raw BuildKit LLB (Low-Level Builder)
+definition, which can be piped to various tools for inspection:
+
+#### Visualize LLB as a graph
+
+```bash
+mise run cli build $(pwd) --dump-llb | \
+  buildctl debug dump-llb --dot | \
+  dot -Tpng > graph.png
+```
+
+#### Inspect LLB as JSON
+
+```bash
+mise run cli build $(pwd) --dump-llb | \
+  buildctl debug dump-llb | \
+  fx
+```
+
+_Note: Any JSON visualization tool can be used (jq, fx, jless, etc.)_
+
+#### Build directly with buildctl
+
+```bash
+mise run cli build $(pwd) --dump-llb | \
+  buildctl build \
+    --progress=plain \
+    --trace=build.log \
+    --local context=.
+```
+
 ### Interactive Debugging with Delve
 
 ```sh

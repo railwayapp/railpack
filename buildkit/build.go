@@ -112,9 +112,7 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		return fmt.Errorf("error marshaling LLB state: %w", err)
 	}
 
-	// TODO consider removing, hard to imagine a case where this is useful
 	if opts.DumpLLB {
-		log.Info("Dumping LLB to stdout")
 		err = llb.WriteTo(def, os.Stdout)
 		if err != nil {
 			return fmt.Errorf("error writing LLB definition: %w", err)
