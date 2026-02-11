@@ -1,0 +1,17 @@
+[project]
+name = "python-uv-workspace-postgres"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "db-package",
+]
+
+[tool.uv.workspace]
+members = [
+    "db-package",
+]
+
+[tool.uv.sources]
+db-package = { workspace = true }

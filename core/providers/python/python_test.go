@@ -83,6 +83,11 @@ func TestUsesBinaryPsycopg(t *testing.T) {
 			path: "../../../examples/python-django",
 			want: false,
 		},
+		{
+			name: "psycopg2 in workspace sub-package (non-binary)",
+			path: "../../../examples/python-uv-workspace-postgres",
+			want: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -119,6 +124,11 @@ func TestUsesPostgres(t *testing.T) {
 		{
 			name: "psycopg2 (django) needs apt packages",
 			path: "../../../examples/python-django",
+			want: true,
+		},
+		{
+			name: "psycopg2 in workspace sub-package needs apt packages",
+			path: "../../../examples/python-uv-workspace-postgres",
 			want: true,
 		},
 	}
