@@ -465,16 +465,14 @@ func (p *PythonProvider) addMetadata(ctx *generate.GenerateContext) {
 }
 
 func (p *PythonProvider) usesDep(ctx *generate.GenerateContext, dep string) bool {
-	for _, pattern := range []string{"**/requirements.txt", "**/pyproject.toml", "**/Pipfile"} {
-		files, err := ctx.App.FindFiles(pattern)
-		if err != nil {
-			continue
-		}
-		for _, file := range files {
-			if contents, err := ctx.App.ReadFile(file); err == nil {
-				if strings.Contains(strings.ToLower(contents), strings.ToLower(dep)) {
-					return true
-				}
+	files, err := ctx.App.FindFiles("**/{requirements.txt,pyproject.toml,Pipfile}")
+	if err != nil {
+		return false
+	}
+	for _, file := range files {
+		if contents, err := ctx.App.ReadFile(file); err == nil {
+			if strings.Contains(strings.ToLower(contents), strings.ToLower(dep)) {
+				return true
 			}
 		}
 	}
