@@ -24,7 +24,7 @@ func TestGenerateConfigFromEnvironment(t *testing.T) {
 				"steps": {},
 				"packages": {},
 				"caches": {},
-				"deploy": {}
+				"deploy": {"variables": {}}
 			}`,
 		},
 
@@ -69,7 +69,8 @@ func TestGenerateConfigFromEnvironment(t *testing.T) {
 				"caches": {},
 				"deploy": {
 					"startCommand": "npm start",
-					"aptPackages": ["libssl-dev"]
+					"aptPackages": ["libssl-dev"],
+					"variables": {}
 				},
 				"secrets": ["RAILPACK_BUILD_APT_PACKAGES", "RAILPACK_BUILD_CMD", "RAILPACK_DEPLOY_APT_PACKAGES",
 					"RAILPACK_INSTALL_CMD", "RAILPACK_PACKAGES", "RAILPACK_START_CMD"]

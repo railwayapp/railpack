@@ -24,6 +24,16 @@ const (
 	defaultConfigFileName = "railpack.json"
 )
 
+// mergeVariables merges userVars into providerVars, with userVars taking precedence
+func mergeVariables(providerVars map[string]string, userVars map[string]string) {
+	if providerVars == nil {
+		return
+	}
+	for key, value := range userVars {
+		providerVars[key] = value
+	}
+}
+
 type GenerateBuildPlanOptions struct {
 	RailpackVersion          string
 	BuildCommand             string
@@ -31,6 +41,7 @@ type GenerateBuildPlanOptions struct {
 	PreviousVersions         map[string]string
 	ConfigFilePath           string
 	ErrorMissingStartCommand bool
+	Vars                     map[string]string
 }
 
 type BuildResult struct {
@@ -83,6 +94,11 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		for name, version := range options.PreviousVersions {
 			ctx.Resolver.SetPreviousVersion(name, version)
 		}
+	}
+
+	// Set user variables to be available in all steps
+	if options.Vars != nil {
+		maps.Copy(ctx.UserVariables, options.Vars)
 	}
 
 	// Figure out what providers to use
@@ -254,6 +270,10 @@ func GenerateConfigFromOptions(options *GenerateBuildPlanOptions) *c.Config {
 
 	if options.StartCommand != "" {
 		config.Deploy.StartCmd = options.StartCommand
+	}
+
+	if options.Vars != nil {
+		mergeVariables(config.Deploy.Variables, options.Vars)
 	}
 
 	return config

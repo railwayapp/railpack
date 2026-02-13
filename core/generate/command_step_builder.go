@@ -121,6 +121,9 @@ func (b *CommandStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions)
 	step.Variables = b.Variables
 	step.Secrets = b.Secrets
 
+	// Add user variables to this step
+	maps.Copy(step.Variables, options.UserVariables)
+
 	p.Steps = append(p.Steps, *step)
 
 	return nil
