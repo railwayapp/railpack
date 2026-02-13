@@ -561,3 +561,93 @@ var pythonRuntimeDepRequirements = map[string][]string{
 	"pydub":     {"ffmpeg"},
 	"pymovie":   {"ffmpeg", "qt5-qmake", "qtbase5-dev", "qtbase5-dev-tools", "qttools5-dev-tools", "libqt5core5a", "python3-pyqt5"},
 }
+
+type PyProjectTOML struct {
+	Project struct {
+		Dependencies []string `toml:"dependencies"`
+	} `toml:"project"`
+	Tool struct {
+		Poetry struct {
+			Dependencies map[string]any `toml:"dependencies"`
+		} `toml:"poetry"`
+	} `toml:"tool"`
+}
+
+type Pipfile struct {
+	Packages    map[string]any `toml:"packages"`
+	DevPackages map[string]any `toml:"dev-packages"`
+}
+
+func extractPackageName(dep string) string {
+	if idx := strings.Index(dep, " ;"); idx != -1 {
+		dep = dep[:idx]
+	}
+
+	versionSpecifiers := []string{">=", "<=", "==", "~=", "!=", ">", "<", "@"}
+
+	result := dep
+	for _, spec := range versionSpecifiers {
+		if idx := strings.Index(dep, spec); idx != -1 {
+			result = dep[:idx]
+			break
+		}
+	}
+
+	return strings.TrimSpace(result)
+}
+
+func normalizeDep(dep string) string {
+	packageName := extractPackageName(dep)
+	return strings.ToLower(packageName)
+}
+
+func (p *PythonProvider) HasProductionDependency(ctx *generate.GenerateContext, dep string) bool {
+	normalizedDep := normalizeDep(dep)
+
+	if contents, err := ctx.App.ReadFile("requirements.txt"); err == nil {
+		for _, line := range strings.Split(contents, "\n") {
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			if normalizeDep(line) == normalizedDep {
+				return true
+			}
+		}
+	}
+
+	if ctx.App.HasFile("pyproject.toml") {
+		var pyproject PyProjectTOML
+		if err := ctx.App.ReadTOML("pyproject.toml", &pyproject); err == nil {
+			if p.hasPoetry(ctx) {
+				for depName := range pyproject.Tool.Poetry.Dependencies {
+					if depName == "python" {
+						continue
+					}
+					if normalizeDep(depName) == normalizedDep {
+						return true
+					}
+				}
+			} else {
+				for _, depSpec := range pyproject.Project.Dependencies {
+					if normalizeDep(depSpec) == normalizedDep {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	if ctx.App.HasFile("Pipfile") {
+		var pipfile Pipfile
+		if err := ctx.App.ReadTOML("Pipfile", &pipfile); err == nil {
+			for depName := range pipfile.Packages {
+				if normalizeDep(depName) == normalizedDep {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
