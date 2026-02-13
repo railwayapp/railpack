@@ -93,6 +93,7 @@
     "MISE_CACHE_DIR": "/mise/cache",
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
+    "MISE_GPG_VERIFY": "1",
     "MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS": "python,node,ruby,elixir,go,java,yarn",
     "MISE_INSTALLS_DIR": "/mise/installs",
     "MISE_NODE_COREPACK": "true",
