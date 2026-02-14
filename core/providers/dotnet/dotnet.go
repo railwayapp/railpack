@@ -11,6 +11,7 @@ import (
 
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	dotnetconfig "github.com/railwayapp/railpack/core/providers/dotnet/config"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -164,11 +165,32 @@ func (p *DotnetProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		}
 	}
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("DOTNET_VERSION"); envVersion != "" {
-		miseStep.Version(dotnet, envVersion, varName)
+	if dotnetVersion, source := p.dotnetVersion(ctx); dotnetVersion != "" {
+		miseStep.Version(dotnet, dotnetVersion, source)
 	}
 
 	miseStep.UseMiseVersions(ctx, []string{"dotnet"})
+}
+
+func (p *DotnetProvider) providerConfig(ctx *generate.GenerateContext) *dotnetconfig.DotnetConfig {
+	if ctx.Config == nil {
+		return nil
+	}
+
+	return ctx.Config.Dotnet
+}
+
+func (p *DotnetProvider) dotnetVersion(ctx *generate.GenerateContext) (string, string) {
+	if envVersion, varName := ctx.Env.GetConfigVariable("DOTNET_VERSION"); envVersion != "" {
+		return envVersion, varName
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil && providerConfig.Version != "" {
+		return providerConfig.Version, "dotnet.version"
+	}
+
+	return "", ""
 }
 
 func (p *DotnetProvider) getDotnetVersion(ctx *generate.GenerateContext) string {

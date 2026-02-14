@@ -9,6 +9,7 @@ import (
 
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	staticfileconfig "github.com/railwayapp/railpack/core/providers/staticfile/config"
 )
 
 //go:embed Caddyfile.template
@@ -82,6 +83,27 @@ func (p *StaticfileProvider) StartCommandHelp() string {
 	return ""
 }
 
+func providerConfig(ctx *generate.GenerateContext) *staticfileconfig.StaticfileConfig {
+	if ctx.Config == nil {
+		return nil
+	}
+
+	return ctx.Config.Staticfile
+}
+
+func staticFileRootDir(ctx *generate.GenerateContext) (string, string) {
+	if rootDir, envVarName := ctx.Env.GetConfigVariable("STATIC_FILE_ROOT"); rootDir != "" {
+		return rootDir, envVarName
+	}
+
+	config := providerConfig(ctx)
+	if config != nil && config.Root != "" {
+		return config.Root, "staticfile.root"
+	}
+
+	return "", ""
+}
+
 func (p *StaticfileProvider) addCaddyfileToStep(ctx *generate.GenerateContext, setup *generate.CommandStepBuilder) error {
 	ctx.Logger.LogInfo("Using root dir: %s", p.RootDir)
 
@@ -111,7 +133,7 @@ func (p *StaticfileProvider) addCaddyfileToStep(ctx *generate.GenerateContext, s
 }
 
 func getRootDir(ctx *generate.GenerateContext) (string, error) {
-	if rootDir, _ := ctx.Env.GetConfigVariable("STATIC_FILE_ROOT"); rootDir != "" {
+	if rootDir, _ := staticFileRootDir(ctx); rootDir != "" {
 		return rootDir, nil
 	}
 

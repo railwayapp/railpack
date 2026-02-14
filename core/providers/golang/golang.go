@@ -7,6 +7,7 @@ import (
 
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	golangconfig "github.com/railwayapp/railpack/core/providers/golang/config"
 )
 
 const (
@@ -68,12 +69,12 @@ func (p *GoProvider) Build(ctx *generate.GenerateContext, build *generate.Comman
 	flags := "-w -s"
 	baseBuildCmd := fmt.Sprintf("go build -ldflags=\"%s\" -o %s", flags, GO_BINARY_NAME)
 
-	if modulePath, _ := ctx.Env.GetConfigVariable("GO_WORKSPACE_MODULE"); modulePath != "" {
-		// Use the provided env var path to build the specified module
+	if modulePath := p.workspaceModule(ctx); modulePath != "" {
+		// Use the configured path to build the specified workspace module.
 		ctx.Logger.LogInfo("Building workspace module: %s", modulePath)
 		buildCmd = fmt.Sprintf("%s ./%s", baseBuildCmd, modulePath)
-	} else if binName, _ := ctx.Env.GetConfigVariable("GO_BIN"); binName != "" {
-		// Use the provided env var path to build the specified command
+	} else if binName := p.binName(ctx); binName != "" {
+		// Use the configured command name under cmd/.
 		ctx.Logger.LogInfo("Building bin: %s", binName)
 		buildCmd = fmt.Sprintf("%s ./cmd/%s", baseBuildCmd, binName)
 	} else if p.isGoMod(ctx) && p.hasRootGoFiles(ctx) {
@@ -183,11 +184,58 @@ func (p *GoProvider) InstallGoPackages(ctx *generate.GenerateContext, miseStep *
 		miseStep.Version(goPkg, goVersion, "go.mod")
 	}
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("GO_VERSION"); envVersion != "" {
-		miseStep.Version(goPkg, envVersion, varName)
+	if goVersion, source := p.goVersion(ctx); goVersion != "" {
+		miseStep.Version(goPkg, goVersion, source)
 	}
 
 	miseStep.UseMiseVersions(ctx, []string{"go"})
+}
+
+func (p *GoProvider) providerConfig(ctx *generate.GenerateContext) *golangconfig.GolangConfig {
+	if ctx.Config == nil {
+		return nil
+	}
+
+	return ctx.Config.Golang
+}
+
+func (p *GoProvider) goVersion(ctx *generate.GenerateContext) (string, string) {
+	if envVersion, varName := ctx.Env.GetConfigVariable("GO_VERSION"); envVersion != "" {
+		return envVersion, varName
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil && providerConfig.Version != "" {
+		return providerConfig.Version, "golang.version"
+	}
+
+	return "", ""
+}
+
+func (p *GoProvider) workspaceModule(ctx *generate.GenerateContext) string {
+	if modulePath, _ := ctx.Env.GetConfigVariable("GO_WORKSPACE_MODULE"); modulePath != "" {
+		return modulePath
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil {
+		return providerConfig.WorkspaceModule
+	}
+
+	return ""
+}
+
+func (p *GoProvider) binName(ctx *generate.GenerateContext) string {
+	if binName, _ := ctx.Env.GetConfigVariable("GO_BIN"); binName != "" {
+		return binName
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil {
+		return providerConfig.Bin
+	}
+
+	return ""
 }
 
 func (p *GoProvider) GetBuilder(ctx *generate.GenerateContext) *generate.MiseStepBuilder {
@@ -232,7 +280,12 @@ func (p *GoProvider) isGin(ctx *generate.GenerateContext) bool {
 }
 
 func (p *GoProvider) hasCGOEnabled(ctx *generate.GenerateContext) bool {
-	return ctx.Env.GetVariable("CGO_ENABLED") == "1"
+	if cgoEnabled := ctx.Env.GetVariable("CGO_ENABLED"); cgoEnabled != "" {
+		return cgoEnabled == "1"
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	return providerConfig != nil && providerConfig.CgoEnabled
 }
 
 func (p *GoProvider) isGoMod(ctx *generate.GenerateContext) bool {
@@ -269,6 +322,6 @@ func (p *GoProvider) StartCommandHelp() string {
 	return "To configure your start command, Railpack will check:\n\n" +
 		"1. Create a main.go file in your project root\n\n" +
 		"2. Create a command in the cmd directory (e.g., cmd/server/main.go)\n\n" +
-		"3. Set the GO_BIN environment variable to specify which command to build\n\n" +
-		"4. For workspaces: Set GO_WORKSPACE_MODULE to build a specific module (e.g., GO_WORKSPACE_MODULE=api)"
+		"3. Set GO_BIN or golang.bin to specify which command to build\n\n" +
+		"4. For workspaces: set GO_WORKSPACE_MODULE or golang.workspaceModule (e.g., api)"
 }

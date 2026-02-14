@@ -56,3 +56,42 @@ func TestDeno(t *testing.T) {
 		})
 	}
 }
+
+func TestDenoProviderConfigFromFile(t *testing.T) {
+	t.Run("deno version from provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/deno-2")
+		testingUtils.ClearConfigVariable(ctx, "DENO_VERSION")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
+			"deno": {
+				"version": "2.1.0"
+			}
+		}`)
+
+		provider := DenoProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+		require.NoError(t, provider.Plan(ctx))
+
+		denoVersion := ctx.Resolver.Get("deno")
+		require.Equal(t, "2.1.0", denoVersion.Version)
+		require.Equal(t, "deno.version", denoVersion.Source)
+	})
+
+	t.Run("deno env var takes precedence over provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/deno-2")
+		testingUtils.ClearConfigVariable(ctx, "DENO_VERSION")
+		ctx.Env.SetVariable("RAILPACK_DENO_VERSION", "2.4.0")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
+			"deno": {
+				"version": "2.1.0"
+			}
+		}`)
+
+		provider := DenoProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+		require.NoError(t, provider.Plan(ctx))
+
+		denoVersion := ctx.Resolver.Get("deno")
+		require.Equal(t, "2.4.0", denoVersion.Version)
+		require.Equal(t, "RAILPACK_DENO_VERSION", denoVersion.Source)
+	})
+}

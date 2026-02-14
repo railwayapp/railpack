@@ -39,6 +39,37 @@ func TestDetect(t *testing.T) {
 	}
 }
 
+func TestShellProviderConfigFromFile(t *testing.T) {
+	t.Run("shell script from provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, createShellApp(t))
+		testingUtils.ClearConfigVariable(ctx, "SHELL_SCRIPT")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
+			"shell": {
+				"script": "deploy.sh"
+			}
+		}`)
+
+		provider := ShellProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+		require.Equal(t, "deploy.sh", provider.scriptName)
+	})
+
+	t.Run("shell env var takes precedence over provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, createShellApp(t))
+		testingUtils.ClearConfigVariable(ctx, "SHELL_SCRIPT")
+		ctx.Env.SetVariable("RAILPACK_SHELL_SCRIPT", "start.sh")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
+			"shell": {
+				"script": "deploy.sh"
+			}
+		}`)
+
+		provider := ShellProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+		require.Equal(t, "start.sh", provider.scriptName)
+	})
+}
+
 func TestInitialize(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -181,4 +212,14 @@ func TestDetectShellInterpreter(t *testing.T) {
 			require.Equal(t, tt.wantInterpreter, got)
 		})
 	}
+}
+
+func createShellApp(t *testing.T) string {
+	t.Helper()
+
+	appDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(appDir, "start.sh"), []byte("#!/bin/sh\necho start\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(appDir, "deploy.sh"), []byte("#!/bin/sh\necho deploy\n"), 0644))
+
+	return appDir
 }

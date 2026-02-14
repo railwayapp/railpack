@@ -48,6 +48,11 @@ func (p *NodeProvider) getAngularOutputDirectory(ctx *generate.GenerateContext) 
 	var projectName string
 	if name, _ := ctx.Env.GetConfigVariable("ANGULAR_PROJECT"); name != "" {
 		projectName = name
+	} else {
+		providerConfig := providerConfig(ctx)
+		if providerConfig != nil {
+			projectName = providerConfig.AngularProject
+		}
 	}
 
 	for name, project := range config.Projects {

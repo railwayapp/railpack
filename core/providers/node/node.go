@@ -11,6 +11,7 @@ import (
 	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	nodeconfig "github.com/railwayapp/railpack/core/providers/node/config"
 	"github.com/railwayapp/railpack/core/resolver"
 )
 
@@ -237,7 +238,12 @@ func (p *NodeProvider) addCachesToBuildStep(ctx *generate.GenerateContext, build
 }
 
 func (p *NodeProvider) shouldPrune(ctx *generate.GenerateContext) bool {
-	return ctx.Env.IsConfigVariableTruthy("PRUNE_DEPS")
+	if ctx.Env.IsConfigVariableTruthy("PRUNE_DEPS") {
+		return true
+	}
+
+	providerConfig := providerConfig(ctx)
+	return providerConfig != nil && providerConfig.PruneDeps
 }
 
 func (p *NodeProvider) PruneNodeDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
@@ -287,13 +293,47 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 // resolve node version selection which is used both for node runtime *and* when bun is used but node is required for
 // build or runtime.
 func (p *NodeProvider) applyNodeVersionResolution(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder, nodeToolRef resolver.PackageRef) {
-	if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
-		miseStep.Version(nodeToolRef, envVersion, varName)
+	if nodeVersion, source := p.nodeVersion(ctx); nodeVersion != "" {
+		miseStep.Version(nodeToolRef, nodeVersion, source)
 	}
 
 	if p.packageJson != nil && p.packageJson.Engines != nil && p.packageJson.Engines["node"] != "" {
 		miseStep.Version(nodeToolRef, p.packageJson.Engines["node"], "package.json > engines > node")
 	}
+}
+
+func providerConfig(ctx *generate.GenerateContext) *nodeconfig.NodeConfig {
+	if ctx.Config == nil {
+		return nil
+	}
+
+	return ctx.Config.Node
+}
+
+func (p *NodeProvider) nodeVersion(ctx *generate.GenerateContext) (string, string) {
+	if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
+		return envVersion, varName
+	}
+
+	providerConfig := providerConfig(ctx)
+	if providerConfig != nil && providerConfig.Version != "" {
+		return providerConfig.Version, "node.version"
+	}
+
+	return "", ""
+}
+
+func (p *NodeProvider) bunVersion(ctx *generate.GenerateContext) (string, string) {
+	if envVersion, varName := ctx.Env.GetConfigVariable("BUN_VERSION"); envVersion != "" {
+		return envVersion, varName
+	}
+
+	providerConfig := providerConfig(ctx)
+	if providerConfig != nil && providerConfig.BunVersion != "" {
+		return providerConfig.BunVersion, "node.bunVersion"
+	}
+
+	return "", ""
 }
 
 func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
@@ -319,8 +359,8 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		bun := miseStep.Default("bun", DEFAULT_BUN_VERSION)
 		misePackages = append(misePackages, "bun")
 
-		if envVersion, varName := ctx.Env.GetConfigVariable("BUN_VERSION"); envVersion != "" {
-			miseStep.Version(bun, envVersion, varName)
+		if bunVersion, source := p.bunVersion(ctx); bunVersion != "" {
+			miseStep.Version(bun, bunVersion, source)
 		}
 
 		// .bun-version is a community convention for specifying the Bun version.
