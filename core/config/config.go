@@ -6,6 +6,7 @@ import (
 	"github.com/invopop/jsonschema"
 	"github.com/railwayapp/railpack/core/plan"
 	denoconfig "github.com/railwayapp/railpack/core/providers/deno/config"
+	dotnetconfig "github.com/railwayapp/railpack/core/providers/dotnet/config"
 	elixirconfig "github.com/railwayapp/railpack/core/providers/elixir/config"
 	golangconfig "github.com/railwayapp/railpack/core/providers/golang/config"
 	"github.com/railwayapp/railpack/internal/utils"
@@ -32,6 +33,7 @@ type StepConfig struct {
 type Config struct {
 	Provider         *string                    `json:"provider,omitempty" jsonschema:"description=The provider to use"`
 	Deno             *denoconfig.DenoConfig     `json:"deno,omitempty" jsonschema:"description=Configuration for the deno provider"`
+	Dotnet           *dotnetconfig.DotnetConfig `json:"dotnet,omitempty" jsonschema:"description=Configuration for the dotnet provider"`
 	Elixir           *elixirconfig.ElixirConfig `json:"elixir,omitempty" jsonschema:"description=Configuration for the elixir provider"`
 	Golang           *golangconfig.GolangConfig `json:"golang,omitempty" jsonschema:"description=Configuration for the golang provider"`
 	BuildAptPackages []string                   `json:"buildAptPackages,omitempty" jsonschema:"description=List of apt packages to install during the build step"`
