@@ -1,13 +1,10 @@
 package rust
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/railwayapp/railpack/core/config"
-	"github.com/railwayapp/railpack/core/generate"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -59,8 +56,8 @@ func TestRust(t *testing.T) {
 func TestRustProviderConfigFromFile(t *testing.T) {
 	t.Run("rust version from provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, createRustApp(t))
-		clearConfigVariable(ctx, "RUST_VERSION")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.ClearConfigVariable(ctx, "RUST_VERSION")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"rust": {
 				"version": "1.88.0"
 			}
@@ -77,9 +74,9 @@ func TestRustProviderConfigFromFile(t *testing.T) {
 
 	t.Run("rust env var takes precedence over provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, createRustApp(t))
-		clearConfigVariable(ctx, "RUST_VERSION")
+		testingUtils.ClearConfigVariable(ctx, "RUST_VERSION")
 		ctx.Env.SetVariable("RAILPACK_RUST_VERSION", "1.90.0")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"rust": {
 				"version": "1.88.0"
 			}
@@ -96,8 +93,8 @@ func TestRustProviderConfigFromFile(t *testing.T) {
 
 	t.Run("rust bin from provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, createRustMultiBinApp(t))
-		clearConfigVariable(ctx, "RUST_BIN")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.ClearConfigVariable(ctx, "RUST_BIN")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"rust": {
 				"bin": "worker"
 			}
@@ -112,9 +109,9 @@ func TestRustProviderConfigFromFile(t *testing.T) {
 
 	t.Run("rust bin env var takes precedence over provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, createRustMultiBinApp(t))
-		clearConfigVariable(ctx, "RUST_BIN")
+		testingUtils.ClearConfigVariable(ctx, "RUST_BIN")
 		ctx.Env.SetVariable("RAILPACK_RUST_BIN", "server")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"rust": {
 				"bin": "worker"
 			}
@@ -129,8 +126,8 @@ func TestRustProviderConfigFromFile(t *testing.T) {
 
 	t.Run("rust workspace from provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, createRustWorkspaceApp(t))
-		clearConfigVariable(ctx, "CARGO_WORKSPACE")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.ClearConfigVariable(ctx, "CARGO_WORKSPACE")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"rust": {
 				"workspace": "worker"
 			}
@@ -145,9 +142,9 @@ func TestRustProviderConfigFromFile(t *testing.T) {
 
 	t.Run("cargo workspace env var takes precedence over provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, createRustWorkspaceApp(t))
-		clearConfigVariable(ctx, "CARGO_WORKSPACE")
+		testingUtils.ClearConfigVariable(ctx, "CARGO_WORKSPACE")
 		ctx.Env.SetVariable("RAILPACK_CARGO_WORKSPACE", "api")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"rust": {
 				"workspace": "worker"
 			}
@@ -159,18 +156,6 @@ func TestRustProviderConfigFromFile(t *testing.T) {
 
 		require.Equal(t, "./bin/api", ctx.Deploy.StartCmd)
 	})
-}
-
-func setConfigFromJSON(t *testing.T, ctx *generate.GenerateContext, configJSON string) {
-	t.Helper()
-
-	var cfg config.Config
-	require.NoError(t, json.Unmarshal([]byte(configJSON), &cfg))
-	ctx.Config = &cfg
-}
-
-func clearConfigVariable(ctx *generate.GenerateContext, variableName string) {
-	delete(ctx.Env.Variables, ctx.Env.ConfigVariable(variableName))
 }
 
 func createRustApp(t *testing.T) string {

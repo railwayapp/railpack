@@ -1,13 +1,10 @@
 package java
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/railwayapp/railpack/core/config"
-	"github.com/railwayapp/railpack/core/generate"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -15,9 +12,9 @@ import (
 func TestJavaProviderConfigFromFile(t *testing.T) {
 	t.Run("jdk version from provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/java-maven")
-		clearConfigVariable(ctx, "JDK_VERSION")
-		clearConfigVariable(ctx, "GRADLE_VERSION")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.ClearConfigVariable(ctx, "JDK_VERSION")
+		testingUtils.ClearConfigVariable(ctx, "GRADLE_VERSION")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"java": {
 				"version": "17"
 			}
@@ -34,9 +31,9 @@ func TestJavaProviderConfigFromFile(t *testing.T) {
 
 	t.Run("gradle version from provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, createGradleApp(t))
-		clearConfigVariable(ctx, "JDK_VERSION")
-		clearConfigVariable(ctx, "GRADLE_VERSION")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.ClearConfigVariable(ctx, "JDK_VERSION")
+		testingUtils.ClearConfigVariable(ctx, "GRADLE_VERSION")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"java": {
 				"gradleVersion": "7"
 			}
@@ -53,10 +50,10 @@ func TestJavaProviderConfigFromFile(t *testing.T) {
 
 	t.Run("jdk env var takes precedence over provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/java-maven")
-		clearConfigVariable(ctx, "JDK_VERSION")
-		clearConfigVariable(ctx, "GRADLE_VERSION")
+		testingUtils.ClearConfigVariable(ctx, "JDK_VERSION")
+		testingUtils.ClearConfigVariable(ctx, "GRADLE_VERSION")
 		ctx.Env.SetVariable("RAILPACK_JDK_VERSION", "11")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"java": {
 				"version": "17"
 			}
@@ -73,10 +70,10 @@ func TestJavaProviderConfigFromFile(t *testing.T) {
 
 	t.Run("gradle env var takes precedence over provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, createGradleApp(t))
-		clearConfigVariable(ctx, "JDK_VERSION")
-		clearConfigVariable(ctx, "GRADLE_VERSION")
+		testingUtils.ClearConfigVariable(ctx, "JDK_VERSION")
+		testingUtils.ClearConfigVariable(ctx, "GRADLE_VERSION")
 		ctx.Env.SetVariable("RAILPACK_GRADLE_VERSION", "6")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"java": {
 				"gradleVersion": "8"
 			}
@@ -90,18 +87,6 @@ func TestJavaProviderConfigFromFile(t *testing.T) {
 		require.Equal(t, "6", gradle.Version)
 		require.Equal(t, "RAILPACK_GRADLE_VERSION", gradle.Source)
 	})
-}
-
-func setConfigFromJSON(t *testing.T, ctx *generate.GenerateContext, configJSON string) {
-	t.Helper()
-
-	var cfg config.Config
-	require.NoError(t, json.Unmarshal([]byte(configJSON), &cfg))
-	ctx.Config = &cfg
-}
-
-func clearConfigVariable(ctx *generate.GenerateContext, variableName string) {
-	delete(ctx.Env.Variables, ctx.Env.ConfigVariable(variableName))
 }
 
 func createGradleApp(t *testing.T) string {

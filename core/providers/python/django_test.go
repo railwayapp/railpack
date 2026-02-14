@@ -46,8 +46,8 @@ func TestDjango(t *testing.T) {
 func TestDjangoProviderConfigFromFile(t *testing.T) {
 	t.Run("django app name from provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/python-django")
-		clearConfigVariable(ctx, "DJANGO_APP_NAME")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.ClearConfigVariable(ctx, "DJANGO_APP_NAME")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"python": {
 				"djangoAppName": "custom.wsgi"
 			}
@@ -65,9 +65,9 @@ func TestDjangoProviderConfigFromFile(t *testing.T) {
 
 	t.Run("django env var takes precedence over provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/python-django")
-		clearConfigVariable(ctx, "DJANGO_APP_NAME")
+		testingUtils.ClearConfigVariable(ctx, "DJANGO_APP_NAME")
 		ctx.Env.SetVariable("RAILPACK_DJANGO_APP_NAME", "env.wsgi")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"python": {
 				"djangoAppName": "custom.wsgi"
 			}

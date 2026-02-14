@@ -1,11 +1,8 @@
 package elixir
 
 import (
-	"encoding/json"
 	"testing"
 
-	"github.com/railwayapp/railpack/core/config"
-	"github.com/railwayapp/railpack/core/generate"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -52,9 +49,9 @@ func TestElixir(t *testing.T) {
 func TestElixirProviderConfigFromFile(t *testing.T) {
 	t.Run("elixir version from provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/elixir-ecto")
-		clearConfigVariable(ctx, "ELIXIR_VERSION")
-		clearConfigVariable(ctx, "ERLANG_VERSION")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.ClearConfigVariable(ctx, "ELIXIR_VERSION")
+		testingUtils.ClearConfigVariable(ctx, "ERLANG_VERSION")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"elixir": {
 				"version": "1.18.4"
 			}
@@ -71,9 +68,9 @@ func TestElixirProviderConfigFromFile(t *testing.T) {
 
 	t.Run("erlang version from provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/elixir-ecto")
-		clearConfigVariable(ctx, "ELIXIR_VERSION")
-		clearConfigVariable(ctx, "ERLANG_VERSION")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.ClearConfigVariable(ctx, "ELIXIR_VERSION")
+		testingUtils.ClearConfigVariable(ctx, "ERLANG_VERSION")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"elixir": {
 				"erlangVersion": "27.3.4"
 			}
@@ -90,10 +87,10 @@ func TestElixirProviderConfigFromFile(t *testing.T) {
 
 	t.Run("elixir env var takes precedence over provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/elixir-ecto")
-		clearConfigVariable(ctx, "ELIXIR_VERSION")
-		clearConfigVariable(ctx, "ERLANG_VERSION")
+		testingUtils.ClearConfigVariable(ctx, "ELIXIR_VERSION")
+		testingUtils.ClearConfigVariable(ctx, "ERLANG_VERSION")
 		ctx.Env.SetVariable("RAILPACK_ELIXIR_VERSION", "1.16.3")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"elixir": {
 				"version": "1.18.4"
 			}
@@ -110,10 +107,10 @@ func TestElixirProviderConfigFromFile(t *testing.T) {
 
 	t.Run("erlang env var takes precedence over provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/elixir-ecto")
-		clearConfigVariable(ctx, "ELIXIR_VERSION")
-		clearConfigVariable(ctx, "ERLANG_VERSION")
+		testingUtils.ClearConfigVariable(ctx, "ELIXIR_VERSION")
+		testingUtils.ClearConfigVariable(ctx, "ERLANG_VERSION")
 		ctx.Env.SetVariable("RAILPACK_ERLANG_VERSION", "26.2.5")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"elixir": {
 				"erlangVersion": "27.3.4"
 			}
@@ -127,16 +124,4 @@ func TestElixirProviderConfigFromFile(t *testing.T) {
 		require.Equal(t, "26.2.5", erlangVersion.Version)
 		require.Equal(t, "RAILPACK_ERLANG_VERSION", erlangVersion.Source)
 	})
-}
-
-func setConfigFromJSON(t *testing.T, ctx *generate.GenerateContext, configJSON string) {
-	t.Helper()
-
-	var cfg config.Config
-	require.NoError(t, json.Unmarshal([]byte(configJSON), &cfg))
-	ctx.Config = &cfg
-}
-
-func clearConfigVariable(ctx *generate.GenerateContext, variableName string) {
-	delete(ctx.Env.Variables, ctx.Env.ConfigVariable(variableName))
 }

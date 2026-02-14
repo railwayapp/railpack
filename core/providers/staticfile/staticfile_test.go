@@ -1,11 +1,8 @@
 package staticfile
 
 import (
-	"encoding/json"
 	"testing"
 
-	"github.com/railwayapp/railpack/core/config"
-	"github.com/railwayapp/railpack/core/generate"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -109,7 +106,7 @@ func TestGetRootDir(t *testing.T) {
 			}
 
 			if tt.configJSON != "" {
-				setConfigFromJSON(t, ctx, tt.configJSON)
+				testingUtils.SetConfigFromJSON(t, ctx, tt.configJSON)
 			}
 
 			got, err := getRootDir(ctx)
@@ -122,12 +119,4 @@ func TestGetRootDir(t *testing.T) {
 			}
 		})
 	}
-}
-
-func setConfigFromJSON(t *testing.T, ctx *generate.GenerateContext, configJSON string) {
-	t.Helper()
-
-	var cfg config.Config
-	require.NoError(t, json.Unmarshal([]byte(configJSON), &cfg))
-	ctx.Config = &cfg
 }

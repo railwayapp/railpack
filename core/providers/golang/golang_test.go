@@ -1,12 +1,10 @@
 package golang
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
@@ -88,7 +86,7 @@ func TestGolang(t *testing.T) {
 func TestGolangProviderConfigFromFile(t *testing.T) {
 	t.Run("go version from provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, createGoCmdDirsApp(t))
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"golang": {
 				"version": "1.24.6"
 			}
@@ -104,7 +102,7 @@ func TestGolangProviderConfigFromFile(t *testing.T) {
 
 	t.Run("go bin from provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, createGoCmdDirsApp(t))
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"golang": {
 				"bin": "worker"
 			}
@@ -120,7 +118,7 @@ func TestGolangProviderConfigFromFile(t *testing.T) {
 
 	t.Run("workspace module from provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/go-workspaces")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"golang": {
 				"workspaceModule": "shared"
 			}
@@ -136,7 +134,7 @@ func TestGolangProviderConfigFromFile(t *testing.T) {
 
 	t.Run("cgo enabled from provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, createGoCmdDirsApp(t))
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"golang": {
 				"cgoEnabled": true
 			}
@@ -157,7 +155,7 @@ func TestGolangProviderConfigFromFile(t *testing.T) {
 	t.Run("cgo env var takes precedence over provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, createGoCmdDirsApp(t))
 		ctx.Env.SetVariable("CGO_ENABLED", "0")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"golang": {
 				"cgoEnabled": true
 			}
@@ -173,16 +171,6 @@ func TestGolangProviderConfigFromFile(t *testing.T) {
 		installVariables := getStepVariables(t, ctx, "install")
 		require.Equal(t, "0", installVariables["CGO_ENABLED"])
 	})
-}
-
-// Keep config setup in one place so each test case only describes the provider
-// behavior it is validating.
-func setConfigFromJSON(t *testing.T, ctx *generate.GenerateContext, configJSON string) {
-	t.Helper()
-
-	var cfg config.Config
-	require.NoError(t, json.Unmarshal([]byte(configJSON), &cfg))
-	ctx.Config = &cfg
 }
 
 // These tests assert selection logic by inspecting the generated build command,

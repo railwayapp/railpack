@@ -1,14 +1,11 @@
 package shell
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/railwayapp/railpack/core/app"
-	"github.com/railwayapp/railpack/core/config"
-	"github.com/railwayapp/railpack/core/generate"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -45,8 +42,8 @@ func TestDetect(t *testing.T) {
 func TestShellProviderConfigFromFile(t *testing.T) {
 	t.Run("shell script from provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, createShellApp(t))
-		clearConfigVariable(ctx, "SHELL_SCRIPT")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.ClearConfigVariable(ctx, "SHELL_SCRIPT")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"shell": {
 				"script": "deploy.sh"
 			}
@@ -59,9 +56,9 @@ func TestShellProviderConfigFromFile(t *testing.T) {
 
 	t.Run("shell env var takes precedence over provider config", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, createShellApp(t))
-		clearConfigVariable(ctx, "SHELL_SCRIPT")
+		testingUtils.ClearConfigVariable(ctx, "SHELL_SCRIPT")
 		ctx.Env.SetVariable("RAILPACK_SHELL_SCRIPT", "start.sh")
-		setConfigFromJSON(t, ctx, `{
+		testingUtils.SetConfigFromJSON(t, ctx, `{
 			"shell": {
 				"script": "deploy.sh"
 			}
@@ -215,18 +212,6 @@ func TestDetectShellInterpreter(t *testing.T) {
 			require.Equal(t, tt.wantInterpreter, got)
 		})
 	}
-}
-
-func setConfigFromJSON(t *testing.T, ctx *generate.GenerateContext, configJSON string) {
-	t.Helper()
-
-	var cfg config.Config
-	require.NoError(t, json.Unmarshal([]byte(configJSON), &cfg))
-	ctx.Config = &cfg
-}
-
-func clearConfigVariable(ctx *generate.GenerateContext, variableName string) {
-	delete(ctx.Env.Variables, ctx.Env.ConfigVariable(variableName))
 }
 
 func createShellApp(t *testing.T) string {
