@@ -5,6 +5,7 @@ import (
 
 	"github.com/invopop/jsonschema"
 	"github.com/railwayapp/railpack/core/plan"
+	golangconfig "github.com/railwayapp/railpack/core/providers/golang/config"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -27,13 +28,14 @@ type StepConfig struct {
 }
 
 type Config struct {
-	Provider         *string                `json:"provider,omitempty" jsonschema:"description=The provider to use"`
-	BuildAptPackages []string               `json:"buildAptPackages,omitempty" jsonschema:"description=List of apt packages to install during the build step"`
-	Steps            map[string]*StepConfig `json:"steps,omitempty" jsonschema:"description=Map of step names to step definitions"`
-	Deploy           *DeployConfig          `json:"deploy,omitempty" jsonschema:"description=Deploy configuration"`
-	Packages         map[string]string      `json:"packages,omitempty" jsonschema:"description=Map of package name to package version"`
-	Caches           map[string]*plan.Cache `json:"caches,omitempty" jsonschema:"description=Map of cache name to cache definitions. The cache key can be referenced in an exec command"`
-	Secrets          []string               `json:"secrets,omitempty" jsonschema:"description=Secrets that should be made available to commands that have useSecrets set to true"`
+	Provider         *string                    `json:"provider,omitempty" jsonschema:"description=The provider to use"`
+	Golang           *golangconfig.GolangConfig `json:"golang,omitempty" jsonschema:"description=Configuration for the golang provider"`
+	BuildAptPackages []string                   `json:"buildAptPackages,omitempty" jsonschema:"description=List of apt packages to install during the build step"`
+	Steps            map[string]*StepConfig     `json:"steps,omitempty" jsonschema:"description=Map of step names to step definitions"`
+	Deploy           *DeployConfig              `json:"deploy,omitempty" jsonschema:"description=Deploy configuration"`
+	Packages         map[string]string          `json:"packages,omitempty" jsonschema:"description=Map of package name to package version"`
+	Caches           map[string]*plan.Cache     `json:"caches,omitempty" jsonschema:"description=Map of cache name to cache definitions. The cache key can be referenced in an exec command"`
+	Secrets          []string                   `json:"secrets,omitempty" jsonschema:"description=Secrets that should be made available to commands that have useSecrets set to true"`
 }
 
 func EmptyConfig() *Config {
