@@ -8,7 +8,7 @@ import (
 )
 
 func (p *PythonProvider) getDjangoAppName(ctx *generate.GenerateContext) string {
-	if appName, _ := ctx.Env.GetConfigVariable("DJANGO_APP_NAME"); appName != "" {
+	if appName := p.djangoAppName(ctx); appName != "" {
 		return appName
 	}
 
