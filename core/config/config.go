@@ -10,6 +10,7 @@ import (
 	elixirconfig "github.com/railwayapp/railpack/core/providers/elixir/config"
 	gleamconfig "github.com/railwayapp/railpack/core/providers/gleam/config"
 	golangconfig "github.com/railwayapp/railpack/core/providers/golang/config"
+	javaconfig "github.com/railwayapp/railpack/core/providers/java/config"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -38,6 +39,7 @@ type Config struct {
 	Elixir           *elixirconfig.ElixirConfig `json:"elixir,omitempty" jsonschema:"description=Configuration for the elixir provider"`
 	Gleam            *gleamconfig.GleamConfig   `json:"gleam,omitempty" jsonschema:"description=Configuration for the gleam provider"`
 	Golang           *golangconfig.GolangConfig `json:"golang,omitempty" jsonschema:"description=Configuration for the golang provider"`
+	Java             *javaconfig.JavaConfig     `json:"java,omitempty" jsonschema:"description=Configuration for the java provider"`
 	BuildAptPackages []string                   `json:"buildAptPackages,omitempty" jsonschema:"description=List of apt packages to install during the build step"`
 	Steps            map[string]*StepConfig     `json:"steps,omitempty" jsonschema:"description=Map of step names to step definitions"`
 	Deploy           *DeployConfig              `json:"deploy,omitempty" jsonschema:"description=Deploy configuration"`
