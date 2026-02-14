@@ -11,6 +11,7 @@ import (
 	gleamconfig "github.com/railwayapp/railpack/core/providers/gleam/config"
 	golangconfig "github.com/railwayapp/railpack/core/providers/golang/config"
 	javaconfig "github.com/railwayapp/railpack/core/providers/java/config"
+	nodeconfig "github.com/railwayapp/railpack/core/providers/node/config"
 	phpconfig "github.com/railwayapp/railpack/core/providers/php/config"
 	pythonconfig "github.com/railwayapp/railpack/core/providers/python/config"
 	rubyconfig "github.com/railwayapp/railpack/core/providers/ruby/config"
@@ -46,6 +47,7 @@ type Config struct {
 	Gleam            *gleamconfig.GleamConfig           `json:"gleam,omitempty" jsonschema:"description=Configuration for the gleam provider"`
 	Golang           *golangconfig.GolangConfig         `json:"golang,omitempty" jsonschema:"description=Configuration for the golang provider"`
 	Java             *javaconfig.JavaConfig             `json:"java,omitempty" jsonschema:"description=Configuration for the java provider"`
+	Node             *nodeconfig.NodeConfig             `json:"node,omitempty" jsonschema:"description=Configuration for the node provider"`
 	Php              *phpconfig.PhpConfig               `json:"php,omitempty" jsonschema:"description=Configuration for the php provider"`
 	Python           *pythonconfig.PythonConfig         `json:"python,omitempty" jsonschema:"description=Configuration for the python provider"`
 	Ruby             *rubyconfig.RubyConfig             `json:"ruby,omitempty" jsonschema:"description=Configuration for the ruby provider"`
