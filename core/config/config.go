@@ -13,6 +13,7 @@ import (
 	javaconfig "github.com/railwayapp/railpack/core/providers/java/config"
 	phpconfig "github.com/railwayapp/railpack/core/providers/php/config"
 	pythonconfig "github.com/railwayapp/railpack/core/providers/python/config"
+	rubyconfig "github.com/railwayapp/railpack/core/providers/ruby/config"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -44,6 +45,7 @@ type Config struct {
 	Java             *javaconfig.JavaConfig     `json:"java,omitempty" jsonschema:"description=Configuration for the java provider"`
 	Php              *phpconfig.PhpConfig       `json:"php,omitempty" jsonschema:"description=Configuration for the php provider"`
 	Python           *pythonconfig.PythonConfig `json:"python,omitempty" jsonschema:"description=Configuration for the python provider"`
+	Ruby             *rubyconfig.RubyConfig     `json:"ruby,omitempty" jsonschema:"description=Configuration for the ruby provider"`
 	BuildAptPackages []string                   `json:"buildAptPackages,omitempty" jsonschema:"description=List of apt packages to install during the build step"`
 	Steps            map[string]*StepConfig     `json:"steps,omitempty" jsonschema:"description=Map of step names to step definitions"`
 	Deploy           *DeployConfig              `json:"deploy,omitempty" jsonschema:"description=Deploy configuration"`
