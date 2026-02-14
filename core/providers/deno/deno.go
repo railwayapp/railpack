@@ -5,6 +5,7 @@ import (
 
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	denoconfig "github.com/railwayapp/railpack/core/providers/deno/config"
 )
 
 const (
@@ -84,11 +85,32 @@ func (p *DenoProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 func (p *DenoProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	deno := miseStep.Default("deno", DEFAULT_DENO_VERSION)
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("DENO_VERSION"); envVersion != "" {
-		miseStep.Version(deno, envVersion, varName)
+	if denoVersion, source := p.denoVersion(ctx); denoVersion != "" {
+		miseStep.Version(deno, denoVersion, source)
 	}
 
 	miseStep.UseMiseVersions(ctx, []string{"deno"})
+}
+
+func (p *DenoProvider) providerConfig(ctx *generate.GenerateContext) *denoconfig.DenoConfig {
+	if ctx.Config == nil {
+		return nil
+	}
+
+	return ctx.Config.Deno
+}
+
+func (p *DenoProvider) denoVersion(ctx *generate.GenerateContext) (string, string) {
+	if envVersion, varName := ctx.Env.GetConfigVariable("DENO_VERSION"); envVersion != "" {
+		return envVersion, varName
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil && providerConfig.Version != "" {
+		return providerConfig.Version, "deno.version"
+	}
+
+	return "", ""
 }
 
 func (p *DenoProvider) findMainFile(ctx *generate.GenerateContext) string {
