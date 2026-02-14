@@ -15,6 +15,7 @@ import (
 	pythonconfig "github.com/railwayapp/railpack/core/providers/python/config"
 	rubyconfig "github.com/railwayapp/railpack/core/providers/ruby/config"
 	rustconfig "github.com/railwayapp/railpack/core/providers/rust/config"
+	shellconfig "github.com/railwayapp/railpack/core/providers/shell/config"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -48,6 +49,7 @@ type Config struct {
 	Python           *pythonconfig.PythonConfig `json:"python,omitempty" jsonschema:"description=Configuration for the python provider"`
 	Ruby             *rubyconfig.RubyConfig     `json:"ruby,omitempty" jsonschema:"description=Configuration for the ruby provider"`
 	Rust             *rustconfig.RustConfig     `json:"rust,omitempty" jsonschema:"description=Configuration for the rust provider"`
+	Shell            *shellconfig.ShellConfig   `json:"shell,omitempty" jsonschema:"description=Configuration for the shell provider"`
 	BuildAptPackages []string                   `json:"buildAptPackages,omitempty" jsonschema:"description=List of apt packages to install during the build step"`
 	Steps            map[string]*StepConfig     `json:"steps,omitempty" jsonschema:"description=Map of step names to step definitions"`
 	Deploy           *DeployConfig              `json:"deploy,omitempty" jsonschema:"description=Deploy configuration"`

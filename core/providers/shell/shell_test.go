@@ -1,11 +1,14 @@
 package shell
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/core/config"
+	"github.com/railwayapp/railpack/core/generate"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -37,6 +40,37 @@ func TestDetect(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestShellProviderConfigFromFile(t *testing.T) {
+	t.Run("shell script from provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, createShellApp(t))
+		clearConfigVariable(ctx, "SHELL_SCRIPT")
+		setConfigFromJSON(t, ctx, `{
+			"shell": {
+				"script": "deploy.sh"
+			}
+		}`)
+
+		provider := ShellProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+		require.Equal(t, "deploy.sh", provider.scriptName)
+	})
+
+	t.Run("shell env var takes precedence over provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, createShellApp(t))
+		clearConfigVariable(ctx, "SHELL_SCRIPT")
+		ctx.Env.SetVariable("RAILPACK_SHELL_SCRIPT", "start.sh")
+		setConfigFromJSON(t, ctx, `{
+			"shell": {
+				"script": "deploy.sh"
+			}
+		}`)
+
+		provider := ShellProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+		require.Equal(t, "start.sh", provider.scriptName)
+	})
 }
 
 func TestInitialize(t *testing.T) {
@@ -181,4 +215,26 @@ func TestDetectShellInterpreter(t *testing.T) {
 			require.Equal(t, tt.wantInterpreter, got)
 		})
 	}
+}
+
+func setConfigFromJSON(t *testing.T, ctx *generate.GenerateContext, configJSON string) {
+	t.Helper()
+
+	var cfg config.Config
+	require.NoError(t, json.Unmarshal([]byte(configJSON), &cfg))
+	ctx.Config = &cfg
+}
+
+func clearConfigVariable(ctx *generate.GenerateContext, variableName string) {
+	delete(ctx.Env.Variables, ctx.Env.ConfigVariable(variableName))
+}
+
+func createShellApp(t *testing.T) string {
+	t.Helper()
+
+	appDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(appDir, "start.sh"), []byte("#!/bin/sh\necho start\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(appDir, "deploy.sh"), []byte("#!/bin/sh\necho deploy\n"), 0644))
+
+	return appDir
 }
