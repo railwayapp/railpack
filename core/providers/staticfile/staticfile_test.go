@@ -1,8 +1,11 @@
 package staticfile
 
 import (
+	"encoding/json"
 	"testing"
 
+	"github.com/railwayapp/railpack/core/config"
+	"github.com/railwayapp/railpack/core/generate"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -46,6 +49,7 @@ func TestGetRootDir(t *testing.T) {
 		name        string
 		path        string
 		envVars     map[string]string
+		configJSON  string
 		want        string
 		expectError bool
 	}{
@@ -57,6 +61,22 @@ func TestGetRootDir(t *testing.T) {
 			},
 			want:        "/custom/path",
 			expectError: false,
+		},
+		{
+			name:       "from provider config",
+			path:       "../../../examples/staticfile-index",
+			envVars:    map[string]string{},
+			configJSON: `{"staticfile":{"root":"dist"}}`,
+			want:       "dist",
+		},
+		{
+			name: "env var takes precedence over provider config",
+			path: "../../../examples/staticfile-index",
+			envVars: map[string]string{
+				"RAILPACK_STATIC_FILE_ROOT": "/custom/path",
+			},
+			configJSON: `{"staticfile":{"root":"dist"}}`,
+			want:       "/custom/path",
 		},
 		{
 			name:        "from staticfile config",
@@ -88,6 +108,10 @@ func TestGetRootDir(t *testing.T) {
 				ctx.Env.SetVariable(k, v)
 			}
 
+			if tt.configJSON != "" {
+				setConfigFromJSON(t, ctx, tt.configJSON)
+			}
+
 			got, err := getRootDir(ctx)
 
 			if tt.expectError {
@@ -98,4 +122,12 @@ func TestGetRootDir(t *testing.T) {
 			}
 		})
 	}
+}
+
+func setConfigFromJSON(t *testing.T, ctx *generate.GenerateContext, configJSON string) {
+	t.Helper()
+
+	var cfg config.Config
+	require.NoError(t, json.Unmarshal([]byte(configJSON), &cfg))
+	ctx.Config = &cfg
 }
