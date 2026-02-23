@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	semver "github.com/Masterminds/semver/v3"
 	a "github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/mise"
 	"github.com/railwayapp/railpack/core/plan"
@@ -18,7 +19,35 @@ const (
 	MisePackageStepName = "packages:mise"
 	// System-level config at /etc/mise/config.toml is auto-trusted by mise
 	MiseInstallCommand = "mise install"
+	// NODE_VERIFY_BEFORE is the last Node.js version known to have GPG signatures available.
+	// When new Node.js versions are released, they may not have GPG keys immediately available
+	// for signature verification. This constant tracks the latest version that has been verified
+	// to have GPG signatures. Versions after this will have MISE_NODE_VERIFY=false to prevent
+	// build failures.
+	//
+	// To update this constant when new versions get GPG keys, run:
+	//   mise run update-latest-signed-node
+	//
+	// See: https://github.com/railwayapp/railpack/issues/207
+	NODE_VERIFY_BEFORE = "22.11.0"
 )
+
+// nodeVersionRequiresVerifyDisabled checks if a Node.js version needs GPG verification disabled.
+// Newer versions released without GPG keys yet will return true.
+// This prevents build failures while maintaining security for older, signed versions.
+func nodeVersionRequiresVerifyDisabled(version string) bool {
+	nodeVer, err := semver.NewVersion(version)
+	if err != nil {
+		return false
+	}
+
+	cutoffVer, err := semver.NewVersion(NODE_VERIFY_BEFORE)
+	if err != nil {
+		return false
+	}
+
+	return nodeVer.GreaterThan(cutoffVer)
+}
 
 // represents a app-local mise package
 type MisePackageInfo struct {
@@ -237,15 +266,32 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 
 	if len(b.MisePackages) > 0 {
 		step.AddCommands([]plan.Command{plan.NewPathCommand("/mise/shims")})
+
+		// Build packages to install map first so we can check Node version
+		packagesToInstall := make(map[string]string)
+		for _, pkg := range b.MisePackages {
+			resolved, ok := options.ResolvedPackages[pkg.Name]
+
+			if ok && resolved.ResolvedVersion != nil && !b.Resolver.Get(pkg.Name).SkipMiseInstall {
+				packagesToInstall[pkg.Name] = *resolved.ResolvedVersion
+			}
+		}
+
+		// Determine whether to disable Node verification based on version
+		nodeVerify := "true"
+		if nodeVersion, hasNode := packagesToInstall["node"]; hasNode {
+			if nodeVersionRequiresVerifyDisabled(nodeVersion) {
+				nodeVerify = "false"
+			}
+		}
+
 		maps.Copy(step.Variables, map[string]string{
 			"MISE_DATA_DIR":     "/mise",
 			"MISE_CONFIG_DIR":   "/mise",
 			"MISE_CACHE_DIR":    "/mise/cache",
 			"MISE_SHIMS_DIR":    "/mise/shims",
 			"MISE_INSTALLS_DIR": "/mise/installs",
-			// Don't verify the asset because recently released versions don't have a public key to verify against
-			// https://github.com/railwayapp/railpack/issues/207
-			"MISE_NODE_VERIFY": "false",
+			"MISE_NODE_VERIFY":  nodeVerify,
 			// Enforces HTTPS and stricter security
 			"MISE_PARANOID": "1",
 			// Trust config files in the app directory to avoid trust warnings during build
@@ -265,16 +311,6 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			step.AddCommands([]plan.Command{
 				plan.NewCopyCommand(file),
 			})
-		}
-
-		// Setup mise commands
-		packagesToInstall := make(map[string]string)
-		for _, pkg := range b.MisePackages {
-			resolved, ok := options.ResolvedPackages[pkg.Name]
-
-			if ok && resolved.ResolvedVersion != nil && !b.Resolver.Get(pkg.Name).SkipMiseInstall {
-				packagesToInstall[pkg.Name] = *resolved.ResolvedVersion
-			}
 		}
 
 		miseToml, err := mise.GenerateMiseToml(packagesToInstall)

@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# Description: Find the latest Node.js version that has GPG signature available and update NODE_VERIFY_BEFORE constant
+
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+# Check that we're on the main branch
+current_branch="$(git branch --show-current)"
+if [[ "$current_branch" != "main" ]]; then
+  echo "Error: must be on 'main' branch, currently on '$current_branch'" >&2
+  exit 1
+fi
+
+# Pull latest changes from upstream
+git pull upstream main
+
+# Require clean working tree for tracked files
+if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+  echo "Error: tracked files are dirty. Commit or stash first." >&2
+  exit 1
+fi
+
+# Tooling checks
+if ! command -v gh >/dev/null 2>&1; then
+  echo "Error: gh CLI is required (brew install gh)." >&2
+  exit 1
+fi
+
+echo "Fetching Node.js versions from mise..."
+
+echo "Checking releases for GPG signatures..."
+echo
+
+latest_signed=""
+count=0
+
+# Get versions from mise in descending order (newest first)
+while IFS= read -r version; do
+  # mise returns versions without 'v' prefix, add it for the URL
+  version_with_v="v${version}"
+
+  # Check if SHASUMS256.txt.asc exists for this version
+  if curl -sf -I "https://nodejs.org/dist/${version_with_v}/SHASUMS256.txt.asc" > /dev/null 2>&1; then
+    echo "✓ ${version} has GPG signature"
+    if [[ -z "$latest_signed" ]]; then
+      latest_signed="$version"
+    fi
+  else
+    echo "✗ ${version} missing GPG signature"
+  fi
+
+  # Only check first 5 versions to avoid too many requests
+  count=$((count + 1))
+  if [[ $count -ge 5 ]]; then
+    break
+  fi
+done < <(mise ls-remote node | tac)
+
+echo
+if [[ -z "$latest_signed" ]]; then
+  echo "No GPG-signed versions found in recent releases"
+  exit 1
+fi
+
+echo "Latest Node.js version with GPG signature: $latest_signed"
+echo
+
+file="$repo_root/core/generate/mise_step_builder.go"
+if [[ ! -f "$file" ]]; then
+  echo "Error: $file not found" >&2
+  exit 1
+fi
+
+# Get current value
+current=$(awk -F'"' '/NODE_VERIFY_BEFORE[[:space:]]*=/{print $2; exit}' "$file")
+echo "Current NODE_VERIFY_BEFORE: $current"
+echo "New NODE_VERIFY_BEFORE: $latest_signed"
+
+if [[ "$current" == "$latest_signed" ]]; then
+  echo "NODE_VERIFY_BEFORE already set to $latest_signed. Nothing to do."
+  exit 0
+fi
+
+branch="chore/update-node-verify-before-$latest_signed"
+if git show-ref --verify --quiet "refs/heads/$branch"; then
+  echo "Local branch $branch already exists." >&2
+  exit 1
+fi
+
+git switch -c "$branch"
+
+# Replace the NODE_VERIFY_BEFORE line with the new version string
+perl -i -pe 's/^(\s*)NODE_VERIFY_BEFORE\s*=.*$/\1NODE_VERIFY_BEFORE = "'"$latest_signed"'"/' "$file"
+
+new="$(awk -F'"' '/NODE_VERIFY_BEFORE[[:space:]]*=/{print $2; exit}' "$file")"
+if [[ "$new" != "$latest_signed" ]]; then
+  echo "Error: failed to update NODE_VERIFY_BEFORE in $file" >&2
+  exit 1
+fi
+
+mise run check
+
+# If nothing changed, stop early
+if git diff --quiet -- "$file"; then
+  echo "NODE_VERIFY_BEFORE already set to $latest_signed. Nothing to do."
+  git switch main
+  git branch -D "$branch"
+  exit 0
+fi
+
+git add -- "$file"
+git commit -m "chore: update NODE_VERIFY_BEFORE to $latest_signed"
+
+gh pr create \
+  --title "chore: update NODE_VERIFY_BEFORE to $latest_signed" \
+  --body "Update NODE_VERIFY_BEFORE constant to the latest Node.js version with GPG signature available ($latest_signed)."
