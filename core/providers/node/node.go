@@ -256,7 +256,7 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 	// TODO once dockerignore is in place, we should remove this
 	if ctx.App.HasMatch("node_modules") {
 		ctx.Logger.LogWarn("node_modules directory found in project root, this is likely a mistake")
-		ctx.Logger.LogWarn("It is recommended to add node_modules to the .gitignore file")
+		ctx.Logger.LogWarn("It is recommended to add node_modules to the .gitignore and/or .dockerignore file")
 	}
 
 	if p.usesCorepack() {
