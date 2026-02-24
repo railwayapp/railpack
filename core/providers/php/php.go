@@ -173,7 +173,7 @@ func (p *PhpProvider) InstallCompose(ctx *generate.GenerateContext, composer *ge
 		}
 
 		composer.AddCommands([]plan.Command{
-			plan.NewExecCommand("composer install --optimize-autoloader --no-scripts --no-interaction"),
+			plan.NewExecCommand("composer install --optimize-autoloader --no-interaction"),
 		})
 	}
 }
