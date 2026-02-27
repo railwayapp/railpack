@@ -1,8 +1,11 @@
 package gleam
 
 import (
+	"strings"
+
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	gleamconfig "github.com/railwayapp/railpack/core/providers/gleam/config"
 )
 
 type GleamProvider struct{}
@@ -42,7 +45,7 @@ func (p *GleamProvider) Plan(ctx *generate.GenerateContext) error {
 	outPath := "build/erlang-shipment/."
 
 	includedPath := outPath
-	if ctx.Env.IsConfigVariableTruthy("GLEAM_INCLUDE_SOURCE") {
+	if p.includeSource(ctx) {
 		includedPath = "."
 	}
 
@@ -60,4 +63,22 @@ func (p *GleamProvider) Plan(ctx *generate.GenerateContext) error {
 
 func (p *GleamProvider) installErlang(step *generate.MiseStepBuilder) {
 	step.Default("erlang", "latest")
+}
+
+func (p *GleamProvider) providerConfig(ctx *generate.GenerateContext) *gleamconfig.GleamConfig {
+	if ctx.Config == nil {
+		return nil
+	}
+
+	return ctx.Config.Gleam
+}
+
+func (p *GleamProvider) includeSource(ctx *generate.GenerateContext) bool {
+	if envValue, _ := ctx.Env.GetConfigVariable("GLEAM_INCLUDE_SOURCE"); envValue != "" {
+		envValue = strings.ToLower(envValue)
+		return envValue == "1" || envValue == "true"
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	return providerConfig != nil && providerConfig.IncludeSource
 }

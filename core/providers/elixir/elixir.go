@@ -10,6 +10,7 @@ import (
 	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	elixirconfig "github.com/railwayapp/railpack/core/providers/elixir/config"
 	"github.com/railwayapp/railpack/core/providers/node"
 	"github.com/railwayapp/railpack/internal/utils"
 )
@@ -202,8 +203,8 @@ func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(elixir, strings.TrimSpace(string(versionFile)), ".elixir-version")
 	}
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("ELIXIR_VERSION"); envVersion != "" {
-		miseStep.Version(elixir, envVersion, varName)
+	if elixirVersion, source := p.elixirVersion(ctx); elixirVersion != "" {
+		miseStep.Version(elixir, elixirVersion, source)
 	}
 
 	erlang := miseStep.Default("erlang", DEFAULT_ERLANG_VERSION)
@@ -235,11 +236,45 @@ func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(erlang, strings.TrimSpace(string(versionFile)), ".erlang-version")
 	}
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("ERLANG_VERSION"); envVersion != "" {
-		miseStep.Version(erlang, envVersion, varName)
+	if erlangVersion, source := p.erlangVersion(ctx); erlangVersion != "" {
+		miseStep.Version(erlang, erlangVersion, source)
 	}
 
 	miseStep.UseMiseVersions(ctx, []string{"elixir", "erlang"})
+}
+
+func (p *ElixirProvider) providerConfig(ctx *generate.GenerateContext) *elixirconfig.ElixirConfig {
+	if ctx.Config == nil {
+		return nil
+	}
+
+	return ctx.Config.Elixir
+}
+
+func (p *ElixirProvider) elixirVersion(ctx *generate.GenerateContext) (string, string) {
+	if envVersion, varName := ctx.Env.GetConfigVariable("ELIXIR_VERSION"); envVersion != "" {
+		return envVersion, varName
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil && providerConfig.Version != "" {
+		return providerConfig.Version, "elixir.version"
+	}
+
+	return "", ""
+}
+
+func (p *ElixirProvider) erlangVersion(ctx *generate.GenerateContext) (string, string) {
+	if envVersion, varName := ctx.Env.GetConfigVariable("ERLANG_VERSION"); envVersion != "" {
+		return envVersion, varName
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil && providerConfig.ErlangVersion != "" {
+		return providerConfig.ErlangVersion, "elixir.erlangVersion"
+	}
+
+	return "", ""
 }
 
 func (p *ElixirProvider) GetEnvVars(ctx *generate.GenerateContext) map[string]string {
