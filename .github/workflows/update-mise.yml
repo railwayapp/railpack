@@ -3,6 +3,7 @@ name: Update Mise Version
 on:
   schedule:
     - cron: '0 0 * * *'
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -16,6 +17,9 @@ jobs:
         with:
           fetch-depth: 0
       - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566
+
+      # Temporary fix to allow testing the script on a PR branch
+      - run: git checkout -B main
 
       - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074
 
