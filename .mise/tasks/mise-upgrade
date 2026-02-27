@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 # Description: one-click command to check for a new mise version and create a PR to update core/mise/version.txt.
 
 set -euo pipefail
@@ -6,14 +6,13 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-# Ensure upstream remote exists
-if ! git remote | grep -q '^upstream$'; then
-  echo "Error: 'upstream' remote is not configured. Please add it to fetch the latest changes." >&2
-  exit 1
+# Pull latest changes from upstream if it exists
+base_branch="main"
+if git remote | grep -q '^upstream$'; then
+  git fetch upstream main
+  git pull upstream main
+  base_branch="upstream/main"
 fi
-
-# Fetch latest changes from upstream
-git fetch upstream main
 
 # Require clean working tree for tracked files
 if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
@@ -47,7 +46,7 @@ if git show-ref --verify --quiet "refs/heads/$branch"; then
   exit 1
 fi
 
-git switch -c "$branch" upstream/main
+git switch -c "$branch" "$base_branch"
 
 # Write the new version to version.txt
 echo "$latest" > "$file"
@@ -69,6 +68,9 @@ fi
 git add -- "$file"
 git commit -m "update mise $latest"
 
+# Push the branch (needed in CI and good practice locally)
+git push -u origin "$branch"
+
 gh pr create \
   --title "chore: mise update $latest" \
-  --body "Update mise to $latest" \
+  --body "Update mise to $latest"
