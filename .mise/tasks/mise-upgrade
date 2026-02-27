@@ -6,15 +6,14 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-# Check that we're on the main branch
-current_branch="$(git branch --show-current)"
-if [[ "$current_branch" != "main" ]]; then
-  echo "Error: must be on 'main' branch, currently on '$current_branch'" >&2
+# Ensure upstream remote exists
+if ! git remote | grep -q '^upstream$'; then
+  echo "Error: 'upstream' remote is not configured. Please add it to fetch the latest changes." >&2
   exit 1
 fi
 
-# Pull latest changes from upstream
-git pull upstream main
+# Fetch latest changes from upstream
+git fetch upstream main
 
 # Require clean working tree for tracked files
 if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
@@ -48,7 +47,7 @@ if git show-ref --verify --quiet "refs/heads/$branch"; then
   exit 1
 fi
 
-git switch -c "$branch"
+git switch -c "$branch" upstream/main
 
 # Write the new version to version.txt
 echo "$latest" > "$file"
