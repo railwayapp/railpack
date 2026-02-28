@@ -92,6 +92,12 @@ run = "bun run build"
 dir = "docs"
 run = "bun run dev"
 
+[tasks.image-builder-build]
+run = "docker build --build-arg MISE_VERSION=$(cat core/mise/version.txt) -f images/debian/build/Dockerfile -t railpack-builder:local ."
+
+[tasks.image-runtime-build]
+run = "docker build -f images/debian/runtime/Dockerfile -t railpack-runtime:local ."
+
 [tools]
 go = "1.23.4"
 golangci-lint = "1.63.4"
