@@ -6,6 +6,13 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
+# Check that we're on the main branch
+current_branch="$(git branch --show-current)"
+if [[ "$current_branch" != "main" ]]; then
+  echo "Error: must be on 'main' branch, currently on '$current_branch'" >&2
+  exit 1
+fi
+
 # Pull latest changes from upstream if it exists
 base_branch="main"
 if git remote | grep -q '^upstream$'; then
