@@ -14,6 +14,11 @@ on:
     # these backends, and the services they connect to are not. By running integration tests each day, we'll know if
     # something changes in the package ecosystem that breaks one of our build tests.
     - cron: "0 0 * * *"
+
+env:
+  # in rare cases, docker hub can timeout
+  DOCKER_CLIENT_TIMEOUT: 300
+
 jobs:
   # generate a JSON array of all entries in examples/ to shard out example into a separate job that can be run in parallel
   find-examples:
@@ -59,19 +64,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Start BuildKit
-        env:
-          # in rare cases, docker hub can timeout
-          DOCKER_CLIENT_TIMEOUT: 300
-        run: |
-          docker run --rm --privileged -d \
-            --name buildkit \
-            -e BUILDKIT_DEBUG=1 \
-            moby/buildkit:latest
-
-          # Wait for BuildKit to be ready
-          sleep 5
-
-          echo "BUILDKIT_HOST=docker-container://buildkit" >> $GITHUB_ENV
+        run: mise run run-buildkit-container
 
       - name: Install dependencies
         run: go mod download
