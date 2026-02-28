@@ -2,6 +2,7 @@ name: Release
 
 on:
   push:
+    # pushing a new tag is what triggers the release process
     tags:
       - "v*"
 
@@ -14,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_CLI_EXPERIMENTAL: "enabled"
+      # this is referenced by the .goreleaser.yml config
       FRONTEND_IMAGE: "ghcr.io/railwayapp/railpack-frontend"
     steps:
       - name: Checkout
