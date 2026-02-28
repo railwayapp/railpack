@@ -1,7 +1,6 @@
 package plan
 
 const (
-	RailpackBuilderImage = "ghcr.io/railwayapp/railpack-builder:latest"
 	RailpackRuntimeImage = "ghcr.io/railwayapp/railpack-runtime:latest"
 )
 
