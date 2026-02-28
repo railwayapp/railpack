@@ -42,7 +42,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=mise-${{ steps.mise-version.outputs.version }}
             type=raw,value=debian-bookworm
             type=sha,format=long
             type=raw,value={{date 'YYYYMMDD'}}

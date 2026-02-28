@@ -46,8 +46,11 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # each builder image is tagged with the specific mise version it contains, this is used to reference the build
+          # image version within the railpack CLI to ensure the exact same mise version is used on the host and in the build image
           tags: |
-            type=raw,value=latest
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=mise-${{ steps.mise-version.outputs.version }}
             type=raw,value=debian-bookworm
             type=sha,format=long
             type=raw,value={{date 'YYYYMMDD'}}

@@ -1,3 +1,4 @@
+# run automatically when a tag is created by the release.yml workflow
 version: 2
 
 before:
@@ -35,6 +36,8 @@ archives:
       - goos: windows
         formats: [zip]
 
+# build a multi-arch railpack frontend image to be used by buildkit to convert a repo (and any railpack.json) into docker llb
+# the railpack build and runtime images are created separately``
 dockers:
   - image_templates:
       - "{{ .Env.FRONTEND_IMAGE }}:{{ .Tag }}-amd64"
@@ -72,7 +75,5 @@ checksum:
 
 release:
   prerelease: auto
-
   name_template: "{{.ProjectName}} v{{.Version}}"
-
   include_meta: true
