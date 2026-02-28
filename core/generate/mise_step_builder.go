@@ -17,8 +17,11 @@ import (
 const (
 	MisePackageStepName = "packages:mise"
 	// System-level config at /etc/mise/config.toml is auto-trusted by mise
-	MiseInstallCommand   = "mise install"
-	RailpackBuilderImage = "ghcr.io/railwayapp/railpack-builder:latest"
+	MiseInstallCommand = "mise install"
+)
+
+var (
+	RailpackBuilderImage = fmt.Sprintf("ghcr.io/railwayapp/railpack-builder:mise-%s", mise.Version)
 )
 
 // represents a app-local mise package
