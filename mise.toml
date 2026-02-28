@@ -5,10 +5,13 @@ _.path = './bin'
 [tasks.setup]
 run = [
   "mise install",
-  "docker run --rm --privileged -d --name buildkit moby/buildkit || true",
+  "mise run run-buildkit-container || true",
   "mise run tidy",
   "cd docs/ && bun install",
 ]
+
+[tasks.run-buildkit-container]
+run = "docker run --rm --privileged -d --name buildkit -e BUILDKIT_DEBUG=1 moby/buildkit:latest"
 
 [tasks.cli]
 run = "go run cmd/cli/main.go"
