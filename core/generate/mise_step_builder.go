@@ -17,7 +17,8 @@ import (
 const (
 	MisePackageStepName = "packages:mise"
 	// System-level config at /etc/mise/config.toml is auto-trusted by mise
-	MiseInstallCommand = "mise install"
+	MiseInstallCommand   = "mise install"
+	RailpackBuilderImage = "ghcr.io/railwayapp/railpack-builder:latest"
 )
 
 // represents a app-local mise package
@@ -216,7 +217,7 @@ func (b *MiseStepBuilder) GetLayer() plan.Layer {
 }
 
 func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) error {
-	baseLayer := plan.NewImageLayer(plan.RailpackBuilderImage)
+	baseLayer := plan.NewImageLayer(RailpackBuilderImage)
 
 	if len(b.SupportingAptPackages) > 0 {
 		aptStep := plan.NewStep("packages:apt:build")
