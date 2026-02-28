@@ -1,8 +1,8 @@
+# Image used by railpack during the build process, but not as the base image of the final runtime image
 FROM buildpack-deps:bookworm-scm
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
     # Build tools
     build-essential \
