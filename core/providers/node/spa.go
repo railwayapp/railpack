@@ -81,11 +81,11 @@ func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.
 		ctx.Logger.LogInfo("Using custom Caddyfile: %s", caddyfileTemplate.Filename)
 	}
 
-	installCaddyStep := ctx.NewInstallBinStepBuilder("packages:caddy")
-	installCaddyStep.Default("caddy", "latest")
+	miseStep := ctx.GetMiseStepBuilder()
+	miseStep.Default("caddy", "latest")
 
 	caddy := ctx.NewCommandStep("caddy")
-	caddy.AddInput(plan.NewStepLayer(installCaddyStep.Name()))
+	caddy.AddInput(plan.NewStepLayer(miseStep.Name()))
 	caddy.AddCommands([]plan.Command{
 		plan.NewFileCommand(DefaultCaddyfilePath, "Caddyfile"),
 		plan.NewExecCommand(fmt.Sprintf("caddy fmt --overwrite %s", DefaultCaddyfilePath)),
@@ -97,7 +97,7 @@ func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.
 	ctx.Deploy.StartCmd = fmt.Sprintf("caddy run --config %s --adapter caddyfile 2>&1", DefaultCaddyfilePath)
 
 	ctx.Deploy.AddInputs([]plan.Layer{
-		installCaddyStep.GetLayer(),
+		miseStep.GetLayer(),
 		plan.NewStepLayer(caddy.Name(), plan.Filter{
 			Include: []string{DefaultCaddyfilePath},
 		}),
@@ -105,19 +105,6 @@ func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.
 			Include: []string{outputDir},
 		}),
 	})
-
-	// ctx.Deploy.Inputs = []plan.Layer{
-	// 	ctx.DefaultRuntimeInput(),
-	// 	plan.NewStepLayer(installCaddyStep.Name(), plan.InputOptions{
-	// 		Include: installCaddyStep.GetOutputPaths(),
-	// 	}),
-	// 	plan.NewStepLayer(caddy.Name(), plan.InputOptions{
-	// 		Include: []string{DefaultCaddyfilePath},
-	// 	}),
-	// 	plan.NewStepLayer(build.Name(), plan.InputOptions{
-	// 		Include: []string{outputDir},
-	// 	}),
-	// }
 
 	return nil
 }
