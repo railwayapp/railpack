@@ -1,4 +1,4 @@
-name: Run Tests
+name: Integration Tests
 
 on:
   push:
@@ -16,8 +16,7 @@ on:
     - cron: "0 0 * * *"
 
 env:
-  # in rare cases, docker hub can timeout
-  DOCKER_CLIENT_TIMEOUT: 300
+  MISE_ENV: ci
 
 jobs:
   # generate a JSON array of all entries in examples/ to shard out example into a separate job that can be run in parallel
@@ -26,16 +25,47 @@ jobs:
     outputs:
       examples: ${{ steps.find-examples.outputs.examples }}
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Find examples with test.json
         id: find-examples
         run: |
           examples=$(find examples -name "test.json" -exec dirname {} \; | xargs -n 1 basename | jq -R -s -c 'split("\n")[:-1]')
           echo "examples=$examples" >> "$GITHUB_OUTPUT"
+  
+  # integration tests plan, build, and run example projects. Running the example projects requires both the builder and runtime
+  # images. If the mise version changes, we want to ensure there are no breakages, which means we need to use fresh images
+  # that contain the pinned mise version. The code below builds these requires images, and pushes them to a production
+  # registry so they can be used properly in the matrix jobs (which all run in an isolated runner, so they must reference a remote registry).
+  # These images are *not* tagged with `latest` or other more generic tags used in the release workflow. Additionally,
+  # since railpack uses a image tag from the mise version compiled into the binary, pushes to the registry should not cause
+  # any production impacts.
+  build-images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-docker
+
+      # TODO check if the mise images already exist on the registry
+
+      - name: Build Builder Image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        with:
+          context: images/debian/build
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ env.PRODUCTION_BUILDER_IMAGE_NAME }}:${{ env.PRODUCTION_MISE_TAG }}
+          build-args: MISE_VERSION=${{ env.RAILPACK_MISE_VERSION }}
+          push: true
+
+      - name: Build Runtime Image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        with:
+          context: images/debian/runtime
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ env.PRODUCTION_RUNTIME_IMAGE_NAME }}:${{ env.PRODUCTION_MISE_TAG }}
+          push: true
 
   test:
-    needs: find-examples
+    needs: [build-images, find-examples]
     runs-on: ubuntu-latest
     # packages:read is not available by default and is required for docker login to ghcr.io
     permissions:
@@ -48,26 +78,23 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-      - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8
 
       # Set up GitHub Actions runtime for BuildKit cache
-      - name: Set up BuildKit GHA cache
-        uses: crazy-max/ghaction-github-runtime@v3
+      # - name: Set up BuildKit GHA cache
+      #   uses: crazy-max/ghaction-github-runtime@v3
 
       # Not strictly required, but authenticating increases rate limits and reduces 429 errors
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ${{ env.PRODUCTION_CONTAINER_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Start BuildKit
         run: mise run run-buildkit-container
-
-      - name: Install dependencies
-        run: go mod download
 
       # required for integration tests that use multiple platforms
       - name: Set up QEMU

@@ -1,5 +1,7 @@
 [env]
 BUILDKIT_HOST = "docker-container://buildkit"
+RAILPACK_MISE_VERSION = "{{exec(command='cat core/mise/version.txt')}}"
+
 _.path = './bin'
 
 [tasks.setup]
@@ -96,7 +98,7 @@ dir = "docs"
 run = "bun run dev"
 
 [tasks.image-builder-build]
-run = "docker build --build-arg MISE_VERSION=$(cat core/mise/version.txt) -f images/debian/build/Dockerfile -t railpack-builder:local ."
+run = "docker build --build-arg MISE_VERSION=$RAILPACK_MISE_VERSION -f images/debian/build/Dockerfile -t railpack-builder:local ."
 
 [tasks.image-runtime-build]
 run = "docker build -f images/debian/runtime/Dockerfile -t railpack-runtime:local ."
@@ -112,3 +114,4 @@ experimental = true
 idiomatic_version_file_enable_tools = ["python", "node", "ruby"]
 # ensures homebrew go, etc doesn't take precedence
 activate_aggressive = true
+env_shell_expand = true
