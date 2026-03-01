@@ -124,3 +124,9 @@ func TestMiseGetAllVersions(t *testing.T) {
 		})
 	}
 }
+
+func TestMiseVersion(t *testing.T) {
+	require.NotEmpty(t, miseVersionRaw, "mise version file should not be empty")
+	require.Equal(t, strings.TrimSpace(miseVersionRaw), miseVersionRaw, "mise version file should be trimmed")
+	require.Regexp(t, `^\d+\.\d+\.\d+$`, miseVersionRaw, "mise version should match format YYYY.M.D")
+}
