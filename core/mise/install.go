@@ -25,7 +25,7 @@ var miseVersion string
 const githubReleaseBase = "https://github.com/jdx/mise/releases/download"
 
 func init() {
-	miseVersion = strings.TrimSpace(miseVersionRaw)
+	miseVersion = miseVersionRaw
 }
 
 // returns name of the mise binary based on the operating system
