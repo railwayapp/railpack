@@ -13,6 +13,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
+  MISE_ENV: ci
 
 jobs:
   publish-builder:
