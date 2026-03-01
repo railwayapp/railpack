@@ -1,4 +1,4 @@
-name: Integration Tests
+name: Run Tests
 
 on:
   push:
@@ -41,36 +41,66 @@ jobs:
   # any production impacts.
   build-images:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
     steps:
+      # duplicated on the release.yml job, keep these in sync
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: ./.github/actions/setup-docker
+      - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        with:
+          registry: ${{ env.PRODUCTION_CONTAINER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # TODO check if the mise images already exist on the registry
+      # since railpack binary is pinned to a specific version, we only want to build and push the images if the mise version
+      # has changed. This isn't *exactly* true, as there could be a world where we want to build a new image with a changed
+      # dockerfile, but this should be extremely rare and would be an important breaking change. Mise versions should be
+      # changed pretty frequently, which means we'll pick up any updates to the `FROM` images soon, so we shouldn't need
+      # to update these images outside of a mise version update.
+      - name: Check for mise version change
+        id: mise_version
+        run: |
+          # clones are shallow by default
+          git fetch origin main --depth=1
+
+          if ! git diff --quiet origin/main HEAD -- core/mise/version.txt; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"            
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build Builder Image
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        if: steps.mise_version.outputs.changed == 'true'
         with:
           context: images/debian/build
           platforms: linux/amd64,linux/arm64
-          tags: ${{ env.PRODUCTION_BUILDER_IMAGE_NAME }}:${{ env.PRODUCTION_MISE_TAG }}
+          tags: ${{ env.PRODUCTION_BUILDER_IMAGE_REF }}
           build-args: MISE_VERSION=${{ env.RAILPACK_MISE_VERSION }}
           push: true
+          # instead of figuring out the right "what's changed" mechanism
+          cache-from: type=registry,ref=${{ env.PRODUCTION_BUILDER_IMAGE_REF }}
+          # embed cache metadata into the image being pushed so it can be used on the next run against this PR
+          cache-to: type=inline
 
       - name: Build Runtime Image
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        if: steps.mise_version.outputs.changed == 'true'
         with:
           context: images/debian/runtime
           platforms: linux/amd64,linux/arm64
-          tags: ${{ env.PRODUCTION_RUNTIME_IMAGE_NAME }}:${{ env.PRODUCTION_MISE_TAG }}
+          tags: ${{ env.PRODUCTION_RUNTIME_IMAGE_REF }}
           push: true
+          cache-from: type=registry,ref=${{ env.PRODUCTION_BUILDER_IMAGE_REF }}
+          cache-to: type=inline
 
   test:
     needs: [build-images, find-examples]
     runs-on: ubuntu-latest
-    # packages:read is not available by default and is required for docker login to ghcr.io
-    permissions:
-      contents: read
-      packages: read
     strategy:
       matrix:
         # create a separate job for each entry in examples/. i.e. gleam, elixir-ecto, etc
@@ -79,15 +109,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8
+      - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074
 
-      # Set up GitHub Actions runtime for BuildKit cache
-      # - name: Set up BuildKit GHA cache
-      #   uses: crazy-max/ghaction-github-runtime@v3
-
-      # Not strictly required, but authenticating increases rate limits and reduces 429 errors
+      # not strictly required, but authenticating increases rate limits and reduces 429 errors
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
         with:
           registry: ${{ env.PRODUCTION_CONTAINER_REGISTRY }}
           username: ${{ github.actor }}
@@ -98,7 +124,7 @@ jobs:
 
       # required for integration tests that use multiple platforms
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
 
       - name: Run test for ${{ matrix.example }}
         env:
@@ -109,9 +135,6 @@ jobs:
           go test -v ./integration_tests \
             -run "^TestExamplesIntegration/${{ matrix.example }}$" \
             -timeout 20m
-        # TODO Add cache import/export flags to the test command
-        # -buildkit-cache-import="type=gha,url=${{ env.ACTIONS_CACHE_URL }},token=${{ env.ACTIONS_RUNTIME_TOKEN }},scope=${{ matrix.example }}" \
-        # -buildkit-cache-export="type=gha,url=${{ env.ACTIONS_CACHE_URL }},token=${{ env.ACTIONS_RUNTIME_TOKEN }},mode=max,scope=${{ matrix.example }},error=ignore,compression=zstd"
 
       - name: Upload size.json
         if: always()
