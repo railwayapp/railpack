@@ -43,6 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
+      contents: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074
