@@ -11,6 +11,7 @@ import (
 	"github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/logger"
 	"github.com/railwayapp/railpack/core/plan"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -185,5 +186,134 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to parse .dockerignore")
 		require.Nil(t, ctx)
+	})
+}
+
+func TestGenerateContextDeployInputs(t *testing.T) {
+	t.Run("deploy inputs with specific include prevents default output", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+		provider := &TestProvider{}
+		require.NoError(t, provider.Plan(ctx))
+
+		configJSON := `{
+			"steps": {
+				"install": {
+					"commands": ["echo installing"]
+				},
+				"build": {
+					"commands": ["echo building"]
+				}
+			},
+			"deploy": {
+				"startCommand": "echo hello",
+				"inputs": [{"step": "build", "include": ["dist"]}]
+			}
+		}`
+
+		var cfg config.Config
+		require.NoError(t, json.Unmarshal([]byte(configJSON), &cfg))
+		ctx.Config = &cfg
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+
+		for _, input := range buildPlan.Deploy.Inputs {
+			if input.Step == "build" {
+				for _, inc := range input.Include {
+					assert.NotEqual(t, ".", inc,
+						"deploy inputs should not contain default '.' when user specified deploy.inputs")
+				}
+			}
+			assert.NotEqual(t, "install", input.Step,
+				"install step should not have a default deploy output when user specified deploy.inputs")
+		}
+
+		found := false
+		for _, input := range buildPlan.Deploy.Inputs {
+			if input.Step == "build" && len(input.Include) == 1 && input.Include[0] == "dist" {
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "user's deploy input with include 'dist' should be present")
+	})
+
+	t.Run("no deploy inputs preserves default behavior", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+		provider := &TestProvider{}
+		require.NoError(t, provider.Plan(ctx))
+
+		configJSON := `{
+			"steps": {
+				"build": {
+					"commands": ["echo building"]
+				}
+			},
+			"deploy": {
+				"startCommand": "echo hello"
+			}
+		}`
+
+		var cfg config.Config
+		require.NoError(t, json.Unmarshal([]byte(configJSON), &cfg))
+		ctx.Config = &cfg
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+
+		found := false
+		for _, input := range buildPlan.Deploy.Inputs {
+			if input.Step == "build" && len(input.Include) == 1 && input.Include[0] == "." {
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "default '.' deploy output should be present when no deploy.inputs specified")
+	})
+
+	t.Run("deploy inputs with deployOutputs on step", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+		provider := &TestProvider{}
+		require.NoError(t, provider.Plan(ctx))
+
+		configJSON := `{
+			"steps": {
+				"build": {
+					"commands": ["echo building"],
+					"deployOutputs": [{"include": ["dist"]}]
+				}
+			},
+			"deploy": {
+				"startCommand": "echo hello",
+				"inputs": [{"step": "build", "include": ["other"]}]
+			}
+		}`
+
+		var cfg config.Config
+		require.NoError(t, json.Unmarshal([]byte(configJSON), &cfg))
+		ctx.Config = &cfg
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+
+		// The user's deploy.inputs layer should be present
+		foundUserInput := false
+		for _, input := range buildPlan.Deploy.Inputs {
+			if input.Step == "build" && len(input.Include) == 1 && input.Include[0] == "other" {
+				foundUserInput = true
+				break
+			}
+		}
+		require.True(t, foundUserInput, "user's deploy input should be present")
+
+		// The step's deployOutputs should also be present
+		foundDeployOutput := false
+		for _, input := range buildPlan.Deploy.Inputs {
+			if input.Step == "build" && len(input.Include) == 1 && input.Include[0] == "dist" {
+				foundDeployOutput = true
+				break
+			}
+		}
+		require.True(t, foundDeployOutput, "step's deployOutputs should still be honored")
 	})
 }
