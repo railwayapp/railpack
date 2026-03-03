@@ -1,14 +1,18 @@
 [env]
 BUILDKIT_HOST = "docker-container://buildkit"
+RAILPACK_MISE_VERSION = "{{exec(command='cat core/mise/version.txt')}}"
+
 _.path = './bin'
 
 [tasks.setup]
 run = [
   "mise install",
-  "docker run --rm --privileged -d --name buildkit moby/buildkit || true",
+  "mise run run-buildkit-container || true",
   "mise run tidy",
-  "cd docs/ && bun install",
 ]
+
+[tasks.run-buildkit-container]
+run = "docker run --rm --privileged -d --name buildkit -e BUILDKIT_DEBUG=1 moby/buildkit:latest"
 
 [tasks.cli]
 run = "go run cmd/cli/main.go"
@@ -71,13 +75,23 @@ run = ["go vet ./...", "go fmt ./...", "golangci-lint run"]
 [tasks.tidy]
 run = "go mod tidy"
 
+# build docs for production
 [tasks.docs-build]
 dir = "docs"
-run = "bun run build"
+run = [
+  "bun install --frozen-lockfile",
+  "bun run build"
+]
 
 [tasks.docs-dev]
 dir = "docs"
-run = "bun run dev"
+run = ["bun install","bun run dev"]
+
+[tasks.image-builder-build]
+run = "docker build --build-arg MISE_VERSION=$RAILPACK_MISE_VERSION -f images/debian/build/Dockerfile -t railpack-builder:local ."
+
+[tasks.image-runtime-build]
+run = "docker build -f images/debian/runtime/Dockerfile -t railpack-runtime:local ."
 
 [tools]
 go = "1.23.4"
@@ -88,3 +102,4 @@ bun = "1.3"
 experimental = true
 # without this, navigating into various examples/ will output an annoying warning
 idiomatic_version_file_enable_tools = ["python", "node", "ruby"]
+env_shell_expand = true

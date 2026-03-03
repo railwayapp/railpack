@@ -1,8 +1,13 @@
 package plan
 
-const (
-	RailpackBuilderImage = "ghcr.io/railwayapp/railpack-builder:latest"
-	RailpackRuntimeImage = "ghcr.io/railwayapp/railpack-runtime:latest"
+import (
+	"fmt"
+
+	"github.com/railwayapp/railpack/core/mise"
+)
+
+var (
+	RailpackRuntimeImage = fmt.Sprintf("ghcr.io/railwayapp/railpack-runtime:mise-%s", mise.Version)
 )
 
 // serialized to railpack.json

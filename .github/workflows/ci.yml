@@ -16,6 +16,9 @@ on:
     # run every day to alert against changes in default mise versions which break snapshot tests
     - cron: "0 0 * * *"
 
+env:
+  MISE_ENV: ci
+
 jobs:
   test:
     name: Check and Test
