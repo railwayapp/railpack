@@ -9,7 +9,6 @@ run = [
   "mise install",
   "mise run run-buildkit-container || true",
   "mise run tidy",
-  "cd docs/ && bun install",
 ]
 
 [tasks.run-buildkit-container]
@@ -89,13 +88,17 @@ run = ["go vet ./...", "go fmt ./...", "golangci-lint run"]
 [tasks.tidy]
 run = "go mod tidy"
 
+# build docs for production
 [tasks.docs-build]
 dir = "docs"
-run = "bun run build"
+run = [
+  "bun install --frozen-lockfile",
+  "bun run build"
+]
 
 [tasks.docs-dev]
 dir = "docs"
-run = "bun run dev"
+run = ["bun install","bun run dev"]
 
 [tasks.image-builder-build]
 run = "docker build --build-arg MISE_VERSION=$RAILPACK_MISE_VERSION -f images/debian/build/Dockerfile -t railpack-builder:local ."
