@@ -260,6 +260,7 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 		})
 		maps.Copy(step.Variables, b.Variables)
 
+		// pass through the MISE_VERBOSE variable for detailed logging
 		if verbose := b.env.GetVariable("MISE_VERBOSE"); verbose != "" {
 			step.Variables["MISE_VERBOSE"] = verbose
 		}
@@ -287,7 +288,7 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			return fmt.Errorf("failed to generate mise.toml: %w", err)
 		}
 
-		b.Assets["mise.toml"] = miseToml
+		b.Assets["generated-mise-toml"] = miseToml
 
 		pkgNames := make([]string, 0, len(packagesToInstall))
 		for k := range packagesToInstall {
@@ -296,7 +297,7 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 		sort.Strings(pkgNames)
 
 		step.AddCommands([]plan.Command{
-			plan.NewFileCommand("/etc/mise/config.toml", "mise.toml", plan.FileOptions{
+			plan.NewFileCommand("/etc/mise/config.toml", "generated-mise-toml", plan.FileOptions{
 				CustomName: "create mise config",
 			}),
 			plan.NewExecCommand(MiseInstallCommand, plan.ExecOptions{
@@ -315,6 +316,7 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 
 var miseConfigFiles = []string{
 	"mise.toml",
+	"mise.lock",
 	".tool-versions",
 	".python-version",
 	".node-version",
