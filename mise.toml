@@ -55,9 +55,22 @@ if [[ ! "$MISE_ORIGINAL_CWD" =~ /examples/ ]]; then
   echo "Error: must be run from within an examples/ directory"
   exit 1
 fi
+
 example_name=$(basename "$MISE_ORIGINAL_CWD")
 echo "Running integration test for: $example_name"
 go test -v ./integration_tests -run "TestExamplesIntegration/$example_name"
+"""
+
+[tasks.run-example-cwd]
+run = """
+if [[ ! "$MISE_ORIGINAL_CWD" =~ /examples/ ]]; then
+  echo "Error: must be run from within an examples/ directory"
+  exit 1
+fi
+
+example_name=$(basename "$MISE_ORIGINAL_CWD")
+mise run cli build $MISE_ORIGINAL_CWD --show-plan
+echo "Running example: 'docker run $example_name'"
 """
 
 # update all test snapshots, if you've updated a example/ project, run this to update the snapshots
