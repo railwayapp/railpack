@@ -267,8 +267,11 @@ func formatBytes(bytes int64) string {
 	return fmt.Sprintf("%.1f MB", float64(bytes)/mb)
 }
 
+// Writes image size metadata to size.json in the example directory so CI can
+// collect and track image sizes over time via benchmark-action.
 func writeImageSize(examplePath string, name string, sizeBytes int64, folderSizes map[string]int64) error {
 	data := map[string]any{
+		// not required, but makes it easier to identify which example a size.json was tied to
 		"name":      name,
 		"size":      sizeBytes,
 		"sizeHuman": formatBytes(sizeBytes),
