@@ -237,6 +237,7 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 
 	if len(b.MisePackages) > 0 {
 		step.AddCommands([]plan.Command{plan.NewPathCommand("/mise/shims")})
+		// NOTE make sure to keep (some) of the variables below in sync with install_bin_builder
 		maps.Copy(step.Variables, map[string]string{
 			"MISE_DATA_DIR":     "/mise",
 			"MISE_CONFIG_DIR":   "/mise",

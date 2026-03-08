@@ -164,7 +164,7 @@
   {
    "commands": [
     {
-     "cmd": "mise install-into caddy@2.11.1 /railpack/caddy"
+     "cmd": "mise install-into caddy@2.11.2 /railpack/caddy"
     },
     {
      "path": "/railpack/caddy"
@@ -178,7 +178,10 @@
      "image": "ghcr.io/railwayapp/railpack-builder:latest"
     }
    ],
-   "name": "packages:caddy"
+   "name": "packages:caddy",
+   "variables": {
+    "MISE_PARANOID": "1"
+   }
   },
   {
    "assets": {
