@@ -87,8 +87,11 @@ func TestExamplesIntegration(t *testing.T) {
 		testConfigBytes, err = utils.StandardizeJSON(testConfigBytes)
 		require.NoError(t, err)
 
+		// extract test.json from the example directory, and fail if unexpected fields are present
 		var testCases []TestCase
-		err = json.Unmarshal(testConfigBytes, &testCases)
+		decoder := json.NewDecoder(strings.NewReader(string(testConfigBytes)))
+		decoder.DisallowUnknownFields()
+		err = decoder.Decode(&testCases)
 		require.NoError(t, err)
 
 		// Validate test case configuration
