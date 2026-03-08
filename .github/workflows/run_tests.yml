@@ -93,6 +93,49 @@ jobs:
         # -buildkit-cache-import="type=gha,url=${{ env.ACTIONS_CACHE_URL }},token=${{ env.ACTIONS_RUNTIME_TOKEN }},scope=${{ matrix.example }}" \
         # -buildkit-cache-export="type=gha,url=${{ env.ACTIONS_CACHE_URL }},token=${{ env.ACTIONS_RUNTIME_TOKEN }},mode=max,scope=${{ matrix.example }},error=ignore,compression=zstd"
 
+      - name: Upload size.json
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: size-${{ matrix.example }}
+          path: examples/${{ matrix.example }}/size.json
+          if-no-files-found: ignore
+
       - name: Stop BuildKit
         if: always()
         run: docker stop buildkit
+
+  # Collects size.json artifacts from all matrix jobs, merges them into a single
+  # benchmark payload, and pushes to gh-pages so benchmark-action can track
+  # image size trends over time. Only runs on main to avoid polluting history.
+  track-sizes:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write # required for benchmark-action to push to gh-pages
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+      - name: Download all size artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: size-*
+          merge-multiple: false # each artifact lands in its own size-<example>/ directory
+
+      - name: Merge size.json files into benchmark format
+        # customSmallerIsBetter expects [{name, unit, value}]; folders stay in size.json for manual inspection only
+        run: |
+          jq -s '[.[] | {name: .name, unit: "bytes", value: .size}]' size-*/size.json > benchmark.json
+
+      - name: Store benchmark results
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: customSmallerIsBetter
+          output-file-path: benchmark.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          benchmark-data-dir-path: dev/bench
+          alert-threshold: '120%' # alert when an image grows more than 20%
+          comment-on-alert: true
