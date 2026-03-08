@@ -21,6 +21,7 @@ with support for Node, Python, Go, PHP, and more.
 - When writing a comment describing a function, do not start the comment with the name of the function
 - Assume the person reading this code is an expert software engineer, but is not familiar with the internals of every system. Include concise one-line comments explaining key hooks, API usage, blocks of logic, etc., to help the reader quickly understand the code you've written.
 - Follow Go conventions and existing patterns in the codebase
+- Prefer early returns or early continues to `if` nesting
 - Use appropriate error handling with proper error wrapping
 - Do not write comments that are obvious from the code itself; focus on
   explaining why something is done, not what it does
