@@ -19,7 +19,7 @@ func TestPackagesWithDefaults(t *testing.T) {
 }
 
 func TestPackageResolver(t *testing.T) {
-	resolver, err := NewResolver(mise.TestInstallDir)
+	resolver, err := NewResolver(mise.GetTestInstallDir())
 	require.NoError(t, err)
 
 	// Set up Node.js
@@ -80,7 +80,7 @@ func TestPackageResolver(t *testing.T) {
 }
 
 func TestPackageResolverWithPreviousVersions(t *testing.T) {
-	resolver, err := NewResolver(mise.TestInstallDir)
+	resolver, err := NewResolver(mise.GetTestInstallDir())
 	require.NoError(t, err)
 
 	resolver.SetPreviousVersion("node", "16")
@@ -105,7 +105,7 @@ func TestPackageResolverWithPreviousVersions(t *testing.T) {
 }
 
 func TestResolvingPackagesNotAvailable(t *testing.T) {
-	resolver, err := NewResolver(mise.TestInstallDir)
+	resolver, err := NewResolver(mise.GetTestInstallDir())
 	require.NoError(t, err)
 
 	node := resolver.Default("node", "18.20")

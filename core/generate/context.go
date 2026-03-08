@@ -65,7 +65,7 @@ func (c CommandWrapper) IsSpread() bool {
 }
 
 func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, logger *logger.Logger) (*GenerateContext, error) {
-	resolver, err := resolver.NewResolver(mise.InstallDir)
+	resolver, err := resolver.NewResolver(mise.GetInstallDir())
 	if err != nil {
 		return nil, err
 	}

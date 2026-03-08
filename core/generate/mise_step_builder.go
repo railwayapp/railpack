@@ -116,7 +116,7 @@ func (b *MiseStepBuilder) SkipMiseInstall(name resolver.PackageRef) {
 // GetMisePackageVersions gets all package versions from mise that are defined in the app directory environment
 // this can include additional packages defined outside the app directory, but we filter those out
 func (b *MiseStepBuilder) GetMisePackageVersions(ctx *GenerateContext) (map[string]*MisePackageInfo, error) {
-	miseInstance, err := mise.New(mise.InstallDir)
+	miseInstance, err := mise.New(mise.GetInstallDir())
 	if err != nil {
 		return nil, err
 	}
