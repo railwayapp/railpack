@@ -88,3 +88,5 @@ bun = "1.3"
 experimental = true
 # without this, navigating into various examples/ will output an annoying warning
 idiomatic_version_file_enable_tools = ["python", "node", "ruby"]
+# ensures homebrew go, etc doesn't take precedence
+activate_aggressive = true
