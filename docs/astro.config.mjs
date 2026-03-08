@@ -100,6 +100,10 @@ export default defineConfig({
           link: "/getting-started",
         },
         {
+          label: "FAQ",
+          link: "/faq",
+        },
+        {
           label: "Installation",
           link: "/installation",
         },
