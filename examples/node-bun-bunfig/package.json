@@ -1,0 +1,9 @@
+{
+  "name": "node-bun-bunfig",
+  "private": true,
+  "module": "index.ts",
+  "type": "module",
+  "dependencies": {
+    "@jsr/std__fmt": "0.224.0"
+  }
+}
