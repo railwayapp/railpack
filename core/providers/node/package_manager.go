@@ -226,7 +226,7 @@ func (p PackageManager) GetInstallFolder(ctx *generate.GenerateContext) []string
 // SupportingInstallFiles returns a list of files that are needed to install dependencies
 func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []string {
 	// Use brace expansion for single filesystem traversal instead of 16 separate globs
-	pattern := "**/{package.json,package-lock.json,pnpm-workspace.yaml,yarn.lock,pnpm-lock.yaml,bun.lockb,bun.lock,.yarn,.pnp.*,.yarnrc.yml,.npmrc,.node-version,.nvmrc,patches,.pnpm-patches,prisma}"
+	pattern := "**/{package.json,package-lock.json,pnpm-workspace.yaml,yarn.lock,pnpm-lock.yaml,bun.lockb,bun.lock,bunfig.toml,.yarn,.pnp.*,.yarnrc.yml,.npmrc,.node-version,.nvmrc,patches,.pnpm-patches,prisma}"
 
 	var allFiles []string
 
