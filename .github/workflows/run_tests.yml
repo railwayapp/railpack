@@ -128,9 +128,18 @@ jobs:
           merge-multiple: false
 
       - name: Merge size.json files into benchmark format
-        # customSmallerIsBetter expects [{name, unit, value}]; folders stay in size.json for manual inspection only
+        # customSmallerIsBetter expects [{name, unit, value}]; also emit a simple size.json for manual inspection
         run: |
+          # create a master size.json for manual debugging
+          jq -s '[.[] | .] | sort_by(.name)' size-*/size.json > size.json
+          # this debugging data is compared against the "master" copy in gh-pages
           jq -s '[.[] | {name: .name, unit: "bytes", value: .size}]' size-*/size.json > benchmark.json
+
+      - name: Upload merged size.json
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: sizes
+          path: size.json
 
       - name: Store benchmark results
         uses: benchmark-action/github-action-benchmark@a7bc2366eda11037936ea57d811a43b3418d3073
