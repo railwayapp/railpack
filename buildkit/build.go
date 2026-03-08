@@ -273,7 +273,10 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 }
 
 func getImageName(appDir string) string {
-	parts := strings.Split(appDir, string(os.PathSeparator))
+	// Normalize path separators to forward slash for consistent splitting
+	// This handles both Unix (/path/to/app) and Windows (C:\path\to\app) paths
+	normalized := strings.ReplaceAll(appDir, "\\", "/")
+	parts := strings.Split(normalized, "/")
 	name := parts[len(parts)-1]
 	if name == "" {
 		name = "railpack-app" // Fallback if path ends in separator
