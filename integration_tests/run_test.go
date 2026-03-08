@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -180,6 +181,23 @@ func TestExamplesIntegration(t *testing.T) {
 					t.Fatalf("failed to build image: %v", err)
 				}
 
+				// only need to calculate the size of the image *once*, not for every test case
+				// this is for the image benchmarking system
+				if i == 0 {
+					if sizeBytes, err := getImageSize(imageName); err == nil {
+						t.Logf("image size for %s: %s", entry.Name(), formatBytes(sizeBytes))
+						folderSizes, err := getFolderSizes(imageName)
+						if err != nil {
+							t.Logf("warning: failed to get folder sizes: %v", err)
+						}
+						if err := writeImageSize(examplePath, entry.Name(), sizeBytes, folderSizes); err != nil {
+							t.Logf("warning: failed to write size.json: %v", err)
+						}
+					} else {
+						t.Logf("warning: failed to get image size: %v", err)
+					}
+				}
+
 				if testCase.JustBuild {
 					return
 				}
@@ -202,6 +220,65 @@ func TestExamplesIntegration(t *testing.T) {
 			})
 		}
 	}
+}
+
+func getImageSize(imageName string) (int64, error) {
+	out, err := exec.Command("docker", "image", "inspect", imageName, "--format", "{{.Size}}").Output()
+	if err != nil {
+		return 0, err
+	}
+	return strconv.ParseInt(strings.TrimSpace(string(out)), 10, 64)
+}
+
+// returns the byte size of each root-level directory in the
+// image. This is strictly informational for developers to understand what is
+// contributing to image size
+func getFolderSizes(imageName string) (map[string]int64, error) {
+	out, err := exec.Command("docker", "run", "--rm", "--entrypoint", "sh", imageName, "-c", "du -sb /* 2>/dev/null || true").Output()
+	if err != nil {
+		return nil, err
+	}
+
+	skip := map[string]bool{"/proc": true, "/sys": true, "/dev": true}
+	sizes := map[string]int64{}
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "\t", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		path := strings.TrimSpace(parts[1])
+		if skip[path] {
+			continue
+		}
+		size, err := strconv.ParseInt(strings.TrimSpace(parts[0]), 10, 64)
+		if err != nil {
+			continue
+		}
+		sizes[path] = size
+	}
+	return sizes, nil
+}
+
+func formatBytes(bytes int64) string {
+	const mb = 1024 * 1024
+	return fmt.Sprintf("%.1f MB", float64(bytes)/mb)
+}
+
+func writeImageSize(examplePath string, name string, sizeBytes int64, folderSizes map[string]int64) error {
+	data := map[string]any{
+		"name":      name,
+		"size":      sizeBytes,
+		"sizeHuman": formatBytes(sizeBytes),
+		"folders":   folderSizes,
+	}
+	out, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(examplePath, "size.json"), out, 0644)
 }
 
 // wait until cmd subprocess exits
