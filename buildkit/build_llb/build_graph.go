@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"path/filepath"
+	"path"
 	"slices"
 	"strings"
 
@@ -333,7 +333,8 @@ func (g *BuildGraph) convertFileCommandToLLB(cmd plan.FileCommand, state llb.Sta
 	}
 
 	// Create parent directories for the file
-	parentDir := filepath.Dir(cmd.Path)
+	// Use path.Dir for container paths (always forward slash)
+	parentDir := path.Dir(cmd.Path)
 	if parentDir != "/" {
 		s := state.File(llb.Mkdir(parentDir, 0755, llb.WithParents(true)))
 		state = s

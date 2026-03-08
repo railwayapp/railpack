@@ -3,7 +3,6 @@ package build_llb
 import (
 	"fmt"
 	"path"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -260,18 +259,21 @@ func hasPathOverlap(paths1, paths2 []string) bool {
 // resolvePaths determines source and destination paths based on the include path and whether it's local.
 // For local paths, only the basename is preserved when copying to /app directory.
 // For container paths, the full relative path structure is preserved under /app.
+// Note: Uses path.Join (not filepath.Join) for container paths to ensure forward slashes on all platforms.
 func resolvePaths(include string, isLocal bool) (srcPath, destPath string) {
 	if isLocal {
 		// convert a local path reference to fully qualified container path
-		return include, filepath.Join("/app", filepath.Base(include))
+		// Use path.Join and path.Base for container paths (always forward slash)
+		return include, path.Join("/app", path.Base(include))
 	}
 
 	switch {
 	case include == "." || include == "/app" || include == "/app/":
 		return "/app", "/app"
-	case filepath.IsAbs(include):
+	case path.IsAbs(include):
 		return include, include
 	default:
-		return filepath.Join("/app", include), filepath.Join("/app", include)
+		// Use path.Join for container paths (always forward slash)
+		return path.Join("/app", include), path.Join("/app", include)
 	}
 }
