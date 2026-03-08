@@ -17,16 +17,9 @@ jobs:
     name: Build Documentation
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: docs
-
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-      - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074
 
       - name: Build documentation site
         run: mise run docs-build
