@@ -136,6 +136,7 @@ export default defineConfig({
               label: "Environment Variables",
               link: "/config/environment-variables",
             },
+            { label: "Mise", link: "/config/mise" },
             { label: "Procfile", link: "/config/procfile" },
             { label: "Excluding Files", link: "/config/excluding-files" },
           ],

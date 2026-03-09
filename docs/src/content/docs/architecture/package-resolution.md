@@ -14,6 +14,8 @@ Railpack and alternative installation methods are possible (for example PHP will
 use Mise to resolve a valid version and then start from a PHP base image).
 Railpack enables Mise paranoid mode for stricter security validation.
 
+For more information on how Railpack utilizes Mise and our philosophy on tool defaults, see the [Mise Configuration](/config/mise) guide.
+
 ## Previous and default versions
 
 One important aspect of Railpack is that updating the default version of
