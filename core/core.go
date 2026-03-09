@@ -30,7 +30,7 @@ type GenerateBuildPlanOptions struct {
 	StartCommand             string
 	PreviousVersions         map[string]string
 	ConfigFilePath           string
-	ErrorMissingStartCommand bool
+	ErrorMissingStartCommand bool // enabled on railway
 }
 
 type BuildResult struct {
