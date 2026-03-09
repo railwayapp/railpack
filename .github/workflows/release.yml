@@ -33,7 +33,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
         with:
-          images: ${{ env.PRODUCTION_BUILDER_IMAGE_REF }}
+          images: ${{ env.PRODUCTION_BUILDER_IMAGE_NAME }}
           # type=raw,value=latest,enable={{is_default_branch}}
           # type=raw,value=debian-bookworm
           tags: |
@@ -77,7 +77,7 @@ jobs:
           # this makes it easy to ensure we (a) pin the runtime and build images to the same external build image and (b) allows us to build
           # these images *before* the railpack binary build step to ensure they are properly created (railpack relies on them existing, so we want
           # a successful builder + runtime image build before building and releasing a new railpack frontend).
-          images: ${{ env.PRODUCTION_RUNTIME_IMAGE_REF }}
+          images: ${{ env.PRODUCTION_RUNTIME_IMAGE_NAME }}
           # type=raw,value=latest,enable={{is_default_branch}}
           # type=raw,value=debian-bookworm
           tags: |
