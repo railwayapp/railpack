@@ -138,6 +138,8 @@ func (p *RubyProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 		return "bundle exec rake"
 	}
 
+	// unlike py, there's no `main.rb` convention
+
 	return startCommand
 }
 
