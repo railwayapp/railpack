@@ -14,5 +14,8 @@ PRODUCTION_RUNTIME_IMAGE_REF = "${PRODUCTION_RUNTIME_IMAGE_NAME}:${PRODUCTION_MI
 PRODUCTION_FRONTEND_IMAGE_NAME = "${PRODUCTION_CONTAINER_REGISTRY}/${PRODUCTION_GITHUB_REPOSITORY}-frontend"
 
 [settings]
+# intermittent failures on CI are a big time suck, let's be generous with our installation retries
+http_retries = 5
+
 # require URLs to be present in the mise.lockfile to ensure there is consistent versions used across CI runs
 locked = true
