@@ -29,6 +29,8 @@ run = [
   "rm -rf bin dist docs/dist",
   "docker exec buildkit buildctl prune",
   "rm -f *.test",
+  # stop all railpack containers
+  "docker stop $(docker ps -q --filter name=railpack)",
   # remove all images created by the integration test suite
   "docker images 'railpack-test-*' -q | xargs -r docker rmi -f",
   # remove images created by manually running `railpack build` against a project example
@@ -73,7 +75,7 @@ if [[ ! "$MISE_ORIGINAL_CWD" =~ /examples/ ]]; then
 fi
 
 example_name=$(basename "$MISE_ORIGINAL_CWD")
-mise run cli build $MISE_ORIGINAL_CWD --show-plan
+mise run cli build $MISE_ORIGINAL_CWD --show-plan --progress=plain --env MISE_VERBOSE=1
 echo "Running example: 'docker run $example_name'"
 """
 
