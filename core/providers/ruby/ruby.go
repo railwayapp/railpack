@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	DEFAULT_RUBY_VERSION = "3.4.6"
+	DEFAULT_RUBY_VERSION = "3.4"
 )
 
 type RubyProvider struct{}
