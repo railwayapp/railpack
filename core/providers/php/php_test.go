@@ -48,3 +48,38 @@ func TestPhpProvider(t *testing.T) {
 		})
 	}
 }
+
+func TestPhpProviderConfigFromFile(t *testing.T) {
+	t.Run("php extensions from provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/php-laravel-12-react")
+		testingUtils.ClearConfigVariable(ctx, "PHP_EXTENSIONS")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
+			"php": {
+				"extensions": ["xdebug", "imagick"]
+			}
+		}`)
+
+		provider := PhpProvider{}
+		extensions := provider.getPhpExtensions(ctx)
+
+		require.Contains(t, extensions, "xdebug")
+		require.Contains(t, extensions, "imagick")
+	})
+
+	t.Run("php env var takes precedence over provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/php-laravel-12-react")
+		testingUtils.ClearConfigVariable(ctx, "PHP_EXTENSIONS")
+		ctx.Env.SetVariable("RAILPACK_PHP_EXTENSIONS", "imagick")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
+			"php": {
+				"extensions": ["xdebug"]
+			}
+		}`)
+
+		provider := PhpProvider{}
+		extensions := provider.getPhpExtensions(ctx)
+
+		require.Contains(t, extensions, "imagick")
+		require.NotContains(t, extensions, "xdebug")
+	})
+}

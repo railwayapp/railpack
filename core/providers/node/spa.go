@@ -18,12 +18,12 @@ const (
 var caddyfileTemplate string
 
 func (p *NodeProvider) isSPA(ctx *generate.GenerateContext) bool {
-	if ctx.Env.IsConfigVariableTruthy("NO_SPA") {
+	if p.noSPA(ctx) {
 		return false
 	}
 
 	// Setting the output dir directly will force an SPA build
-	if value, _ := ctx.Env.GetConfigVariable(OUTPUT_DIR_VAR); value != "" {
+	if value, _ := p.spaOutputDir(ctx); value != "" {
 		return true
 	}
 
@@ -39,6 +39,28 @@ func (p *NodeProvider) isSPA(ctx *generate.GenerateContext) bool {
 	isReactRouter := p.isReactRouter(ctx)
 
 	return (isVite || isAstro || isCRA || isAngular || isReactRouter) && p.getOutputDirectory(ctx) != ""
+}
+
+func (p *NodeProvider) noSPA(ctx *generate.GenerateContext) bool {
+	if ctx.Env.IsConfigVariableTruthy("NO_SPA") {
+		return true
+	}
+
+	providerConfig := providerConfig(ctx)
+	return providerConfig != nil && providerConfig.NoSpa
+}
+
+func (p *NodeProvider) spaOutputDir(ctx *generate.GenerateContext) (string, string) {
+	if outputDir, envVarName := ctx.Env.GetConfigVariable(OUTPUT_DIR_VAR); outputDir != "" {
+		return outputDir, envVarName
+	}
+
+	providerConfig := providerConfig(ctx)
+	if providerConfig != nil && providerConfig.SpaOutputDir != "" {
+		return providerConfig.SpaOutputDir, "node.spaOutputDir"
+	}
+
+	return "", ""
 }
 
 func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
@@ -125,7 +147,7 @@ func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.
 func (p *NodeProvider) getOutputDirectory(ctx *generate.GenerateContext) string {
 	outputDir := ""
 
-	if dir, _ := ctx.Env.GetConfigVariable(OUTPUT_DIR_VAR); dir != "" {
+	if dir, _ := p.spaOutputDir(ctx); dir != "" {
 		outputDir = dir
 	} else if p.isReactRouter(ctx) {
 		outputDir = p.getReactRouterOutputDirectory(ctx)

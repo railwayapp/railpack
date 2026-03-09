@@ -20,8 +20,8 @@ func (p *JavaProvider) setGradleVersion(ctx *generate.GenerateContext) {
 	miseStep := ctx.GetMiseStepBuilder()
 	gradle := miseStep.Default("gradle", DEFAULT_GRADLE_VERSION)
 
-	if envVersion, envName := ctx.Env.GetConfigVariable("GRADLE_VERSION"); envVersion != "" {
-		miseStep.Version(gradle, envVersion, envName)
+	if gradleVersion, source := p.gradleVersion(ctx); gradleVersion != "" {
+		miseStep.Version(gradle, gradleVersion, source)
 	}
 
 	if !ctx.App.HasFile("gradle/wrapper/gradle-wrapper.properties") {

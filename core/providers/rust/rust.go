@@ -9,6 +9,7 @@ import (
 
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	rustconfig "github.com/railwayapp/railpack/core/providers/rust/config"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -71,6 +72,8 @@ func (p *RustProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
 func (p *RustProvider) StartCommandHelp() string {
 	return "To start your Rust application, Railpack will look for:\n\n" +
 		"1. A Cargo.toml file in your project root\n\n" +
+		"2. Set RUST_BIN or rust.bin to choose which binary to start\n\n" +
+		"3. Set CARGO_WORKSPACE or rust.workspace to choose a workspace package\n\n" +
 		"Your application will be compiled to a binary and started using `./bin/<binary>`"
 }
 
@@ -107,15 +110,15 @@ func (p *RustProvider) getStartBin(ctx *generate.GenerateContext) string {
 
 	if len(bins) == 1 {
 		bin = bins[0]
-	} else if envBinName, _ := ctx.Env.GetConfigVariable("RUST_BIN"); envBinName != "" {
+	} else if selectedBin := p.binName(ctx); selectedBin != "" {
 		for _, b := range bins {
-			if b == envBinName {
+			if b == selectedBin {
 				bin = b
 				break
 			}
 		}
 		if bin == "" {
-			ctx.Logger.LogWarn("RUST_BIN environment variable set to '%s', but no matching binary found in Cargo.toml", envBinName)
+			ctx.Logger.LogWarn("RUST_BIN or rust.bin set to '%s', but no matching binary found in Cargo.toml", selectedBin)
 		}
 	} else {
 		cargoToml, err := parseCargoTOML(ctx)
@@ -336,10 +339,6 @@ func (p *RustProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		}
 	}
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("RUST_VERSION"); envVersion != "" {
-		miseStep.Version(rust, envVersion, varName)
-	}
-
 	for _, filename := range []string{"rust-version.txt", ".rust-version"} {
 		if content, err := ctx.App.ReadFile(filename); err == nil {
 			if version := strings.TrimSpace(utils.ExtractSemverVersion(content)); version != "" {
@@ -369,7 +368,58 @@ func (p *RustProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		}
 	}
 
+	if rustVersion, source := p.rustVersion(ctx); rustVersion != "" {
+		miseStep.Version(rust, rustVersion, source)
+	}
+
 	miseStep.UseMiseVersions(ctx, []string{"rust"})
+}
+
+func (p *RustProvider) providerConfig(ctx *generate.GenerateContext) *rustconfig.RustConfig {
+	if ctx.Config == nil {
+		return nil
+	}
+
+	return ctx.Config.Rust
+}
+
+func (p *RustProvider) rustVersion(ctx *generate.GenerateContext) (string, string) {
+	if envVersion, varName := ctx.Env.GetConfigVariable("RUST_VERSION"); envVersion != "" {
+		return envVersion, varName
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil && providerConfig.Version != "" {
+		return providerConfig.Version, "rust.version"
+	}
+
+	return "", ""
+}
+
+func (p *RustProvider) binName(ctx *generate.GenerateContext) string {
+	if envBinName, _ := ctx.Env.GetConfigVariable("RUST_BIN"); envBinName != "" {
+		return envBinName
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil {
+		return providerConfig.Bin
+	}
+
+	return ""
+}
+
+func (p *RustProvider) workspaceName(ctx *generate.GenerateContext) string {
+	if workspaceName, _ := ctx.Env.GetConfigVariable("CARGO_WORKSPACE"); workspaceName != "" {
+		return workspaceName
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil {
+		return providerConfig.Workspace
+	}
+
+	return ""
 }
 
 var wasmRegex = regexp.MustCompile(`target\s*=\s*"wasm32-wasi"`)
@@ -380,8 +430,7 @@ func (p *RustProvider) shouldMakeWasm32Wasi(ctx *generate.GenerateContext) bool 
 }
 
 func (p *RustProvider) resolveCargoWorkspace(ctx *generate.GenerateContext) string {
-	// First check for environment variable override
-	if name, _ := ctx.Env.GetConfigVariable("CARGO_WORKSPACE"); name != "" {
+	if name := p.workspaceName(ctx); name != "" {
 		return name
 	}
 

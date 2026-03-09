@@ -11,6 +11,7 @@ import (
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/providers/node"
+	phpconfig "github.com/railwayapp/railpack/core/providers/php/config"
 	"github.com/stretchr/objx"
 )
 
@@ -284,10 +285,8 @@ func (p *PhpProvider) getPhpExtensions(ctx *generate.GenerateContext) []string {
 		}
 	}
 
-	if extensionsVar, _ := ctx.Env.GetConfigVariable("PHP_EXTENSIONS"); extensionsVar != "" {
-		extensions = append(extensions, strings.FieldsFunc(extensionsVar, func(r rune) bool {
-			return r == ',' || r == ' '
-		})...)
+	if extraExtensions := p.extraPhpExtensions(ctx); len(extraExtensions) > 0 {
+		extensions = append(extensions, extraExtensions...)
 	}
 
 	if p.usesLaravel(ctx) {
@@ -321,6 +320,35 @@ func (p *PhpProvider) getPhpExtensions(ctx *generate.GenerateContext) []string {
 	}
 
 	return extensions
+}
+
+func (p *PhpProvider) providerConfig(ctx *generate.GenerateContext) *phpconfig.PhpConfig {
+	if ctx.Config == nil {
+		return nil
+	}
+
+	return ctx.Config.Php
+}
+
+func (p *PhpProvider) extraPhpExtensions(ctx *generate.GenerateContext) []string {
+	if extensionsVar, _ := ctx.Env.GetConfigVariable("PHP_EXTENSIONS"); extensionsVar != "" {
+		return p.parsePhpExtensions(extensionsVar)
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig == nil {
+		return nil
+	}
+
+	return p.parsePhpExtensions(strings.Join(providerConfig.Extensions, " "))
+}
+
+func (p *PhpProvider) parsePhpExtensions(extensions string) []string {
+	parsedExtensions := strings.FieldsFunc(extensions, func(r rune) bool {
+		return r == ',' || r == ' '
+	})
+
+	return parsedExtensions
 }
 
 func (p *PhpProvider) needsRedisExtension(ctx *generate.GenerateContext, composerJson map[string]interface{}) bool {

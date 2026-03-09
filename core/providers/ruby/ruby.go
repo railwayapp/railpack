@@ -10,6 +10,7 @@ import (
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/providers/node"
+	rubyconfig "github.com/railwayapp/railpack/core/providers/ruby/config"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -245,12 +246,12 @@ func (p *RubyProvider) GetBuilderDeps(ctx *generate.GenerateContext) *generate.M
 func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	ruby := miseStep.Default("ruby", DEFAULT_RUBY_VERSION)
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("RUBY_VERSION"); envVersion != "" {
-		miseStep.Version(ruby, envVersion, varName)
-	}
-
 	if gemfileVersion := parseVersionFromGemfile(ctx); gemfileVersion != "" {
 		miseStep.Version(ruby, gemfileVersion, "Gemfile")
+	}
+
+	if rubyVersion, source := p.rubyVersion(ctx); rubyVersion != "" {
+		miseStep.Version(ruby, rubyVersion, source)
 	}
 
 	miseStep.UseMiseVersions(ctx, []string{"ruby"})
@@ -268,6 +269,27 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		miseStep.AddSupportingAptPackage("rustc")
 		miseStep.AddSupportingAptPackage("cargo")
 	}
+}
+
+func (p *RubyProvider) providerConfig(ctx *generate.GenerateContext) *rubyconfig.RubyConfig {
+	if ctx.Config == nil {
+		return nil
+	}
+
+	return ctx.Config.Ruby
+}
+
+func (p *RubyProvider) rubyVersion(ctx *generate.GenerateContext) (string, string) {
+	if envVersion, varName := ctx.Env.GetConfigVariable("RUBY_VERSION"); envVersion != "" {
+		return envVersion, varName
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil && providerConfig.Version != "" {
+		return providerConfig.Version, "ruby.version"
+	}
+
+	return "", ""
 }
 
 func (p *RubyProvider) getRubyVersion(ctx *generate.GenerateContext) string {
