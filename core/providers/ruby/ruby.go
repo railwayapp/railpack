@@ -131,9 +131,9 @@ func (p *RubyProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 			return "bundle exec bin/rails server -b 0.0.0.0 -p ${PORT:-3000} -e $RAILS_ENV"
 		}
 	} else if app.HasFile("config/environment.rb") && app.HasMatch("script") {
-		return "bundle exec ruby script/server -p ${PORT:-3000}"
+		return "bundle exec ruby script/server -b 0.0.0.0 -p ${PORT:-3000}"
 	} else if app.HasFile("config.ru") {
-		return "bundle exec rackup config.ru -p ${PORT:-3000}"
+		return "bundle exec rackup config.ru -o 0.0.0.0 -p ${PORT:-3000}"
 	} else if app.HasFile("Rakefile") {
 		return "bundle exec rake"
 	}
