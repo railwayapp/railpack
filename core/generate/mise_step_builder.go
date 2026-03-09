@@ -63,6 +63,8 @@ type MiseStepBuilder struct {
 	Variables             map[string]string
 	app                   *a.App
 	env                   *a.Environment
+	// nil = not yet computed, non-nil = cached result (may be an empty slice)
+	supportingMiseConfigFiles *[]string
 }
 
 func (c *GenerateContext) NewMiseStepBuilder(displayName string) *MiseStepBuilder {
@@ -359,6 +361,12 @@ var miseConfigGlobs = []string{
 // this enables the user to use mise config to configure the runtime, options, etc in a pretty granular way but also
 // requires the user to understand how to enable mise for various environments if they have a more advanced configuration
 func (b *MiseStepBuilder) getSupportingMiseConfigFiles() []string {
+	// depending on the size of the app source, this *could* be a expensive operation, so we cache the results so we can
+	// call multiple times without concern.
+	if b.supportingMiseConfigFiles != nil {
+		return *b.supportingMiseConfigFiles
+	}
+
 	seen := map[string]bool{}
 	files := []string{}
 
@@ -395,5 +403,6 @@ func (b *MiseStepBuilder) getSupportingMiseConfigFiles() []string {
 		}
 	}
 
+	b.supportingMiseConfigFiles = &files
 	return files
 }
