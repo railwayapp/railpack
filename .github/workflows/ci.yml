@@ -25,12 +25,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
 
       - name: Lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.63.4
+          version: v1.64.8
           args: --timeout=5m
 
       - name: Go Checks
