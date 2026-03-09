@@ -1,0 +1,34 @@
+name: Update Mise Version
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  MISE_ENV: ci
+
+jobs:
+  update-mise:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          fetch-depth: 0
+
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+
+      # We manually configure the git user here to support the mise-upgrade script
+      # which handles the commit and PR creation. This keeps the script as the
+      # single source of truth for both local and CI usage.
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - run: mise run mise-upgrade
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

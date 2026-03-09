@@ -45,8 +45,9 @@ build/
 
 tmp/
 
+examples/*/size.json
+
 ### AI Tooling ###
 .claude/settings.local.json
 examples/**/.claude
-
-examples/*/size.json
+.gemini/
