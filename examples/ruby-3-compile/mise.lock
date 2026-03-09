@@ -1,0 +1,8 @@
+[[tools.ruby]]
+version = "4.0.1"
+backend = "core:ruby"
+"platforms.linux-arm64" = { checksum = "sha256:59f6f03b5113afac408248c7b762a8a4d8bbe223917ef3cc56614d061e296f92", url = "https://github.com/jdx/ruby/releases/download/4.0.1/ruby-4.0.1.arm64_linux.tar.gz"}
+"platforms.linux-x64" = { checksum = "sha256:df9793cc730f782273fb17c70bc205f724fd2e127e95c0c059ae198705110b98", url = "https://github.com/jdx/ruby/releases/download/4.0.1/ruby-4.0.1.x86_64_linux.tar.gz"}
+"platforms.macos-arm64" = { checksum = "sha256:d5fd316eabcbe58e33be6b44125c7b22f87da90bae0d7e28ffc6be34abe1476e", url = "https://github.com/jdx/ruby/releases/download/4.0.1/ruby-4.0.1.macos.tar.gz"}
+"platforms.macos-x64" = { checksum = "sha256:3924be2d05db30f4e35f859bf028be85f4b7dd01714142fd823e4af5de2faf9d", url = "https://cache.ruby-lang.org/pub/ruby/4.0/ruby-4.0.1.tar.gz"}
+"platforms.windows-x64" = { checksum = "sha256:3924be2d05db30f4e35f859bf028be85f4b7dd01714142fd823e4af5de2faf9d", url = "https://cache.ruby-lang.org/pub/ruby/4.0/ruby-4.0.1.tar.gz"}

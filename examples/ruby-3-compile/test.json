@@ -1,0 +1,10 @@
+[
+    {
+        "expectedOutput": [
+	        // TODO pretty sure on newer mise versions this should be enabled
+            "YJIT is not enabled",
+            // ruby version is set to 3
+            "Ruby version: 3"
+        ]
+    }
+]
