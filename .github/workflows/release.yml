@@ -34,9 +34,9 @@ jobs:
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
         with:
           images: ${{ env.PRODUCTION_BUILDER_IMAGE_NAME }}
-          # type=raw,value=latest,enable={{is_default_branch}}
-          # type=raw,value=debian-bookworm
+          # latest tag is automatically generated
           tags: |
+            type=raw,value=debian-bookworm
             type=semver,pattern={{version}}
             type=raw,value=${{ env.PRODUCTION_MISE_TAG }}
             type=sha,format=long
@@ -78,9 +78,9 @@ jobs:
           # these images *before* the railpack binary build step to ensure they are properly created (railpack relies on them existing, so we want
           # a successful builder + runtime image build before building and releasing a new railpack frontend).
           images: ${{ env.PRODUCTION_RUNTIME_IMAGE_NAME }}
-          # type=raw,value=latest,enable={{is_default_branch}}
-          # type=raw,value=debian-bookworm
+          # latest tag is automatically generated
           tags: |
+            type=raw,value=debian-bookworm
             type=semver,pattern={{version}}
             type=raw,value=${{ env.PRODUCTION_MISE_TAG }}
             type=sha,format=long
