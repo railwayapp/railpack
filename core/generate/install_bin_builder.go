@@ -73,7 +73,7 @@ func (b *InstallBinStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptio
 		"MISE_PARANOID": "1",
 	}
 	step.Inputs = []plan.Layer{
-		plan.NewImageLayer(plan.RailpackBuilderImage),
+		plan.NewImageLayer(RailpackBuilderImage),
 	}
 
 	// TODO copy MISE_VERBOSE from the environment if it's set

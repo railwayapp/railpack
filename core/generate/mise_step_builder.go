@@ -20,6 +20,10 @@ const (
 	MiseInstallCommand = "mise install"
 )
 
+var (
+	RailpackBuilderImage = fmt.Sprintf("ghcr.io/railwayapp/railpack-builder:mise-%s", mise.Version)
+)
+
 // represents a app-local mise package
 type MisePackageInfo struct {
 	Version string
@@ -216,7 +220,7 @@ func (b *MiseStepBuilder) GetLayer() plan.Layer {
 }
 
 func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) error {
-	baseLayer := plan.NewImageLayer(plan.RailpackBuilderImage)
+	baseLayer := plan.NewImageLayer(RailpackBuilderImage)
 
 	if len(b.SupportingAptPackages) > 0 {
 		aptStep := plan.NewStep("packages:apt:build")

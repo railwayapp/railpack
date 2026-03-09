@@ -163,6 +163,7 @@ func TestExamplesIntegration(t *testing.T) {
 				// strictly for debugging when attempting to reproduce and compare a build locally
 				core.PrettyPrintBuildResult(buildResult)
 
+				// generate a completely random, but readable, image name for the example project
 				imageName := uniqueContainerName(
 					strings.ToLower(strings.ReplaceAll(testName, "/", "-")),
 					strings.ToLower(uuid.New().String()))
