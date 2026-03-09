@@ -1,3 +1,4 @@
+# Not used by goreleaser, for local development
 FROM golang:1.23-alpine AS builder
 
 WORKDIR /src

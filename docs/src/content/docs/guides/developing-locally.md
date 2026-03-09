@@ -57,33 +57,45 @@ mise run cli build $(pwd)
 
 You need to have a BuildKit instance running (see below).
 
+## Docker Images
+
+Multiple Docker images are used in Railpack:
+
+* **`images/alpine/frontend/`** for the Railpack BuildKit frontend. These are simple: they include a railpack binary in a image that can be executed by the buildpack frontend. One is designed to be built for production, one is for local testing and development. These are not used by the user's application during build or runtime.
+* **`images/debian/*`:** for the Railpack build process. These are used within the buildpack exection of the railpack-generated llb.
+  * `images/debian/build` used during the llb build process. These contain common tools, languages, mise, etc that might be used during the build process. Note that all of these utilities are *not* included in the final image in order to reduce the total image size.
+  * `images/debian/runtime` a bare bones debian image used at runtime. The tools, build artifacts, etc generated during the railpack build are added to this base image.
+
 ## Custom frontend
 
 You can build with a [custom BuildKit frontend](/guides/custom-frontend), but
 this is a bit tedious for local iteration.
 
 The frontend needs to be built into an image and accessible to the BuildKit
-instance. To see how you can build and push an image, see the
-`build-and-push-frontend` mise task in `mise.toml`.
+instance. You can build this image locally using standard Docker commands from the root of the repository:
 
-Once you have an image, you can do:
+```bash
+docker build -f images/alpine/frontend/Dockerfile -t railpack-frontend:local .
+```
 
-Generate a build plan for an app:
+Then, generate a build plan for an app:
 
 ```bash
 mise run cli plan examples/node-bun --out test/railpack-plan.json
 ```
 
-Build the app with Docker:
+With the image you built previously, you can now run the build:
 
 ```bash
 docker buildx \
-  --build-arg BUILDKIT_SYNTAX="ghcr.io/railwayapp/railpack:railpack-frontend" \
+  --build-arg BUILDKIT_SYNTAX="railpack-frontend:local" \
   -f test/railpack-plan.json \
   examples/node-bun
 ```
 
-or use BuildKit directly:
+By default, `ghcr.io/railwayapp/railpack:railpack-frontend` is used when running `railpack build`.
+
+You can also use the `buildctl` command to run BuildKit directly:
 
 ```bash
 buildctl build \
@@ -94,9 +106,9 @@ buildctl build \
   --output type=docker,name=test | docker load
 ```
 
-_Note the `docker load` here to load the image into Docker. However, you can
+*Note the `docker load` here to load the image into Docker. However, you can
 change the [output](https://github.com/moby/buildkit?tab=readme-ov-file#output)
-or push to a registry instead._
+or push to a registry instead.*
 
 ## Integration Tests
 

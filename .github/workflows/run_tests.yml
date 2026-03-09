@@ -14,6 +14,10 @@ on:
     # these backends, and the services they connect to are not. By running integration tests each day, we'll know if
     # something changes in the package ecosystem that breaks one of our build tests.
     - cron: "0 0 * * *"
+
+env:
+  MISE_ENV: ci
+
 jobs:
   # generate a JSON array of all entries in examples/ to shard out example into a separate job that can be run in parallel
   find-examples:
@@ -21,21 +25,82 @@ jobs:
     outputs:
       examples: ${{ steps.find-examples.outputs.examples }}
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Find examples with test.json
         id: find-examples
         run: |
           examples=$(find examples -name "test.json" -exec dirname {} \; | xargs -n 1 basename | jq -R -s -c 'split("\n")[:-1]')
           echo "examples=$examples" >> "$GITHUB_OUTPUT"
+  
+  # integration tests plan, build, and run example projects. Running the example projects requires both the builder and runtime
+  # images. If the mise version changes, we want to ensure there are no breakages, which means we need to use fresh images
+  # that contain the pinned mise version. The code below builds these requires images, and pushes them to a production
+  # registry so they can be used properly in the matrix jobs (which all run in an isolated runner, so they must reference a remote registry).
+  # These images are *not* tagged with `latest` or other more generic tags used in the release workflow. Additionally,
+  # since railpack uses a image tag from the mise version compiled into the binary, pushes to the registry should not cause
+  # any production impacts.
+  build-images:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      # duplicated on the release.yml job, keep these in sync
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        with:
+          registry: ${{ env.PRODUCTION_CONTAINER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # since railpack binary is pinned to a specific version, we only want to build and push the images if the mise version
+      # has changed. This isn't *exactly* true, as there could be a world where we want to build a new image with a changed
+      # dockerfile, but this should be extremely rare and would be an important breaking change. Mise versions should be
+      # changed pretty frequently, which means we'll pick up any updates to the `FROM` images soon, so we shouldn't need
+      # to update these images outside of a mise version update.
+      - name: Check for mise version change
+        id: mise_version
+        run: |
+          # clones are shallow by default
+          git fetch origin main --depth=1
+
+          if ! git diff --quiet origin/main HEAD -- core/mise/version.txt; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"            
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build Builder Image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        if: steps.mise_version.outputs.changed == 'true'
+        with:
+          context: images/debian/build
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ env.PRODUCTION_BUILDER_IMAGE_REF }}
+          build-args: MISE_VERSION=${{ env.RAILPACK_MISE_VERSION }}
+          push: true
+          # instead of figuring out the right "what's changed" mechanism
+          cache-from: type=registry,ref=${{ env.PRODUCTION_BUILDER_IMAGE_REF }}
+          # embed cache metadata into the image being pushed so it can be used on the next run against this PR
+          cache-to: type=inline
+
+      - name: Build Runtime Image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        if: steps.mise_version.outputs.changed == 'true'
+        with:
+          context: images/debian/runtime
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ env.PRODUCTION_RUNTIME_IMAGE_REF }}
+          push: true
+          cache-from: type=registry,ref=${{ env.PRODUCTION_BUILDER_IMAGE_REF }}
+          cache-to: type=inline
 
   test:
-    needs: find-examples
+    needs: [build-images, find-examples]
     runs-on: ubuntu-latest
-    # packages:read is not available by default and is required for docker login to ghcr.io
-    permissions:
-      contents: read
-      packages: read
     strategy:
       matrix:
         # create a separate job for each entry in examples/. i.e. gleam, elixir-ecto, etc
@@ -43,42 +108,23 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-      - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
 
-      # Set up GitHub Actions runtime for BuildKit cache
-      - name: Set up BuildKit GHA cache
-        uses: crazy-max/ghaction-github-runtime@v3
-
-      # Not strictly required, but authenticating increases rate limits and reduces 429 errors
+      # not strictly required, but authenticating increases rate limits and reduces 429 errors
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
         with:
-          registry: ghcr.io
+          registry: ${{ env.PRODUCTION_CONTAINER_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Start BuildKit
-        env:
-          # in rare cases, docker hub can timeout
-          DOCKER_CLIENT_TIMEOUT: 300
-        run: |
-          docker run --rm --privileged -d \
-            --name buildkit \
-            -e BUILDKIT_DEBUG=1 \
-            moby/buildkit:latest
-
-          # Wait for BuildKit to be ready
-          sleep 5
-
-          echo "BUILDKIT_HOST=docker-container://buildkit" >> $GITHUB_ENV
-
-      - name: Install dependencies
-        run: go mod download
+        run: mise run run-buildkit-container
 
       # required for integration tests that use multiple platforms
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
 
       - name: Run test for ${{ matrix.example }}
         env:
@@ -89,9 +135,6 @@ jobs:
           go test -v ./integration_tests \
             -run "^TestExamplesIntegration/${{ matrix.example }}$" \
             -timeout 20m
-        # TODO Add cache import/export flags to the test command
-        # -buildkit-cache-import="type=gha,url=${{ env.ACTIONS_CACHE_URL }},token=${{ env.ACTIONS_RUNTIME_TOKEN }},scope=${{ matrix.example }}" \
-        # -buildkit-cache-export="type=gha,url=${{ env.ACTIONS_CACHE_URL }},token=${{ env.ACTIONS_RUNTIME_TOKEN }},mode=max,scope=${{ matrix.example }},error=ignore,compression=zstd"
 
       - name: Upload size.json
         if: always()
@@ -104,54 +147,3 @@ jobs:
       - name: Stop BuildKit
         if: always()
         run: docker stop buildkit
-
-  # Collects size.json artifacts from all matrix jobs, merges them into a single
-  # benchmark payload. On main, pushes results to gh-pages to track history.
-  # On PRs, compares against stored history and posts a comment with the delta.
-  docker-image-benchmark:
-    needs: test
-    runs-on: ubuntu-latest
-    permissions:
-      # required for benchmark-action to push to gh-pages on main
-      contents: write
-      # required to post comparison comments on PRs
-      pull-requests: write
-
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-
-      - name: Download all size artifacts
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
-        # each artifact lands in its own size-<example>/ directory
-        with:
-          pattern: size-*
-          merge-multiple: false
-
-      - name: Merge size.json files into benchmark format
-        # customSmallerIsBetter expects [{name, unit, value}]; also emit a simple size.json for manual inspection
-        run: |
-          # create a master size.json for manual debugging
-          jq -s '[.[] | .] | sort_by(.name)' size-*/size.json > size.json
-          # this debugging data is compared against the "master" copy in gh-pages
-          jq -s '[.[] | {name: .name, unit: "bytes", value: .size}]' size-*/size.json > benchmark.json
-
-      - name: Upload merged size.json
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
-        with:
-          name: sizes
-          path: size.json
-
-      - name: Store benchmark results
-        uses: benchmark-action/github-action-benchmark@a7bc2366eda11037936ea57d811a43b3418d3073
-        with:
-          tool: customSmallerIsBetter
-          output-file-path: benchmark.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          # only persist history on main
-          auto-push: ${{ github.ref == 'refs/heads/main' }}
-          # post size comparison comment on every PR
-          comment-always: true
-          benchmark-data-dir-path: dev/bench
-          # alert when an image grows more than 20%
-          alert-threshold: '120%'
-          comment-on-alert: true

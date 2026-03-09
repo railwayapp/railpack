@@ -58,6 +58,13 @@ func detectAndStartCompose(examplePath string, t interface {
 	projectName := fmt.Sprintf("railpack-test-%s", strings.ToLower(uuid.New().String()))
 	networkName := projectName + composeNetworkSuffix
 
+	config := &ComposeConfig{
+		ProjectName:       projectName,
+		ExamplePath:       examplePath,
+		NetworkName:       networkName,
+		DockerComposePath: composeFile,
+	}
+
 	// Start docker-compose services and wait for them to be ready
 	cmd := exec.Command("docker", "compose",
 		"-f", composeFile,
@@ -66,16 +73,12 @@ func detectAndStartCompose(examplePath string, t interface {
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
+		_ = stopAndCleanupCompose(config, t)
 		return nil, fmt.Errorf("failed to start docker-compose services: %v: %s", err, string(out))
 	}
 	t.Logf("Started docker-compose services with network: %s", networkName)
 
-	return &ComposeConfig{
-		ProjectName:       projectName,
-		ExamplePath:       examplePath,
-		NetworkName:       networkName,
-		DockerComposePath: composeFile,
-	}, nil
+	return config, nil
 }
 
 // stopAndCleanupCompose stops and removes docker-compose services

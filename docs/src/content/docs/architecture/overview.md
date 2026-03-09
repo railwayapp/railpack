@@ -82,6 +82,25 @@ will:
   - Modifies the build context with all the steps, commands, caches, and
     everything that is needed to build for that language/framework
 
+## Docker Images
+
+Each Railpack binary has the builder and runtime image tags baked in at
+compile time, derived from a single pinned mise version in
+`core/mise/version.txt`:
+
+- **Builder image** (`ghcr.io/railwayapp/railpack-builder:mise-<version>`):
+  used during the build process. Contains mise, common languages, and build
+  tools. Not included in the final image.
+- **Runtime image** (`ghcr.io/railwayapp/railpack-runtime:mise-<version>`):
+  a minimal Debian image used as the base for the final output image.
+
+Because the image tags are pinned to the mise version, upgrading Railpack
+automatically uses the corresponding builder and runtime images. There is no
+`latest` tag ambiguity — a given binary always references the same images.
+
+If you want to use a specific builder or runtime image, you can customize the image
+references in your `railpack.json`.
+
 ## Config
 
 The build plan can be customized through [environment
