@@ -1,9 +1,6 @@
 # define all required variables for CI, so we can limit the configuration and logic within GHA to test more of the CI process locally
 
 [env]
-# in rare cases, docker hub can timeout, and we want our CI runs to be as resilient as possible
-DOCKER_CLIENT_TIMEOUT = 300
-
 PRODUCTION_CONTAINER_REGISTRY = "ghcr.io"
 PRODUCTION_GITHUB_REPOSITORY = "railwayapp/railpack"
 PRODUCTION_MISE_TAG = "mise-${RAILPACK_MISE_VERSION}"
