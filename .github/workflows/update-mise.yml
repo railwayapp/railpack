@@ -9,6 +9,9 @@ permissions:
   contents: write
   pull-requests: write
 
+env:
+  MISE_ENV: ci
+
 jobs:
   update-mise:
     runs-on: ubuntu-latest
@@ -17,7 +20,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: jdx/mise-action@be3be2260bc02bc3fbf94c5e2fed8b7964baf074
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
 
       # We manually configure the git user here to support the mise-upgrade script
       # which handles the commit and PR creation. This keeps the script as the
@@ -26,6 +29,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - env:
+      - run: mise run mise-upgrade
+        env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: mise run mise-upgrade
