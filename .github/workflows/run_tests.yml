@@ -111,6 +111,18 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
 
+      - name: Cache Go modules and build artifacts
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
+        with:
+          #   ~/.cache/go-build  -> GOCACHE (Compiled build artifacts)
+          #   ~/go/pkg/mod       -> GOMODCACHE (Downloaded dependencies)
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-${{ runner.os }}-${{ hashFiles('mise.lock') }}-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            go-${{ runner.os }}-${{ hashFiles('mise.lock') }}-
+
       # not strictly required, but authenticating increases rate limits and reduces 429 errors
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
