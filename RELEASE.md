@@ -14,8 +14,9 @@ This document outlines the process for creating new releases of Railpack.
 2. Create and push a new tag with the version number:
 
    ```bash
-   git tag v1.2.3  # Replace with your version number
-   git push origin --tags
+   git fetch origin # or upstream, if you aren't using a fork
+   git tag v1.2.3 origin/main  # Replace with your version number
+   git push origin v1.2.3
    ```
 
 3. The [release
