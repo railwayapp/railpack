@@ -192,9 +192,9 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           # only persist history on main
           auto-push: ${{ github.ref == 'refs/heads/main' }}
-          # post size comparison comment on every PR
-          comment-always: true
           benchmark-data-dir-path: dev/bench
           # alert when an image grows more than 20%
           alert-threshold: '120%'
-          comment-on-alert: true
+          # Enable Job Summary for PRs
+          summary-always: true
+          # no comment-on-alert, comment-always; just on PR
