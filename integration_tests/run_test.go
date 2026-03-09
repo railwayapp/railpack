@@ -108,24 +108,12 @@ func TestExamplesIntegration(t *testing.T) {
 			}
 		}
 
-		// Start docker-compose services for this example if they exist
 		examplePath := filepath.Join(examplesDir, entry.Name())
-		composeConfig, err := detectAndStartCompose(examplePath, t)
-		require.NoError(t, err)
-
-		if composeConfig != nil {
-			t.Cleanup(func() {
-				if err := stopAndCleanupCompose(composeConfig, t); err != nil {
-					t.Errorf("failed to cleanup docker-compose for %s: %v", entry.Name(), err)
-				}
-			})
-		}
 
 		// each entry in the tests.json array is an individual test case which runs it's own container
 		for i, testCase := range testCases {
 			testCase := testCase // capture for parallel execution
 			i := i
-			composeConfig := composeConfig // capture for parallel execution
 
 			testName := fmt.Sprintf("%s/case-%d", entry.Name(), i)
 			t.Run(testName, func(t *testing.T) {
@@ -201,6 +189,20 @@ func TestExamplesIntegration(t *testing.T) {
 
 				if testCase.JustBuild {
 					return
+				}
+
+				// Start docker-compose services for this test case if they exist
+				composeConfig, err := detectAndStartCompose(examplePath, t)
+				if err != nil {
+					t.Fatalf("failed to start compose for %s: %v", entry.Name(), err)
+				}
+
+				if composeConfig != nil {
+					t.Cleanup(func() {
+						if err := stopAndCleanupCompose(composeConfig, t); err != nil {
+							t.Errorf("failed to cleanup docker-compose for %s: %v", entry.Name(), err)
+						}
+					})
 				}
 
 				networkName := ""
