@@ -1,6 +1,9 @@
 [env]
 BUILDKIT_HOST = "docker-container://buildkit"
 RAILPACK_MISE_VERSION = "{{exec(command='cat core/mise/version.txt')}}"
+# Mise installation directory (Windows users: change to e.g. C:\tmp\railpack\mise)
+RAILPACK_MISE_DIR = "/tmp/railpack/mise"
+RAILPACK_MISE_TEST_DIR = "/tmp/railpack/mise-test"
 
 _.path = './bin'
 
