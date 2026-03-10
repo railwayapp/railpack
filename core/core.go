@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/app"
@@ -116,17 +115,8 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		return &BuildResult{Success: false, Logs: logger.Logs}
 	}
 
-	misePackages, err := ctx.GetMiseStepBuilder().GetMisePackageVersions(ctx)
-	if err != nil {
-		logger.LogError("Failed to list additional tools from mise.toml: %s", err.Error())
-	} else {
-		extraTools := getExtraMiseTomlTools(misePackages, resolvedPackages)
-		if len(extraTools) > 0 {
-			logger.LogInfo(
-				"Also installing additional tools from mise.toml: %s",
-				formatToolPreview(extraTools, 2),
-			)
-		}
+	if err := addAdditionalMiseToolsToPackages(ctx, ctx.GetMiseStepBuilder(), resolvedPackages); err != nil {
+		logger.LogWarn("Failed to include additional tools from mise.toml in package output: %s", err.Error())
 	}
 
 	if providerToUse != nil {
@@ -326,12 +316,26 @@ func getProviders(ctx *generate.GenerateContext, config *c.Config) (providers.Pr
 	return providerToUse, detectedProvider
 }
 
-func getExtraMiseTomlTools(
+// Adds app-local mise.toml tools to the package output table.
+func addAdditionalMiseToolsToPackages(
+	ctx *generate.GenerateContext,
+	miseStep *generate.MiseStepBuilder,
+	resolvedPackages map[string]*resolver.ResolvedPackage,
+) error {
+	misePackages, err := miseStep.GetMisePackageVersionsCached(ctx)
+	if err != nil {
+		return err
+	}
+
+	addAdditionalMiseToolsFromPackages(misePackages, resolvedPackages)
+	return nil
+}
+
+// Merges non-provider mise.toml tools into resolved package rows.
+func addAdditionalMiseToolsFromPackages(
 	misePackages map[string]*generate.MisePackageInfo,
 	resolvedPackages map[string]*resolver.ResolvedPackage,
-) []string {
-	extra := []string{}
-
+) {
 	for _, name := range slices.Sorted(maps.Keys(misePackages)) {
 		pkg := misePackages[name]
 		if pkg == nil || pkg.Source != "mise.toml" {
@@ -340,23 +344,17 @@ func getExtraMiseTomlTools(
 		if _, exists := resolvedPackages[name]; exists {
 			continue
 		}
-		extra = append(extra, name)
+
+		version := pkg.Version
+		var requestedVersion *string
+		if pkg.RequestedVersion != "" {
+			requestedVersion = &pkg.RequestedVersion
+		}
+		resolvedPackages[name] = &resolver.ResolvedPackage{
+			Name:             name,
+			RequestedVersion: requestedVersion,
+			ResolvedVersion:  &version,
+			Source:           "mise.toml",
+		}
 	}
-
-	return extra
-}
-
-func formatToolPreview(tools []string, maxTools int) string {
-	if len(tools) == 0 {
-		return ""
-	}
-
-	count := min(len(tools), maxTools)
-	preview := strings.Join(tools[:count], ", ")
-
-	if len(tools) > maxTools {
-		return preview + ", etc."
-	}
-
-	return preview
 }
