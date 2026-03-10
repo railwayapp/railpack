@@ -105,3 +105,10 @@ func TestGenerateBuildPlan_DockerignoreMetadata(t *testing.T) {
 	require.NotNil(t, buildResult.Metadata)
 	require.Equal(t, "true", buildResult.Metadata["dockerIgnore"])
 }
+
+func TestFormatToolPreview(t *testing.T) {
+	require.Equal(t, "", formatToolPreview([]string{}, 3))
+	require.Equal(t, "go, python", formatToolPreview([]string{"go", "python"}, 3))
+	require.Equal(t, "go, jq, python", formatToolPreview([]string{"go", "jq", "python"}, 3))
+	require.Equal(t, "go, jq, python, etc.", formatToolPreview([]string{"go", "jq", "python", "uv"}, 3))
+}
