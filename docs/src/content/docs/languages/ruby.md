@@ -30,6 +30,7 @@ BUNDLE_GEMFILE="/app/Gemfile"
 GEM_PATH="/usr/local/bundle"
 GEM_HOME="/usr/local/bundle"
 MALLOC_ARENA_MAX="2"
+LD_PRELOAD="libjemalloc.so.2"
 ```
 
 ## Configuration
@@ -115,8 +116,8 @@ section in your `Gemfile.lock` and installs that specific version.
 
 Railpack includes several performance optimizations:
 
-- **jemalloc**: Installs and configures `libjemalloc` for improved memory
-  allocation performance
+- **jemalloc**: Installs `libjemalloc2` and preloads it via `LD_PRELOAD`
+  for improved memory allocation performance
 - **YJIT**: For Ruby 3.2+, installs `rustc` and `cargo` required for YJIT
   compilation support
 

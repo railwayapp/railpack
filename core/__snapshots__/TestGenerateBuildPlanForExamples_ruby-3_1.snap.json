@@ -42,7 +42,7 @@
    "BUNDLE_GEMFILE": "/app/Gemfile",
    "GEM_HOME": "/usr/local/bundle",
    "GEM_PATH": "/usr/local/bundle",
-   "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so",
+   "LD_PRELOAD": "libjemalloc.so.2",
    "MALLOC_ARENA_MAX": "2"
   }
  },
@@ -131,7 +131,7 @@
     "BUNDLE_GEMFILE": "/app/Gemfile",
     "GEM_HOME": "/usr/local/bundle",
     "GEM_PATH": "/usr/local/bundle",
-    "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so",
+    "LD_PRELOAD": "libjemalloc.so.2",
     "MALLOC_ARENA_MAX": "2"
    }
   },
@@ -152,7 +152,7 @@
     "BUNDLE_GEMFILE": "/app/Gemfile",
     "GEM_HOME": "/usr/local/bundle",
     "GEM_PATH": "/usr/local/bundle",
-    "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libjemalloc.so",
+    "LD_PRELOAD": "libjemalloc.so.2",
     "MALLOC_ARENA_MAX": "2"
    }
   },
@@ -163,8 +163,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libjemalloc-dev libyaml-dev'",
-     "customName": "install apt packages: libjemalloc-dev libyaml-dev"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libjemalloc2 libyaml-dev'",
+     "customName": "install apt packages: libjemalloc2 libyaml-dev"
     }
    ],
    "inputs": [
