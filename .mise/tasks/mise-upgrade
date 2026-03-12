@@ -82,7 +82,11 @@ if git diff --quiet -- "$file"; then
 fi
 
 git add -- "$file"
-git commit -m "update mise $latest"
+git commit -m "chore: update mise to $latest"
+
+# Update snapshots and commit using the pre-filled message
+mise run test-update-snapshots
+git commit -F .git/COMMIT_EDITMSG
 
 # Push the branch (needed in CI and good practice locally)
 git push -u origin "$branch"
