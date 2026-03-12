@@ -79,7 +79,11 @@ echo "Running example: 'docker run $example_name'"
 
 # update all test snapshots, if you've updated a example/ project, run this to update the snapshots
 [tasks.test-update-snapshots]
-run = "UPDATE_SNAPS=true go test -short ./..."
+run = [
+  "UPDATE_SNAPS=true go test -short ./...",
+  "git add core/__snapshots__/",
+  "echo 'test: update snapshots' > .git/COMMIT_EDITMSG",
+]
 
 # linting, formatting, and static analysis
 [tasks.check]
