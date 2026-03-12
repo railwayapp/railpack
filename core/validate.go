@@ -20,7 +20,7 @@ func ValidatePlan(plan *plan.BuildPlan, app *app.App, logger *logger.Logger, opt
 		return false
 	}
 
-	if options.ErrorMissingStartCommand && !validateStartCommand(plan, logger, options.ProviderToUse) {
+	if !validateStartCommand(plan, logger, options) {
 		return false
 	}
 
@@ -50,22 +50,24 @@ func validateCommands(plan *plan.BuildPlan, app *app.App, logger *logger.Logger)
 	return true
 }
 
-// validateStartCommand checks if the plan has a start command
-func validateStartCommand(plan *plan.BuildPlan, logger *logger.Logger, provider providers.Provider) bool {
-	if plan.Deploy.StartCmd == "" {
-		startCmdHelp := "No start command was found."
+func validateStartCommand(plan *plan.BuildPlan, logger *logger.Logger, options *ValidatePlanOptions) bool {
+	if plan.Deploy.StartCmd != "" {
+		return true
+	}
 
-		if provider != nil {
-			if providerHelp := provider.StartCommandHelp(); providerHelp != "" {
-				startCmdHelp += "\n\n" + providerHelp
-			}
+	msg := "No start command detected. Specify a start command: https://railpack.com/config/file"
+	if options.ProviderToUse != nil {
+		if providerHelp := options.ProviderToUse.StartCommandHelp(); providerHelp != "" {
+			msg += "\n\n" + providerHelp
 		}
+	}
 
-		logger.LogError("%s", startCmdHelp)
-
+	if options.ErrorMissingStartCommand {
+		logger.LogError("%s", msg)
 		return false
 	}
 
+	logger.LogWarn("%s", msg)
 	return true
 }
 

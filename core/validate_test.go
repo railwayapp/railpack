@@ -65,20 +65,48 @@ func TestValidateCommands(t *testing.T) {
 }
 
 func TestValidateStartCommand(t *testing.T) {
-	logger := logger.NewLogger()
 	mockProvider := &mockProvider{startCommandHelp: "Add a start command"}
 
 	t.Run("with start command", func(t *testing.T) {
+		logger := logger.NewLogger()
 		buildPlan := plan.NewBuildPlan()
 		buildPlan.Deploy = plan.Deploy{
 			StartCmd: "npm start",
 		}
-		require.True(t, validateStartCommand(buildPlan, logger, mockProvider))
+		options := &ValidatePlanOptions{
+			ErrorMissingStartCommand: true,
+			ProviderToUse:            mockProvider,
+		}
+		require.True(t, validateStartCommand(buildPlan, logger, options))
+		require.Equal(t, 0, len(logger.Logs))
 	})
 
-	t.Run("without start command", func(t *testing.T) {
+	t.Run("without start command (error)", func(t *testing.T) {
+		loggerInst := logger.NewLogger()
 		buildPlan := plan.NewBuildPlan()
-		require.False(t, validateStartCommand(buildPlan, logger, mockProvider))
+		options := &ValidatePlanOptions{
+			ErrorMissingStartCommand: true,
+			ProviderToUse:            mockProvider,
+		}
+		require.False(t, validateStartCommand(buildPlan, loggerInst, options))
+		require.Equal(t, 1, len(loggerInst.Logs))
+		require.Equal(t, logger.Error, loggerInst.Logs[0].Level)
+		require.Contains(t, loggerInst.Logs[0].Msg, "No start command detected")
+		require.Contains(t, loggerInst.Logs[0].Msg, "Add a start command")
+	})
+
+	t.Run("without start command (warning)", func(t *testing.T) {
+		loggerInst := logger.NewLogger()
+		buildPlan := plan.NewBuildPlan()
+		options := &ValidatePlanOptions{
+			ErrorMissingStartCommand: false,
+			ProviderToUse:            mockProvider,
+		}
+		require.True(t, validateStartCommand(buildPlan, loggerInst, options))
+		require.Equal(t, 1, len(loggerInst.Logs))
+		require.Equal(t, logger.Warn, loggerInst.Logs[0].Level)
+		require.Contains(t, loggerInst.Logs[0].Msg, "No start command detected")
+		require.Contains(t, loggerInst.Logs[0].Msg, "Add a start command")
 	})
 }
 

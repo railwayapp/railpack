@@ -37,3 +37,5 @@ having to worry about breaking existing apps that rely on the previous defaults.
 Passing in a previous version will only be used in place of the default. If a
 more specific version of a package is requested (e.g. through a package.json
 engines field or env var), then we will always use that.
+
+This is done on Railway automatically.
