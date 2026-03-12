@@ -26,6 +26,14 @@ This document outlines the process for creating new releases of Railpack.
    - Create a GitHub release with changelog
    - Build and attach binaries for multiple platforms
 
+### Rerunning a Failed Release
+
+This should *rarely* occur. If you need to rerun a release workflow, on a newer commit:
+
+```
+git tag -d v0.18.0 && git push --delete origin v0.18.0 && git tag v0.18.0 origin/main && git push origin v0.18.0
+```
+
 ## Release Artifacts
 
 ### Frontend Docker Image
