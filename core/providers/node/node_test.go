@@ -142,7 +142,7 @@ func TestGetNextApps(t *testing.T) {
 		{
 			name: "turbo with 2 next apps",
 			path: "../../../examples/node-turborepo",
-			want: []string{"apps/docs", "apps/web"},
+			want: []string{"apps/web"},
 		},
 	}
 

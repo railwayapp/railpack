@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	DEFAULT_RUBY_VERSION = "3.4.6"
+	DEFAULT_RUBY_VERSION = "3.4"
 )
 
 type RubyProvider struct{}
@@ -131,9 +131,9 @@ func (p *RubyProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 			return "bundle exec bin/rails server -b 0.0.0.0 -p ${PORT:-3000} -e $RAILS_ENV"
 		}
 	} else if app.HasFile("config/environment.rb") && app.HasMatch("script") {
-		return "bundle exec ruby script/server -p ${PORT:-3000}"
+		return "bundle exec ruby script/server -b 0.0.0.0 -p ${PORT:-3000}"
 	} else if app.HasFile("config.ru") {
-		return "bundle exec rackup config.ru -p ${PORT:-3000}"
+		return "bundle exec rackup config.ru -o 0.0.0.0 -p ${PORT:-3000}"
 	} else if app.HasFile("Rakefile") {
 		return "bundle exec rake"
 	}
@@ -249,10 +249,6 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		miseStep.Version(ruby, envVersion, varName)
 	}
 
-	if versionFile, err := ctx.App.ReadFile(".ruby-version"); err == nil {
-		miseStep.Version(ruby, utils.ExtractSemverVersion(string(versionFile)), ".ruby-version")
-	}
-
 	if gemfileVersion := parseVersionFromGemfile(ctx); gemfileVersion != "" {
 		miseStep.Version(ruby, gemfileVersion, "Gemfile")
 	}
@@ -261,9 +257,12 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 
 	miseStep.AddSupportingAptPackage("libyaml-dev")
 	miseStep.AddSupportingAptPackage("libjemalloc-dev")
+	// TODO this does not take into account the mise-specified version of ruby, we should pull the resolved version via Mise
 	version := p.getRubyVersion(ctx)
 	version = utils.ExtractSemverVersion(version)
 	semver, err := utils.ParseSemver(version)
+
+	// TODO we should install these via mise, not apt
 	// YJIT in Ruby 3.1+ requires rustc to install
 	if err == nil && semver != nil && semver.Major >= 3 && semver.Minor > 1 {
 		miseStep.AddSupportingAptPackage("rustc")

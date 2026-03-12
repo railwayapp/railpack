@@ -100,6 +100,10 @@ export default defineConfig({
           link: "/getting-started",
         },
         {
+          label: "FAQ",
+          link: "/faq",
+        },
+        {
           label: "Installation",
           link: "/installation",
         },
@@ -133,6 +137,7 @@ export default defineConfig({
               link: "/config/environment-variables",
             },
             { label: "Procfile", link: "/config/procfile" },
+            { label: "Excluding Files", link: "/config/excluding-files" },
           ],
         },
         {

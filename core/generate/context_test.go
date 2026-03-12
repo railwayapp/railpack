@@ -108,6 +108,9 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		// Verify dockerignore was parsed during context creation
 		require.NotNil(t, ctx.dockerignoreCtx)
 
+		// Verify metadata indicates dockerignore presence
+		require.Equal(t, "true", ctx.Metadata.Get("dockerIgnore"))
+
 		// Test NewLocalLayer with dockerignore patterns
 		layer := ctx.NewLocalLayer()
 		require.True(t, layer.Local)
@@ -120,7 +123,7 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		require.Contains(t, layer.Filter.Exclude, "__pycache__") // Trailing slash is stripped by parser
 
 		// Should have default include pattern
-		require.Equal(t, []string{"."}, layer.Filter.Include)
+		require.Equal(t, []string{".", "negation_test/should_exist.txt", "negation_test/existing_folder"}, layer.Filter.Include)
 	})
 
 	t.Run("context without dockerignore", func(t *testing.T) {
@@ -128,6 +131,9 @@ func TestGenerateContextDockerignore(t *testing.T) {
 
 		// Verify dockerignore context exists but has no patterns
 		require.NotNil(t, ctx.dockerignoreCtx)
+
+		// Verify metadata does not indicate dockerignore presence
+		require.Empty(t, ctx.Metadata.Get("dockerIgnore"))
 
 		// Test NewLocalLayer without dockerignore patterns
 		layer := ctx.NewLocalLayer()
@@ -148,9 +154,8 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		require.NotNil(t, ctx.dockerignoreCtx)
 
 		// Verify parsing works with no file present
-		excludes, includes, _ := ctx.dockerignoreCtx.Parse()
-		require.Nil(t, excludes)
-		require.Nil(t, includes)
+		require.Nil(t, ctx.dockerignoreCtx.Excludes)
+		require.Nil(t, ctx.dockerignoreCtx.Includes)
 	})
 
 	t.Run("context creation fails with invalid dockerignore", func(t *testing.T) {

@@ -1,7 +1,7 @@
 {
  "deploy": {
   "base": {
-   "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+   "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.3.5"
   },
   "inputs": [
    {
@@ -15,6 +15,14 @@
  },
  "steps": [
   {
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.3.5"
+    }
+   ],
+   "name": "packages:mise"
+  },
+  {
    "commands": [
     {
      "cmd": "chmod +x start.sh"
@@ -22,7 +30,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+     "step": "packages:mise"
     },
     {
      "include": [

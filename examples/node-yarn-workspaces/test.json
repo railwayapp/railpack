@@ -1,0 +1,11 @@
+[
+  {
+    "expectedOutput": [
+      "Hello from yarn workspaces",
+      "pkg-a loaded",
+      "pkg-b loaded",
+      "pkg-a says:",
+      "pkg-b says: hello from yarn workspace!"
+    ]
+  }
+]

@@ -1,3 +1,4 @@
+// for platforms: used by `ghcr.io/railwayapp/railpack-frontend` to accept railpack plans via BuildKit
 package buildkit
 
 import (
@@ -23,13 +24,12 @@ const (
 	// This is "dockerfile" because that is commonly used for the config file mount
 	configMountName = "dockerfile"
 
-	// The default filename for the serialized Railpack plan
+	// default filename for the serialized Railpack plan
 	defaultRailpackPlan = "railpack-plan.json"
 
+	// Build arg keys
 	secretsHash = "secrets-hash"
-
-	cacheKey = "cache-key"
-
+	cacheKey    = "cache-key"
 	githubToken = "github-token"
 )
 

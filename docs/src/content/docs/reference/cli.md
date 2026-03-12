@@ -16,7 +16,7 @@ The following options are available across multiple commands:
 | `--build-cmd`           | Build command to use                                                                                                       |
 | `--start-cmd`           | Start command to use                                                                                                       |
 | `--config-file`         | Path to config file to use                                                                                                 |
-| `--error-missing-start` | Error if no start command is found                                                                                         |
+| `--error-missing-start` | Error if no start command is found. Enabled by default on Railway.                                                         |
 
 ## Commands
 

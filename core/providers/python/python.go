@@ -425,10 +425,18 @@ func (p *PythonProvider) installNeedsAllFiles(ctx *generate.GenerateContext) boo
 	return false
 }
 
+func (p *PythonProvider) usesBinaryPsycopg(ctx *generate.GenerateContext) bool {
+	return p.usesDep(ctx, "psycopg2-binary") || p.usesDep(ctx, "psycopg[binary]")
+}
+
 func (p *PythonProvider) usesPostgres(ctx *generate.GenerateContext) bool {
+	if p.usesBinaryPsycopg(ctx) {
+		return false
+	}
+
 	djangoPythonRe := regexp.MustCompile(`django.db.backends.postgresql`)
 	containsDjangoPostgres := len(ctx.App.FindFilesWithContent("**/*.py", djangoPythonRe)) > 0
-	return p.usesDep(ctx, "psycopg2") || p.usesDep(ctx, "psycopg2-binary") || p.usesDep(ctx, "psycopg") || containsDjangoPostgres
+	return p.usesDep(ctx, "psycopg2") || p.usesDep(ctx, "psycopg") || containsDjangoPostgres
 }
 
 func (p *PythonProvider) usesMysql(ctx *generate.GenerateContext) bool {
@@ -457,9 +465,12 @@ func (p *PythonProvider) addMetadata(ctx *generate.GenerateContext) {
 }
 
 func (p *PythonProvider) usesDep(ctx *generate.GenerateContext, dep string) bool {
-	for _, file := range []string{"requirements.txt", "pyproject.toml", "Pipfile"} {
+	files, err := ctx.App.FindFiles("**/{requirements.txt,pyproject.toml,Pipfile}")
+	if err != nil {
+		return false
+	}
+	for _, file := range files {
 		if contents, err := ctx.App.ReadFile(file); err == nil {
-			// TODO: Do something better than string comparison
 			if strings.Contains(strings.ToLower(contents), strings.ToLower(dep)) {
 				return true
 			}

@@ -3,8 +3,12 @@ package plan
 import (
 	"strings"
 
-	"github.com/moby/patternmatcher/ignorefile"
 	"github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/internal/utils"
+
+	// this is the native dockerignore parser used by buildkit
+	// https://github.com/moby/buildkit/blob/master/frontend/dockerfile/dockerignore/dockerignore_deprecated.go
+	"github.com/moby/patternmatcher/ignorefile"
 )
 
 // checks if a .dockerignore file exists in the app directory and parses it
@@ -26,7 +30,16 @@ func CheckAndParseDockerignore(app *app.App) ([]string, []string, error) {
 
 	excludePatterns, includePatterns := separatePatterns(patterns)
 
-	return excludePatterns, includePatterns, nil
+	// Filter include patterns that don't match any files
+	// This prevents build errors when a negated pattern in .dockerignore refers to a missing file
+	var validIncludes []string
+	for _, pattern := range includePatterns {
+		if app.HasMatch(pattern) {
+			validIncludes = append(validIncludes, pattern)
+		}
+	}
+
+	return excludePatterns, validIncludes, nil
 }
 
 // separatePatterns separates patterns into exclude and include lists
@@ -44,43 +57,26 @@ func separatePatterns(patterns []string) (excludes []string, includes []string) 
 }
 
 type DockerignoreContext struct {
-	parsed   bool
-	excludes []string
-	includes []string
-	app      *app.App
+	Excludes []string
+	Includes []string
+	HasFile  bool
 }
 
-func NewDockerignoreContext(app *app.App) *DockerignoreContext {
-	return &DockerignoreContext{
-		app: app,
-	}
-}
-
-// Parse parses the .dockerignore file and caches the results
-func (d *DockerignoreContext) Parse() ([]string, []string, error) {
-	if !d.parsed {
-		excludes, includes, err := CheckAndParseDockerignore(d.app)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		d.excludes = excludes
-		d.includes = includes
-		d.parsed = true
-	}
-
-	return d.excludes, d.includes, nil
-}
-
-func (d *DockerignoreContext) ParseWithLogging(logger interface{ LogInfo(string, ...interface{}) }) ([]string, []string, error) {
-	excludes, includes, err := d.Parse()
+func NewDockerignoreContext(app *app.App) (*DockerignoreContext, error) {
+	hasFile := app.HasFile(".dockerignore")
+	excludes, includes, err := CheckAndParseDockerignore(app)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-
-	if excludes != nil || includes != nil {
-		logger.LogInfo("Found .dockerignore file, applying filters")
+	if excludes != nil {
+		excludes = utils.RemoveDuplicates(excludes)
 	}
-
-	return excludes, includes, nil
+	if includes != nil {
+		includes = utils.RemoveDuplicates(includes)
+	}
+	return &DockerignoreContext{
+		Excludes: excludes,
+		Includes: includes,
+		HasFile:  hasFile,
+	}, nil
 }

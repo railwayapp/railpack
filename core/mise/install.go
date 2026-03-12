@@ -20,20 +20,20 @@ import (
 //go:embed version.txt
 var miseVersionRaw string
 
-var miseVersion string
+var Version string
 
 const githubReleaseBase = "https://github.com/jdx/mise/releases/download"
 
 func init() {
-	miseVersion = strings.TrimSpace(miseVersionRaw)
+	Version = miseVersionRaw
 }
 
 // returns name of the mise binary based on the operating system
 func getBinaryName() string {
 	if runtime.GOOS == "windows" {
-		return fmt.Sprintf("mise-%s.exe", miseVersion)
+		return fmt.Sprintf("mise-%s.exe", Version)
 	}
-	return fmt.Sprintf("mise-%s", miseVersion)
+	return fmt.Sprintf("mise-%s", Version)
 }
 
 // returns platform-specific mise github asset download name
@@ -64,7 +64,7 @@ func getAssetName() (string, error) {
 		extension = "zip"
 	}
 
-	return fmt.Sprintf("mise-v%s-%s.%s", miseVersion, platform, extension), nil
+	return fmt.Sprintf("mise-v%s-%s.%s", Version, platform, extension), nil
 }
 
 // getBinaryPath returns the full path to the binary
@@ -81,7 +81,7 @@ func ensureInstalled(cacheDir string) (string, error) {
 		return binaryPath, nil
 	}
 
-	log.Debugf("Mise %s not found, installing", miseVersion)
+	log.Debugf("Mise %s not found, installing", Version)
 
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {
 		return "", fmt.Errorf("failed to create cache directory: %w", err)
@@ -95,7 +95,7 @@ func ensureInstalled(cacheDir string) (string, error) {
 		return "", fmt.Errorf("failed to validate installation: %w", err)
 	}
 
-	log.Debugf("Installed mise version: %s to %s", miseVersion, binaryPath)
+	log.Debugf("Installed mise version: %s to %s", Version, binaryPath)
 
 	return binaryPath, nil
 }
@@ -106,7 +106,7 @@ func downloadAndInstall(cacheDir string) error {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/v%s/%s", githubReleaseBase, miseVersion, assetName)
+	url := fmt.Sprintf("%s/v%s/%s", githubReleaseBase, Version, assetName)
 	binaryPath := getBinaryPath(cacheDir)
 
 	log.Debugf("Downloading mise from %s", url)
@@ -247,8 +247,8 @@ func validateInstallation(cacheDir string) error {
 	}
 
 	versionOutput := string(output)
-	if !strings.Contains(versionOutput, miseVersion) {
-		return fmt.Errorf("mise version mismatch: expected %s, got %s", miseVersion, strings.TrimSpace(versionOutput))
+	if !strings.Contains(versionOutput, Version) {
+		return fmt.Errorf("mise version mismatch: expected %s, got %s", Version, strings.TrimSpace(versionOutput))
 	}
 
 	return nil

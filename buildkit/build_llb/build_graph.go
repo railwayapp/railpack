@@ -394,6 +394,7 @@ func (g *BuildGraph) getSecretInvalidationMountOptions(node *StepNode, secretOpt
 }
 
 func isCacheDisabled(key string) bool {
+	// TODO: Thread Environment-derived config into BuildGraph instead of reading process envs here.
 	disabled := os.Getenv("RAILPACK_DISABLE_CACHES")
 	return disabled == "*" || slices.Contains(strings.Split(disabled, " "), key)
 }

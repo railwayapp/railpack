@@ -2,6 +2,7 @@ package integration_tests
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -57,6 +58,13 @@ func detectAndStartCompose(examplePath string, t interface {
 	projectName := fmt.Sprintf("railpack-test-%s", strings.ToLower(uuid.New().String()))
 	networkName := projectName + composeNetworkSuffix
 
+	config := &ComposeConfig{
+		ProjectName:       projectName,
+		ExamplePath:       examplePath,
+		NetworkName:       networkName,
+		DockerComposePath: composeFile,
+	}
+
 	// Start docker-compose services and wait for them to be ready
 	cmd := exec.Command("docker", "compose",
 		"-f", composeFile,
@@ -65,16 +73,12 @@ func detectAndStartCompose(examplePath string, t interface {
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
+		_ = stopAndCleanupCompose(config, t)
 		return nil, fmt.Errorf("failed to start docker-compose services: %v: %s", err, string(out))
 	}
 	t.Logf("Started docker-compose services with network: %s", networkName)
 
-	return &ComposeConfig{
-		ProjectName:       projectName,
-		ExamplePath:       examplePath,
-		NetworkName:       networkName,
-		DockerComposePath: composeFile,
-	}, nil
+	return config, nil
 }
 
 // stopAndCleanupCompose stops and removes docker-compose services
@@ -100,9 +104,10 @@ func stopAndCleanupCompose(config *ComposeConfig, logger interface {
 // HTTPCheck defines an HTTP endpoint check for a container
 // Path defaults to /, Expected defaults to 200.
 type HTTPCheck struct {
-	InternalPort int    `json:"internalPort"`
-	Path         string `json:"path"`
-	Expected     int    `json:"expected"`
+	InternalPort   int           `json:"internalPort"`
+	Path           string        `json:"path"`
+	Expected       int           `json:"expected"`
+	ExpectedOutput StringOrArray `json:"expectedOutput"`
 }
 
 // runContainerWithHTTPCheck starts a container from the given image,
@@ -156,8 +161,15 @@ func runContainerWithHTTPCheck(t *testing.T, imageName string, envs map[string]s
 	// Small grace period: some servers bind after initial log lines
 	time.Sleep(containerStartGracePeriod)
 	url := fmt.Sprintf("http://127.0.0.1:%d%s", hostPort, hc.Path)
-	if err := waitForHTTPStatus(url, hc.Expected); err != nil {
+	body, err := waitForHTTPStatus(url, hc.Expected)
+	if err != nil {
 		return fmt.Errorf("http check failed: %w", err)
+	}
+
+	for _, expected := range hc.ExpectedOutput {
+		if !strings.Contains(body, expected) {
+			return fmt.Errorf("response body did not contain expected string: %q\nBody:\n%s", expected, body)
+		}
 	}
 
 	t.Logf("HTTP check passed (%s => %d)", hc.Path, hc.Expected)
@@ -177,7 +189,7 @@ func pickFreePort() (int, error) {
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
-func waitForHTTPStatus(url string, expected int) error {
+func waitForHTTPStatus(url string, expected int) (string, error) {
 	deadline := time.Now().Add(httpCheckTimeout)
 	client := &http.Client{Timeout: httpCheckClientTimeout}
 
@@ -185,9 +197,15 @@ func waitForHTTPStatus(url string, expected int) error {
 	for time.Now().Before(deadline) {
 		resp, err := client.Get(url)
 		if err == nil {
+			body, readErr := io.ReadAll(resp.Body)
 			_ = resp.Body.Close()
+			if readErr != nil {
+				lastErr = fmt.Errorf("failed to read response body: %w", readErr)
+				time.Sleep(httpCheckInterval)
+				continue
+			}
 			if resp.StatusCode == expected {
-				return nil
+				return string(body), nil
 			}
 			lastErr = fmt.Errorf("http status %d != %d", resp.StatusCode, expected)
 		} else {
@@ -202,7 +220,7 @@ func waitForHTTPStatus(url string, expected int) error {
 		lastErr = fmt.Errorf("timeout waiting for %s", url)
 	}
 
-	return lastErr
+	return "", lastErr
 }
 
 func fetchContainerLogs(name string) string {

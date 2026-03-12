@@ -1,3 +1,6 @@
+// entrypoint to the `build` subcommand
+// Primarily bundles CLI options into the structure that `BuildWithBuildkitClient` expects
+
 package cli
 
 import (
@@ -59,14 +62,16 @@ var BuildCommand = &cli.Command{
 			return cli.Exit(err, 1)
 		}
 
-		core.PrettyPrintBuildResult(buildResult, core.PrintOptions{Version: Version})
+		if !cmd.Bool("dump-llb") {
+			core.PrettyPrintBuildResult(buildResult, core.PrintOptions{Version: Version})
+		}
 
 		if !buildResult.Success {
 			os.Exit(1)
 			return nil
 		}
 
-		if cmd.Bool("show-plan") {
+		if cmd.Bool("show-plan") && !cmd.Bool("dump-llb") {
 			planMap, err := addSchemaToPlanMap(buildResult.Plan)
 			if err != nil {
 				return cli.Exit(err, 1)
@@ -115,6 +120,7 @@ func validateSecrets(plan *plan.BuildPlan, env *app.Environment) error {
 	return nil
 }
 
+// generate a hash all of build secrets to invalidate all caches when any secret changes
 func getSecretsHash(env *app.Environment) string {
 	secretsValue := ""
 	for _, v := range env.Variables {

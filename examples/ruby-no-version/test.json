@@ -1,5 +1,10 @@
 [
   {
-    "expectedOutput": "Hello from Sinatra"
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 3000,
+      "expectedOutput": "Ruby version: 3.4"
+    }
   }
 ]

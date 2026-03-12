@@ -62,13 +62,13 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libcairo2-dev libpq-dev'",
-     "customName": "install apt packages: libcairo2-dev libpq-dev"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libcairo2-dev'",
+     "customName": "install apt packages: libcairo2-dev"
     }
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.3.5"
     }
    ],
    "name": "packages:apt:build"
@@ -174,13 +174,13 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y ffmpeg libcairo2 libpq5 poppler-utils'",
-     "customName": "install apt packages: ffmpeg libcairo2 libpq5 poppler-utils"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y ffmpeg libcairo2 poppler-utils'",
+     "customName": "install apt packages: ffmpeg libcairo2 poppler-utils"
     }
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.3.5"
     }
    ],
    "name": "packages:apt:runtime"

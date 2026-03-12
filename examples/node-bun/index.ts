@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 
-console.log("hello from Bun " + Bun.version);
+process.stdout.write("hello from Bun " + Bun.version + "\n");
 
 const nodeVersion = execSync("node -v").toString().trim();
-console.log("Node " + nodeVersion.replace(/^v/, ""));
+process.stdout.write("Node " + nodeVersion.replace(/^v/, "") + "\n");

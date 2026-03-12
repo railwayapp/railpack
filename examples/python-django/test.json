@@ -3,7 +3,8 @@
     "httpCheck": {
       "path": "/",
       "expected": 200,
-      "internalPort": 8000
+      "internalPort": 8000,
+      "expectedOutput": "Django + PostgreSQL + Redis"
     },
     "envs": {
       "DATABASE_URL": "postgresql://django_user:django_password@postgres:5432/django_db",

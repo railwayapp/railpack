@@ -69,8 +69,8 @@ func TestFindFilesWithContent(t *testing.T) {
 	app, err := NewApp("../../examples/node-bun")
 	require.NoError(t, err)
 
-	// Test finding files containing "console.log"
-	regex := regexp.MustCompile(`console\.log`)
+	// Test finding files containing "process.stdout.write"
+	regex := regexp.MustCompile(`process\.stdout\.write`)
 	matches := app.FindFilesWithContent("*.ts", regex)
 	require.Equal(t, len(matches), 1)
 	require.Equal(t, matches[0], "index.ts")

@@ -1,5 +1,6 @@
 [
     {
+        // No expectedOutput because content is rendered client-side
         "httpCheck": {
             "path": "/",
             "expected": 200,

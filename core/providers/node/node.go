@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
@@ -293,26 +294,12 @@ func (p *NodeProvider) applyNodeVersionResolution(ctx *generate.GenerateContext,
 	if p.packageJson != nil && p.packageJson.Engines != nil && p.packageJson.Engines["node"] != "" {
 		miseStep.Version(nodeToolRef, p.packageJson.Engines["node"], "package.json > engines > node")
 	}
-
-	// TODO both nvmrc and node-version should be parsed via mise idiomatic version parsing
-	if nvmrc, err := ctx.App.ReadFile(".nvmrc"); err == nil {
-		if len(nvmrc) > 0 && nvmrc[0] == 'v' {
-			nvmrc = nvmrc[1:]
-		}
-
-		miseStep.Version(nodeToolRef, string(nvmrc), ".nvmrc")
-	}
-
-	if nodeVersionFile, err := ctx.App.ReadFile(".node-version"); err == nil {
-		miseStep.Version(nodeToolRef, string(nodeVersionFile), ".node-version")
-	}
 }
 
 func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	requiresNode := p.requiresNode(ctx)
 	misePackages := []string{}
 
-	// Node
 	if requiresNode {
 		node := miseStep.Default("node", DEFAULT_NODE_VERSION)
 		misePackages = append(misePackages, "node")
@@ -323,8 +310,12 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		p.applyNodeVersionResolution(ctx, miseStep, node)
 	}
 
-	// Bun
 	if p.requiresBun(ctx) {
+		// there isn't a bun provider, it's mixed into the node provider
+		// users will see a message that indicates that railpack detected node, but not that bun is selected as the runtime
+		// let's at least add a note the plan so users understand that the bun runtime is being used.
+		ctx.Logger.LogInfo("Bun runtime detected")
+
 		bun := miseStep.Default("bun", DEFAULT_BUN_VERSION)
 		misePackages = append(misePackages, "bun")
 
@@ -357,7 +348,6 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		miseStep.Variables["MISE_NODE_COREPACK"] = "true"
 	}
 
-	// Check for mise.toml and .tool-versions and use those versions if they exist
 	if len(misePackages) > 0 {
 		miseStep.UseMiseVersions(ctx, misePackages)
 	}
@@ -396,21 +386,34 @@ func (p *NodeProvider) usesPuppeteer() bool {
 	return p.workspace.HasDependency("puppeteer")
 }
 
+// determine the major version of yarn from a version string. These major versions are installed and managed quite
+// differently which is why we need to distinguish them here.
+func parseYarnPackageManager(pmVersion string) PackageManager {
+	if strings.Split(pmVersion, ".")[0] == "1" {
+		return PackageManagerYarn1
+	}
+
+	// versions 2-4 are all considered part of the "Yarn Berry" release line
+	return PackageManagerYarnBerry
+}
+
 func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
 	// Check packageManager field first
 	if packageJson, err := p.GetPackageJson(app); err == nil && packageJson.PackageManager != nil {
 		pmName, pmVersion := packageJson.GetPackageManagerInfo()
 		if pmName == "yarn" && pmVersion != "" {
-			majorVersion := strings.Split(pmVersion, ".")[0]
-			if majorVersion == "1" {
-				return PackageManagerYarn1
-			} else {
-				return PackageManagerYarnBerry
-			}
+			return parseYarnPackageManager(pmVersion)
 		} else if pmName == "pnpm" {
 			return PackageManagerPnpm
+		} else if pmName == "npm" {
+			return PackageManagerNpm
 		} else if pmName == "bun" {
 			return PackageManagerBun
+		} else if pmName == "" {
+			// this is mostly likely a user configuration bug, so let's at least log it in case someone is stuck
+			log.Info("Package manager name is empty in package.json")
+		} else {
+			log.Warnf("Unknown package manager `%s` specified in package.json, defaulting to npm", pmName)
 		}
 	}
 
@@ -435,13 +438,11 @@ func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
 		}
 		if engine := strings.TrimSpace(packageJson.Engines["yarn"]); engine != "" {
 			// Decide yarn major: 1 -> yarn1, otherwise default to berry
-			major := strings.Split(engine, ".")[0]
-			if major == "1" {
-				return PackageManagerYarn1
-			}
-			return PackageManagerYarnBerry
+			return parseYarnPackageManager(engine)
 		}
 	}
+
+	log.Info("No package manager inferred, using npm default")
 
 	return PackageManagerNpm
 }
@@ -515,7 +516,7 @@ func (p *NodeProvider) requiresNode(ctx *generate.GenerateContext) bool {
 	return p.isAstro(ctx) || p.isVite(ctx)
 }
 
-// packageJsonRequiresBun checks if a package.json's scripts use bun commands
+// checks if a package.json's scripts use bun commands
 func packageJsonRequiresBun(packageJson *PackageJson) bool {
 	if packageJson == nil || packageJson.Scripts == nil {
 		return false
@@ -530,7 +531,7 @@ func packageJsonRequiresBun(packageJson *PackageJson) bool {
 	return false
 }
 
-// requiresBun checks if bun should be installed and available for the build and final image
+// checks if bun should be installed and available for the build and final image
 func (p *NodeProvider) requiresBun(ctx *generate.GenerateContext) bool {
 	if p.packageManager == PackageManagerBun {
 		return true

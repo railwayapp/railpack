@@ -44,3 +44,10 @@ dist/
 build/
 
 tmp/
+
+examples/*/size.json
+
+### AI Tooling ###
+.claude/settings.local.json
+examples/**/.claude
+.gemini/

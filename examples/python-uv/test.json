@@ -10,7 +10,8 @@
     "httpCheck": {
       "path": "/",
       "expected": 200,
-      "internalPort": 8000
+      "internalPort": 8000,
+      "expectedOutput": "Hello from Python Flask!"
     }
   }
 ]

@@ -1,3 +1,9 @@
+// Unlike the mise step builder, this builder uses mise to install a binary, but throws away all of the mise installation cruft
+// this reduces the image size considerably. Image sizes are important: performance is a feature and smaller images perform better.
+// They are easier to move around, debug, use less storage, etc. This is why we have this step in use on particular high-volume build paths.
+
+// TODO this builder is not exposed to the user right now via railpack.json
+
 package generate
 
 import (
@@ -61,9 +67,16 @@ func (b *InstallBinStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptio
 
 	step := plan.NewStep(b.DisplayName)
 	step.Secrets = []string{}
-	step.Inputs = []plan.Layer{
-		plan.NewImageLayer(plan.RailpackBuilderImage),
+	// take a look at mise_step_builder for any config that would be useful here
+	step.Variables = map[string]string{
+		// Enforces HTTPS and stricter security
+		"MISE_PARANOID": "1",
 	}
+	step.Inputs = []plan.Layer{
+		plan.NewImageLayer(RailpackBuilderImage),
+	}
+
+	// TODO copy MISE_VERBOSE from the environment if it's set
 
 	binPath := b.getBinPath()
 

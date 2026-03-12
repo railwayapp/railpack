@@ -20,6 +20,10 @@ const (
 	MiseInstallCommand = "mise install"
 )
 
+var (
+	RailpackBuilderImage = fmt.Sprintf("ghcr.io/railwayapp/railpack-builder:mise-%s", mise.Version)
+)
+
 // represents a app-local mise package
 type MisePackageInfo struct {
 	Version string
@@ -216,7 +220,7 @@ func (b *MiseStepBuilder) GetLayer() plan.Layer {
 }
 
 func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) error {
-	baseLayer := plan.NewImageLayer(plan.RailpackBuilderImage)
+	baseLayer := plan.NewImageLayer(RailpackBuilderImage)
 
 	if len(b.SupportingAptPackages) > 0 {
 		aptStep := plan.NewStep("packages:apt:build")
@@ -237,6 +241,7 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 
 	if len(b.MisePackages) > 0 {
 		step.AddCommands([]plan.Command{plan.NewPathCommand("/mise/shims")})
+		// NOTE make sure to keep (some) of the variables below in sync with install_bin_builder
 		maps.Copy(step.Variables, map[string]string{
 			"MISE_DATA_DIR":     "/mise",
 			"MISE_CONFIG_DIR":   "/mise",

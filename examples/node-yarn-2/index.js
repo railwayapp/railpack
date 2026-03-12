@@ -5,6 +5,7 @@ function getYarnVersion()  {
   return /\byarn\/([^\s]+)/.exec(ua)?.[1] ?? null; // e.g. "1.22.22", "3.6.1"
 }
 
+console.log("Node " + process.version);
 console.log(
   cowsay.say({
     text: `Hello from Yarn ${getYarnVersion()}`,

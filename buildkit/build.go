@@ -113,7 +113,6 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 	}
 
 	if opts.DumpLLB {
-		log.Info("Dumping LLB to stdout")
 		err = llb.WriteTo(def, os.Stdout)
 		if err != nil {
 			return fmt.Errorf("error writing LLB definition: %w", err)

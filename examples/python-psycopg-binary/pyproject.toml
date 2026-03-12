@@ -1,0 +1,7 @@
+[project]
+name = "python-psycopg-binary"
+version = "0.1.0"
+description = "Test psycopg[binary] detection"
+dependencies = [
+    "psycopg[binary]>=3.2,<4.0",
+]

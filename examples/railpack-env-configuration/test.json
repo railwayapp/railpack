@@ -1,0 +1,36 @@
+[
+  {
+    "expectedOutput": [
+      "Custom Install",
+      "Custom Build",
+      "Custom Start",
+      "/usr/bin/curl",
+      "http"
+    ],
+    "envs": {
+      "RAILPACK_DEPLOY_APT_PACKAGES": "curl",
+      "RAILPACK_BUILD_APT_PACKAGES": "python3-venv",
+      "RAILPACK_PACKAGES": "pipx pipx:httpie jq",
+      "RAILPACK_INSTALL_CMD": "mkdir -p artifacts && echo \"Custom Install\" > artifacts/install.txt",
+      "RAILPACK_BUILD_CMD": "which jq && echo \"Custom Build\" > artifacts/build.txt",
+      "RAILPACK_START_CMD": "cat artifacts/install.txt && cat artifacts/build.txt && echo \"Custom Start\" && which curl && which http && which jq"
+    }
+  },
+  {
+    "expectedOutput": "Hello from a non-standard script!",
+    "envs": {
+      "RAILPACK_SHELL_SCRIPT": "run.sh"
+    }
+  },
+  {
+    "expectedOutput": [
+      "Running start.sh",
+      "Custom Install",
+      "Custom Build"
+    ],
+    "envs": {
+      "RAILPACK_INSTALL_CMD": "mkdir -p artifacts && echo \"Custom Install\" > artifacts/install.txt",
+      "RAILPACK_BUILD_CMD": "echo \"Custom Build\" > artifacts/build.txt"
+    }
+  }
+]

@@ -18,7 +18,10 @@ with support for Node, Python, Go, PHP, and more.
 
 # Code style
 
+- When writing a comment describing a function, do not start the comment with the name of the function
+- Assume the person reading this code is an expert software engineer, but is not familiar with the internals of every system. Include concise one-line comments explaining key hooks, API usage, blocks of logic, etc., to help the reader quickly understand the code you've written.
 - Follow Go conventions and existing patterns in the codebase
+- Prefer early returns or early continues to `if` nesting
 - Use appropriate error handling with proper error wrapping
 - Do not write comments that are obvious from the code itself; focus on
   explaining why something is done, not what it does
@@ -28,6 +31,10 @@ with support for Node, Python, Go, PHP, and more.
 - When configuring Mise settings, prefer environment variables (e.g.
   `MISE_PIPX_UVX`) over TOML settings to maintain consistency with existing
   patterns in the codebase.
+- **Never manually update lockfiles** (yarn.lock, package-lock.json,
+  pnpm-lock.yaml, etc.). Always use the respective package manager to generate
+  or update lockfiles. Manual edits can result in invalid checksums and broken
+  builds.
 
 # Mise Setup
 
@@ -61,6 +68,7 @@ There are normal unit tests, snapshot tests, and integration tests. The integrat
 
 ## Integration Tests
 
+* Run `mise run test-integration-cwd` from within an `examples/` directory to run the integration test for that example.
 * `test.json` files are JSONC format and support comments. Use comments to explain temporary workarounds or special test conditions.
 * In `test.json` we should avoid using `justBuild` for all but the most simple projects. `justBuild` does not test `expectedOutput` or any other assertions.
 * If the project has a server component, we should use a `httpCheck` test. Read the @docs/src/content/docs/guides/developing-locally.md guide, specifically the `### HTTP Checks` section for more information.

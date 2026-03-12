@@ -70,6 +70,10 @@
      "path": "/mise/shims"
     },
     {
+     "dest": ".node-version",
+     "src": ".node-version"
+    },
+    {
      "customName": "create mise config",
      "name": "mise.toml",
      "path": "/etc/mise/config.toml"
@@ -81,7 +85,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.3.5"
     }
    ],
    "name": "packages:mise",
@@ -107,6 +111,10 @@
     },
     {
      "cmd": "mkdir -p /app/node_modules/.cache"
+    },
+    {
+     "dest": ".node-version",
+     "src": ".node-version"
     },
     {
      "dest": ".yarnrc.yml",
@@ -175,7 +183,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.3.5"
     }
    ],
    "name": "packages:apt:runtime"

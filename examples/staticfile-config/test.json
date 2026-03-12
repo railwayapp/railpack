@@ -3,7 +3,8 @@
     "httpCheck": {
       "internalPort": 80,
       "path": "/",
-      "expected": 200
+      "expected": 200,
+      "expectedOutput": "Railpack Static File"
     }
   }
 ]

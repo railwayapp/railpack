@@ -118,6 +118,33 @@ install the specified package manager version. When a package manager is
 detected via the `engines` field, the specified version constraint will be
 used.
 
+### Monorepo Support
+
+Railpack automatically supports monorepo (workspaces) configurations with all major
+package managers. No special configuration is required. 
+
+**Supported Approaches:**
+
+- **npm, bun, yarn**: Uses the `workspaces` field in `package.json`
+- **pnpm**: Uses `pnpm-workspace.yaml` configuration
+
+See the [examples
+folder](https://github.com/railwayapp/railpack/tree/main/examples) in the
+repository for workspace examples across different package managers (e.g.,
+`node-pnpm-workspaces`, `node-npm-workspaces`, `node-yarn-workspaces`,
+`node-bun-workspaces`).
+
+When building a monorepo, Railpack will:
+
+- Detect workspace configurations automatically
+- Install all workspace dependencies correctly
+- Respect workspace dependency links between packages
+- Cache workspace node_modules appropriately
+
+If your monorepo requires building a specific workspace package, ensure
+your build and start scripts are defined in the root `package.json` or use
+a [config file](/architecture/user-config) to specify custom commands.
+
 ### Install
 
 Railpack will only include the necessary files to install dependencies in order
@@ -206,3 +233,5 @@ Railpack automatically installs system dependencies for certain packages:
 - **Puppeteer**: When detected in workspace dependencies, Railpack installs
   all necessary system packages for running headless Chrome, including
   `xvfb`, `chromium` dependencies, and font libraries
+- **Playwright**: When detected in workspace dependencies, Railpack installs
+  the necessary system packages and the headless shell version of Chromium

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	semver "github.com/Masterminds/semver/v3"
+	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 )
@@ -30,6 +31,7 @@ func (p PackageManager) Name() string {
 	case PackageManagerYarn1, PackageManagerYarnBerry:
 		return "yarn"
 	default:
+		log.Warnf("unknown package manager: %s", p)
 		return ""
 	}
 }
@@ -224,7 +226,7 @@ func (p PackageManager) GetInstallFolder(ctx *generate.GenerateContext) []string
 // SupportingInstallFiles returns a list of files that are needed to install dependencies
 func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []string {
 	// Use brace expansion for single filesystem traversal instead of 16 separate globs
-	pattern := "**/{package.json,package-lock.json,pnpm-workspace.yaml,yarn.lock,pnpm-lock.yaml,bun.lockb,bun.lock,.yarn,.pnp.*,.yarnrc.yml,.npmrc,.node-version,.nvmrc,patches,.pnpm-patches,prisma}"
+	pattern := "**/{package.json,package-lock.json,pnpm-workspace.yaml,yarn.lock,pnpm-lock.yaml,bun.lockb,bun.lock,bunfig.toml,.yarn,.pnp.*,.yarnrc.yml,.npmrc,.node-version,.nvmrc,patches,.pnpm-patches,prisma}"
 
 	var allFiles []string
 
@@ -242,9 +244,9 @@ func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []
 		allFiles = append(allFiles, dirs...)
 	}
 
-	if customInstallPatterns, _ := ctx.Env.GetConfigVariable("NODE_INSTALL_PATTERNS"); customInstallPatterns != "" {
-		ctx.Logger.LogInfo("Using custom install patterns: %s", customInstallPatterns)
-		for _, pat := range strings.Split(customInstallPatterns, " ") {
+	if customInstallPatterns, _ := ctx.Env.GetConfigVariableList("NODE_INSTALL_PATTERNS"); len(customInstallPatterns) > 0 {
+		ctx.Logger.LogInfo("Using custom install patterns: %s", strings.Join(customInstallPatterns, " "))
+		for _, pat := range customInstallPatterns {
 			customFiles, _ := ctx.App.FindFiles("**/" + pat)
 			allFiles = append(allFiles, customFiles...)
 		}

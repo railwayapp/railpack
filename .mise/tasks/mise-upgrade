@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 # Description: one-click command to check for a new mise version and create a PR to update core/mise/version.txt.
 
 set -euo pipefail
@@ -13,8 +13,22 @@ if [[ "$current_branch" != "main" ]]; then
   exit 1
 fi
 
-# Pull latest changes from upstream
-git pull upstream main
+# Pull latest changes from the canonical railpack remote
+canonical_repo="railwayapp/railpack"
+canonical_url="https://github.com/$canonical_repo"
+remote_name=$(git remote -v | grep "$canonical_repo" | head -n1 | awk '{print $1}')
+
+if [[ -n "$remote_name" ]]; then
+  echo "Updating from remote: $remote_name ($canonical_url)"
+  git fetch "$remote_name" main
+  git pull "$remote_name" main
+  base_branch="$remote_name/main"
+else
+  echo "Updating from URL: $canonical_url"
+  git fetch "$canonical_url" main
+  git pull "$canonical_url" main
+  base_branch="FETCH_HEAD"
+fi
 
 # Require clean working tree for tracked files
 if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
@@ -48,10 +62,10 @@ if git show-ref --verify --quiet "refs/heads/$branch"; then
   exit 1
 fi
 
-git switch -c "$branch"
+git switch -c "$branch" "$base_branch"
 
 # Write the new version to version.txt
-echo "$latest" > "$file"
+printf "%s" "$latest" > "$file"
 
 new="$(cat "$file")"
 if [[ "$new" != "$latest" ]]; then
@@ -70,6 +84,10 @@ fi
 git add -- "$file"
 git commit -m "update mise $latest"
 
+# Push the branch (needed in CI and good practice locally)
+git push -u origin "$branch"
+
 gh pr create \
+  --repo "$canonical_repo" \
   --title "chore: mise update $latest" \
-  --body "Update mise to $latest" \
+  --body "Update mise to $latest"
