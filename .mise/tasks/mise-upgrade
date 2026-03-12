@@ -86,7 +86,7 @@ git commit -m "chore: update mise to $latest"
 
 # Update snapshots and commit using the pre-filled message
 mise run test-update-snapshots
-git commit -F .git/COMMIT_EDITMSG
+git commit -F "$(git rev-parse --git-dir)/COMMIT_EDITMSG"
 
 # Push the branch (needed in CI and good practice locally)
 git push -u origin "$branch"
