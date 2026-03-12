@@ -1,5 +1,0 @@
-{
-  "deploy": {
-    "startCommand": "ruby app.rb"
-  }
-}
