@@ -65,7 +65,7 @@ fi
 git switch -c "$branch" "$base_branch"
 
 # Write the new version to version.txt
-echo "$latest" > "$file"
+printf "%s" "$latest" > "$file"
 
 new="$(cat "$file")"
 if [[ "$new" != "$latest" ]]; then
