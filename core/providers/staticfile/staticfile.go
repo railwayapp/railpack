@@ -52,11 +52,11 @@ func (p *StaticfileProvider) Detect(ctx *generate.GenerateContext) (bool, error)
 }
 
 func (p *StaticfileProvider) Plan(ctx *generate.GenerateContext) error {
-	miseStep := ctx.GetMiseStepBuilder()
-	miseStep.Default("caddy", "latest")
+	installCaddyStep := ctx.NewInstallBinStepBuilder("packages:caddy")
+	installCaddyStep.Default("caddy", "latest")
 
 	build := ctx.NewCommandStep("build")
-	build.AddInput(plan.NewStepLayer(miseStep.Name()))
+	build.AddInput(plan.NewStepLayer(installCaddyStep.Name()))
 	build.AddInput(ctx.NewLocalLayer())
 
 	err := p.addCaddyfileToStep(ctx, build)
@@ -65,7 +65,7 @@ func (p *StaticfileProvider) Plan(ctx *generate.GenerateContext) error {
 	}
 
 	ctx.Deploy.AddInputs([]plan.Layer{
-		miseStep.GetLayer(),
+		installCaddyStep.GetLayer(),
 		plan.NewStepLayer(build.Name(), plan.Filter{
 			Include: []string{"."},
 		}),
