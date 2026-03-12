@@ -30,6 +30,34 @@ The Python version is determined in the following order:
 - Read from the `Pipfile` if present
 - Defaults to `3.13.2`
 
+## Precompiled vs. Compiled Python
+
+By default, Railpack installs Python using precompiled binaries via Mise.
+Precompiled binaries are faster to install and more reliable, but they may not
+be available for every Python version (e.g., very new or very old releases).
+
+When a precompiled binary is unavailable, the build will fail. This is
+intentional — many popular packages that provide precompiled wheels have not
+yet caught up to the latest Python release, meaning pip will fall back to
+compiling those packages from source, which frequently fails.
+
+If you need to use a Python version without a precompiled binary and are
+prepared to handle any compilation issues that may arise, you can opt into
+source compilation:
+
+```sh
+MISE_PYTHON_COMPILE=1
+```
+
+Set this as a deploy environment variable
+
+:::caution
+Compiling Python and its packages from source significantly increases build
+times and may cause failures for packages that have complex native
+dependencies. Only use this if a precompiled binary is unavailable for your
+required version.
+:::
+
 ## Runtime Variables
 
 These variables are available at runtime:
