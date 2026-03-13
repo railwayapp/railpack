@@ -201,26 +201,17 @@ func (m *Mise) runCmdWithEnv(extraEnv []string, args ...string) (string, error) 
 	return stdout.String(), nil
 }
 
-// MisePackage represents a single mise package configuration
-type MisePackage struct {
-	Version string `toml:"version"`
-}
-
 // MiseConfig represents the overall mise configuration
 type MiseConfig struct {
-	Tools    map[string]MisePackage `toml:"tools"`
-	Settings map[string]any         `toml:"settings,omitempty"`
+	Tools    map[string]string `toml:"tools"`
+	Settings map[string]any    `toml:"settings,omitempty"`
 }
 
 // used by the container mise logic, but uses the package structs defined in this file
 func GenerateMiseToml(packages map[string]string, settings map[string]any) (string, error) {
 	config := MiseConfig{
-		Tools:    make(map[string]MisePackage),
+		Tools:    packages,
 		Settings: settings,
-	}
-
-	for name, version := range packages {
-		config.Tools[name] = MisePackage{Version: version}
 	}
 
 	buf := bytes.NewBuffer(nil)
