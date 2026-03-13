@@ -326,7 +326,7 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		packages = append(packages, "pipx")
 
 		// prefer to use uv tooling as much as we can
-		miseStep.Variables["MISE_PIPX_UVX"] = "true"
+		miseStep.AddMiseSetting("pipx.uvx", true)
 	}
 
 	if p.hasPoetry(ctx) {
@@ -355,7 +355,7 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 
 	// Disable Python compilation to avoid incompatibility issues with some packages
 	// https://mise.jdx.dev/lang/python.html#python.compile
-	miseStep.Variables["MISE_PYTHON_COMPILE"] = "false"
+	miseStep.AddMiseSetting("python.compile", false)
 }
 
 func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[string]string {

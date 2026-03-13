@@ -208,13 +208,15 @@ type MisePackage struct {
 
 // MiseConfig represents the overall mise configuration
 type MiseConfig struct {
-	Tools map[string]MisePackage `toml:"tools"`
+	Tools    map[string]MisePackage `toml:"tools"`
+	Settings map[string]any         `toml:"settings,omitempty"`
 }
 
 // used by the container mise logic, but uses the package structs defined in this file
-func GenerateMiseToml(packages map[string]string) (string, error) {
+func GenerateMiseToml(packages map[string]string, settings map[string]any) (string, error) {
 	config := MiseConfig{
-		Tools: make(map[string]MisePackage),
+		Tools:    make(map[string]MisePackage),
+		Settings: settings,
 	}
 
 	for name, version := range packages {
