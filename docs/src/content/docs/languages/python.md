@@ -43,13 +43,18 @@ compiling those packages from source, which frequently fails.
 
 If you need to use a Python version without a precompiled binary and are
 prepared to handle any compilation issues that may arise, you can opt into
-source compilation:
+source compilation. Either set a deploy environment variable:
 
 ```sh
 MISE_PYTHON_COMPILE=1
 ```
 
-Set this as a deploy environment variable
+Or add the following to your `mise.toml`:
+
+```toml
+[settings.python]
+compile = true
+```
 
 :::caution
 Compiling Python and its packages from source significantly increases build
