@@ -28,9 +28,9 @@ with support for Node, Python, Go, PHP, and more.
 - Seriously, do not write comments that are obvious from the code itself.
 - Do not write one-line functions
 - Always use the App abstraction for file system operations.
-- When configuring Mise settings, prefer environment variables (e.g.
-  `MISE_PIPX_UVX`) over TOML settings to maintain consistency with existing
-  patterns in the codebase.
+- When configuring Mise settings, prefer TOML settings in the generated
+  `mise.toml` (via `AddMiseSetting`) over environment variables, so users can
+  override defaults with their own `mise.toml`.
 - **Never manually update lockfiles** (yarn.lock, package-lock.json,
   pnpm-lock.yaml, etc.). Always use the respective package manager to generate
   or update lockfiles. Manual edits can result in invalid checksums and broken

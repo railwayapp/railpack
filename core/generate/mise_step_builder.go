@@ -59,6 +59,7 @@ type MiseStepBuilder struct {
 	Assets                map[string]string
 	Inputs                []plan.Layer
 	Variables             map[string]string
+	MiseSettings          map[string]any
 	app                   *a.App
 	env                   *a.Environment
 }
@@ -74,6 +75,7 @@ func (c *GenerateContext) NewMiseStepBuilder(displayName string) *MiseStepBuilde
 		Assets:                map[string]string{},
 		Inputs:                []plan.Layer{},
 		Variables:             map[string]string{},
+		MiseSettings:          map[string]any{},
 		app:                   c.App,
 		env:                   c.Env,
 	}
@@ -91,6 +93,24 @@ func (c *GenerateContext) newMiseStepBuilder() *MiseStepBuilder {
 
 func (b *MiseStepBuilder) AddSupportingAptPackage(name string) {
 	b.SupportingAptPackages = append(b.SupportingAptPackages, name)
+}
+
+// AddMiseSetting adds a setting to the generated mise.toml [settings] section.
+// Dotted keys (e.g. "python.compile") are expanded into nested maps for TOML encoding.
+func (b *MiseStepBuilder) AddMiseSetting(key string, value any) {
+	parts := strings.SplitN(key, ".", 2)
+	if len(parts) == 1 {
+		b.MiseSettings[key] = value
+		return
+	}
+
+	// Ensure the nested map exists
+	nested, ok := b.MiseSettings[parts[0]].(map[string]any)
+	if !ok {
+		nested = map[string]any{}
+		b.MiseSettings[parts[0]] = nested
+	}
+	nested[parts[1]] = value
 }
 
 func (b *MiseStepBuilder) AddInput(input plan.Layer) {
@@ -248,17 +268,19 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			"MISE_CACHE_DIR":    "/mise/cache",
 			"MISE_SHIMS_DIR":    "/mise/shims",
 			"MISE_INSTALLS_DIR": "/mise/installs",
-			// Don't verify the asset because recently released versions don't have a public key to verify against
-			// https://github.com/railwayapp/railpack/issues/207
-			"MISE_NODE_VERIFY": "false",
-			// Enforces HTTPS and stricter security
-			"MISE_PARANOID": "1",
-			// Trust config files in the app directory to avoid trust warnings during build
-			"MISE_TRUSTED_CONFIG_PATHS": "/app",
-			// Enable mise to automatically read idiomatic version files
-			"MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS": mise.IdiomaticVersionFileTools,
 		})
 		maps.Copy(step.Variables, b.Variables)
+
+		// Base settings written into [settings] of the generated mise.toml so users can override with their own mise.toml
+		// Don't verify the asset because recently released versions don't have a public key to verify against
+		// https://github.com/railwayapp/railpack/issues/207
+		b.AddMiseSetting("node.verify", false)
+		// Enforces HTTPS and stricter security
+		b.AddMiseSetting("paranoid", true)
+		// Trust config files in the app directory to avoid trust warnings during build
+		b.AddMiseSetting("trusted_config_paths", []string{"/app"})
+		// Enable mise to automatically read idiomatic version files
+		b.AddMiseSetting("idiomatic_version_file_enable_tools", strings.Split(mise.IdiomaticVersionFileTools, ","))
 
 		if verbose := b.env.GetVariable("MISE_VERBOSE"); verbose != "" {
 			step.Variables["MISE_VERBOSE"] = verbose
@@ -282,7 +304,7 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			}
 		}
 
-		miseToml, err := mise.GenerateMiseToml(packagesToInstall)
+		miseToml, err := mise.GenerateMiseToml(packagesToInstall, b.MiseSettings)
 		if err != nil {
 			return fmt.Errorf("failed to generate mise.toml: %w", err)
 		}
