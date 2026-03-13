@@ -1,7 +1,7 @@
 # Railpack
 
-[![CI](https://github.com/railwayapp/railpack/actions/workflows/ci.yml/badge.svg)](https://github.com/railwayapp/railpack/actions/workflows/ci.yml)
-[![Run Tests](https://github.com/railwayapp/railpack/actions/workflows/run_tests.yml/badge.svg)](https://github.com/railwayapp/railpack/actions/workflows/run_tests.yml)
+[![CI](https://github.com/railwayapp/railpack/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/railwayapp/railpack/actions/workflows/unit-tests.yml)
+[![Run Tests](https://github.com/railwayapp/railpack/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/railwayapp/railpack/actions/workflows/integration-tests.yml)
 
 Railpack is a tool for building images from source code with minimal
 configuration. It is the successor to [Nixpacks](https://nixpacks.com) and

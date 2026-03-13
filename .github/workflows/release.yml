@@ -18,7 +18,7 @@ jobs:
   publish-builder:
     runs-on: ubuntu-latest
     steps:
-      # duplicated on the run_tests.yml job, keep these in sync
+      # duplicated on the integration-tests.yml job, keep these in sync
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
       - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
@@ -58,7 +58,7 @@ jobs:
     env:
       IMAGE_NAME: ${{ github.repository }}-runtime
     steps:
-      # duplicated on the run_tests.yml job, keep these in sync
+      # duplicated on the integration-tests.yml job, keep these in sync
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
       - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130

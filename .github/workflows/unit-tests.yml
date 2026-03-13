@@ -1,4 +1,4 @@
-name: CI
+name: Linting, Formatting, and Unit Tests
 
 # Security: Actions are pinned to commit SHAs instead of tags/versions where possible.
 # Tags are mutable and can be force-pushed, allowing attackers to replace trusted
