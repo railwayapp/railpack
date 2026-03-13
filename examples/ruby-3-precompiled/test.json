@@ -1,0 +1,10 @@
+[
+    {
+        "expectedOutput": [
+            "YJIT is enabled",
+            // ruby version is set to 3
+            "Ruby version: 3",
+            "jemalloc available"
+        ]
+    }
+]

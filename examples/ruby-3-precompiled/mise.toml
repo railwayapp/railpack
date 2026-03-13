@@ -1,0 +1,5 @@
+[tools]
+ruby = "3"
+
+[settings]
+ruby.compile = false

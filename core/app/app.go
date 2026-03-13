@@ -73,7 +73,7 @@ func (a *App) findMatches(pattern string, isDir bool) ([]string, error) {
 	return paths, nil
 }
 
-// FindFiles returns a list of file paths matching a glob pattern
+// returns a list of file paths matching a glob pattern
 func (a *App) FindFiles(pattern string) ([]string, error) {
 	return a.findMatches(pattern, false)
 }
@@ -190,7 +190,6 @@ func (a *App) ReadYAML(name string, v interface{}) error {
 	return nil
 }
 
-// ReadTOML reads and parses a TOML file
 func (a *App) ReadTOML(name string, v interface{}) error {
 	data, err := a.ReadFile(name)
 	if err != nil {
@@ -200,7 +199,7 @@ func (a *App) ReadTOML(name string, v interface{}) error {
 	return toml.Unmarshal([]byte(data), v)
 }
 
-// IsFileExecutable checks if a path is an executable file
+// checks if a path is an executable file
 func (a *App) IsFileExecutable(name string) bool {
 	path := filepath.Join(a.Source, name)
 	info, err := os.Stat(path)
@@ -216,7 +215,7 @@ func (a *App) IsFileExecutable(name string) bool {
 	return info.Mode()&0111 != 0
 }
 
-// StripSourcePath converts an absolute path to a path relative to the app source directory
+// converts an absolute path to a path relative to the app source directory
 func (a *App) stripSourcePath(absPath string) (string, error) {
 	rel, err := filepath.Rel(a.Source, absPath)
 	if err != nil {

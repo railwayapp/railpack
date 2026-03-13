@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -61,6 +63,8 @@ type MiseStepBuilder struct {
 	Variables             map[string]string
 	app                   *a.App
 	env                   *a.Environment
+	// nil = not yet computed, non-nil = cached result (may be an empty slice)
+	supportingMiseConfigFiles *[]string
 }
 
 func (c *GenerateContext) NewMiseStepBuilder(displayName string) *MiseStepBuilder {
@@ -201,7 +205,7 @@ func (b *MiseStepBuilder) Name() string {
 }
 
 func (b *MiseStepBuilder) GetOutputPaths() []string {
-	if len(b.MisePackages) == 0 {
+	if len(b.MisePackages) == 0 && len(b.getSupportingMiseConfigFiles()) == 0 {
 		return []string{}
 	}
 
@@ -239,7 +243,8 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 
 	step.Inputs = []plan.Layer{baseLayer}
 
-	if len(b.MisePackages) > 0 {
+	supportingMiseConfigFiles := b.getSupportingMiseConfigFiles()
+	if len(b.MisePackages) > 0 || len(supportingMiseConfigFiles) > 0 {
 		step.AddCommands([]plan.Command{plan.NewPathCommand("/mise/shims")})
 		// NOTE make sure to keep (some) of the variables below in sync with install_bin_builder
 		maps.Copy(step.Variables, map[string]string{
@@ -260,12 +265,12 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 		})
 		maps.Copy(step.Variables, b.Variables)
 
+		// pass through the MISE_VERBOSE variable for detailed logging
 		if verbose := b.env.GetVariable("MISE_VERBOSE"); verbose != "" {
 			step.Variables["MISE_VERBOSE"] = verbose
 		}
 
 		// Add user mise config files if they exist
-		supportingMiseConfigFiles := b.GetSupportingMiseConfigFiles(b.app.Source)
 		for _, file := range supportingMiseConfigFiles {
 			step.AddCommands([]plan.Command{
 				plan.NewCopyCommand(file),
@@ -287,7 +292,8 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 			return fmt.Errorf("failed to generate mise.toml: %w", err)
 		}
 
-		b.Assets["mise.toml"] = miseToml
+		// use a `generated-` to make it clear to the plan reader that this is system-generated, not user provided
+		b.Assets["generated-mise-toml"] = miseToml
 
 		pkgNames := make([]string, 0, len(packagesToInstall))
 		for k := range packagesToInstall {
@@ -296,7 +302,7 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 		sort.Strings(pkgNames)
 
 		step.AddCommands([]plan.Command{
-			plan.NewFileCommand("/etc/mise/config.toml", "mise.toml", plan.FileOptions{
+			plan.NewFileCommand("/etc/mise/config.toml", "generated-mise-toml", plan.FileOptions{
 				CustomName: "create mise config",
 			}),
 			plan.NewExecCommand(MiseInstallCommand, plan.ExecOptions{
@@ -313,24 +319,90 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 	return nil
 }
 
-var miseConfigFiles = []string{
-	"mise.toml",
-	".tool-versions",
+// https://mise.jdx.dev/configuration.html#idiomatic-version-files
+var miseIdiomaticFiles = []string{
 	".python-version",
+	".python-versions",
 	".node-version",
 	".nvmrc",
+	".ruby-version",
+	"Gemfile",
+	".go-version",
+	".java-version",
+	".sdkmanrc",
+	".exenv-version",
+	".deno-version",
 	// .bun-version is a community convention, not officially supported by Bun
 	".bun-version",
+	".yvmrc",
 }
 
-func (b *MiseStepBuilder) GetSupportingMiseConfigFiles(path string) []string {
+// https://mise.jdx.dev/configuration.html#configuration-hierarchy
+var miseConfigFiles = []string{
+	"mise.toml",
+	".mise.toml",
+	"mise/config.toml",
+	".mise/config.toml",
+	".config/mise.toml",
+	".config/mise/config.toml",
+	".tool-versions",
+}
+
+// https://mise.jdx.dev/configuration.html#mise-toml
+// the env-specific mise files are not as well documented, but we should look for them and include them in the install
+// step in case a user specified a MISE_ENV. They won't negatively impact builds otherwise (outside of more frequency cache busting)
+var miseConfigGlobs = []string{
+	"mise.*.toml",
+	".mise.*.toml",
+	".config/mise/conf.d/*.toml",
+}
+
+// This logic casts a wide net to find any mise configuration that may exist in the app source.
+// this enables the user to use mise config to configure the runtime, options, etc in a pretty granular way but also
+// requires the user to understand how to enable mise for various environments if they have a more advanced configuration
+func (b *MiseStepBuilder) getSupportingMiseConfigFiles() []string {
+	// depending on the size of the app source, this *could* be a expensive operation, so we cache the results so we can
+	// call multiple times without concern.
+	if b.supportingMiseConfigFiles != nil {
+		return *b.supportingMiseConfigFiles
+	}
+
+	seen := map[string]bool{}
 	files := []string{}
 
-	for _, file := range miseConfigFiles {
-		if b.app.HasFile(file) {
+	add := func(file string) {
+		if !seen[file] {
+			seen[file] = true
 			files = append(files, file)
 		}
 	}
 
+	for _, file := range slices.Concat(miseConfigFiles, miseIdiomaticFiles) {
+		if b.app.HasFile(file) {
+			add(file)
+		}
+	}
+
+	for _, pattern := range miseConfigGlobs {
+		matches, err := b.app.FindFiles(pattern)
+		if err != nil {
+			continue
+		}
+		for _, match := range matches {
+			add(match)
+		}
+	}
+
+	// For each directory containing a toml config, also check for a co-located mise.lock
+	for _, file := range files {
+		if !strings.HasSuffix(file, ".toml") {
+			continue
+		}
+		if lockFile := filepath.Join(filepath.Dir(file), "mise.lock"); b.app.HasFile(lockFile) {
+			add(lockFile)
+		}
+	}
+
+	b.supportingMiseConfigFiles = &files
 	return files
 }

@@ -112,6 +112,23 @@ compilation.
 Railpack automatically detects the Bundler version from the `BUNDLED WITH`
 section in your `Gemfile.lock` and installs that specific version.
 
+### Precompiled Ruby
+
+By default, Railpack follows the Mise default of building Ruby from
+source. You can opt into precompiled Ruby binaries for faster build times
+by adding a `mise.toml` to your repository:
+
+```toml
+[tools]
+ruby = "3"
+
+[settings]
+ruby.compile = false
+```
+
+Note that precompiled binaries may not be available for all Ruby versions
+or platforms.
+
 ### Performance Optimizations
 
 Railpack includes several performance optimizations:
