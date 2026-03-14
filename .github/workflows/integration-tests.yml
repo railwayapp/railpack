@@ -160,6 +160,58 @@ jobs:
         if: always()
         run: docker stop buildkit
 
+  # Same as `test`, but runs on native ARM hardware to catch ARM-specific failures
+  # without QEMU emulation overhead. Size artifacts are omitted since the benchmark
+  # job tracks x86 image sizes separately.
+  test-arm:
+    needs: [build-images, find-examples]
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      matrix:
+        example: ${{ fromJson(needs.find-examples.outputs.examples) }}
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+
+      - name: Cache Go modules and build artifacts
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          # include runner.arch so ARM and x86 caches don't collide
+          key: go-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock') }}-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            go-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock') }}-
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        with:
+          registry: ${{ env.PRODUCTION_CONTAINER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Start BuildKit
+        run: mise run run-buildkit-container
+
+      # QEMU provides x86 emulation on this ARM runner for any cross-platform build steps
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
+
+      - name: Run test for ${{ matrix.example }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          go test -v ./integration_tests \
+            -run "^TestExamplesIntegration/${{ matrix.example }}$" \
+            -timeout 20m
+
+      - name: Stop BuildKit
+        if: always()
+        run: docker stop buildkit
+
   # Collects size.json artifacts from all matrix jobs, merges them into a single
   # benchmark payload. On main, pushes results to gh-pages to track history.
   # On PRs, compares against stored history and posts a comment with the delta.
