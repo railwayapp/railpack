@@ -152,7 +152,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
-          name: size-${{ matrix.example }}
+          name: size-x86-${{ matrix.example }}
           path: examples/${{ matrix.example }}/size.json
           if-no-files-found: ignore
 
@@ -161,8 +161,7 @@ jobs:
         run: docker stop buildkit
 
   # Same as `test`, but runs on native ARM hardware to catch ARM-specific failures
-  # without QEMU emulation overhead. Size artifacts are omitted since the benchmark
-  # job tracks x86 image sizes separately.
+  # without QEMU emulation overhead.
   test-arm:
     needs: [build-images, find-examples]
     runs-on: ubuntu-24.04-arm
@@ -208,15 +207,24 @@ jobs:
             -run "^TestExamplesIntegration/${{ matrix.example }}$" \
             -timeout 20m
 
+      - name: Upload size.json
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: size-arm-${{ matrix.example }}
+          path: examples/${{ matrix.example }}/size.json
+          if-no-files-found: ignore
+
       - name: Stop BuildKit
         if: always()
         run: docker stop buildkit
 
-  # Collects size.json artifacts from all matrix jobs, merges them into a single
-  # benchmark payload. On main, pushes results to gh-pages to track history.
+  # Collects size.json artifacts from both x86 and ARM matrix jobs, merges them
+  # into a single benchmark payload with arch-suffixed names (e.g. "node-bun (x86)").
+  # On main, pushes results to gh-pages to track history.
   # On PRs, compares against stored history and posts a comment with the delta.
   docker-image-benchmark:
-    needs: test
+    needs: [test, test-arm]
     runs-on: ubuntu-latest
     permissions:
       # required for benchmark-action to push to gh-pages on main
@@ -229,24 +237,17 @@ jobs:
 
       - name: Download all size artifacts
         uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
-        # each artifact lands in its own size-<example>/ directory
+        # each artifact lands in its own size-{x86,arm}-<example>/ directory
         with:
           pattern: size-*
           merge-multiple: false
 
       - name: Merge size.json files into benchmark format
-        # customSmallerIsBetter expects [{name, unit, value}]; also emit a simple size.json for manual inspection
+        # customSmallerIsBetter expects [{name, unit, value}]; suffix name with arch for side-by-side comparison
         run: |
-          # create a master size.json for manual debugging
-          jq -s '[.[] | .] | sort_by(.name)' size-*/size.json > size.json
-          # this debugging data is compared against the "master" copy in gh-pages
-          jq -s '[.[] | {name: .name, unit: "bytes", value: .size}]' size-*/size.json > benchmark.json
-
-      - name: Upload merged size.json
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
-        with:
-          name: sizes
-          path: size.json
+          jq -s 'map(. + {name: (.name + " (x86)")})' size-x86-*/size.json > x86.json
+          jq -s 'map(. + {name: (.name + " (arm)")})' size-arm-*/size.json > arm.json
+          jq -s 'add | sort_by(.name) | map({name, unit: "bytes", value: .size})' x86.json arm.json > benchmark.json
 
       - name: Store benchmark results
         uses: benchmark-action/github-action-benchmark@a7bc2366eda11037936ea57d811a43b3418d3073
