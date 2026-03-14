@@ -1,5 +1,8 @@
 [
   {
-    "expectedOutput": "Hello from puppeteer"
+    "expectedOutput": "Hello from puppeteer",
+    // Puppeteer's bundled Chromium does not ship ARM64 binaries; skip on ARM runners
+    // See https://github.com/puppeteer/puppeteer/issues/7740
+    "skipArch": ["arm64"]
   }
 ]
