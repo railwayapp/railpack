@@ -81,7 +81,7 @@ echo "Running example: 'docker run $example_name'"
 [tasks.test-update-snapshots]
 run = [
   "UPDATE_SNAPS=true go test -short ./...",
-  "git add core/__snapshots__/",
+  "git add **/__snapshots__/",
   "echo 'test: update snapshots' > .git/COMMIT_EDITMSG",
 ]
 
