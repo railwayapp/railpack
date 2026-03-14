@@ -73,8 +73,6 @@ if [[ "$new" != "$latest" ]]; then
   exit 1
 fi
 
-mise run check
-
 # If nothing changed, stop early
 if git diff --quiet -- "$file"; then
   echo "mise version already set to $latest. Nothing to do."
@@ -84,9 +82,14 @@ fi
 git add -- "$file"
 git commit -m "chore: update mise to $latest"
 
-# Update snapshots and commit using the pre-filled message
+# Update snapshots before running any assertion tests — a new mise version
+# will always produce different snapshots, so assertions must come after.
 mise run test-update-snapshots
-git commit -F "$(git rev-parse --git-dir)/COMMIT_EDITMSG"
+if ! git diff --cached --quiet; then
+  git commit -F "$(git rev-parse --git-dir)/COMMIT_EDITMSG"
+fi
+
+mise run check
 
 # Push the branch (needed in CI and good practice locally)
 git push -u origin "$branch"
