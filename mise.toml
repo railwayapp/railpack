@@ -79,6 +79,8 @@ echo "Running example: 'docker run $example_name'"
 
 # update all test snapshots, if you've updated a example/ project, run this to update the snapshots
 [tasks.test-update-snapshots]
+# CI=false forces go-snaps to write new snapshots rather than assert — it ignores UPDATE_SNAPS in CI mode
+env = {CI = "false"}
 run = [
   "UPDATE_SNAPS=true go test -short ./...",
   "git add core/__snapshots__/",
