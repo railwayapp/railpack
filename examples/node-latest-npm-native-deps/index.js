@@ -1,7 +1,8 @@
 const Database = require('better-sqlite3');
+const bcrypt = require('bcrypt');
 
 console.log('Node version:', process.version);
-console.log('Testing better-sqlite3 (native module)...');
+console.log('Testing better-sqlite3 and bcrypt (native modules)...');
 
 // Create an in-memory database
 const db = new Database(':memory:');
@@ -22,4 +23,11 @@ console.log('Rows:', rows);
 
 db.close();
 
-console.log('✓ better-sqlite3 native module working correctly with npm');
+console.log('Testing bcrypt (native module)...');
+const saltRounds = 10;
+const hash = bcrypt.hashSync('npm-native-deps', saltRounds);
+const match = bcrypt.compareSync('npm-native-deps', hash);
+console.log('Bcrypt hash generated:', hash.substring(0, 20) + '...');
+console.log('Bcrypt compare result:', match);
+
+console.log('✓ better-sqlite3 and bcrypt native modules working correctly with npm');
