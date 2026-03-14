@@ -1,7 +1,6 @@
 package buildkit
 
 import (
-	"path/filepath"
 	"testing"
 )
 
@@ -38,7 +37,7 @@ func TestGetImageName(t *testing.T) {
 		},
 		{
 			name:     "path ending with separator",
-			appDir:   "/path/to/myapp" + string(filepath.Separator),
+			appDir:   "/path/to/myapp/",
 			expected: "railpack-app",
 		},
 	}

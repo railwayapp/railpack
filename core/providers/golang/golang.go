@@ -2,6 +2,7 @@ package golang
 
 import (
 	"fmt"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -145,9 +146,11 @@ func (p *GoProvider) InstallGoDeps(ctx *generate.GenerateContext, install *gener
 
 	workspacePackages := p.GoWorkspacePackages(ctx)
 	for _, pkgPath := range workspacePackages {
-		install.AddCommand(plan.NewCopyCommand(filepath.Join(pkgPath, "go.mod")))
+		// Use path.Join for container paths (always forward slash)
+		install.AddCommand(plan.NewCopyCommand(path.Join(pkgPath, "go.mod")))
+		// Use filepath.Join for host filesystem checks
 		if ctx.App.HasFile(filepath.Join(pkgPath, "go.sum")) {
-			install.AddCommand(plan.NewCopyCommand(filepath.Join(pkgPath, "go.sum")))
+			install.AddCommand(plan.NewCopyCommand(path.Join(pkgPath, "go.sum")))
 		}
 	}
 

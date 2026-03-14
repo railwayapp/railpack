@@ -19,10 +19,26 @@ import (
 )
 
 const (
-	InstallDir                = "/tmp/railpack/mise"
-	TestInstallDir            = "/tmp/railpack/mise-test"
+	DefaultInstallDir         = "/tmp/railpack/mise"
+	DefaultTestInstallDir     = "/tmp/railpack/mise-test"
 	IdiomaticVersionFileTools = "python,node,ruby,elixir,go,java,yarn"
 )
+
+// GetInstallDir returns the mise install directory, checking RAILPACK_MISE_DIR env var first
+func GetInstallDir() string {
+	if envDir := os.Getenv("RAILPACK_MISE_DIR"); envDir != "" {
+		return envDir
+	}
+	return DefaultInstallDir
+}
+
+// GetTestInstallDir returns the mise test install directory
+func GetTestInstallDir() string {
+	if envDir := os.Getenv("RAILPACK_MISE_TEST_DIR"); envDir != "" {
+		return envDir
+	}
+	return DefaultTestInstallDir
+}
 
 type Mise struct {
 	binaryPath  string
