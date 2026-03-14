@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -55,6 +56,8 @@ type TestCase struct {
 	ShouldFail     bool              `json:"shouldFail"`
 	HTTPCheck      *HTTPCheck        `json:"httpCheck"`
 	StderrAllowed  bool              `json:"stderrAllowed"`
+	// architectures to skip, e.g. ["arm64"]. Matches against runtime.GOARCH.
+	SkipArch []string `json:"skipArch"`
 }
 
 func TestExamplesIntegration(t *testing.T) {
@@ -118,6 +121,10 @@ func TestExamplesIntegration(t *testing.T) {
 			testName := fmt.Sprintf("%s/case-%d", entry.Name(), i)
 			t.Run(testName, func(t *testing.T) {
 				t.Parallel()
+
+				if slices.Contains(testCase.SkipArch, runtime.GOARCH) {
+					t.Skipf("skipping %s on %s", entry.Name(), runtime.GOARCH)
+				}
 
 				fmt.Printf("\033[32mRunning: examples/%s\033[0m\n", entry.Name())
 

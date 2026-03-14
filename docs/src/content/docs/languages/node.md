@@ -232,6 +232,11 @@ Railpack automatically installs system dependencies for certain packages:
 
 - **Puppeteer**: When detected in workspace dependencies, Railpack installs
   all necessary system packages for running headless Chrome, including
-  `xvfb`, `chromium` dependencies, and font libraries
+  `xvfb`, `chromium` dependencies, and font libraries. Note that
+  Puppeteer's bundled Chromium [does not support
+  ARM64](https://github.com/puppeteer/puppeteer/issues/7740); if you need
+  to run on ARM hardware, consider switching to
+  [Playwright](#system-dependencies) or implementing a custom workaround
+  (e.g. installing a system Chromium and pointing `executablePath` at it).
 - **Playwright**: When detected in workspace dependencies, Railpack installs
   the necessary system packages and the headless shell version of Chromium
