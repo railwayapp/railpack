@@ -45,7 +45,8 @@
     ],
     "include": [
      "/root/.cache",
-     "."
+     ".",
+     "/opt/corepack"
     ],
     "step": "build"
    }
@@ -69,10 +70,6 @@
      "path": "/mise/shims"
     },
     {
-     "dest": "mise.toml",
-     "src": "mise.toml"
-    },
-    {
      "customName": "create mise config",
      "name": "mise.toml",
      "path": "/etc/mise/config.toml"
@@ -94,6 +91,7 @@
     "MISE_DATA_DIR": "/mise",
     "MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS": "python,node,ruby,elixir,go,java,yarn",
     "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_NODE_COREPACK": "true",
     "MISE_NODE_VERIFY": "false",
     "MISE_PARANOID": "1",
     "MISE_SHIMS_DIR": "/mise/shims",
@@ -107,6 +105,14 @@
    "commands": [
     {
      "path": "/app/node_modules/.bin"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
+    },
+    {
+     "cmd": "sh -c 'npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate'",
+     "customName": "npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate"
     },
     {
      "cmd": "mkdir -p /app/node_modules/.cache"
@@ -131,6 +137,7 @@
    "name": "install",
    "variables": {
     "CI": "true",
+    "COREPACK_HOME": "/opt/corepack",
     "NODE_ENV": "production",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",

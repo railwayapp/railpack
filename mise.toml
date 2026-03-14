@@ -82,7 +82,7 @@ echo "Running example: 'docker run $example_name'"
 run = [
   "UPDATE_SNAPS=true go test -short ./...",
   "git add **/__snapshots__/",
-  "echo 'test: update snapshots' > .git/COMMIT_EDITMSG",
+  "echo 'test: update snapshots' > $(git rev-parse --git-dir)/COMMIT_EDITMSG",
 ]
 
 # linting, formatting, and static analysis

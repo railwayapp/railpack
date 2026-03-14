@@ -1,2 +1,5 @@
-onlyBuiltDependencies:
-  - better-sqlite3
+allowBuilds:
+  bcrypt: true
+  better-sqlite3: true
+  canvas: true
+  sharp: true
