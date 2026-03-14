@@ -7,7 +7,10 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "better-sqlite3": "^11.8.1"
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^11.8.1",
+    "canvas": "^3.2.1",
+    "sharp": "^0.34.5"
   },
   "keywords": [],
   "author": "",

@@ -2,7 +2,8 @@
   {
     "expectedOutput": [
       "Database test successful!",
-      "better-sqlite3 native module working correctly with pnpm"
+      "Bcrypt compare result: true",
+      "better-sqlite3 and bcrypt native modules working correctly with pnpm"
     ]
   }
 ]

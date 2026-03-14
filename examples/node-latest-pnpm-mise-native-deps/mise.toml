@@ -1,4 +1,5 @@
+# mise-installed pnpm is mainly what we are testing here: do extensions with C extensions properly download, compile, etc
+
 [tools]
 node = "latest"
-# Would like to use latest but can't because of https://github.com/jonathanmorley/asdf-pnpm/pull/41
-pnpm = "10.22.0"
+pnpm = "latest"
