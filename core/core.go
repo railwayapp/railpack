@@ -115,6 +115,10 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		return &BuildResult{Success: false, Logs: logger.Logs}
 	}
 
+	if err := addAdditionalMiseToolsToPackages(ctx, ctx.GetMiseStepBuilder(), resolvedPackages); err != nil {
+		logger.LogWarn("Failed to include additional tools from mise.toml in package output: %s", err.Error())
+	}
+
 	if providerToUse != nil {
 		providerToUse.CleansePlan(buildPlan)
 	}
@@ -310,4 +314,47 @@ func getProviders(ctx *generate.GenerateContext, config *c.Config) (providers.Pr
 	}
 
 	return providerToUse, detectedProvider
+}
+
+// Adds app-local mise.toml tools to the package output table.
+func addAdditionalMiseToolsToPackages(
+	ctx *generate.GenerateContext,
+	miseStep *generate.MiseStepBuilder,
+	resolvedPackages map[string]*resolver.ResolvedPackage,
+) error {
+	misePackages, err := miseStep.GetMisePackageVersionsCached(ctx)
+	if err != nil {
+		return err
+	}
+
+	addAdditionalMiseToolsFromPackages(misePackages, resolvedPackages)
+	return nil
+}
+
+// Merges non-provider mise.toml tools into resolved package rows.
+func addAdditionalMiseToolsFromPackages(
+	misePackages map[string]*generate.MisePackageInfo,
+	resolvedPackages map[string]*resolver.ResolvedPackage,
+) {
+	for _, name := range slices.Sorted(maps.Keys(misePackages)) {
+		pkg := misePackages[name]
+		if pkg == nil || pkg.Source != "mise.toml" {
+			continue
+		}
+		if _, exists := resolvedPackages[name]; exists {
+			continue
+		}
+
+		version := pkg.Version
+		var requestedVersion *string
+		if pkg.RequestedVersion != "" {
+			requestedVersion = &pkg.RequestedVersion
+		}
+		resolvedPackages[name] = &resolver.ResolvedPackage{
+			Name:             name,
+			RequestedVersion: requestedVersion,
+			ResolvedVersion:  &version,
+			Source:           "mise.toml",
+		}
+	}
 }
