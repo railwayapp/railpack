@@ -32,3 +32,6 @@ jobs:
       - run: mise run mise-upgrade
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # go-snaps ignores UPDATE_SNAPS when CI is detected, preventing snapshot
+          # writes. This overrides that so the mise-upgrade script can update them.
+          CI: false
