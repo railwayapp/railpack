@@ -28,7 +28,7 @@ The Python version is determined in the following order:
   `.tool-versions`, `mise.toml`)
 - Read from the `runtime.txt` file
 - Read from the `Pipfile` if present
-- Defaults to `3.13.2`
+- Defaults to `3.12.18`
 
 ## Precompiled vs. Compiled Python
 
