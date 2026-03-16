@@ -26,6 +26,7 @@ type BuildGraph struct {
 	Plan       *plan.BuildPlan
 	Platform   *specs.Platform
 	LocalState *llb.State
+	NoCache    bool
 
 	githubToken     string
 	secretsFile     *llb.State
@@ -37,7 +38,7 @@ type BuildGraphOutput struct {
 	GraphEnv BuildEnvironment
 }
 
-func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *BuildKitCacheStore, secretsHash string, platform *specs.Platform, githubToken string) (*BuildGraph, error) {
+func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *BuildKitCacheStore, secretsHash string, platform *specs.Platform, githubToken string, noCache bool) (*BuildGraph, error) {
 	var secretsFile *llb.State
 	if secretsHash != "" {
 		st := llb.Scratch().File(llb.Mkfile("/secrets-hash", 0644, []byte(secretsHash)), llb.WithCustomName("[railpack] secrets hash"))
@@ -51,6 +52,7 @@ func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *Buil
 		Plan:       plan,
 		Platform:   platform,
 		LocalState: localState,
+		NoCache:    noCache,
 
 		githubToken:     githubToken,
 		secretsFile:     secretsFile,
@@ -252,6 +254,10 @@ func (g *BuildGraph) convertExecCommandToLLB(node *StepNode, cmd plan.ExecComman
 	opts := []llb.RunOption{llb.Shlex(cmd.Cmd)}
 	if cmd.CustomName != "" {
 		opts = append(opts, llb.WithCustomName(cmd.CustomName))
+	}
+
+	if g.NoCache {
+		opts = append(opts, llb.IgnoreCache)
 	}
 
 	// These options mount all secrets as environments variables

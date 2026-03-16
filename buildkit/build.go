@@ -60,6 +60,7 @@ type BuildWithBuildkitClientOptions struct {
 	ExportCache  []string
 	CacheKey     string
 	GitHubToken  string
+	NoCache      bool
 }
 
 func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWithBuildkitClientOptions) error {
@@ -102,6 +103,7 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		SecretsHash:   opts.SecretsHash,
 		CacheKey:      opts.CacheKey,
 		GitHubToken:   opts.GitHubToken,
+		NoCache:       opts.NoCache,
 	})
 	if err != nil {
 		return fmt.Errorf("error converting plan to LLB: %w", err)
