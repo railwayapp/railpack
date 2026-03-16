@@ -12,15 +12,18 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/containerd/platforms"
+	"github.com/docker/cli/cli/config"
 	"github.com/moby/buildkit/client"
 	_ "github.com/moby/buildkit/client/connhelper/dockercontainer"
 	_ "github.com/moby/buildkit/client/connhelper/nerdctlcontainer"
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/buildkit/session"
+	"github.com/moby/buildkit/session/auth/authprovider"
 	"github.com/moby/buildkit/session/secrets/secretsprovider"
 	"github.com/moby/buildkit/util/appcontext"
 	_ "github.com/moby/buildkit/util/grpcutil/encoding/proto"
 	"github.com/moby/buildkit/util/progress/progressui"
+	"github.com/railwayapp/railpack/buildkit/cplnauth"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/tonistiigi/fsutil"
 )
@@ -44,17 +47,19 @@ Use 'railpack --verbose' to view more error details.
 )
 
 type BuildWithBuildkitClientOptions struct {
-	ImageName    string
-	DumpLLB      bool
-	OutputDir    string
-	ProgressMode string
-	SecretsHash  string
-	Secrets      map[string]string
-	Platform     string
-	ImportCache  string
-	ExportCache  string
-	CacheKey     string
-	GitHubToken  string
+	ImageName      string
+	DumpLLB        bool
+	OutputDir      string
+	ProgressMode   string
+	SecretsHash    string
+	Secrets        map[string]string
+	Platform       string
+	ImportCache    string
+	ExportCache    string
+	CacheRef       string
+	CacheKey       string
+	GitHubToken    string
+	CacheAuthBasic bool
 }
 
 func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWithBuildkitClientOptions) error {
@@ -184,11 +189,30 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 	}
 	secrets := secretsprovider.FromMap(secretsMap)
 
+	// Attach Docker auth provider so BuildKit can authenticate to private
+	// registries for cache import/export (--cache-ref).
+	dockerCfg := config.LoadDefaultConfigFile(os.Stderr)
+	var authAttachable session.Attachable
+	authAttachable = authprovider.NewDockerAuthProvider(dockerCfg, nil)
+
+	// When --cache-auth-basic is set and --cache-ref targets a registry,
+	// wrap the auth provider to force client-side token fetching via Basic
+	// auth GET. This works around registries (like Control Plane) that
+	// don't support the OAuth2 POST token exchange that BuildKit's daemon
+	// uses by default.
+	if opts.CacheAuthBasic && opts.CacheRef != "" {
+		host := cplnauth.RegistryHost(opts.CacheRef)
+		if host != "" {
+			log.Debugf("Using basic auth token provider for cache registry %s", host)
+			authAttachable = cplnauth.New(authAttachable, dockerCfg, []string{host})
+		}
+	}
+
 	solveOpts := client.SolveOpt{
 		LocalMounts: map[string]fsutil.FS{
 			"context": appFS,
 		},
-		Session: []session.Attachable{secrets},
+		Session: []session.Attachable{secrets, authAttachable},
 		Exports: []client.ExportEntry{
 			{
 				Type: client.ExporterDocker,
@@ -216,6 +240,23 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		solveOpts.CacheExports = append(solveOpts.CacheExports, client.CacheOptionsEntry{
 			Type:  "gha",
 			Attrs: parseKeyValue(opts.ExportCache),
+		})
+	}
+
+	// Add registry cache import/export if specified
+	if opts.CacheRef != "" {
+		solveOpts.CacheImports = append(solveOpts.CacheImports, client.CacheOptionsEntry{
+			Type: "registry",
+			Attrs: map[string]string{
+				"ref": opts.CacheRef,
+			},
+		})
+		solveOpts.CacheExports = append(solveOpts.CacheExports, client.CacheOptionsEntry{
+			Type: "registry",
+			Attrs: map[string]string{
+				"ref":  opts.CacheRef,
+				"mode": "max",
+			},
 		})
 	}
 

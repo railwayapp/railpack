@@ -50,6 +50,15 @@ var BuildCommand = &cli.Command{
 			Name:  "cache-key",
 			Usage: "Unique id to prefix to cache keys",
 		},
+		&cli.StringFlag{
+			Name:  "cache-ref",
+			Usage: "Registry ref for remote BuildKit layer cache (e.g. registry.example.com/cache:latest)",
+		},
+		&cli.BoolFlag{
+			Name:  "cache-auth-basic",
+			Usage: "Force client-side Basic auth for registry cache (for registries that don't support OAuth2 token exchange)",
+			Value: false,
+		},
 		&cli.BoolFlag{
 			Name:   "dump-llb",
 			Hidden: true,
@@ -93,15 +102,17 @@ var BuildCommand = &cli.Command{
 
 		platformStr := cmd.String("platform")
 		err = buildkit.BuildWithBuildkitClient(app.Source, buildResult.Plan, buildkit.BuildWithBuildkitClientOptions{
-			ImageName:    cmd.String("name"),
-			DumpLLB:      cmd.Bool("dump-llb"),
-			OutputDir:    cmd.String("output"),
-			ProgressMode: cmd.String("progress"),
-			CacheKey:     cmd.String("cache-key"),
-			SecretsHash:  secretsHash,
-			Secrets:      env.Variables,
-			Platform:     platformStr,
-			GitHubToken:  os.Getenv("GITHUB_TOKEN"),
+			ImageName:      cmd.String("name"),
+			DumpLLB:        cmd.Bool("dump-llb"),
+			OutputDir:      cmd.String("output"),
+			ProgressMode:   cmd.String("progress"),
+			CacheKey:       cmd.String("cache-key"),
+			CacheRef:       cmd.String("cache-ref"),
+			CacheAuthBasic: cmd.Bool("cache-auth-basic"),
+			SecretsHash:    secretsHash,
+			Secrets:        env.Variables,
+			Platform:       platformStr,
+			GitHubToken:    os.Getenv("GITHUB_TOKEN"),
 		})
 		if err != nil {
 			return cli.Exit(err, 1)
