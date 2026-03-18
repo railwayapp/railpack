@@ -7,7 +7,9 @@ import (
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/logger"
+	"github.com/railwayapp/railpack/core/resolver"
 	"github.com/stretchr/testify/require"
 )
 
@@ -104,4 +106,43 @@ func TestGenerateBuildPlan_DockerignoreMetadata(t *testing.T) {
 	require.True(t, buildResult.Success)
 	require.NotNil(t, buildResult.Metadata)
 	require.Equal(t, "true", buildResult.Metadata["dockerIgnore"])
+}
+
+func TestAddAdditionalMiseToolsToPackages(t *testing.T) {
+	nodeVersion := "24.0.0"
+	bunVersion := "1.3.10"
+
+	// Simulate what provider already resolved (node + bun already in table)
+	resolvedPackages := map[string]*resolver.ResolvedPackage{
+		"node": {Name: "node", ResolvedVersion: &nodeVersion, Source: "mise.toml"},
+		"bun":  {Name: "bun", ResolvedVersion: &bunVersion, Source: "mise.toml"},
+	}
+
+	// Simulate what mise returns from app mise.toml
+	misePackages := map[string]*generate.MisePackageInfo{
+		"node":   {Version: "24.0.0", RequestedVersion: "24", Source: "mise.toml"},
+		"bun":    {Version: "1.3.10", RequestedVersion: "latest", Source: "mise.toml"},
+		"python": {Version: "3.13.0", RequestedVersion: "3.13", Source: "mise.toml"},
+		"go":     {Version: "1.23.0", RequestedVersion: "1.23", Source: "mise.toml"},
+	}
+
+	addAdditionalMiseToolsFromPackages(misePackages, resolvedPackages)
+
+	// node and bun should remain unchanged
+	require.Equal(t, "mise.toml", resolvedPackages["node"].Source)
+	require.Equal(t, "mise.toml", resolvedPackages["bun"].Source)
+
+	// python and go should be added with requested versions from app mise.toml
+	require.Contains(t, resolvedPackages, "python")
+	require.Equal(t, "mise.toml", resolvedPackages["python"].Source)
+	require.Equal(t, "3.13.0", *resolvedPackages["python"].ResolvedVersion)
+	require.Equal(t, "3.13", *resolvedPackages["python"].RequestedVersion)
+
+	require.Contains(t, resolvedPackages, "go")
+	require.Equal(t, "mise.toml", resolvedPackages["go"].Source)
+	require.Equal(t, "1.23.0", *resolvedPackages["go"].ResolvedVersion)
+	require.Equal(t, "1.23", *resolvedPackages["go"].RequestedVersion)
+
+	// total should now be 4
+	require.Len(t, resolvedPackages, 4)
 }

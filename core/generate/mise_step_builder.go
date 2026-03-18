@@ -26,8 +26,9 @@ var (
 
 // represents a app-local mise package
 type MisePackageInfo struct {
-	Version string
-	Source  string
+	Version          string
+	RequestedVersion string
+	Source           string
 }
 
 // MiseListSource represents the source of a mise tool installation
@@ -61,6 +62,7 @@ type MiseStepBuilder struct {
 	Variables             map[string]string
 	app                   *a.App
 	env                   *a.Environment
+	cachedMisePackages    map[string]*MisePackageInfo
 }
 
 func (c *GenerateContext) NewMiseStepBuilder(displayName string) *MiseStepBuilder {
@@ -161,7 +163,8 @@ func (b *MiseStepBuilder) GetMisePackageVersions(ctx *GenerateContext) (map[stri
 		if len(appDirTools) > 0 {
 			firstTool := appDirTools[0]
 			packages[toolName] = &MisePackageInfo{
-				Version: firstTool.Version,
+				Version:          firstTool.Version,
+				RequestedVersion: firstTool.RequestedVersion,
 				// include the source so we can surface this to the user so they understand where the package version came from
 				Source: firstTool.Source.Type,
 			}
@@ -171,9 +174,24 @@ func (b *MiseStepBuilder) GetMisePackageVersions(ctx *GenerateContext) (map[stri
 	return packages, nil
 }
 
+// Reuses the mise package list to avoid duplicate mise invocations.
+func (b *MiseStepBuilder) GetMisePackageVersionsCached(ctx *GenerateContext) (map[string]*MisePackageInfo, error) {
+	if b.cachedMisePackages != nil {
+		return b.cachedMisePackages, nil
+	}
+
+	misePackages, err := b.GetMisePackageVersions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	b.cachedMisePackages = misePackages
+	return misePackages, nil
+}
+
 // Use mise-specified versions for all packages in the input list
 func (b *MiseStepBuilder) UseMiseVersions(ctx *GenerateContext, packages []string) {
-	miseVersions, err := b.GetMisePackageVersions(ctx)
+	miseVersions, err := b.GetMisePackageVersionsCached(ctx)
 	if err != nil {
 		ctx.Logger.LogWarn("Failed to get package versions from mise: %s", err.Error())
 		return
