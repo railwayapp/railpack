@@ -141,7 +141,7 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
 	prune.AddCache(p.GetInstallCache(ctx))
 
-	if pruneCmd, _ := ctx.Env.GetConfigVariable("NODE_PRUNE_CMD"); pruneCmd != "" {
+	if pruneCmd, _ := nodePruneCmd(ctx); pruneCmd != "" {
 		prune.AddCommand(plan.NewExecCommand(pruneCmd))
 		return
 	}
@@ -244,8 +244,11 @@ func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []
 		allFiles = append(allFiles, dirs...)
 	}
 
-	if customInstallPatterns, _ := ctx.Env.GetConfigVariableList("NODE_INSTALL_PATTERNS"); len(customInstallPatterns) > 0 {
+	if customInstallPatterns, source := nodeInstallPatterns(ctx); len(customInstallPatterns) > 0 {
 		ctx.Logger.LogInfo("Using custom install patterns: %s", strings.Join(customInstallPatterns, " "))
+		if source != "" {
+			ctx.Logger.LogInfo("Custom install patterns source: %s", source)
+		}
 		for _, pat := range customInstallPatterns {
 			customFiles, _ := ctx.App.FindFiles("**/" + pat)
 			allFiles = append(allFiles, customFiles...)
@@ -253,6 +256,32 @@ func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []
 	}
 
 	return allFiles
+}
+
+func nodePruneCmd(ctx *generate.GenerateContext) (string, string) {
+	if pruneCmd, envVarName := ctx.Env.GetConfigVariable("NODE_PRUNE_CMD"); pruneCmd != "" {
+		return pruneCmd, envVarName
+	}
+
+	config := providerConfig(ctx)
+	if config != nil && config.PruneCmd != "" {
+		return config.PruneCmd, "node.pruneCmd"
+	}
+
+	return "", ""
+}
+
+func nodeInstallPatterns(ctx *generate.GenerateContext) ([]string, string) {
+	if patterns, envVarName := ctx.Env.GetConfigVariableList("NODE_INSTALL_PATTERNS"); len(patterns) > 0 {
+		return patterns, envVarName
+	}
+
+	config := providerConfig(ctx)
+	if config != nil && len(config.InstallPatterns) > 0 {
+		return config.InstallPatterns, "node.installPatterns"
+	}
+
+	return nil, ""
 }
 
 // GetPackageManagerPackages installs specific versions of package managers by analyzing the users code

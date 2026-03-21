@@ -5,6 +5,7 @@ import (
 
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	javaconfig "github.com/railwayapp/railpack/core/providers/java/config"
 )
 
 type JavaProvider struct{}
@@ -107,6 +108,40 @@ func (p *JavaProvider) addMetadata(ctx *generate.GenerateContext) {
 	}
 
 	ctx.Metadata.Set("javaFramework", framework)
+}
+
+func (p *JavaProvider) providerConfig(ctx *generate.GenerateContext) *javaconfig.JavaConfig {
+	if ctx.Config == nil {
+		return nil
+	}
+
+	return ctx.Config.Java
+}
+
+func (p *JavaProvider) jdkVersion(ctx *generate.GenerateContext) (string, string) {
+	if jdkVersion, envName := ctx.Env.GetConfigVariable("JDK_VERSION"); jdkVersion != "" {
+		return jdkVersion, envName
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil && providerConfig.Version != "" {
+		return providerConfig.Version, "java.version"
+	}
+
+	return "", ""
+}
+
+func (p *JavaProvider) gradleVersion(ctx *generate.GenerateContext) (string, string) {
+	if gradleVersion, envName := ctx.Env.GetConfigVariable("GRADLE_VERSION"); gradleVersion != "" {
+		return gradleVersion, envName
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil && providerConfig.GradleVersion != "" {
+		return providerConfig.GradleVersion, "java.gradleVersion"
+	}
+
+	return "", ""
 }
 
 func (p *JavaProvider) usesSpringBoot(ctx *generate.GenerateContext) bool {

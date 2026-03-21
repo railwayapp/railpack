@@ -1,6 +1,9 @@
 package python
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -141,4 +144,53 @@ func TestUsesPostgres(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestPythonProviderConfigFromFile(t *testing.T) {
+	t.Run("python version from provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, createPythonApp(t))
+		testingUtils.ClearConfigVariable(ctx, "PYTHON_VERSION")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
+			"python": {
+				"version": "3.12"
+			}
+		}`)
+
+		provider := PythonProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+		require.NoError(t, provider.Plan(ctx))
+
+		pythonVersion := ctx.Resolver.Get("python")
+		require.True(t, strings.HasPrefix(pythonVersion.Version, "3.12"))
+		require.Equal(t, "python.version", pythonVersion.Source)
+	})
+
+	t.Run("python env var takes precedence over provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, createPythonApp(t))
+		testingUtils.ClearConfigVariable(ctx, "PYTHON_VERSION")
+		ctx.Env.SetVariable("RAILPACK_PYTHON_VERSION", "3.11")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
+			"python": {
+				"version": "3.12"
+			}
+		}`)
+
+		provider := PythonProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+		require.NoError(t, provider.Plan(ctx))
+
+		pythonVersion := ctx.Resolver.Get("python")
+		require.True(t, strings.HasPrefix(pythonVersion.Version, "3.11"))
+		require.Equal(t, "RAILPACK_PYTHON_VERSION", pythonVersion.Source)
+	})
+}
+
+func createPythonApp(t *testing.T) string {
+	t.Helper()
+
+	appDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(appDir, "requirements.txt"), []byte("flask==3.0.0\n"), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(appDir, "main.py"), []byte("print('hello')\n"), 0644))
+
+	return appDir
 }

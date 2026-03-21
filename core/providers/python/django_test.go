@@ -42,3 +42,44 @@ func TestDjango(t *testing.T) {
 		})
 	}
 }
+
+func TestDjangoProviderConfigFromFile(t *testing.T) {
+	t.Run("django app name from provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/python-django")
+		testingUtils.ClearConfigVariable(ctx, "DJANGO_APP_NAME")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
+			"python": {
+				"djangoAppName": "custom.wsgi"
+			}
+		}`)
+
+		provider := PythonProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+
+		appName := provider.getDjangoAppName(ctx)
+		require.Equal(t, "custom.wsgi", appName)
+
+		startCmd := provider.getDjangoStartCommand(ctx)
+		require.Equal(t, "python manage.py migrate && gunicorn --bind 0.0.0.0:${PORT:-8000} custom.wsgi:application", startCmd)
+	})
+
+	t.Run("django env var takes precedence over provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/python-django")
+		testingUtils.ClearConfigVariable(ctx, "DJANGO_APP_NAME")
+		ctx.Env.SetVariable("RAILPACK_DJANGO_APP_NAME", "env.wsgi")
+		testingUtils.SetConfigFromJSON(t, ctx, `{
+			"python": {
+				"djangoAppName": "custom.wsgi"
+			}
+		}`)
+
+		provider := PythonProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+
+		appName := provider.getDjangoAppName(ctx)
+		require.Equal(t, "env.wsgi", appName)
+
+		startCmd := provider.getDjangoStartCommand(ctx)
+		require.Equal(t, "python manage.py migrate && gunicorn --bind 0.0.0.0:${PORT:-8000} env.wsgi:application", startCmd)
+	})
+}

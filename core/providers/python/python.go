@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	pythonconfig "github.com/railwayapp/railpack/core/providers/python/config"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -305,8 +306,8 @@ func (p *PythonProvider) GetBuilderDeps(ctx *generate.GenerateContext) *generate
 func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	python := miseStep.Default("python", DEFAULT_PYTHON_VERSION)
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("PYTHON_VERSION"); envVersion != "" {
-		miseStep.Version(python, envVersion, varName)
+	if pythonVersion, source := p.pythonVersion(ctx); pythonVersion != "" {
+		miseStep.Version(python, pythonVersion, source)
 	}
 
 	if runtimeFile, err := ctx.App.ReadFile("runtime.txt"); err == nil {
@@ -356,6 +357,40 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	// Disable Python compilation to avoid incompatibility issues with some packages
 	// https://mise.jdx.dev/lang/python.html#python.compile
 	miseStep.Variables["MISE_PYTHON_COMPILE"] = "false"
+}
+
+func (p *PythonProvider) providerConfig(ctx *generate.GenerateContext) *pythonconfig.PythonConfig {
+	if ctx.Config == nil {
+		return nil
+	}
+
+	return ctx.Config.Python
+}
+
+func (p *PythonProvider) pythonVersion(ctx *generate.GenerateContext) (string, string) {
+	if envVersion, varName := ctx.Env.GetConfigVariable("PYTHON_VERSION"); envVersion != "" {
+		return envVersion, varName
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil && providerConfig.Version != "" {
+		return providerConfig.Version, "python.version"
+	}
+
+	return "", ""
+}
+
+func (p *PythonProvider) djangoAppName(ctx *generate.GenerateContext) string {
+	if appName, _ := ctx.Env.GetConfigVariable("DJANGO_APP_NAME"); appName != "" {
+		return appName
+	}
+
+	providerConfig := p.providerConfig(ctx)
+	if providerConfig != nil {
+		return providerConfig.DjangoAppName
+	}
+
+	return ""
 }
 
 func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[string]string {

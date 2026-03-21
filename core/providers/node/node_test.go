@@ -2,10 +2,13 @@ package node
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/railwayapp/railpack/core/generate"
+	"github.com/railwayapp/railpack/core/plan"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -228,5 +231,256 @@ func TestPackageJsonRequiresBun(t *testing.T) {
 		}
 		got := packageJsonRequiresBun(packageJson)
 		require.False(t, got)
+	})
+}
+
+func TestNodeProviderConfigFromFile(t *testing.T) {
+	t.Run("node version from provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, createNodeApp(t, map[string]string{
+			"package.json": `{"name":"app","scripts":{"start":"node index.js"}}`,
+			"index.js":     `console.log("ok")`,
+		}))
+		testingUtils.ClearConfigVariable(ctx, "NODE_VERSION")
+		testingUtils.SetConfigFromJSON(t, ctx, `{"node":{"version":"20.11.0"}}`)
+
+		provider := NodeProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+		require.NoError(t, provider.Plan(ctx))
+
+		nodeVersion := ctx.Resolver.Get("node")
+		require.Equal(t, "20.11.0", nodeVersion.Version)
+		require.Equal(t, "node.version", nodeVersion.Source)
+	})
+
+	t.Run("node env var takes precedence over provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, createNodeApp(t, map[string]string{
+			"package.json": `{"name":"app","scripts":{"start":"node index.js"}}`,
+			"index.js":     `console.log("ok")`,
+		}))
+		testingUtils.ClearConfigVariable(ctx, "NODE_VERSION")
+		ctx.Env.SetVariable("RAILPACK_NODE_VERSION", "21.2.0")
+		testingUtils.SetConfigFromJSON(t, ctx, `{"node":{"version":"20.11.0"}}`)
+
+		provider := NodeProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+		require.NoError(t, provider.Plan(ctx))
+
+		nodeVersion := ctx.Resolver.Get("node")
+		require.Equal(t, "21.2.0", nodeVersion.Version)
+		require.Equal(t, "RAILPACK_NODE_VERSION", nodeVersion.Source)
+	})
+
+	t.Run("bun version from provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, createNodeApp(t, map[string]string{
+			"package.json": `{"name":"app","scripts":{"start":"bun run index.js"}}`,
+			"index.js":     `console.log("ok")`,
+		}))
+		testingUtils.ClearConfigVariable(ctx, "BUN_VERSION")
+		testingUtils.SetConfigFromJSON(t, ctx, `{"node":{"bunVersion":"1.1.5"}}`)
+
+		provider := NodeProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+		require.NoError(t, provider.Plan(ctx))
+
+		bunVersion := ctx.Resolver.Get("bun")
+		require.Equal(t, "1.1.5", bunVersion.Version)
+		require.Equal(t, "node.bunVersion", bunVersion.Source)
+	})
+
+	t.Run("bun env var takes precedence over provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, createNodeApp(t, map[string]string{
+			"package.json": `{"name":"app","scripts":{"start":"bun run index.js"}}`,
+			"index.js":     `console.log("ok")`,
+		}))
+		testingUtils.ClearConfigVariable(ctx, "BUN_VERSION")
+		ctx.Env.SetVariable("RAILPACK_BUN_VERSION", "1.2.3")
+		testingUtils.SetConfigFromJSON(t, ctx, `{"node":{"bunVersion":"1.1.5"}}`)
+
+		provider := NodeProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+		require.NoError(t, provider.Plan(ctx))
+
+		bunVersion := ctx.Resolver.Get("bun")
+		require.Equal(t, "1.2.3", bunVersion.Version)
+		require.Equal(t, "RAILPACK_BUN_VERSION", bunVersion.Source)
+	})
+
+	t.Run("spa output dir from provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-vite-react")
+		testingUtils.ClearConfigVariable(ctx, OUTPUT_DIR_VAR)
+		testingUtils.SetConfigFromJSON(t, ctx, `{"node":{"spaOutputDir":"custom-dist"}}`)
+
+		provider := NodeProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+
+		require.True(t, provider.isSPA(ctx))
+		require.Equal(t, "custom-dist", provider.getOutputDirectory(ctx))
+	})
+
+	t.Run("spa output dir env var takes precedence over provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-vite-react")
+		testingUtils.ClearConfigVariable(ctx, OUTPUT_DIR_VAR)
+		ctx.Env.SetVariable("RAILPACK_SPA_OUTPUT_DIR", "env-dist")
+		testingUtils.SetConfigFromJSON(t, ctx, `{"node":{"spaOutputDir":"custom-dist"}}`)
+
+		provider := NodeProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+
+		require.Equal(t, "env-dist", provider.getOutputDirectory(ctx))
+	})
+
+	t.Run("no spa from provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-vite-react")
+		testingUtils.ClearConfigVariable(ctx, "NO_SPA")
+		testingUtils.SetConfigFromJSON(t, ctx, `{"node":{"noSpa":true}}`)
+
+		provider := NodeProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+
+		require.False(t, provider.isSPA(ctx))
+	})
+
+	t.Run("prune deps from provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-npm")
+		testingUtils.ClearConfigVariable(ctx, "PRUNE_DEPS")
+		testingUtils.SetConfigFromJSON(t, ctx, `{"node":{"pruneDeps":true}}`)
+
+		provider := NodeProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+
+		require.True(t, provider.shouldPrune(ctx))
+	})
+
+	t.Run("prune command from provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-npm")
+		testingUtils.ClearConfigVariable(ctx, "NODE_PRUNE_CMD")
+		testingUtils.SetConfigFromJSON(t, ctx, `{"node":{"pruneCmd":"npm prune --omit=dev --ignore-scripts --workspaces"}}`)
+
+		prune := ctx.NewCommandStep("prune")
+		PackageManagerNpm.PruneDeps(ctx, prune)
+
+		require.Contains(t, getExecCommands(prune), "npm prune --omit=dev --ignore-scripts --workspaces")
+	})
+
+	t.Run("prune command env var takes precedence over provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-npm")
+		testingUtils.ClearConfigVariable(ctx, "NODE_PRUNE_CMD")
+		ctx.Env.SetVariable("RAILPACK_NODE_PRUNE_CMD", "npm prune --omit=dev")
+		testingUtils.SetConfigFromJSON(t, ctx, `{"node":{"pruneCmd":"npm prune --omit=dev --ignore-scripts --workspaces"}}`)
+
+		prune := ctx.NewCommandStep("prune")
+		PackageManagerNpm.PruneDeps(ctx, prune)
+
+		require.Contains(t, getExecCommands(prune), "npm prune --omit=dev")
+	})
+
+	t.Run("install patterns from provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, createNodeApp(t, map[string]string{
+			"package.json":             `{"name":"app"}`,
+			"custom/from-config.txt":   "configured",
+			"custom/from-env-only.txt": "env",
+		}))
+		testingUtils.ClearConfigVariable(ctx, "NODE_INSTALL_PATTERNS")
+		testingUtils.SetConfigFromJSON(t, ctx, `{"node":{"installPatterns":["from-config.txt"]}}`)
+
+		files := PackageManagerNpm.SupportingInstallFiles(ctx)
+		require.Contains(t, files, "custom/from-config.txt")
+	})
+
+	t.Run("install patterns env var takes precedence over provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, createNodeApp(t, map[string]string{
+			"package.json":             `{"name":"app"}`,
+			"custom/from-config.txt":   "configured",
+			"custom/from-env-only.txt": "env",
+		}))
+		testingUtils.ClearConfigVariable(ctx, "NODE_INSTALL_PATTERNS")
+		ctx.Env.SetVariable("RAILPACK_NODE_INSTALL_PATTERNS", "from-env-only.txt")
+		testingUtils.SetConfigFromJSON(t, ctx, `{"node":{"installPatterns":["from-config.txt"]}}`)
+
+		files := PackageManagerNpm.SupportingInstallFiles(ctx)
+		require.Contains(t, files, "custom/from-env-only.txt")
+		require.NotContains(t, files, "custom/from-config.txt")
+	})
+
+	t.Run("angular project from provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, createAngularWorkspaceApp(t))
+		testingUtils.ClearConfigVariable(ctx, "ANGULAR_PROJECT")
+		testingUtils.SetConfigFromJSON(t, ctx, `{"node":{"angularProject":"admin"}}`)
+
+		provider := NodeProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+
+		require.Equal(t, "dist/admin/browser", provider.getAngularOutputDirectory(ctx))
+	})
+
+	t.Run("angular project env var takes precedence over provider config", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, createAngularWorkspaceApp(t))
+		testingUtils.ClearConfigVariable(ctx, "ANGULAR_PROJECT")
+		ctx.Env.SetVariable("RAILPACK_ANGULAR_PROJECT", "web")
+		testingUtils.SetConfigFromJSON(t, ctx, `{"node":{"angularProject":"admin"}}`)
+
+		provider := NodeProvider{}
+		require.NoError(t, provider.Initialize(ctx))
+
+		require.Equal(t, "dist/web/browser", provider.getAngularOutputDirectory(ctx))
+	})
+}
+
+func getExecCommands(step *generate.CommandStepBuilder) []string {
+	commands := []string{}
+
+	for _, command := range step.Commands {
+		execCommand, ok := command.(plan.ExecCommand)
+		if ok {
+			commands = append(commands, execCommand.Cmd)
+		}
+	}
+
+	return commands
+}
+
+func createNodeApp(t *testing.T, files map[string]string) string {
+	t.Helper()
+
+	appDir := t.TempDir()
+
+	for filePath, contents := range files {
+		absolutePath := filepath.Join(appDir, filePath)
+		require.NoError(t, os.MkdirAll(filepath.Dir(absolutePath), 0755))
+		require.NoError(t, os.WriteFile(absolutePath, []byte(contents), 0644))
+	}
+
+	return appDir
+}
+
+func createAngularWorkspaceApp(t *testing.T) string {
+	t.Helper()
+
+	return createNodeApp(t, map[string]string{
+		"package.json": `{
+			"name": "angular-app",
+			"dependencies": {"@angular/core": "^19.0.0"},
+			"scripts": {"build": "ng build"}
+		}`,
+		"angular.json": `{
+			"projects": {
+				"web": {
+					"architect": {
+						"build": {
+							"builder": "@angular-devkit/build-angular:application",
+							"options": {"outputPath": "dist/web"}
+						}
+					}
+				},
+				"admin": {
+					"architect": {
+						"build": {
+							"builder": "@angular-devkit/build-angular:application",
+							"options": {"outputPath": "dist/admin"}
+						}
+					}
+				}
+			}
+		}`,
 	})
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	shellconfig "github.com/railwayapp/railpack/core/providers/shell/config"
 	"mvdan.cc/sh/v3/fileutil"
 )
 
@@ -94,9 +95,30 @@ func (p *ShellProvider) StartCommandHelp() string {
 	return ""
 }
 
+func providerConfig(ctx *generate.GenerateContext) *shellconfig.ShellConfig {
+	if ctx.Config == nil {
+		return nil
+	}
+
+	return ctx.Config.Shell
+}
+
+func shellScript(ctx *generate.GenerateContext) (string, string) {
+	if scriptName, envVarName := ctx.Env.GetConfigVariable("SHELL_SCRIPT"); scriptName != "" {
+		return scriptName, envVarName
+	}
+
+	providerConfig := providerConfig(ctx)
+	if providerConfig != nil && providerConfig.Script != "" {
+		return providerConfig.Script, "shell.script"
+	}
+
+	return "", ""
+}
+
 // determine shell script to use for container start
 func getScript(ctx *generate.GenerateContext) string {
-	scriptName, envVarName := ctx.Env.GetConfigVariable("SHELL_SCRIPT")
+	scriptName, source := shellScript(ctx)
 	if scriptName == "" {
 		scriptName = StartScriptName
 	}
@@ -105,8 +127,8 @@ func getScript(ctx *generate.GenerateContext) string {
 		return scriptName
 	}
 
-	if envVarName != "" {
-		ctx.Logger.LogWarn("%s %s script not found", envVarName, scriptName)
+	if source != "" {
+		ctx.Logger.LogWarn("%s %s script not found", source, scriptName)
 	} else {
 		ctx.Logger.LogWarn("script %s not found", scriptName)
 	}

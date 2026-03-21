@@ -5,6 +5,19 @@ import (
 
 	"github.com/invopop/jsonschema"
 	"github.com/railwayapp/railpack/core/plan"
+	denoconfig "github.com/railwayapp/railpack/core/providers/deno/config"
+	dotnetconfig "github.com/railwayapp/railpack/core/providers/dotnet/config"
+	elixirconfig "github.com/railwayapp/railpack/core/providers/elixir/config"
+	gleamconfig "github.com/railwayapp/railpack/core/providers/gleam/config"
+	golangconfig "github.com/railwayapp/railpack/core/providers/golang/config"
+	javaconfig "github.com/railwayapp/railpack/core/providers/java/config"
+	nodeconfig "github.com/railwayapp/railpack/core/providers/node/config"
+	phpconfig "github.com/railwayapp/railpack/core/providers/php/config"
+	pythonconfig "github.com/railwayapp/railpack/core/providers/python/config"
+	rubyconfig "github.com/railwayapp/railpack/core/providers/ruby/config"
+	rustconfig "github.com/railwayapp/railpack/core/providers/rust/config"
+	shellconfig "github.com/railwayapp/railpack/core/providers/shell/config"
+	staticfileconfig "github.com/railwayapp/railpack/core/providers/staticfile/config"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -27,13 +40,26 @@ type StepConfig struct {
 }
 
 type Config struct {
-	Provider         *string                `json:"provider,omitempty" jsonschema:"description=The provider to use"`
-	BuildAptPackages []string               `json:"buildAptPackages,omitempty" jsonschema:"description=List of apt packages to install during the build step"`
-	Steps            map[string]*StepConfig `json:"steps,omitempty" jsonschema:"description=Map of step names to step definitions"`
-	Deploy           *DeployConfig          `json:"deploy,omitempty" jsonschema:"description=Deploy configuration"`
-	Packages         map[string]string      `json:"packages,omitempty" jsonschema:"description=Map of package name to package version"`
-	Caches           map[string]*plan.Cache `json:"caches,omitempty" jsonschema:"description=Map of cache name to cache definitions. The cache key can be referenced in an exec command"`
-	Secrets          []string               `json:"secrets,omitempty" jsonschema:"description=Secrets that should be made available to commands that have useSecrets set to true"`
+	Provider         *string                            `json:"provider,omitempty" jsonschema:"description=The provider to use"`
+	Deno             *denoconfig.DenoConfig             `json:"deno,omitempty" jsonschema:"description=Configuration for the deno provider"`
+	Dotnet           *dotnetconfig.DotnetConfig         `json:"dotnet,omitempty" jsonschema:"description=Configuration for the dotnet provider"`
+	Elixir           *elixirconfig.ElixirConfig         `json:"elixir,omitempty" jsonschema:"description=Configuration for the elixir provider"`
+	Gleam            *gleamconfig.GleamConfig           `json:"gleam,omitempty" jsonschema:"description=Configuration for the gleam provider"`
+	Golang           *golangconfig.GolangConfig         `json:"golang,omitempty" jsonschema:"description=Configuration for the golang provider"`
+	Java             *javaconfig.JavaConfig             `json:"java,omitempty" jsonschema:"description=Configuration for the java provider"`
+	Node             *nodeconfig.NodeConfig             `json:"node,omitempty" jsonschema:"description=Configuration for the node provider"`
+	Php              *phpconfig.PhpConfig               `json:"php,omitempty" jsonschema:"description=Configuration for the php provider"`
+	Python           *pythonconfig.PythonConfig         `json:"python,omitempty" jsonschema:"description=Configuration for the python provider"`
+	Ruby             *rubyconfig.RubyConfig             `json:"ruby,omitempty" jsonschema:"description=Configuration for the ruby provider"`
+	Rust             *rustconfig.RustConfig             `json:"rust,omitempty" jsonschema:"description=Configuration for the rust provider"`
+	Shell            *shellconfig.ShellConfig           `json:"shell,omitempty" jsonschema:"description=Configuration for the shell provider"`
+	Staticfile       *staticfileconfig.StaticfileConfig `json:"staticfile,omitempty" jsonschema:"description=Configuration for the staticfile provider"`
+	BuildAptPackages []string                           `json:"buildAptPackages,omitempty" jsonschema:"description=List of apt packages to install during the build step"`
+	Steps            map[string]*StepConfig             `json:"steps,omitempty" jsonschema:"description=Map of step names to step definitions"`
+	Deploy           *DeployConfig                      `json:"deploy,omitempty" jsonschema:"description=Deploy configuration"`
+	Packages         map[string]string                  `json:"packages,omitempty" jsonschema:"description=Map of package name to package version"`
+	Caches           map[string]*plan.Cache             `json:"caches,omitempty" jsonschema:"description=Map of cache name to cache definitions. The cache key can be referenced in an exec command"`
+	Secrets          []string                           `json:"secrets,omitempty" jsonschema:"description=Secrets that should be made available to commands that have useSecrets set to true"`
 }
 
 func EmptyConfig() *Config {

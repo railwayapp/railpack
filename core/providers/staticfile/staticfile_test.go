@@ -46,6 +46,7 @@ func TestGetRootDir(t *testing.T) {
 		name        string
 		path        string
 		envVars     map[string]string
+		configJSON  string
 		want        string
 		expectError bool
 	}{
@@ -57,6 +58,22 @@ func TestGetRootDir(t *testing.T) {
 			},
 			want:        "/custom/path",
 			expectError: false,
+		},
+		{
+			name:       "from provider config",
+			path:       "../../../examples/staticfile-index",
+			envVars:    map[string]string{},
+			configJSON: `{"staticfile":{"root":"dist"}}`,
+			want:       "dist",
+		},
+		{
+			name: "env var takes precedence over provider config",
+			path: "../../../examples/staticfile-index",
+			envVars: map[string]string{
+				"RAILPACK_STATIC_FILE_ROOT": "/custom/path",
+			},
+			configJSON: `{"staticfile":{"root":"dist"}}`,
+			want:       "/custom/path",
 		},
 		{
 			name:        "from staticfile config",
@@ -86,6 +103,10 @@ func TestGetRootDir(t *testing.T) {
 			ctx := testingUtils.CreateGenerateContext(t, tt.path)
 			for k, v := range tt.envVars {
 				ctx.Env.SetVariable(k, v)
+			}
+
+			if tt.configJSON != "" {
+				testingUtils.SetConfigFromJSON(t, ctx, tt.configJSON)
 			}
 
 			got, err := getRootDir(ctx)
