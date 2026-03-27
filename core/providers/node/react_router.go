@@ -16,17 +16,7 @@ const (
 // getReactRouterOutputDirectory attempts to read the output directory from react-router.config.{ts,js} by extracting
 // the buildDirectory option in the config object.
 func (p *NodeProvider) getReactRouterOutputDirectory(ctx *generate.GenerateContext) string {
-	configContent := ""
-
-	if ctx.App.HasFile(ReactRouterConfigJS) {
-		if content, err := ctx.App.ReadFile(ReactRouterConfigJS); err == nil {
-			configContent = content
-		}
-	} else if ctx.App.HasFile(ReactRouterConfigTS) {
-		if content, err := ctx.App.ReadFile(ReactRouterConfigTS); err == nil {
-			configContent = content
-		}
-	}
+	_, configContent, _ := ctx.App.ReadFirstFileOf(ReactRouterConfigJS, ReactRouterConfigTS)
 
 	if configContent != "" {
 		// TODO this field can be an expression `buildDirectory: "build/" + process.env.NODE_ENV,` so we should tighten

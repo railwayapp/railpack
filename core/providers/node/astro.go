@@ -56,21 +56,8 @@ func (p *NodeProvider) getAstroOutputDirectory(ctx *generate.GenerateContext) st
 }
 
 func (p *NodeProvider) getAstroConfigFileContents(ctx *generate.GenerateContext) string {
-	configFile := ""
-
-	if ctx.App.HasFile("astro.config.mjs") {
-		contents, err := ctx.App.ReadFile("astro.config.mjs")
-		if err == nil {
-			configFile = contents
-		}
-	} else if ctx.App.HasFile("astro.config.ts") {
-		contents, err := ctx.App.ReadFile("astro.config.ts")
-		if err == nil {
-			configFile = contents
-		}
-	}
-
-	return configFile
+	_, contents, _ := ctx.App.ReadFirstFileOf("astro.config.mjs", "astro.config.ts")
+	return contents
 }
 
 func (p *NodeProvider) getAstroEnvVars() map[string]string {
