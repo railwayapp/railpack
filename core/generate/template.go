@@ -2,8 +2,11 @@ package generate
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"text/template"
+
+	"github.com/railwayapp/railpack/core/app"
 )
 
 type TemplateFileResult struct {
@@ -14,21 +17,13 @@ type TemplateFileResult struct {
 // TemplateFiles will look the first file that exists in the list of potential files and render it with the given data
 // If no file is found, it will use the default contents and render it with the given data
 func (c *GenerateContext) TemplateFiles(potentialFiles []string, defaultContents string, data map[string]any) (*TemplateFileResult, error) {
-	contents := defaultContents
-	filename := ""
-
-	for _, potentialFilename := range potentialFiles {
-		if c.App.HasFile(potentialFilename) {
-			c, err := c.App.ReadFile(potentialFilename)
-			if err != nil {
-				return nil, err
-			}
-
-			contents = c
-			filename = potentialFilename
-
-			break
+	filename, contents, err := c.App.ReadFirstFileOf(potentialFiles...)
+	if err != nil {
+		if !errors.Is(err, app.ErrNoFileFound) {
+			return nil, err
 		}
+
+		contents = defaultContents
 	}
 
 	tmpl, err := template.New(filename).Parse(contents)

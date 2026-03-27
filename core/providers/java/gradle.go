@@ -64,16 +64,8 @@ func (p *JavaProvider) gradleCache(ctx *generate.GenerateContext) string {
 }
 
 func (p *JavaProvider) readBuildGradle(ctx *generate.GenerateContext) string {
-	filePath := "build.gradle"
-	if !ctx.App.HasFile(filePath) {
-		filePath = "build.gradle.kts"
-	}
-	result, err := ctx.App.ReadFile(filePath)
-	if err != nil {
-		return ""
-	} else {
-		return result
-	}
+	_, result, _ := ctx.App.ReadFirstFileOf("build.gradle", "build.gradle.kts")
+	return result
 }
 
 func isUsingSpringBoot(buildGradle string) bool {
