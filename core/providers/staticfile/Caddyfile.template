@@ -1,3 +1,4 @@
+# global options
 {
 	admin off
 	persist_config off
@@ -8,43 +9,45 @@
 	}
 
 	servers {
-		trusted_proxies static private_ranges
+		trusted_proxies static private_ranges 100.0.0.0/8 # trust railway's proxy
 	}
 }
 
+# site block, listens on the $PORT environment variable, automatically assigned by railway
 :{$PORT:80} {
 	log {
 		format json
 	}
 
-	respond /health 200
+	# log_skip suppresses health checks from access logs since orchestrators
+	# poll them frequently and would otherwise create significant log noise
+	handle /health {
+		respond 200
+		log_skip
+	}
 
-	# Security headers
 	header {
-		# Enable cross-site filter (XSS) and tell browsers to block detected attacks
-		X-XSS-Protection "1; mode=block"
-		# Prevent some browsers from MIME-sniffing a response away from the declared Content-Type
+		# blocks MIME-sniffing attacks where browsers execute files as a different type than declared
 		X-Content-Type-Options "nosniff"
-		# Keep referrer data off of HTTP connections
+		# prevents the site from being embedded in iframes on other domains (clickjacking)
+		X-Frame-Options "SAMEORIGIN"
+		# prevents full URLs (which may contain tokens) from leaking to external sites via Referer
 		Referrer-Policy "strict-origin-when-cross-origin"
-		# Enable strict Content Security Policy
-		Content-Security-Policy "default-src 'self'; img-src 'self' data: https: *; style-src 'self' 'unsafe-inline' https: *; script-src 'self' 'unsafe-inline' https: *; font-src 'self' data: https: *; connect-src 'self' https: *; media-src 'self' https: *; object-src 'none'; frame-src 'self' https: *;"
-		# Remove Server header
+		# removes Caddy's Server header to avoid disclosing the underlying stack
 		-Server
 	}
 
 	root * {{.StaticFileRoot}}
 
-	# Handle static files
 	file_server {
+		# prevent .git and .env* files from being served
 		hide .git
 		hide .env*
 	}
 
-	# Compression with more formats
 	encode {
-		gzip
 		zstd
+		gzip
 	}
 
 	# Try files with HTML extension{{if .IndexFallback}} and handle SPA routing{{end}}
