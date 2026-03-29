@@ -151,8 +151,16 @@ func GetConfig(app *app.App, env *app.Environment, options *GenerateBuildPlanOpt
 	}
 
 	mergedConfig := c.Merge(optionsConfig, envConfig, fileConfig)
+	// c.Merge only includes the latest value for slices
+	// so we re append the env secrets to the config
+	mergedConfig.Secrets = mergeSecrets(envConfig.Secrets, mergedConfig.Secrets)
 
 	return mergedConfig, nil
+}
+
+// Merge secrets from env without losing values
+func mergeSecrets(envSecrets []string, mergedConfigSecrets []string) []string {
+	return utils.RemoveDuplicates(append(slices.Clone(envSecrets), mergedConfigSecrets...))
 }
 
 func GenerateConfigFromFile(app *app.App, env *app.Environment, options *GenerateBuildPlanOptions, logger *logger.Logger) (*c.Config, error) {
