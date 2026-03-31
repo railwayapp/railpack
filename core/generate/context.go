@@ -244,11 +244,14 @@ func (c *GenerateContext) applyConfig() {
 		maps.Copy(commandStepBuilder.Assets, configStep.Assets)
 
 		// Convert the deploy outputs into layers that will be added to the deploy.
-		// Skip if the path is already covered by existing inputs from this step
-		// (e.g. provider already added "." so we don't duplicate it from --build-cmd).
-		outputFilters := []plan.Filter{plan.NewIncludeFilter([]string{"."})}
+		// Skip default outputs if the user explicitly provided deploy.inputs
+		// (they control deploy composition directly), or if the path is already
+		// covered by existing inputs from this step.
+		var outputFilters []plan.Filter
 		if configStep.DeployOutputs != nil {
 			outputFilters = configStep.DeployOutputs
+		} else if c.Config.Deploy == nil || c.Config.Deploy.Inputs == nil {
+			outputFilters = []plan.Filter{plan.NewIncludeFilter([]string{"."})}
 		}
 		for _, filter := range outputFilters {
 			alreadyCovered := false
