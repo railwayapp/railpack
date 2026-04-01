@@ -47,6 +47,7 @@ You can pass advanced options to the frontend using the `--opt` flag (for BuildK
 | `--cache-key`    | Unique ID to prefix to cache keys for cache invalidation.                              |         |
 | `--secrets-hash` | Hash of all secret values, used to invalidate cache when secrets change.               |         |
 | `--github-token` | GitHub token to increase API rate limits for private repositories or package installs. |         |
+| `--no-cache`     | Set to `true` as a build-arg to disable layer cache during the build.                  | `false` |
 
 ### Example
 

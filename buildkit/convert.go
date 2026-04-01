@@ -28,6 +28,9 @@ type ConvertPlanOptions struct {
 
 	// Token used to make authenticated API requests to GitHub to increase rate limits
 	GitHubToken string
+
+	// Do not use cache when building
+	NoCache bool
 }
 
 const (
@@ -45,7 +48,7 @@ func ConvertPlanToLLB(plan *p.BuildPlan, opts ConvertPlanOptions) (*llb.State, *
 	)
 
 	cacheStore := build_llb.NewBuildKitCacheStore(opts.CacheKey)
-	graph, err := build_llb.NewBuildGraph(plan, &localState, cacheStore, opts.SecretsHash, &platform, opts.GitHubToken)
+	graph, err := build_llb.NewBuildGraph(plan, &localState, cacheStore, opts.SecretsHash, &platform, opts.GitHubToken, opts.NoCache)
 	if err != nil {
 		return nil, nil, err
 	}
