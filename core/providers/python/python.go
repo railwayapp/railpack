@@ -48,6 +48,11 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 	install.Secrets = []string{}
 	install.UseSecretsWithPrefixes([]string{"PYTHON", "PIP", "PIPX", "UV", "PDM", "POETRY"})
 
+	if ctx.App.HasMatch(".venv") {
+		ctx.Logger.LogWarn(".venv directory found in project root, this is likely a mistake")
+		ctx.Logger.LogWarn("It is recommended to add .venv to the .gitignore and/or .dockerignore file")
+	}
+
 	build := ctx.NewCommandStep("build")
 	installOutputs := []string{}
 
@@ -371,7 +376,9 @@ func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[str
 
 func (p *PythonProvider) copyInstallFiles(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
 	if p.installNeedsAllFiles(ctx) {
-		install.AddInput(ctx.NewLocalLayer())
+		layer := ctx.NewLocalLayer()
+		layer.Filter.Exclude = append(layer.Filter.Exclude, ".venv")
+		install.AddInput(layer)
 		return
 	}
 
