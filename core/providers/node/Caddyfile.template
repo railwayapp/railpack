@@ -19,31 +19,43 @@
 		format json
 	}
 
-	respond /health 200
+	# log_skip suppresses health checks from access logs since orchestrators
+	# poll them frequently and would otherwise create significant log noise
+	handle /health {
+		respond 200
+		log_skip
+	}
 
-	# Security headers
 	header {
-		# Prevent some browsers from MIME-sniffing a response away from the declared Content-Type
+		# blocks MIME-sniffing attacks where browsers execute files as a different type than declared
 		X-Content-Type-Options "nosniff"
-		# Remove Server header
+		# prevents the site from being embedded in iframes on other domains (clickjacking)
+		X-Frame-Options "SAMEORIGIN"
+		# prevents full URLs (which may contain tokens) from leaking to external sites via Referer
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# removes Caddy's Server header to avoid disclosing the underlying stack
 		-Server
 	}
 
-	# serve from the 'dist' folder (Vite builds into the 'dist' folder)
+	# serve from the dist folder (Vite builds into the 'dist' folder)
 	root * {{.DIST_DIR}}
 
-	# Handle static files
 	file_server {
+		# prevent .git and .env* files from being served
 		hide .git
 		hide .env*
 	}
 
-	# Compression with more formats
 	encode {
-		gzip
 		zstd
+		gzip
 	}
 
 	# Try files with HTML extension and handle SPA routing
 	try_files {path} {path}.html {path}/index.html /index.html
+
+	handle_errors {
+		rewrite * /{err.status_code}.html
+		file_server
+	}
 }
