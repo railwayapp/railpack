@@ -34,11 +34,12 @@ func (p *NodeProvider) isSPA(ctx *generate.GenerateContext) bool {
 
 	isVite := p.isVite(ctx)
 	isAstro := p.isAstroSPA(ctx)
+	isNext := p.isNextSPA(ctx)
 	isCRA := p.isCRA(ctx)
 	isAngular := p.isAngular(ctx)
 	isReactRouter := p.isReactRouter(ctx)
 
-	return (isVite || isAstro || isCRA || isAngular || isReactRouter) && p.getOutputDirectory(ctx) != ""
+	return (isVite || isAstro || isNext || isCRA || isAngular || isReactRouter) && p.getOutputDirectory(ctx) != ""
 }
 
 func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
@@ -52,6 +53,8 @@ func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
 		return "vite"
 	} else if p.isAstro(ctx) {
 		return "astro"
+	} else if p.isNextSPA(ctx) {
+		return "next"
 	} else if p.isCRA(ctx) {
 		return "CRA"
 	} else if p.isAngular(ctx) {
@@ -133,6 +136,8 @@ func (p *NodeProvider) getOutputDirectory(ctx *generate.GenerateContext) string 
 		outputDir = p.getViteOutputDirectory(ctx)
 	} else if p.isAstroSPA(ctx) {
 		outputDir = p.getAstroOutputDirectory(ctx)
+	} else if p.isNextSPA(ctx) {
+		outputDir = p.getNextOutputDirectory(ctx)
 	} else if p.isCRA(ctx) {
 		outputDir = p.getCRAOutputDirectory(ctx)
 	} else if p.isAngular(ctx) {
@@ -149,5 +154,6 @@ func (p *NodeProvider) hasCustomStartCommand(ctx *generate.GenerateContext) bool
 	}
 	isAngularDefaultStartCommand := startCommand == DefaultAngularStartCommand
 	isCRAStartCommand := startCommand == DefaultCRAStartCommand
-	return startCommand != "" && !isAngularDefaultStartCommand && !isCRAStartCommand
+	isNextStartCommand := startCommand == DefaultNextStartCommand
+	return startCommand != "" && !isAngularDefaultStartCommand && !isCRAStartCommand && !isNextStartCommand
 }
