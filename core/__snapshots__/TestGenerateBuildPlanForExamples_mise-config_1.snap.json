@@ -79,7 +79,7 @@
     },
     {
      "cmd": "mise install",
-     "customName": "install mise packages: bun, node"
+     "customName": "install mise packages: bun, node, go, python"
     }
    ],
    "inputs": [

@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	a "github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/mise"
 	"github.com/railwayapp/railpack/core/plan"
@@ -327,7 +328,32 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 		for k := range packagesToInstall {
 			pkgNames = append(pkgNames, k)
 		}
+
+		// Surface extra packages from user mise config files in build output (issue #419)
+		userPkgNames := []string{}
+		for _, file := range supportingMiseConfigFiles {
+			if !strings.HasSuffix(file, ".toml") {
+				continue
+			}
+			content, err := b.app.ReadFile(file)
+			if err != nil {
+				continue
+			}
+			var userConfig struct {
+				Tools map[string]any `toml:"tools"`
+			}
+			if _, err := toml.Decode(content, &userConfig); err != nil {
+				continue
+			}
+			for toolName := range userConfig.Tools {
+				if _, exists := packagesToInstall[toolName]; !exists {
+					userPkgNames = append(userPkgNames, toolName)
+				}
+			}
+		}
+		sort.Strings(userPkgNames)
 		sort.Strings(pkgNames)
+		pkgNames = append(pkgNames, userPkgNames...)
 
 		step.AddCommands([]plan.Command{
 			plan.NewFileCommand("/etc/mise/config.toml", "generated-mise-toml", plan.FileOptions{
