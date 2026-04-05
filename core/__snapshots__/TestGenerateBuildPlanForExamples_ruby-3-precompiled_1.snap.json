@@ -11,7 +11,7 @@
  },
  "deploy": {
   "base": {
-   "step": "packages:apt:runtime"
+   "step": "setup:user"
   },
   "inputs": [
    {
@@ -38,6 +38,7 @@
    }
   ],
   "startCommand": "ruby --yjit app.rb",
+  "user": "1001",
   "variables": {
    "BUNDLE_GEMFILE": "/app/Gemfile",
    "GEM_HOME": "/usr/local/bundle",
@@ -185,6 +186,20 @@
     }
    ],
    "name": "packages:apt:runtime"
+  },
+  {
+   "commands": [
+    {
+     "cmd": "groupadd -g 1001 railpack \u0026\u0026 useradd -u 1001 -g railpack -m -s /bin/bash railpack \u0026\u0026 chown -R 1001:1001 /app",
+     "customName": "create non-root user"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:apt:runtime"
+    }
+   ],
+   "name": "setup:user"
   }
  ]
 }

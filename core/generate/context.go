@@ -213,6 +213,9 @@ func (c *GenerateContext) applyConfig() {
 		c.Deploy.AptPackages = plan.SpreadStrings(c.Config.Deploy.AptPackages, c.Deploy.AptPackages)
 		c.Deploy.DeployInputs = plan.Spread(c.Config.Deploy.Inputs, c.Deploy.DeployInputs)
 		c.Deploy.Paths = plan.SpreadStrings(c.Config.Deploy.Paths, c.Deploy.Paths)
+		if c.Config.Deploy.User != "" {
+			c.Deploy.User = c.Config.Deploy.User
+		}
 		maps.Copy(c.Deploy.Variables, c.Config.Deploy.Variables)
 	}
 

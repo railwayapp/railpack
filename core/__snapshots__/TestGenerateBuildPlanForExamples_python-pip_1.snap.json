@@ -7,7 +7,7 @@
  },
  "deploy": {
   "base": {
-   "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.3.17"
+   "step": "setup:user"
   },
   "inputs": [
    {
@@ -37,6 +37,7 @@
    }
   ],
   "startCommand": "python app.py",
+  "user": "1001",
   "variables": {
    "PIP_DEFAULT_TIMEOUT": "100",
    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
@@ -135,6 +136,20 @@
    "secrets": [
     "*"
    ]
+  },
+  {
+   "commands": [
+    {
+     "cmd": "groupadd -g 1001 railpack \u0026\u0026 useradd -u 1001 -g railpack -m -s /bin/bash railpack \u0026\u0026 chown -R 1001:1001 /app",
+     "customName": "create non-root user"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.3.17"
+    }
+   ],
+   "name": "setup:user"
   }
  ]
 }
