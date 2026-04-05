@@ -19,7 +19,7 @@
  },
  "deploy": {
   "base": {
-   "step": "packages:apt:runtime"
+   "step": "setup:user"
   },
   "inputs": [
    {
@@ -53,6 +53,7 @@
    }
   ],
   "startCommand": "yarn run start",
+  "user": "1001",
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
@@ -190,6 +191,20 @@
     }
    ],
    "name": "packages:apt:runtime"
+  },
+  {
+   "commands": [
+    {
+     "cmd": "groupadd -g 1001 railpack \u0026\u0026 useradd -u 1001 -g railpack -m -s /bin/bash railpack \u0026\u0026 chown -R 1001:1001 /app",
+     "customName": "create non-root user"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:apt:runtime"
+    }
+   ],
+   "name": "setup:user"
   }
  ]
 }

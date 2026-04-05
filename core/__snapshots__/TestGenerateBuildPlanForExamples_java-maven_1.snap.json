@@ -7,7 +7,7 @@
  },
  "deploy": {
   "base": {
-   "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.3.17"
+   "step": "setup:user"
   },
   "inputs": [
    {
@@ -27,7 +27,8 @@
     "step": "build"
    }
   ],
-  "startCommand": "java  $JAVA_OPTS -jar target/*jar"
+  "startCommand": "java  $JAVA_OPTS -jar target/*jar",
+  "user": "1001"
  },
  "steps": [
   {
@@ -118,6 +119,20 @@
     "MISE_INSTALLS_DIR": "/mise/installs",
     "MISE_SHIMS_DIR": "/mise/shims"
    }
+  },
+  {
+   "commands": [
+    {
+     "cmd": "groupadd -g 1001 railpack \u0026\u0026 useradd -u 1001 -g railpack -m -s /bin/bash railpack \u0026\u0026 chown -R 1001:1001 /app",
+     "customName": "create non-root user"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.3.17"
+    }
+   ],
+   "name": "setup:user"
   }
  ]
 }

@@ -11,6 +11,7 @@ type DeployBuilder struct {
 	Variables    map[string]string
 	Paths        []string
 	AptPackages  []string
+	User         string
 }
 
 func NewDeployBuilder() *DeployBuilder {
@@ -21,6 +22,7 @@ func NewDeployBuilder() *DeployBuilder {
 		Variables:    map[string]string{},
 		Paths:        []string{},
 		AptPackages:  []string{},
+		User:         "1001",
 	}
 }
 
@@ -66,10 +68,26 @@ func (b *DeployBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) {
 		baseLayer = plan.NewStepLayer(runtimeAptStep.Name)
 	}
 
+	// Create non-root user unless explicitly set to "root"
+	if b.User != "" && b.User != "root" {
+		userStep := plan.NewStep("setup:user")
+		userStep.Inputs = []plan.Layer{baseLayer}
+		userStep.AddCommands([]plan.Command{
+			plan.NewExecCommand(
+				"groupadd -g 1001 railpack && useradd -u 1001 -g railpack -m -s /bin/bash railpack && chown -R 1001:1001 /app",
+				plan.ExecOptions{CustomName: "create non-root user"},
+			),
+		})
+		userStep.Secrets = []string{}
+		p.Steps = append(p.Steps, *userStep)
+		baseLayer = plan.NewStepLayer(userStep.Name)
+	}
+
 	p.Deploy.Base = baseLayer
 
 	p.Deploy.Inputs = append(p.Deploy.Inputs, b.DeployInputs...)
 	p.Deploy.StartCmd = b.StartCmd
 	p.Deploy.Variables = b.Variables
 	p.Deploy.Paths = b.Paths
+	p.Deploy.User = b.User
 }

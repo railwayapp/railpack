@@ -19,6 +19,7 @@ type DeployConfig struct {
 	StartCmd    string            `json:"startCommand,omitempty" jsonschema:"description=The command to run in the container"`
 	Variables   map[string]string `json:"variables,omitempty" jsonschema:"description=The variables available to this step. The key is the name of the variable that is referenced in a variable command"`
 	Paths       []string          `json:"paths,omitempty" jsonschema:"description=The paths to prepend to the $PATH environment variable"`
+	User        string            `json:"user,omitempty" jsonschema:"description=The user to run the container as. Set to root to disable non-root user. Defaults to 1001"`
 }
 
 type StepConfig struct {

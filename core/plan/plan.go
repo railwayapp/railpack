@@ -33,6 +33,9 @@ type Deploy struct {
 
 	// The paths to prepend to the $PATH environment variable
 	Paths []string `json:"paths,omitempty"`
+
+	// The user to run the container as. Defaults to non-root
+	User string `json:"user,omitempty"`
 }
 
 func NewBuildPlan() *BuildPlan {

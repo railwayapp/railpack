@@ -79,6 +79,7 @@ func ConvertPlanToLLB(plan *p.BuildPlan, opts ConvertPlanOptions) (*llb.State, *
 			WorkingDir: WorkingDir,
 			Entrypoint: []string{"/bin/bash", "-c"},
 			Cmd:        []string{startCommand},
+			User:       plan.Deploy.User,
 		},
 	}
 
