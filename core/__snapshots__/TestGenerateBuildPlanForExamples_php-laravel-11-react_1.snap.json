@@ -69,7 +69,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.3.17"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.4.5"
     }
    ],
    "name": "packages:mise",
