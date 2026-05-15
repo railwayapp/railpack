@@ -1,6 +1,8 @@
 package providers
 
 import (
+	"strings"
+
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/providers/cpp"
@@ -50,7 +52,7 @@ func GetLanguageProviders() []Provider {
 
 func GetProvider(name string) Provider {
 	for _, provider := range GetLanguageProviders() {
-		if provider.Name() == name {
+		if strings.EqualFold(provider.Name(), name) {
 			return provider
 		}
 	}

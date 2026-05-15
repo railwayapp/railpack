@@ -309,6 +309,24 @@ func TestGetJsonSchema(t *testing.T) {
 	require.NotEmpty(t, schema)
 
 	require.NotContains(t, schema.Required, "provider")
+	providerSchema, ok := schema.Properties.Get("provider")
+	require.True(t, ok)
+	require.ElementsMatch(t, []any{
+		"php",
+		"golang",
+		"java",
+		"rust",
+		"ruby",
+		"elixir",
+		"python",
+		"deno",
+		"dotnet",
+		"node",
+		"gleam",
+		"cpp",
+		"staticfile",
+		"shell",
+	}, providerSchema.Enum)
 
 	schemaJson, err := json.MarshalIndent(schema, "", "  ")
 	require.NoError(t, err)
