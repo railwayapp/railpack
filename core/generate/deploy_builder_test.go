@@ -96,3 +96,13 @@ func TestHasIncludeForStep(t *testing.T) {
 		})
 	}
 }
+
+func TestHasInputForStep(t *testing.T) {
+	builder := NewDeployBuilder()
+	builder.DeployInputs = []plan.Layer{
+		{Step: "build", Filter: plan.Filter{Include: []string{"apps/landing/.next/standalone"}}},
+	}
+
+	assert.True(t, builder.HasInputForStep("build"))
+	assert.False(t, builder.HasInputForStep("install"))
+}

@@ -8,12 +8,6 @@
   "inputs": [
    {
     "step": "build"
-   },
-   {
-    "include": [
-     "."
-    ],
-    "step": "build"
    }
   ],
   "startCommand": "echo hello",
