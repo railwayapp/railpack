@@ -101,6 +101,42 @@ func TestGenerateContext(t *testing.T) {
 	snaps.MatchJSON(t, serializedPlan)
 }
 
+func TestGenerateContextAppliesConfiguredDeployBase(t *testing.T) {
+	t.Run("direct deploy base", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+		cfg := config.EmptyConfig()
+		cfg.Deploy.Base = &plan.Layer{Image: "debian:bookworm-slim"}
+		ctx.Config = cfg
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+		require.Equal(t, plan.NewImageLayer("debian:bookworm-slim"), buildPlan.Deploy.Base)
+	})
+
+	t.Run("runtime apt step uses configured deploy base", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+		cfg := config.EmptyConfig()
+		cfg.Deploy.Base = &plan.Layer{Image: "debian:bookworm-slim"}
+		cfg.Deploy.AptPackages = []string{"curl"}
+		ctx.Config = cfg
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+		require.Equal(t, plan.NewStepLayer("packages:apt:runtime"), buildPlan.Deploy.Base)
+
+		var runtimeAptStep *plan.Step
+		for i := range buildPlan.Steps {
+			if buildPlan.Steps[i].Name == "packages:apt:runtime" {
+				runtimeAptStep = &buildPlan.Steps[i]
+				break
+			}
+		}
+
+		require.NotNil(t, runtimeAptStep)
+		require.Equal(t, []plan.Layer{plan.NewImageLayer("debian:bookworm-slim")}, runtimeAptStep.Inputs)
+	})
+}
+
 func TestGenerateContextDockerignore(t *testing.T) {
 	t.Run("context with dockerignore", func(t *testing.T) {
 		ctx := CreateTestContext(t, "../../examples/dockerignore")
