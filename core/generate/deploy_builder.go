@@ -47,6 +47,15 @@ func (b *DeployBuilder) HasIncludeForStep(stepName string, path string) bool {
 	return false
 }
 
+func (b *DeployBuilder) HasInputForStep(stepName string) bool {
+	for _, layer := range b.DeployInputs {
+		if layer.Step == stepName {
+			return true
+		}
+	}
+	return false
+}
+
 func (b *DeployBuilder) AddAptPackages(packages []string) {
 	b.AptPackages = append(b.AptPackages, packages...)
 }
