@@ -101,6 +101,36 @@ func TestGenerateContext(t *testing.T) {
 	snaps.MatchJSON(t, serializedPlan)
 }
 
+func TestGenerateContextKeepsConfiguredDeployInputFilters(t *testing.T) {
+	ctx := CreateTestContext(t, "../../examples/node-npm")
+	configJSON := `{
+		"steps": {
+			"build": {
+				"commands": ["npm run build"]
+			}
+		},
+		"deploy": {
+			"inputs": [
+				{
+					"step": "build",
+					"include": ["apps/landing/.next/standalone"]
+				}
+			]
+		}
+	}`
+
+	var config config.Config
+	require.NoError(t, json.Unmarshal([]byte(configJSON), &config))
+	ctx.Config = &config
+
+	buildPlan, _, err := ctx.Generate()
+	require.NoError(t, err)
+
+	require.Equal(t, []plan.Layer{
+		plan.NewStepLayer("build", plan.NewIncludeFilter([]string{"apps/landing/.next/standalone"})),
+	}, buildPlan.Deploy.Inputs)
+}
+
 func TestGenerateContextDockerignore(t *testing.T) {
 	t.Run("context with dockerignore", func(t *testing.T) {
 		ctx := CreateTestContext(t, "../../examples/dockerignore")
