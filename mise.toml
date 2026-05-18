@@ -113,17 +113,22 @@ run = ["go vet ./...", "go fmt ./...", "golangci-lint run", "go mod verify"]
 
 [tasks.upgrade]
 description = "Upgrade all Go and Mise packages"
-run = [
-  # ensures we are using the latest version of mise locally
-  "mise self-update",
-  # updates lockfiles
-  "mise upgrade --local",
-  # get latest go packages
-  "go get -u ./...",
-  "go mod tidy",
-  # update packages, respecting semver
-  "cd docs && bun update"
-]
+# this task is intentionally run in the same shell so changes caused by version updates are picked up
+run = '''
+# ensures we are using the latest version of mise locally
+mise self-update
+
+# updates lockfiles
+mise upgrade --local
+eval "$(mise hook-env)"
+
+# get latest go packages
+go get -u ./...
+go mod tidy
+
+# update packages, respecting semver
+cd docs && bun update
+'''
 
 # build docs for production
 [tasks.docs-build]

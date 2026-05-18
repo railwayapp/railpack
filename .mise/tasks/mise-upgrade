@@ -95,7 +95,7 @@ fi
 echo "Upgrading go and mise packages..."
 mise run upgrade
 if [[ -n "$(git status --porcelain go.mod go.sum)" ]]; then
-  git add go.mod go.sum
+  git add go.mod go.sum docs/package.json mise.lock docs/bun.lock  
   git commit -m "chore: update go, mise, and bun packages"
 fi
 
@@ -112,7 +112,6 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
   git add .
   git commit -m "style: fix formatting"
 fi
-
 
 # Push the branch (needed in CI and good practice locally)
 git push -u origin "$branch"
