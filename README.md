@@ -43,4 +43,4 @@ Full documentation for both operators (platforms, like Railway) and users (devel
 ## Contributing
 
 Railpack is open source and open to contributions. See the
-[CONTRIBUTING.md](CONTRIBUTING.md) file for more information.
+CONTRIBUTING.md](CONTRIBUTING.md) file for more information.
