@@ -17,6 +17,9 @@ on:
 
 env:
   MISE_ENV: ci
+  # Test JavaScript actions on Node.js 24 ahead of GitHub Actions' default switch
+  # on 2026-06-02. See https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # generate a JSON array of all entries in examples/ to shard out example into a separate job that can be run in parallel
@@ -50,7 +53,7 @@ jobs:
         with:
           # we need the full history to determine if the mise version has changed
           fetch-depth: 0
-      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
       - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
@@ -110,7 +113,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
 
       - name: Cache Go modules and build artifacts
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
@@ -173,7 +176,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
 
       - name: Cache Go modules and build artifacts
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
