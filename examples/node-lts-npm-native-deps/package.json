@@ -1,0 +1,19 @@
+{
+  "name": "node-latest-npm-native-deps",
+  "version": "1.0.0",
+  "description": "Test npm with native dependencies (better-sqlite3)",
+  "main": "index.js",
+  "packageManager": "npm@10.9.6",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": ">=12.10.0",
+    "canvas": "^3.2.1",
+    "sharp": "^0.34.5"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
