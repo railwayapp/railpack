@@ -30,7 +30,7 @@ buildctl build \
   --local context=/path/to/app/to/build \
   --local dockerfile=/path/to/dir/containing/railpack-plan.json \
   --frontend=gateway.v0 \
-  --opt source=ghcr.io/railwayapp/railpack:railpack-frontend \
+  --opt source=ghcr.io/railwayapp/railpack-frontend:latest \
   --output type=docker,name=test
 ```
 
@@ -104,7 +104,7 @@ buildctl build \
   --local context=/path/to/app/to/build \
   --local dockerfile=/path/to/dir/containing/railpack-plan.json \
   --frontend=gateway.v0 \
-  --opt source=ghcr.io/railwayapp/railpack:railpack-frontend \
+  --opt source=ghcr.io/railwayapp/railpack-frontend:latest \
   --secret id=STRIPE_LIVE_KEY,env=STRIPE_LIVE_KEY \
   --output type=docker,name=test
 ```
