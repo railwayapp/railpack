@@ -247,11 +247,12 @@ func (p PackageManager) pruneYarnBerry(ctx *generate.GenerateContext, prune *gen
 
 func (p PackageManager) getPackageJsonFromContext(ctx *generate.GenerateContext) (*PackageJson, error) {
 	packageJson := NewPackageJson()
-	if !ctx.App.HasFile("package.json") {
+	manifest := findPackageManifest(ctx.App)
+	if manifest == "" {
 		return packageJson, nil
 	}
 
-	err := ctx.App.ReadJSON("package.json", packageJson)
+	err := ctx.App.ReadJSON(manifest, packageJson)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +276,7 @@ func (p PackageManager) GetInstallFolder(ctx *generate.GenerateContext) []string
 // SupportingInstallFiles returns a list of files that are needed to install dependencies
 func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []string {
 	// Use brace expansion for single filesystem traversal instead of 16 separate globs
-	pattern := "**/{package.json,package-lock.json,pnpm-workspace.yaml,yarn.lock,pnpm-lock.yaml,bun.lockb,bun.lock,bunfig.toml,.yarn,.pnp.*,.yarnrc.yml,.npmrc,.node-version,.nvmrc,patches,.pnpm-patches,prisma}"
+	pattern := "**/{package.json,package.json5,package-lock.json,pnpm-workspace.yaml,yarn.lock,pnpm-lock.yaml,bun.lockb,bun.lock,bunfig.toml,.yarn,.pnp.*,.yarnrc.yml,.npmrc,.node-version,.nvmrc,patches,.pnpm-patches,prisma}"
 
 	var allFiles []string
 
@@ -383,7 +384,7 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 
 // usesLocalFile returns true if the package.json has a local dependency (e.g. file:./path/to/package)
 func (p PackageManager) usesLocalFile(ctx *generate.GenerateContext) bool {
-	files, err := ctx.App.FindFiles("**/package.json")
+	files, err := ctx.App.FindFiles("**/{package.json,package.json5}")
 	if err != nil {
 		return false
 	}

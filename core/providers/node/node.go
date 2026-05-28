@@ -29,7 +29,25 @@ const (
 var (
 	// bunCommandRegex matches "bun" or "bunx" as a command (not part of another word)
 	bunCommandRegex = regexp.MustCompile(`(^|\s|;|&|&&|\||\|\|)bunx?\s`)
+
+	// PackageManifestFiles is the precedence order Railpack searches for a Node
+	// package manifest. package.json wins if both are present; package.json5 is
+	// supported because pnpm reads it natively (https://pnpm.io/package_json).
+	// Railpack's App.ReadJSON pipes through hujson, which accepts comments and
+	// trailing commas — the common subset of JSON5 used in real manifests.
+	PackageManifestFiles = []string{"package.json", "package.json5"}
 )
+
+// findPackageManifest returns the first manifest file present in the app,
+// honoring PackageManifestFiles precedence. Returns "" if none are present.
+func findPackageManifest(app *app.App) string {
+	for _, f := range PackageManifestFiles {
+		if app.HasFile(f) {
+			return f
+		}
+	}
+	return ""
+}
 
 type NodeProvider struct {
 	packageJson    *PackageJson
@@ -60,7 +78,7 @@ func (p *NodeProvider) Initialize(ctx *generate.GenerateContext) error {
 }
 
 func (p *NodeProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
-	return ctx.App.HasFile("package.json"), nil
+	return findPackageManifest(ctx.App) != "", nil
 }
 
 func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
@@ -267,7 +285,7 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 		ctx.Logger.LogInfo("Installing %s@%s with Corepack", pmName, pmVersion)
 
 		install.AddCommands([]plan.Command{
-			plan.NewCopyCommand("package.json"),
+			plan.NewCopyCommand(findPackageManifest(ctx.App)),
 			// corepack will detect the package manager version from package.json, safe to assume the user is properly
 			// specifying the version they want there, no need to check other version specifications.
 			// corepack *used* to be bundled with node, but as of v25 it's not, so we install it explicitly
@@ -457,13 +475,14 @@ func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
 
 func (p *NodeProvider) GetPackageJson(app *app.App) (*PackageJson, error) {
 	packageJson := NewPackageJson()
-	if !app.HasFile("package.json") {
+	manifest := findPackageManifest(app)
+	if manifest == "" {
 		return packageJson, nil
 	}
 
-	err := app.ReadJSON("package.json", packageJson)
+	err := app.ReadJSON(manifest, packageJson)
 	if err != nil {
-		return nil, fmt.Errorf("error reading package.json: %w", err)
+		return nil, fmt.Errorf("error reading %s: %w", manifest, err)
 	}
 
 	return packageJson, nil
