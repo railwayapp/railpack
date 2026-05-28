@@ -159,6 +159,7 @@ func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.
 	install.UseSecretsWithPrefixes([]string{"RUBY", "GEM", "BUNDLE"})
 	envVars := p.GetRubyEnvVars(ctx)
 	install.AddEnvVars(envVars)
+
 	bundlerVersion := parseBundlerVersionFromGemfile(ctx)
 	commands := []plan.Command{
 		plan.NewExecCommand(fmt.Sprintf("gem install -N %s", bundlerVersion)),
@@ -246,6 +247,9 @@ func (p *RubyProvider) GetBuilderDeps(ctx *generate.GenerateContext) *generate.M
 
 func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	ruby := miseStep.Default("ruby", DEFAULT_RUBY_VERSION)
+
+	// rdoc (a) slows down builds (b) increases build size and (c) mostly importantly, will cause builds to fail if the locale is not properly set
+	miseStep.Variables["RUBY_CONFIGURE_OPTS"] = "--disable-install-doc"
 
 	if envVersion, varName := ctx.Env.GetConfigVariable("RUBY_VERSION"); envVersion != "" {
 		miseStep.Version(ruby, envVersion, varName)
