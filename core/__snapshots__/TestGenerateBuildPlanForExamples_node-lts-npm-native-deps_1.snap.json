@@ -7,6 +7,14 @@
   "apt-lists": {
    "directory": "/var/lib/apt/lists",
    "type": "locked"
+  },
+  "node-modules": {
+   "directory": "/app/node_modules/.cache",
+   "type": "shared"
+  },
+  "npm-install": {
+   "directory": "/root/.npm",
+   "type": "shared"
   }
  },
  "deploy": {
@@ -26,45 +34,33 @@
    },
    {
     "include": [
-     "/usr/local/bundle"
+     "/app/node_modules"
     ],
-    "step": "install"
+    "step": "build"
    },
    {
+    "exclude": [
+     "node_modules",
+     ".yarn"
+    ],
     "include": [
-     "/app"
+     "/root/.cache",
+     ".",
+     "/opt/corepack"
     ],
     "step": "build"
    }
   ],
-  "startCommand": "ruby app.rb",
+  "startCommand": "npm run start",
   "variables": {
-   "BUNDLE_GEMFILE": "/app/Gemfile",
-   "GEM_HOME": "/usr/local/bundle",
-   "GEM_PATH": "/usr/local/bundle",
-   "LD_PRELOAD": "libjemalloc.so.2",
-   "MALLOC_ARENA_MAX": "2"
+   "CI": "true",
+   "NODE_ENV": "production",
+   "NPM_CONFIG_FUND": "false",
+   "NPM_CONFIG_PRODUCTION": "false",
+   "NPM_CONFIG_UPDATE_NOTIFIER": "false"
   }
  },
  "steps": [
-  {
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
-   "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y cargo libjemalloc-dev libyaml-dev rustc'",
-     "customName": "install apt packages: cargo libjemalloc-dev libyaml-dev rustc"
-    }
-   ],
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.5.16"
-    }
-   ],
-   "name": "packages:apt:build"
-  },
   {
    "assets": {
     "generated-mise-toml": "[generated-mise-toml]"
@@ -78,22 +74,18 @@
      "src": "mise.toml"
     },
     {
-     "dest": "Gemfile",
-     "src": "Gemfile"
-    },
-    {
      "customName": "create mise config",
      "name": "generated-mise-toml",
      "path": "/etc/mise/config.toml"
     },
     {
      "cmd": "mise install",
-     "customName": "install mise packages: ruby"
+     "customName": "install mise packages: node"
     }
    ],
    "inputs": [
     {
-     "step": "packages:apt:build"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.5.16"
     }
    ],
    "name": "packages:mise",
@@ -102,28 +94,38 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
-    "MISE_SHIMS_DIR": "/mise/shims",
-    "RUBY_CONFIGURE_OPTS": "--disable-install-doc"
+    "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
   {
+   "caches": [
+    "npm-install"
+   ],
    "commands": [
     {
-     "cmd": "gem install -N bundler:2.3.7"
+     "path": "/app/node_modules/.bin"
     },
     {
-     "dest": "Gemfile",
-     "src": "Gemfile"
+     "dest": "package.json",
+     "src": "package.json"
     },
     {
-     "dest": "Gemfile.lock",
-     "src": "Gemfile.lock"
+     "cmd": "sh -c 'npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate'",
+     "customName": "npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate"
     },
     {
-     "cmd": "bundle install"
+     "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
-     "path": "/usr/local/bundle"
+     "dest": "package-lock.json",
+     "src": "package-lock.json"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
+    },
+    {
+     "cmd": "npm ci"
     }
    ],
    "inputs": [
@@ -133,14 +135,18 @@
    ],
    "name": "install",
    "variables": {
-    "BUNDLE_GEMFILE": "/app/Gemfile",
-    "GEM_HOME": "/usr/local/bundle",
-    "GEM_PATH": "/usr/local/bundle",
-    "LD_PRELOAD": "libjemalloc.so.2",
-    "MALLOC_ARENA_MAX": "2"
+    "CI": "true",
+    "COREPACK_HOME": "/opt/corepack",
+    "NODE_ENV": "production",
+    "NPM_CONFIG_FUND": "false",
+    "NPM_CONFIG_PRODUCTION": "false",
+    "NPM_CONFIG_UPDATE_NOTIFIER": "false"
    }
   },
   {
+   "caches": [
+    "node-modules"
+   ],
    "inputs": [
     {
      "step": "install"
@@ -153,13 +159,9 @@
     }
    ],
    "name": "build",
-   "variables": {
-    "BUNDLE_GEMFILE": "/app/Gemfile",
-    "GEM_HOME": "/usr/local/bundle",
-    "GEM_PATH": "/usr/local/bundle",
-    "LD_PRELOAD": "libjemalloc.so.2",
-    "MALLOC_ARENA_MAX": "2"
-   }
+   "secrets": [
+    "*"
+   ]
   },
   {
    "caches": [
@@ -168,8 +170,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libjemalloc2 libyaml-dev'",
-     "customName": "install apt packages: libjemalloc2 libyaml-dev"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libatomic1'",
+     "customName": "install apt packages: libatomic1"
     }
    ],
    "inputs": [

@@ -61,7 +61,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.5.15"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.5.16"
     }
    ],
    "name": "packages:apt:build"
@@ -103,7 +103,8 @@
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
     "MISE_INSTALLS_DIR": "/mise/installs",
-    "MISE_SHIMS_DIR": "/mise/shims"
+    "MISE_SHIMS_DIR": "/mise/shims",
+    "RUBY_CONFIGURE_OPTS": "--disable-install-doc"
    }
   },
   {
@@ -185,7 +186,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.5.15"
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.5.16"
     }
    ],
    "name": "packages:apt:runtime"
