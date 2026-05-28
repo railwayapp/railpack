@@ -9,7 +9,7 @@
     "start": "node main.js",
   },
   "engines": {
-    "node": "22.19.0",
-    "pnpm": "8.15.9",
+    "node": "26.2.0",
+    "pnpm": "10.34.1",
   },
 }
