@@ -1,0 +1,15 @@
+{
+  // pnpm reads package.json5 natively — https://pnpm.io/package_json
+  "name": "node-pnpm-json5",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Example exercising pnpm's package.json5 manifest support",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+  },
+  "engines": {
+    "node": "22.19.0",
+    "pnpm": "8.15.9",
+  },
+}
