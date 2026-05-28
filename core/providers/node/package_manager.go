@@ -119,7 +119,8 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 			install.AddEnvVars(map[string]string{
 				"PNPM_HOME": "/pnpm",
 			})
-			install.AddPaths([]string{"/pnpm"})
+			// binaries are installed in the /bin subpath. If this is not added to PATH `pnpm add -g` will fail
+			install.AddPaths([]string{"/pnpm/bin"})
 			install.AddCommand(plan.NewExecCommand("pnpm add -g node-gyp"))
 		}
 
