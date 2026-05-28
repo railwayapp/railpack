@@ -9,7 +9,9 @@
     ],
     "envs": {
       "RAILPACK_DEPLOY_APT_PACKAGES": "curl",
+      // TODO I think we should remove this and try to install another apt package...
       "RAILPACK_BUILD_APT_PACKAGES": "python3-venv",
+      // test packages requiring a different runtime
       "RAILPACK_PACKAGES": "pipx pipx:httpie jq",
       "RAILPACK_INSTALL_CMD": "mkdir -p artifacts && echo \"Custom Install\" > artifacts/install.txt",
       "RAILPACK_BUILD_CMD": "which jq && echo \"Custom Build\" > artifacts/build.txt",
