@@ -20,6 +20,7 @@ const (
 	PackageManagerYarnBerry PackageManager = "yarnberry"
 
 	DEFAULT_PNPM_VERSION = "9"
+	PNPM_HOME            = "/pnpm"
 )
 
 func (p PackageManager) Name() string {
@@ -117,14 +118,14 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 		// to support packages with native dependencies (e.g., better-sqlite3, bcrypt, etc.)
 		// Only needed when using mise to install pnpm (not corepack, which includes node-gyp)
 		if !usingCorepack {
-			pnpmBinPath := "/pnpm"
+			pnpmBinPath := PNPM_HOME
 			if requestedPnpm := ctx.Resolver.Get("pnpm"); requestedPnpm != nil && usesPnpmBinSubdir(requestedPnpm.Version) {
-				pnpmBinPath = "/pnpm/bin"
+				pnpmBinPath = PNPM_HOME + "/bin"
 			}
 
 			// Set PNPM_HOME so pnpm can create a global bin directory for node-gyp
 			install.AddEnvVars(map[string]string{
-				"PNPM_HOME": "/pnpm",
+				"PNPM_HOME": PNPM_HOME,
 			})
 			// binaries are installed in the /bin subpath. If this is not added to PATH `pnpm add -g` will fail
 			install.AddPaths([]string{pnpmBinPath})
@@ -146,6 +147,7 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 	}
 }
 
+// pnpm <= 11 used PNPM_HOME for bins, but pnpm 11+ uses a "bin" subdirectory within the PNPM_HOME directory
 func usesPnpmBinSubdir(version string) bool {
 	version = strings.TrimSpace(version)
 	if version == "" {
