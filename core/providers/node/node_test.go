@@ -230,3 +230,48 @@ func TestPackageJsonRequiresBun(t *testing.T) {
 		require.False(t, got)
 	})
 }
+
+func TestUsesPnpmBinSubdir(t *testing.T) {
+	tests := []struct {
+		name    string
+		version string
+		want    bool
+	}{
+		{
+			name:    "latest uses bin subdir",
+			version: "latest",
+			want:    true,
+		},
+		{
+			name:    "major 11 uses bin subdir",
+			version: "11",
+			want:    true,
+		},
+		{
+			name:    "pnpm 11 uses bin subdir",
+			version: "11.0.0",
+			want:    true,
+		},
+		{
+			name:    "pnpm 10 does not use bin subdir",
+			version: "10.9.0",
+			want:    false,
+		},
+		{
+			name:    "empty version does not use bin subdir",
+			version: "",
+			want:    false,
+		},
+		{
+			name:    "invalid version does not use bin subdir",
+			version: "workspace:^",
+			want:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, usesPnpmBinSubdir(tt.version))
+		})
+	}
+}

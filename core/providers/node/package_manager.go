@@ -10,6 +10,8 @@ import (
 	"github.com/railwayapp/railpack/core/plan"
 )
 
+var pnpmPathLayoutVersion = semver.MustParse("11.0.0")
+
 const (
 	PackageManagerNpm       PackageManager = "npm"
 	PackageManagerPnpm      PackageManager = "pnpm"
@@ -115,12 +117,17 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 		// to support packages with native dependencies (e.g., better-sqlite3, bcrypt, etc.)
 		// Only needed when using mise to install pnpm (not corepack, which includes node-gyp)
 		if !usingCorepack {
+			pnpmBinPath := "/pnpm"
+			if requestedPnpm := ctx.Resolver.Get("pnpm"); requestedPnpm != nil && usesPnpmBinSubdir(requestedPnpm.Version) {
+				pnpmBinPath = "/pnpm/bin"
+			}
+
 			// Set PNPM_HOME so pnpm can create a global bin directory for node-gyp
 			install.AddEnvVars(map[string]string{
 				"PNPM_HOME": "/pnpm",
 			})
 			// binaries are installed in the /bin subpath. If this is not added to PATH `pnpm add -g` will fail
-			install.AddPaths([]string{"/pnpm/bin"})
+			install.AddPaths([]string{pnpmBinPath})
 			install.AddCommand(plan.NewExecCommand("pnpm add -g node-gyp"))
 		}
 
@@ -137,6 +144,24 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 	case PackageManagerYarnBerry:
 		install.AddCommand(plan.NewExecCommand("yarn install --check-cache"))
 	}
+}
+
+func usesPnpmBinSubdir(version string) bool {
+	version = strings.TrimSpace(version)
+	if version == "" {
+		return false
+	}
+
+	if version == "latest" {
+		return true
+	}
+
+	pnpmVersion, err := semver.NewVersion(version)
+	if err != nil {
+		return false
+	}
+
+	return pnpmVersion.Compare(pnpmPathLayoutVersion) >= 0
 }
 
 func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
