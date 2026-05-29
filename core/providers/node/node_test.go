@@ -48,6 +48,14 @@ func TestNode(t *testing.T) {
 			nodeVersion:    "22.2.0",
 		},
 		{
+			name:           "pnpm from mise.toml",
+			path:           "../../../examples/node-latest-pnpm-mise-native-deps",
+			detected:       true,
+			packageManager: PackageManagerPnpm,
+			nodeVersion:    "26.1.0",
+			pnpmVersion:    "latest",
+		},
+		{
 			name:           "pnpm",
 			path:           "../../../examples/node-astro",
 			detected:       true,
@@ -85,7 +93,13 @@ func TestNode(t *testing.T) {
 
 				if tt.pnpmVersion != "" {
 					pnpmVersion := ctx.Resolver.Get("pnpm")
-					require.Equal(t, tt.pnpmVersion, pnpmVersion.Version)
+					require.NotNil(t, pnpmVersion)
+
+					if tt.pnpmVersion == "latest" {
+						require.NotEmpty(t, pnpmVersion.Version)
+					} else {
+						require.Equal(t, tt.pnpmVersion, pnpmVersion.Version)
+					}
 				}
 			}
 		})

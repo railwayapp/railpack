@@ -50,6 +50,25 @@ func (p PackageManager) RunScriptCommand(cmd string) string {
 	return "node " + cmd
 }
 
+// Map the active package manager to the mise tool key whose app-local version
+// should override Railpack's inferred/default version. We can't use Name() here
+// because it answers "which command do we run"; for npm that would return
+// "npm", but npm is not installed as a separate mise-managed tool in this flow.
+// This lets us ask mise for the app's resolved tool version and keep Railpack's
+// package-manager selection consistent with the app's mise config.
+func (p PackageManager) misePackageName() string {
+	switch p {
+	case PackageManagerPnpm:
+		return "pnpm"
+	case PackageManagerBun:
+		return "bun"
+	case PackageManagerYarn1, PackageManagerYarnBerry:
+		return "yarn"
+	default:
+		return ""
+	}
+}
+
 func (p PackageManager) installDependencies(ctx *generate.GenerateContext, workspace *Workspace, install *generate.CommandStepBuilder, usingCorepack bool) {
 	packageJsons := workspace.AllPackageJson()
 
@@ -119,6 +138,8 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 		// Only needed when using mise to install pnpm (not corepack, which includes node-gyp)
 		if !usingCorepack {
 			pnpmBinPath := PNPM_HOME
+
+			// newer versions of pnpm use a different bin directory
 			if requestedPnpm := ctx.Resolver.Get("pnpm"); requestedPnpm != nil && usesPnpmBinSubdir(requestedPnpm.Version) {
 				pnpmBinPath = PNPM_HOME + "/bin"
 			}

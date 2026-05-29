@@ -344,6 +344,14 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 
 	p.packageManager.GetPackageManagerPackages(ctx, p.packageJson, miseStep)
 
+	// mise could override a package manager version inferred from the js environment or railpack defaults
+	// if it does, that version should be used within any logic in the node provider (such as changing the pnpm bin directory target)
+	// this is why we get the mise tool name for the package manager and pass to UseMiseVersions, which checks if the user has specified
+	// a version for this tool within the mise environment.
+	if packageManagerTool := p.packageManager.misePackageName(); packageManagerTool != "" {
+		misePackages = append(misePackages, packageManagerTool)
+	}
+
 	if p.usesCorepack() {
 		miseStep.AddMiseSetting("node.corepack", true)
 	}
