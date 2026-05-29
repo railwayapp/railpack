@@ -89,7 +89,7 @@ if [[ ! "$MISE_ORIGINAL_CWD" =~ /examples/ ]]; then
 fi
 
 example_name=$(basename "$MISE_ORIGINAL_CWD")
-mise run cli build $MISE_ORIGINAL_CWD --show-plan --progress=plain --env MISE_VERBOSE=1
+mise run cli --verbose build $MISE_ORIGINAL_CWD --show-plan --progress=plain --env MISE_VERBOSE=1
 echo "Running example: 'docker run $example_name'"
 """
 
