@@ -119,6 +119,8 @@ install the specified package manager version. When a package manager is
 detected via the `engines` field, the specified version constraint will be
 used.
 
+Railpack supports building native modules and automatically configures `node-gyp`.
+
 ### Monorepo Support
 
 Railpack automatically supports monorepo (workspaces) configurations with all major
