@@ -56,7 +56,7 @@
     },
     {
      "cmd": "mise install",
-     "customName": "install mise packages: pipx, pipx:poetry, python"
+     "customName": "install mise packages: pipx, pipx:poetry, python, uv"
     }
    ],
    "inputs": [
