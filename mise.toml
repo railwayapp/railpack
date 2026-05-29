@@ -142,5 +142,9 @@ run = ["bun install", "bun run dev"]
 [tasks.image-builder-build]
 run = "docker build --build-arg MISE_VERSION=$RAILPACK_MISE_VERSION -f images/debian/build/Dockerfile -t railpack-builder:local ."
 
+[tasks.mise-builder-shell]
+description = "Shell into the published railpack-builder image"
+run = "docker run -it --rm ghcr.io/railwayapp/railpack-builder:mise-$RAILPACK_MISE_VERSION bash"
+
 [tasks.image-runtime-build]
 run = "docker build -f images/debian/runtime/Dockerfile -t railpack-runtime:local ."
