@@ -281,6 +281,8 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 		maps.Copy(step.Variables, b.Variables)
 
 		// Base settings written into [settings] of the generated mise.toml so users can override with their own mise.toml
+		// Some of these settings (i.e. `install_before`) should be set in the host mise execution
+
 		// Don't verify the asset because recently released versions don't have a public key to verify against
 		// https://github.com/railwayapp/railpack/issues/207
 		b.AddMiseSetting("node.verify", false)
@@ -291,7 +293,7 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 		// Enable mise to automatically read idiomatic version files
 		b.AddMiseSetting("idiomatic_version_file_enable_tools", strings.Split(mise.IdiomaticVersionFileTools, ","))
 		// Only resolve tool versions released more than 14 days ago to avoid broken newly-released versions
-		b.AddMiseSetting("install_before", "14d")
+		b.AddMiseSetting("minimum_release_age", "14d")
 
 		// pass through the MISE_VERBOSE variable for detailed logging
 		if verbose := b.env.GetVariable("MISE_VERBOSE"); verbose != "" {
