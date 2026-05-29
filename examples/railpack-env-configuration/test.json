@@ -9,11 +9,15 @@
     ],
     "envs": {
       "RAILPACK_DEPLOY_APT_PACKAGES": "curl",
-      "RAILPACK_BUILD_APT_PACKAGES": "python3-venv",
-      "RAILPACK_PACKAGES": "pipx pipx:httpie jq",
+      // this package is strictly here to check if we can install an apt package available on build only
+      "RAILPACK_BUILD_APT_PACKAGES": "dnsutils",
+      // test packages requiring a different runtime
+      // py is required for pipx to run properly, system python doesn't work well with mise and various build requirements
+      "RAILPACK_PACKAGES": "python pipx pipx:httpie jq",
       "RAILPACK_INSTALL_CMD": "mkdir -p artifacts && echo \"Custom Install\" > artifacts/install.txt",
-      "RAILPACK_BUILD_CMD": "which jq && echo \"Custom Build\" > artifacts/build.txt",
-      "RAILPACK_START_CMD": "cat artifacts/install.txt && cat artifacts/build.txt && echo \"Custom Start\" && which curl && which http && which jq"
+      // railpack packages are available in build and install
+      "RAILPACK_BUILD_CMD": "which jq && dig -v && echo \"Custom Build\" > artifacts/build.txt",
+      "RAILPACK_START_CMD": "cat artifacts/install.txt && ! command -v dig >/dev/null && cat artifacts/build.txt && echo \"Custom Start\" && which curl && which http && which jq"
     }
   },
   {

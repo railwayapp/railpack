@@ -10,7 +10,9 @@
     "expectedOutput": ["Free-threaded build: True", "x86_64"],
     "envs": {
       "MISE_PYTHON_COMPILE": "0",
-      "MISE_PYTHON_PRECOMPILED_FLAVOR": "freethreaded+pgo-full"
+      // not all variants are available across all platforms, you can check variants using this script
+      // gh api repos/astral-sh/python-build-standalone/releases/latest --jq '.assets[] | select(.name=="SHA256SUMS") | .browser_download_url' | xargs curl -sL | fzf
+      "MISE_PYTHON_PRECOMPILED_FLAVOR": "freethreaded"
     }
   }
 ]

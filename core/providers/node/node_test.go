@@ -48,6 +48,14 @@ func TestNode(t *testing.T) {
 			nodeVersion:    "22.2.0",
 		},
 		{
+			name:           "pnpm from mise.toml",
+			path:           "../../../examples/node-latest-pnpm-mise-native-deps",
+			detected:       true,
+			packageManager: PackageManagerPnpm,
+			nodeVersion:    "26.1.0",
+			pnpmVersion:    "latest",
+		},
+		{
 			name:           "pnpm",
 			path:           "../../../examples/node-astro",
 			detected:       true,
@@ -85,7 +93,13 @@ func TestNode(t *testing.T) {
 
 				if tt.pnpmVersion != "" {
 					pnpmVersion := ctx.Resolver.Get("pnpm")
-					require.Equal(t, tt.pnpmVersion, pnpmVersion.Version)
+					require.NotNil(t, pnpmVersion)
+
+					if tt.pnpmVersion == "latest" {
+						require.NotEmpty(t, pnpmVersion.Version)
+					} else {
+						require.Equal(t, tt.pnpmVersion, pnpmVersion.Version)
+					}
 				}
 			}
 		})
@@ -229,4 +243,49 @@ func TestPackageJsonRequiresBun(t *testing.T) {
 		got := packageJsonRequiresBun(packageJson)
 		require.False(t, got)
 	})
+}
+
+func TestUsesPnpmBinSubdir(t *testing.T) {
+	tests := []struct {
+		name    string
+		version string
+		want    bool
+	}{
+		{
+			name:    "latest uses bin subdir",
+			version: "latest",
+			want:    true,
+		},
+		{
+			name:    "major 11 uses bin subdir",
+			version: "11",
+			want:    true,
+		},
+		{
+			name:    "pnpm 11 uses bin subdir",
+			version: "11.0.0",
+			want:    true,
+		},
+		{
+			name:    "pnpm 10 does not use bin subdir",
+			version: "10.9.0",
+			want:    false,
+		},
+		{
+			name:    "empty version does not use bin subdir",
+			version: "",
+			want:    false,
+		},
+		{
+			name:    "invalid version does not use bin subdir",
+			version: "workspace:^",
+			want:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, usesPnpmBinSubdir(tt.version))
+		})
+	}
 }

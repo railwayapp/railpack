@@ -84,7 +84,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.3.17"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.5.16"
     }
    ],
    "name": "packages:mise",
@@ -120,7 +120,7 @@
      "src": "pnpm-workspace.yaml"
     },
     {
-     "path": "/pnpm"
+     "path": "/pnpm/bin"
     },
     {
      "cmd": "pnpm add -g node-gyp"
@@ -177,7 +177,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.3.17"
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.5.16"
     }
    ],
    "name": "packages:apt:runtime"

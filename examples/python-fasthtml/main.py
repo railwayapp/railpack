@@ -15,6 +15,10 @@ css = Style('''
     .alive { background-color: green; }
     .dead { background-color: white; }
 ''')
+picolink = Link(
+    rel="stylesheet",
+    href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css",
+)
 gridlink = Link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/flexboxgrid/6.3.1/flexboxgrid.min.css", type="text/css")
 htmx_ws = Script(src="https://unpkg.com/htmx-ext-ws@2.0.0/ws.js")
 app = FastHTML(hdrs=(picolink, gridlink, css, htmx_ws))
@@ -78,7 +82,25 @@ async def background_task():
             await update_players()
         await asyncio.sleep(1.0)
 
-background_task_coroutine = asyncio.create_task(background_task())
+background_task_handle = None
+
+@app.on_event('startup')
+async def startup():
+    global background_task_handle
+    if background_task_handle is None or background_task_handle.done():
+        background_task_handle = asyncio.create_task(background_task())
+
+@app.on_event('shutdown')
+async def shutdown():
+    global background_task_handle
+    if background_task_handle is None:
+        return
+    background_task_handle.cancel()
+    try:
+        await background_task_handle
+    except asyncio.CancelledError:
+        pass
+    background_task_handle = None
 
 @rt('/update')
 async def put(x: int, y: int):

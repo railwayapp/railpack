@@ -327,6 +327,10 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 
 		// prefer to use uv tooling as much as we can
 		miseStep.AddMiseSetting("pipx.uvx", true)
+
+		// without uv installed, pipx.uvx will not be respected
+		miseStep.Default("uv", "latest")
+		packages = append(packages, "uv")
 	}
 
 	if p.hasPoetry(ctx) {

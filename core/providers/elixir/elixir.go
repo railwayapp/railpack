@@ -42,6 +42,8 @@ func (p *ElixirProvider) Initialize(ctx *generate.GenerateContext) error {
 
 func (p *ElixirProvider) Plan(ctx *generate.GenerateContext) error {
 	miseStep := ctx.GetMiseStepBuilder()
+	// ELIXIR_ERL_OPTIONS can impact the install process, so we should use the same set of variables during the mise stage
+	maps.Copy(miseStep.Variables, p.GetEnvVars(ctx))
 	p.InstallMisePackages(ctx, miseStep)
 
 	install := ctx.NewCommandStep("install")

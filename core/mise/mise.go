@@ -172,6 +172,8 @@ func (m *Mise) runCmdWithEnv(extraEnv []string, args ...string) (string, error) 
 		fmt.Sprintf("MISE_DATA_DIR=%s", dataDir),
 		fmt.Sprintf("MISE_STATE_DIR=%s", stateDir),
 		fmt.Sprintf("MISE_SYSTEM_CONFIG_DIR=%s", systemDir),
+		// match the same mise_step_builder default
+		"MISE_MINIMUM_RELEASE_AGE=14d",
 		// TODO doesn't HTTP timeout apply to fetch remote versions too?
 		"MISE_HTTP_TIMEOUT=60s",
 		"MISE_FETCH_REMOTE_VERSIONS_TIMEOUT=60s",

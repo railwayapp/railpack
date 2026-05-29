@@ -89,7 +89,7 @@ if [[ ! "$MISE_ORIGINAL_CWD" =~ /examples/ ]]; then
 fi
 
 example_name=$(basename "$MISE_ORIGINAL_CWD")
-mise run cli build $MISE_ORIGINAL_CWD --show-plan --progress=plain --env MISE_VERBOSE=1
+mise run cli --verbose build $MISE_ORIGINAL_CWD --show-plan --progress=plain --env MISE_VERBOSE=1
 echo "Running example: 'docker run $example_name'"
 """
 
@@ -113,17 +113,22 @@ run = ["go vet ./...", "go fmt ./...", "golangci-lint run", "go mod verify"]
 
 [tasks.upgrade]
 description = "Upgrade all Go and Mise packages"
-run = [
-  # ensures we are using the latest version of mise locally
-  "mise self-update",
-  # updates lockfiles
-  "mise upgrade --local",
-  # get latest go packages
-  "go get -u ./...",
-  "go mod tidy",
-  # update packages, respecting semver
-  "cd docs && bun update"
-]
+# this task is intentionally run in the same shell so changes caused by version updates are picked up
+run = '''
+# ensures we are using the latest version of mise locally
+mise self-update
+
+# updates lockfiles
+mise upgrade --local
+eval "$(mise hook-env)"
+
+# get latest go packages
+go get -u ./...
+go mod tidy
+
+# update packages, respecting semver
+cd docs && bun update
+'''
 
 # build docs for production
 [tasks.docs-build]
@@ -136,6 +141,10 @@ run = ["bun install", "bun run dev"]
 
 [tasks.image-builder-build]
 run = "docker build --build-arg MISE_VERSION=$RAILPACK_MISE_VERSION -f images/debian/build/Dockerfile -t railpack-builder:local ."
+
+[tasks.mise-builder-shell]
+description = "Shell into the published railpack-builder image"
+run = "docker run -it --rm ghcr.io/railwayapp/railpack-builder:mise-$RAILPACK_MISE_VERSION bash"
 
 [tasks.image-runtime-build]
 run = "docker build -f images/debian/runtime/Dockerfile -t railpack-runtime:local ."
