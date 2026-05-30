@@ -40,6 +40,7 @@ run = "go build -o bin/railpack cmd/cli/main.go"
 [tasks.clean]
 run = [
   "rm -rf bin dist docs/dist",
+  "find . -type d -name node_modules -prune -exec rm -rf {} +",
   # clean up buildkit cache, avoids cached layers from being used
   "docker exec buildkit buildctl prune",
   "rm -f *.test",
