@@ -314,11 +314,6 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 	if p == PackageManagerPnpm {
 		pnpm := packages.Default("pnpm", DEFAULT_PNPM_VERSION)
 
-		// Prefer explicit version from package.json engines over defaults/lockfile
-		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["pnpm"] != "" {
-			packages.Version(pnpm, packageJson.Engines["pnpm"], "package.json > engines > pnpm")
-		}
-
 		lockfile, err := ctx.App.ReadFile("pnpm-lock.yaml")
 		if err == nil {
 			switch {
@@ -337,6 +332,11 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 			default:
 				log.Warnf("could not detect pnpm lockfile version")
 			}
+		}
+
+		// engines.pnpm overrides lockfile inference because lockfileVersion is ambiguous across majors
+		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["pnpm"] != "" {
+			packages.Version(pnpm, packageJson.Engines["pnpm"], "package.json > engines > pnpm")
 		}
 
 		if pmName == "pnpm" && pmVersion != "" {
