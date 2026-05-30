@@ -129,6 +129,12 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 
 	if p.usesCorepack() {
 		buildIncludeDirs = append(buildIncludeDirs, COREPACK_HOME)
+
+		// installing corepack results in additional global node package and more symlinks (corepack prepare)
+		// these paths are already included via the packages:mise step, but since they are mutated when corepack is used
+		// we must include them again in order for pnpm and other binaries to be available in the final runtime image.
+		buildIncludeDirs = append(buildIncludeDirs, "/mise/installs")
+		buildIncludeDirs = append(buildIncludeDirs, "/mise/shims")
 	}
 
 	runtimeAptPackages := []string{}
@@ -267,6 +273,7 @@ func (p *NodeProvider) PruneNodeDeps(ctx *generate.GenerateContext, prune *gener
 
 func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
 	maps.Copy(install.Variables, p.GetNodeEnvVars(ctx))
+
 	install.Secrets = []string{}
 	install.UseSecretsWithPrefixes([]string{"NODE", "NPM", "BUN", "PNPM", "YARN", "CI"})
 	install.AddPaths([]string{"/app/node_modules/.bin"})
