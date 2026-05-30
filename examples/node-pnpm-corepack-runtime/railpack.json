@@ -1,0 +1,5 @@
+{
+	"deploy": {
+		"startCommand": "pnpm run start"
+	}
+}
