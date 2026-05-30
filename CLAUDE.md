@@ -36,12 +36,9 @@ with support for Node, Python, Go, PHP, and more.
   or update lockfiles. Manual edits can result in invalid checksums and broken
   builds.
 
-# Mise Setup
-
-If mise is not available in your environment, install it using the instructions at https://mise.jdx.dev/installing-mise.html.
-
 # Workflow
 
+- If mise is not available in your environment, install it using the instructions at https://mise.jdx.dev/installing-mise.html.
 - Take a careful look at @mise.toml to understand what commands should be run at different points in the project lifecycle
 - Do not worry about docker cache, etc. Never run `docker system prune` or any other similar commands.
 - Do not run `go` directly. Instead, inspect @mise.toml and use `mise run <task>` to run various dev lifecycle commands. For instance, you should not run `go vet`, `go fmt`, `go test`, etc directly.
