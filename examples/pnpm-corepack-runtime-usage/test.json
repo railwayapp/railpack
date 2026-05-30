@@ -1,7 +1,7 @@
 [
   {
     "expectedOutput": [
-      "Node.js version: v25",
+      "Node.js version: v26",
       "Started through pnpm run start"
     ],
     // pnpm 11 writes the invoked script command to stderr during `pnpm run start`.

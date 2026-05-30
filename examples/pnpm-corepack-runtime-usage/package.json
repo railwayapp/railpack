@@ -8,6 +8,6 @@
   },
   "packageManager": "pnpm@11.1.2",
   "engines": {
-    "node": "^25.0.0"
+    "node": "^26.0.0"
   }
 }
