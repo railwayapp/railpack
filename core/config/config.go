@@ -27,7 +27,7 @@ type StepConfig struct {
 }
 
 type Config struct {
-	Provider         *string                `json:"provider,omitempty" jsonschema:"description=The provider to use"`
+	Provider         *string                `json:"provider,omitempty" jsonschema:"enum=php,enum=golang,enum=java,enum=rust,enum=ruby,enum=elixir,enum=python,enum=deno,enum=dotnet,enum=node,enum=gleam,enum=cpp,enum=staticfile,enum=shell,description=The provider to use"`
 	BuildAptPackages []string               `json:"buildAptPackages,omitempty" jsonschema:"description=List of apt packages to install during the build step"`
 	Steps            map[string]*StepConfig `json:"steps,omitempty" jsonschema:"description=Map of step names to step definitions"`
 	Deploy           *DeployConfig          `json:"deploy,omitempty" jsonschema:"description=Deploy configuration"`

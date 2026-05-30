@@ -163,6 +163,32 @@ For example:
 }
 ```
 
+### Provider Values
+
+Railpack autodetects the provider by default. If you need to force a provider,
+set the root `provider` field to one of these values:
+
+| Provider     | Use case                         |
+| :----------- | :------------------------------- |
+| `php`        | PHP and Laravel applications     |
+| `golang`     | Go applications                  |
+| `java`       | Java applications                |
+| `rust`       | Rust applications                |
+| `ruby`       | Ruby and Rails applications      |
+| `elixir`     | Elixir and Phoenix applications  |
+| `python`     | Python applications              |
+| `deno`       | Deno applications                |
+| `dotnet`     | .NET applications                |
+| `node`       | Node.js, Bun, and frontend apps  |
+| `gleam`      | Gleam applications               |
+| `cpp`        | C/C++ applications               |
+| `staticfile` | Static sites with a `Staticfile` |
+| `shell`      | Shell-script based applications  |
+
+Provider names are matched case-insensitively. Package managers are handled
+inside each provider, so `uv` support is part of the `python` provider rather
+than a separate provider value.
+
 ## Caches
 
 Caches are used to speed up builds by storing and reusing files between builds.
