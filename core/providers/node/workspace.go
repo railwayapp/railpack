@@ -21,11 +21,15 @@ type PnpmWorkspace struct {
 	Packages []string `yaml:"packages"`
 }
 
-// NewWorkspace creates a new workspace from a package.json file
+// NewWorkspace creates a new workspace from a package.json (or package.json5) file
 func NewWorkspace(app *app.App) (*Workspace, error) {
-	packageJson, err := readPackageJson(app, "package.json")
+	manifest := findPackageManifest(app)
+	if manifest == "" {
+		manifest = "package.json"
+	}
+	packageJson, err := readPackageJson(app, manifest)
 	if err != nil {
-		return nil, fmt.Errorf("error reading root package.json: %w", err)
+		return nil, fmt.Errorf("error reading root %s: %w", manifest, err)
 	}
 
 	workspace := &Workspace{

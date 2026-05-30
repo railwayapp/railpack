@@ -51,8 +51,9 @@ func (p PackageManager) RunScriptCommand(cmd string) string {
 }
 
 // Map the active package manager to the mise tool key whose app-local version
-// should override Railpack's inferred/default version. We can't use Name() here
-// because it answers "which command do we run"; for npm that would return
+// should override Railpack's inferred/default version.
+//
+// Can't use Name() because it answers "which command do we run"; for npm that would return
 // "npm", but npm is not installed as a separate mise-managed tool in this flow.
 // This lets us ask mise for the app's resolved tool version and keep Railpack's
 // package-manager selection consistent with the app's mise config.
@@ -247,11 +248,12 @@ func (p PackageManager) pruneYarnBerry(ctx *generate.GenerateContext, prune *gen
 
 func (p PackageManager) getPackageJsonFromContext(ctx *generate.GenerateContext) (*PackageJson, error) {
 	packageJson := NewPackageJson()
-	if !ctx.App.HasFile("package.json") {
+	manifest := findPackageManifest(ctx.App)
+	if manifest == "" {
 		return packageJson, nil
 	}
 
-	err := ctx.App.ReadJSON("package.json", packageJson)
+	err := ctx.App.ReadJSON(manifest, packageJson)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +277,7 @@ func (p PackageManager) GetInstallFolder(ctx *generate.GenerateContext) []string
 // SupportingInstallFiles returns a list of files that are needed to install dependencies
 func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []string {
 	// Use brace expansion for single filesystem traversal instead of 16 separate globs
-	pattern := "**/{package.json,package-lock.json,pnpm-workspace.yaml,yarn.lock,pnpm-lock.yaml,bun.lockb,bun.lock,bunfig.toml,.yarn,.pnp.*,.yarnrc.yml,.npmrc,.node-version,.nvmrc,patches,.pnpm-patches,prisma}"
+	pattern := "**/{package.json,package.json5,package-lock.json,pnpm-workspace.yaml,yarn.lock,pnpm-lock.yaml,bun.lockb,bun.lock,bunfig.toml,.yarn,.pnp.*,.yarnrc.yml,.npmrc,.node-version,.nvmrc,patches,.pnpm-patches,prisma}"
 
 	var allFiles []string
 
@@ -312,20 +314,29 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 	if p == PackageManagerPnpm {
 		pnpm := packages.Default("pnpm", DEFAULT_PNPM_VERSION)
 
-		// Prefer explicit version from package.json engines over defaults/lockfile
-		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["pnpm"] != "" {
-			packages.Version(pnpm, packageJson.Engines["pnpm"], "package.json > engines > pnpm")
-		}
-
 		lockfile, err := ctx.App.ReadFile("pnpm-lock.yaml")
 		if err == nil {
-			if strings.HasPrefix(lockfile, "lockfileVersion: 5.3") {
+			switch {
+			case strings.HasPrefix(lockfile, "lockfileVersion: 5.3"):
 				packages.Version(pnpm, "6", "pnpm-lock.yaml")
-			} else if strings.HasPrefix(lockfile, "lockfileVersion: 5.4") {
+			case strings.HasPrefix(lockfile, "lockfileVersion: 5.4"):
 				packages.Version(pnpm, "7", "pnpm-lock.yaml")
-			} else if strings.HasPrefix(lockfile, "lockfileVersion: '6.0'") {
+			case strings.HasPrefix(lockfile, "lockfileVersion: '6.0'") || strings.HasPrefix(lockfile, "lockfileVersion: 6.0"):
 				packages.Version(pnpm, "8", "pnpm-lock.yaml")
+			case strings.HasPrefix(lockfile, "lockfileVersion: '6.1'"):
+				packages.Version(pnpm, "8", "pnpm-lock.yaml")
+			case strings.HasPrefix(lockfile, "lockfileVersion: '9.0'") || strings.HasPrefix(lockfile, "lockfileVersion: 9.0"):
+				// pnpm 9 introduced lockfileVersion 9.0.
+				// pnpm 10 and 11 continue using the same 9.0 format (no bump).
+				packages.Version(pnpm, "9", "pnpm-lock.yaml")
+			default:
+				log.Warnf("could not detect pnpm lockfile version")
 			}
+		}
+
+		// engines.pnpm overrides lockfile inference because lockfileVersion is ambiguous across majors
+		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["pnpm"] != "" {
+			packages.Version(pnpm, packageJson.Engines["pnpm"], "package.json > engines > pnpm")
 		}
 
 		if pmName == "pnpm" && pmVersion != "" {
@@ -383,7 +394,7 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 
 // usesLocalFile returns true if the package.json has a local dependency (e.g. file:./path/to/package)
 func (p PackageManager) usesLocalFile(ctx *generate.GenerateContext) bool {
-	files, err := ctx.App.FindFiles("**/package.json")
+	files, err := ctx.App.FindFiles("**/{package.json,package.json5}")
 	if err != nil {
 		return false
 	}

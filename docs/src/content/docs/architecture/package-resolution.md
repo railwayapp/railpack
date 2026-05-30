@@ -14,7 +14,8 @@ Railpack and alternative installation methods are possible (for example PHP will
 use Mise to resolve a valid version and then start from a PHP base image).
 Railpack enables Mise paranoid mode for stricter security validation.
 
-For more information on how Railpack utilizes Mise and our philosophy on tool defaults, see the [Mise Configuration](/config/mise) guide.
+For more information on how Railpack utilizes Mise and our philosophy on tool
+defaults, see the [Mise Configuration](/config/mise) guide.
 
 ## Previous and default versions
 
@@ -41,3 +42,12 @@ more specific version of a package is requested (e.g. through a package.json
 engines field or env var), then we will always use that.
 
 This is done on Railway automatically.
+
+## Semver constraints from app manifests
+
+Manifest constraints (for example `engines.pnpm`) are not resolved with
+npm-style semver. Caret (`^`) and range (`>=`, `<`) notation are simplified to
+the major version only (`^10.34.0` → `10`) before Mise picks a release. This
+is done because Mise does not support compound version constraints right now.
+Use an exact version or `mise.toml` to pin. See also
+[`minimum_release_age`](/config/mise#minimum_release_age).
