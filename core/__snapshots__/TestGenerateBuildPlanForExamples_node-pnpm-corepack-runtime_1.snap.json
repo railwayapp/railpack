@@ -12,9 +12,9 @@
    "directory": "/app/node_modules/.cache",
    "type": "shared"
   },
-  "yarn-install": {
-   "directory": "/usr/local/share/.cache/yarn",
-   "type": "locked"
+  "pnpm-install": {
+   "directory": "/root/.local/share/pnpm/store/v3",
+   "type": "shared"
   }
  },
  "deploy": {
@@ -53,35 +53,16 @@
     "step": "build"
    }
   ],
-  "startCommand": "yarn run start",
+  "startCommand": "pnpm run start",
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
    "NPM_CONFIG_FUND": "false",
    "NPM_CONFIG_PRODUCTION": "false",
-   "NPM_CONFIG_UPDATE_NOTIFIER": "false",
-   "YARN_PRODUCTION": "false"
+   "NPM_CONFIG_UPDATE_NOTIFIER": "false"
   }
  },
  "steps": [
-  {
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
-   "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y gpg tar'",
-     "customName": "install apt packages: gpg tar"
-    }
-   ],
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.5.16"
-    }
-   ],
-   "name": "packages:apt:build"
-  },
   {
    "assets": {
     "generated-mise-toml": "[generated-mise-toml]"
@@ -102,7 +83,7 @@
    ],
    "inputs": [
     {
-     "step": "packages:apt:build"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.5.16"
     }
    ],
    "name": "packages:mise",
@@ -116,7 +97,7 @@
   },
   {
    "caches": [
-    "yarn-install"
+    "pnpm-install"
    ],
    "commands": [
     {
@@ -138,11 +119,7 @@
      "src": "package.json"
     },
     {
-     "dest": "yarn.lock",
-     "src": "yarn.lock"
-    },
-    {
-     "cmd": "yarn install --frozen-lockfile"
+     "cmd": "pnpm install"
     }
    ],
    "inputs": [
@@ -157,18 +134,12 @@
     "NODE_ENV": "production",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",
-    "NPM_CONFIG_UPDATE_NOTIFIER": "false",
-    "YARN_PRODUCTION": "false"
+    "NPM_CONFIG_UPDATE_NOTIFIER": "false"
    }
   },
   {
    "caches": [
     "node-modules"
-   ],
-   "commands": [
-    {
-     "cmd": "yarn run build"
-    }
    ],
    "inputs": [
     {
