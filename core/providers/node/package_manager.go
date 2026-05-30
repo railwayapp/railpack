@@ -51,8 +51,9 @@ func (p PackageManager) RunScriptCommand(cmd string) string {
 }
 
 // Map the active package manager to the mise tool key whose app-local version
-// should override Railpack's inferred/default version. We can't use Name() here
-// because it answers "which command do we run"; for npm that would return
+// should override Railpack's inferred/default version.
+//
+// Can't use Name() because it answers "which command do we run"; for npm that would return
 // "npm", but npm is not installed as a separate mise-managed tool in this flow.
 // This lets us ask mise for the app's resolved tool version and keep Railpack's
 // package-manager selection consistent with the app's mise config.
@@ -320,12 +321,21 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 
 		lockfile, err := ctx.App.ReadFile("pnpm-lock.yaml")
 		if err == nil {
-			if strings.HasPrefix(lockfile, "lockfileVersion: 5.3") {
+			switch {
+			case strings.HasPrefix(lockfile, "lockfileVersion: 5.3"):
 				packages.Version(pnpm, "6", "pnpm-lock.yaml")
-			} else if strings.HasPrefix(lockfile, "lockfileVersion: 5.4") {
+			case strings.HasPrefix(lockfile, "lockfileVersion: 5.4"):
 				packages.Version(pnpm, "7", "pnpm-lock.yaml")
-			} else if strings.HasPrefix(lockfile, "lockfileVersion: '6.0'") {
+			case strings.HasPrefix(lockfile, "lockfileVersion: '6.0'") || strings.HasPrefix(lockfile, "lockfileVersion: 6.0"):
 				packages.Version(pnpm, "8", "pnpm-lock.yaml")
+			case strings.HasPrefix(lockfile, "lockfileVersion: '6.1'"):
+				packages.Version(pnpm, "8", "pnpm-lock.yaml")
+			case strings.HasPrefix(lockfile, "lockfileVersion: '9.0'") || strings.HasPrefix(lockfile, "lockfileVersion: 9.0"):
+				// pnpm 9 introduced lockfileVersion 9.0.
+				// pnpm 10 and 11 continue using the same 9.0 format (no bump).
+				packages.Version(pnpm, "9", "pnpm-lock.yaml")
+			default:
+				log.Warnf("could not detect pnpm lockfile version")
 			}
 		}
 
