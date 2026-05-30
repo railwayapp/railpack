@@ -305,6 +305,20 @@ continue
 
 The commands you probably want: `ls`, `print build.Commands`, `continue`, `next`, `locals`,
 
+## Node
+
+The node provider is the most complex.
+
+### Corepack
+
+* `corepack` used to be included by default in node. It was removed in node 25. Now it must be installed via `npm install -g`
+* corepack does not support node 25. >= 26 is officially required.
+* corepack is installed into `node_modules` but the package managers that corepack installs are added to `COREPACK_HOME`
+  which we customize to be a `/opt` path.
+* `corepack prepare` generates shims next to the `node` binary. These symlink to `.js` files.
+* We detect corepack usage based on the `package.json > engines > pnpm, etc` fields. If we find this, we `npm install -g` corepack for the user. However, this happens *after* the mise install step and the corepack commands end up mutating the global node_modules dirs.
+* In order to make sure these changes are picked up by future steps (i.e. if `pnpm run` is used in a `startCommand`) we have to include the mise shims folder and the mise node folder from the build step.
+  * All shims are installed into `/mise/shims`. There are no subfolders.
 
 ## Maintenance
 
@@ -313,5 +327,6 @@ There are some manual maintenance tasks that need to be done periodically:
 * Mise versions need to updated
 * Test snapshots which use `latest` for runtime versions need to be updated periodically.
 * Elixir<>OTP version map needs to be updated as new major versions come out.
+* PNPM lockfile versions are manually mapped to minimum pnpm versions
 * Pnpm default version needs to be updated as LTS versions are released.
 * Node default version needs to be updated as LTS versions are released.
