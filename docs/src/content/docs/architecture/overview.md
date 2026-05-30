@@ -69,6 +69,35 @@ Steps contain:
 - Caches
   - List of cache IDs available to all commands in this step
 
+### Input Ordering and Layering
+
+Each step (and the deploy step) assembles its filesystem from an ordered list
+of inputs. When inputs reference the same path, ordering decides which one
+wins.
+
+- **Authoring order, not the graph.** Input lists are built by appending in a
+  fixed sequence as providers run and as config is applied. The build graph is
+  _derived from_ these inputs (each step-reference becomes an edge) — never the
+  reverse. The order you see in the plan JSON is the source of truth.
+- **Deterministic.** Any map-based sources (such as config steps and packages)
+  are sorted by key before iteration, so Go's randomized map iteration never
+  affects ordering. The same input always produces the same plan.
+- **Base is pinned first.** The first input must be a full, unfiltered state
+  (the foundation the others stack on). Inputs with `include`/`exclude` filters
+  cannot be first.
+- **Last wins.** Copy and merge operations are emitted strictly in input order,
+  so for overlapping paths the later input takes precedence. To change which
+  input wins, reorder the list — do not rely on graph topology.
+- **Filters only affect the final image.** The `include`/`exclude` paths on an
+  input control what is copied into the layer (e.g. the slim runtime image).
+  They do not restrict what is available _during_ a step's execution, since a
+  step's first input always brings the full filesystem of its source.
+
+Separately, the build graph's topological sort decides _when_ each step's
+state is computed (parents before children) so BuildKit can run independent
+steps in parallel. This is independent of input ordering and does not change
+the contents of the final image.
+
 ## Providers
 
 Language support is managed through providers. Providers are typically
