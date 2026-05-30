@@ -7,6 +7,9 @@
     "start": "node main.js"
   },
   "packageManager": "pnpm@11.1.2",
+  "dependencies": {
+    "better-sqlite3": ">=12"
+  },
   "engines": {
     "node": "^26.0.0"
   }
