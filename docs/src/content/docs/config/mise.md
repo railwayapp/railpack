@@ -28,7 +28,7 @@ Railpack sets the following mise settings by default in the generated
 | `paranoid` | `true` | Enforces HTTPS and stricter security validation |
 | `trusted_config_paths` | `["/app"]` | Trusts app config files to avoid warnings during build |
 | `idiomatic_version_file_enable_tools` | *(language list)* | Auto-reads version files like `.node-version`, `.python-version`, etc. |
-| `install_before` | `"14d"` | Only resolves tool versions released more than 14 days ago, avoiding newly-released versions that may be broken |
+| `minimum_release_age` | `"14d"` | Mise will omit language, package manager, etc versions released in the last two weeks. You can override this settings in your application's mise configuration. |
 | `node.verify` | `false` | Skips asset signature verification for Node, since recently released versions may not yet have a public key |
 
 ## Customization
