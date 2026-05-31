@@ -28,7 +28,7 @@
  "steps": [
   {
    "assets": {
-    "generated-mise-toml": "[tools]\n  go = \"1.23.5\"\n  node = \"20.18.2\"\n  python = \"3.13.1\"\n\n[settings]\n  idiomatic_version_file_enable_tools = [\"python\", \"node\", \"ruby\", \"elixir\", \"go\", \"java\", \"yarn\"]\n  minimum_release_age = \"14d\"\n  paranoid = true\n  trusted_config_paths = [\"/app\"]\n  [settings.node]\n    verify = false\n"
+    "generated-mise-toml": "[tools]\n  go = \"1.23.5\"\n  node = \"20.18.2\"\n  python = \"3.13.1\"\n\n[settings]\n  idiomatic_version_file_enable_tools = [\"python\", \"node\", \"ruby\", \"elixir\", \"go\", \"java\", \"yarn\"]\n  paranoid = true\n  trusted_config_paths = [\"/app\"]\n  [settings.node]\n    verify = false\n"
    },
    "commands": [
     {

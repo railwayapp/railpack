@@ -52,7 +52,7 @@ func TestNode(t *testing.T) {
 			path:           "../../../examples/node-latest-pnpm-mise-native-deps",
 			detected:       true,
 			packageManager: PackageManagerPnpm,
-			nodeVersion:    "26.1.0",
+			nodeVersion:    "26.2.0",
 			pnpmVersion:    "latest",
 		},
 		{
