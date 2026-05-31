@@ -49,5 +49,4 @@ Manifest constraints (for example `engines.pnpm`) are not resolved with
 npm-style semver. Caret (`^`) and range (`>=`, `<`) notation are simplified to
 the major version only (`^10.34.0` → `10`) before Mise picks a release. This
 is done because Mise does not support compound version constraints right now.
-Use an exact version or `mise.toml` to pin. See also
-[`minimum_release_age`](/config/mise#minimum_release_age).
+Use an exact version or `mise.toml` to pin.
