@@ -328,6 +328,24 @@ The deploy section configures how the container runs:
 | `inputs`       | List of layers for the deploy step (from steps, images, or local files) |
 | `aptPackages`  | List of Apt packages to install in the final image                      |
 
+### Locale
+
+Both the builder and runtime images include `en_US.UTF-8`, but do not set
+`LANG` or `LC_ALL` by default. To enable it at runtime, set them in
+`deploy.variables`:
+
+```json
+"deploy": {
+  "variables": {
+    "LANG": "en_US.UTF-8",
+    "LC_ALL": "en_US.UTF-8"
+  }
+}
+```
+
+You can also set `LANG` and `LC_ALL` in your hosting platform's environment
+configuration.
+
 ## Schema
 
 The schema for the config file is available at https://schema.railpack.com. Add
