@@ -4,69 +4,151 @@
 
 set -euo pipefail
 
-# Find all action usages in workflows
-# Matches `uses: owner/repo@ref`
-# Extract unique repo@ref pairs
-all_actions=$(grep -rE "uses: [^@]+@[^[:space:]]+" .github/workflows | sed -E 's/.*uses: ([^@]+)@([^[:space:]]+)/\1@\2/' | sort -u)
+typeset -g c_reset c_bold c_dim c_green c_yellow c_red c_cyan c_blue
+
+init_colors() {
+  if [[ -t 1 ]] && [[ -z "${NO_COLOR:-}" ]] && [[ "${TERM:-}" != "dumb" ]]; then
+    autoload -U colors && colors
+    c_reset=$reset_color
+    c_bold=$bold_color
+    c_dim=$'\e[2m'
+    c_green=$fg[green]
+    c_yellow=$fg[yellow]
+    c_red=$fg[red]
+    c_cyan=$fg[cyan]
+    c_blue=$fg[blue]
+  else
+    c_reset=''
+    c_bold=''
+    c_dim=''
+    c_green=''
+    c_yellow=''
+    c_red=''
+    c_cyan=''
+    c_blue=''
+  fi
+}
+
+print_rule() {
+  echo "${c_dim}────────────────────────────────────────────────────────${c_reset}"
+}
+
+format_ref() {
+  local ref=$1
+  if [[ ${#ref} -ge 40 ]] && [[ "$ref" =~ ^[0-9a-fA-F]+$ ]]; then
+    echo "${ref:0:7}…"
+  else
+    echo "$ref"
+  fi
+}
+
+prompt_update() {
+  local repo=$1 ref=$2 latest_sha=$3
+  if [[ -t 0 ]] && [[ -r /dev/tty ]]; then
+    echo -n "    ${c_bold}Update${c_reset} ${c_dim}@${ref}${c_reset} ${c_dim}→${c_reset} ${c_cyan}@${latest_sha}${c_reset}? ${c_dim}(y/N)${c_reset} "
+    read -k 1 choice < /dev/tty
+    echo
+    [[ "$choice" == "y" || "$choice" == "Y" ]]
+  else
+    echo "    ${c_dim}(non-interactive: skipped — run in a terminal to apply)${c_reset}"
+    return 1
+  fi
+}
+
+init_colors
+
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
+
+all_actions=$(grep -rE "uses: [^@]+@[^[:space:]]+" .github/workflows 2>/dev/null \
+  | sed -E 's/.*uses: ([^@]+)@([^[:space:]]+)/\1@\2/' \
+  | sort -u)
 
 if [[ -z "$all_actions" ]]; then
-  echo "No GitHub Action usages found."
+  echo "${c_yellow}No GitHub Action usages found in .github/workflows.${c_reset}"
   exit 0
 fi
 
-echo "Checking for updates to GitHub Actions...\n"
+action_count=$(echo "$all_actions" | wc -l | tr -d ' ')
+repo_count=$(echo "$all_actions" | cut -d'@' -f1 | sort -u | wc -l | tr -d ' ')
 
-# Get unique repositories
+echo "${c_bold}GitHub Actions update check${c_reset}"
+echo "${c_dim}${repo_count} action(s), ${action_count} pin(s) in .github/workflows/${c_reset}"
+echo
+
+typeset -i count_ok=0 count_update=0 count_updated=0 count_skipped=0 count_error=0
+
 repos=$(echo "$all_actions" | cut -d'@' -f1 | sort -u)
 
 for repo in ${(f)repos}; do
-  echo "Action: $repo"
-  
+  print_rule
+  echo "${c_bold}${c_cyan}${repo}${c_reset}"
+
   latest_tag=$(gh release view --repo "$repo" --json tagName --jq .tagName 2>/dev/null || true)
   if [[ -z "$latest_tag" ]]; then
     latest_tag=$(gh api "repos/$repo/tags" --jq '.[0].name' 2>/dev/null || true)
   fi
 
   if [[ -z "$latest_tag" ]]; then
-    echo "  Could not find any releases or tags for $repo."
-    echo "----------------------------------------"
+    echo "  ${c_red}✗${c_reset} Could not find releases or tags"
+    count_error=$(( count_error + 1 ))
+    echo
     continue
   fi
 
   latest_sha=$(gh api "repos/$repo/commits/$latest_tag" --header 'Accept: application/vnd.github.sha' 2>/dev/null || true)
 
   if [[ -z "$latest_sha" ]]; then
-    echo "  Latest release: $latest_tag"
-    echo "  Could not find SHA for tag $latest_tag."
-    echo "----------------------------------------"
+    echo "  ${c_dim}Latest tag${c_reset}  ${c_bold}${latest_tag}${c_reset}"
+    echo "  ${c_red}✗${c_reset} Could not resolve SHA for ${latest_tag}"
+    count_error=$(( count_error + 1 ))
+    echo
     continue
   fi
 
-  echo "  Latest release: $latest_tag ($latest_sha)"
+  echo "  ${c_dim}Latest${c_reset}  ${c_bold}${latest_tag}${c_reset}  ${c_dim}→${c_reset}  ${c_blue}$(format_ref "$latest_sha")${c_reset}"
+  echo "           ${c_dim}${latest_sha}${c_reset}"
+  echo
 
   current_refs=$(echo "$all_actions" | grep "^$repo@" | cut -d'@' -f2)
   for ref in ${(f)current_refs}; do
+    local_label="$(format_ref "$ref")"
     if [[ "$ref" == "$latest_sha" ]]; then
-      echo "  - @$ref: UP TO DATE"
+      printf "  ${c_green}✓${c_reset}  %-12s  ${c_green}up to date${c_reset}\n" "@${local_label}"
+      count_ok=$(( count_ok + 1 ))
     else
-      echo "  - @$ref: UPDATE AVAILABLE"
-      echo "    Diff: https://github.com/$repo/compare/$ref...$latest_sha"
-      
-      # Prompt user - reading from /dev/tty to ensure it works even if mise is piping
-      echo -n "    Update all occurrences of @$ref to @$latest_sha? (y/N) "
-      read -k 1 choice < /dev/tty
-      echo
-      
-      if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
-        echo "    Updating..."
-        # We use perl for surgical replacement. \b ensures we match the end of the ref string correctly.
-        # We escape the @ in the regex for perl.
+      printf "  ${c_yellow}↑${c_reset}  %-12s  ${c_yellow}update available${c_reset}\n" "@${local_label}"
+      echo "           ${c_dim}https://github.com/${repo}/compare/${ref}...${latest_sha}${c_reset}"
+      count_update=$(( count_update + 1 ))
+
+      if prompt_update "$repo" "$ref" "$latest_sha"; then
         perl -i -pe "s|uses: $repo\@$ref\b|uses: $repo\@$latest_sha|g" .github/workflows/*.yml
-        echo "    Done."
+        echo "    ${c_green}✓${c_reset} Updated workflow files"
+        count_updated=$(( count_updated + 1 ))
+      elif [[ -t 0 ]] && [[ -r /dev/tty ]]; then
+        echo "    ${c_dim}⊘${c_reset} Skipped"
+        count_skipped=$(( count_skipped + 1 ))
       else
-        echo "    Skipped."
+        count_skipped=$(( count_skipped + 1 ))
       fi
     fi
   done
-  echo "----------------------------------------"
+  echo
 done
+
+print_rule
+echo "${c_bold}Summary${c_reset}"
+echo "  ${c_green}✓${c_reset} ${count_ok} up to date"
+if (( count_update > 0 )); then
+  echo "  ${c_yellow}↑${c_reset} ${count_update} update(s) available"
+fi
+if (( count_updated > 0 )); then
+  echo "  ${c_green}✓${c_reset} ${count_updated} applied"
+fi
+if (( count_skipped > 0 )); then
+  echo "  ${c_dim}⊘${c_reset} ${count_skipped} skipped"
+fi
+if (( count_error > 0 )); then
+  echo "  ${c_red}✗${c_reset} ${count_error} error(s)"
+fi
+echo
