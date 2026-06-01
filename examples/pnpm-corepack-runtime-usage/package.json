@@ -1,0 +1,13 @@
+{
+  "name": "node-pnpm-corepack-runtime",
+  "private": true,
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "packageManager": "pnpm@11.1.2",
+  "engines": {
+    "node": "^26.0.0"
+  }
+}

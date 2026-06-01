@@ -46,7 +46,9 @@
     "include": [
      "/root/.cache",
      ".",
-     "/opt/corepack"
+     "/opt/corepack",
+     "/mise/installs",
+     "/mise/shims"
     ],
     "step": "build"
    }
