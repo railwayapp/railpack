@@ -3,4 +3,7 @@ python = "latest"
 uv = "latest"
 
 [settings]
-minimum_release_age = "14d"
+# this is intentionally different than the default mise config
+# we want to pick up early releases in order to ensure that edge pinned
+# releases still work properly (this could be specified by the user)
+minimum_release_age = "1d"
