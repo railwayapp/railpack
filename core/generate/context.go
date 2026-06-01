@@ -249,6 +249,8 @@ func (c *GenerateContext) applyConfig() {
 		outputFilters := []plan.Filter{plan.NewIncludeFilter([]string{"."})}
 		if configStep.DeployOutputs != nil {
 			outputFilters = configStep.DeployOutputs
+		} else if c.Deploy.HasInputForStep(name) {
+			continue
 		}
 		for _, filter := range outputFilters {
 			alreadyCovered := false
