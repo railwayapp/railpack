@@ -50,10 +50,10 @@ jobs:
         with:
           # we need the full history to determine if the mise version has changed
           fetch-depth: 0
-      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
-      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      - uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3
+      - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5
+      - uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee
         with:
           registry: ${{ env.PRODUCTION_CONTAINER_REGISTRY }}
           username: ${{ github.actor }}
@@ -75,7 +75,7 @@ jobs:
           fi
 
       - name: Build Builder Image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf
         if: steps.mise_version.outputs.changed == 'true'
         with:
           context: images/debian/build
@@ -89,7 +89,7 @@ jobs:
           cache-to: type=inline
 
       - name: Build Runtime Image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf
         if: steps.mise_version.outputs.changed == 'true'
         with:
           context: images/debian/runtime
@@ -110,10 +110,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
 
       - name: Cache Go modules and build artifacts
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           #   ~/.cache/go-build  -> GOCACHE (Compiled build artifacts)
           #   ~/go/pkg/mod       -> GOMODCACHE (Downloaded dependencies)
@@ -126,7 +126,7 @@ jobs:
 
       # not strictly required, but authenticating increases rate limits and reduces 429 errors
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee
         with:
           registry: ${{ env.PRODUCTION_CONTAINER_REGISTRY }}
           username: ${{ github.actor }}
@@ -137,7 +137,7 @@ jobs:
 
       # required for integration tests that use multiple platforms
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
+        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3
 
       - name: Run test for ${{ matrix.example }}
         env:
@@ -151,7 +151,7 @@ jobs:
 
       - name: Upload size.json
         if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: size-x86-${{ matrix.example }}
           path: examples/${{ matrix.example }}/size.json
@@ -173,10 +173,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
 
       - name: Cache Go modules and build artifacts
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: |
             ~/.cache/go-build
@@ -187,7 +187,7 @@ jobs:
             go-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock') }}-
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee
         with:
           registry: ${{ env.PRODUCTION_CONTAINER_REGISTRY }}
           username: ${{ github.actor }}
@@ -198,7 +198,7 @@ jobs:
 
       # QEMU provides x86 emulation on this ARM runner for any cross-platform build steps
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
+        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3
 
       - name: Run test for ${{ matrix.example }}
         env:
@@ -210,7 +210,7 @@ jobs:
 
       - name: Upload size.json
         if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: size-arm-${{ matrix.example }}
           path: examples/${{ matrix.example }}/size.json
@@ -237,7 +237,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Download all size artifacts
-        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         # each artifact lands in its own size-{x86,arm}-<example>/ directory
         with:
           pattern: size-*
@@ -253,7 +253,7 @@ jobs:
           jq -s 'add | sort_by(.name) | map({name, unit: "bytes", value: .size})' x86.json arm.json > benchmark.json
 
       - name: Store benchmark results
-        uses: benchmark-action/github-action-benchmark@a7bc2366eda11037936ea57d811a43b3418d3073
+        uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba
         with:
           tool: customSmallerIsBetter
           output-file-path: benchmark.json

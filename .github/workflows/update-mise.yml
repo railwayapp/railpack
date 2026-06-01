@@ -16,11 +16,11 @@ jobs:
   update-mise:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
 
-      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
 
       # We manually configure the git user here to support the mise-upgrade script
       # which handles the commit and PR creation. This keeps the script as the
