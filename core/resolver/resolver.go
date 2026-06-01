@@ -78,6 +78,7 @@ func (r *Resolver) ResolvePackages() (map[string]*ResolvedPackage, error) {
 		var latestVersion string
 
 		// If there is a custom version validator, we get possible versions and pick the latest one that matches
+		// Ex: this is used with PHP to match against a available runtime available on docker hub
 		if pkg.IsVersionAvailable != nil {
 			versions, err := r.mise.GetAllVersions(name, fuzzyVersion)
 			if err != nil {
