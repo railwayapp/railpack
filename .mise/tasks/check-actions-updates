@@ -1,0 +1,72 @@
+#!/usr/bin/env zsh
+# Description: check and interactively update all used GitHub Actions.
+# Matches both SHA-pinned (@sha) and tag-pinned (@v3) actions.
+
+set -euo pipefail
+
+# Find all action usages in workflows
+# Matches `uses: owner/repo@ref`
+# Extract unique repo@ref pairs
+all_actions=$(grep -rE "uses: [^@]+@[^[:space:]]+" .github/workflows | sed -E 's/.*uses: ([^@]+)@([^[:space:]]+)/\1@\2/' | sort -u)
+
+if [[ -z "$all_actions" ]]; then
+  echo "No GitHub Action usages found."
+  exit 0
+fi
+
+echo "Checking for updates to GitHub Actions...\n"
+
+# Get unique repositories
+repos=$(echo "$all_actions" | cut -d'@' -f1 | sort -u)
+
+for repo in ${(f)repos}; do
+  echo "Action: $repo"
+  
+  latest_tag=$(gh release view --repo "$repo" --json tagName --jq .tagName 2>/dev/null || true)
+  if [[ -z "$latest_tag" ]]; then
+    latest_tag=$(gh api "repos/$repo/tags" --jq '.[0].name' 2>/dev/null || true)
+  fi
+
+  if [[ -z "$latest_tag" ]]; then
+    echo "  Could not find any releases or tags for $repo."
+    echo "----------------------------------------"
+    continue
+  fi
+
+  latest_sha=$(gh api "repos/$repo/commits/$latest_tag" --header 'Accept: application/vnd.github.sha' 2>/dev/null || true)
+
+  if [[ -z "$latest_sha" ]]; then
+    echo "  Latest release: $latest_tag"
+    echo "  Could not find SHA for tag $latest_tag."
+    echo "----------------------------------------"
+    continue
+  fi
+
+  echo "  Latest release: $latest_tag ($latest_sha)"
+
+  current_refs=$(echo "$all_actions" | grep "^$repo@" | cut -d'@' -f2)
+  for ref in ${(f)current_refs}; do
+    if [[ "$ref" == "$latest_sha" ]]; then
+      echo "  - @$ref: UP TO DATE"
+    else
+      echo "  - @$ref: UPDATE AVAILABLE"
+      echo "    Diff: https://github.com/$repo/compare/$ref...$latest_sha"
+      
+      # Prompt user - reading from /dev/tty to ensure it works even if mise is piping
+      echo -n "    Update all occurrences of @$ref to @$latest_sha? (y/N) "
+      read -k 1 choice < /dev/tty
+      echo
+      
+      if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
+        echo "    Updating..."
+        # We use perl for surgical replacement. \b ensures we match the end of the ref string correctly.
+        # We escape the @ in the regex for perl.
+        perl -i -pe "s|uses: $repo\@$ref\b|uses: $repo\@$latest_sha|g" .github/workflows/*.yml
+        echo "    Done."
+      else
+        echo "    Skipped."
+      fi
+    fi
+  done
+  echo "----------------------------------------"
+done
