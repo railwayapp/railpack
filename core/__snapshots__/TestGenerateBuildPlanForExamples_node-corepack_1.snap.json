@@ -13,7 +13,7 @@
    "type": "shared"
   },
   "pnpm-install": {
-   "directory": "/root/.local/share/pnpm/store/v3",
+   "directory": "/opt/pnpm/store",
    "type": "shared"
   }
  },
@@ -138,7 +138,9 @@
     "NODE_ENV": "production",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",
-    "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+    "NPM_CONFIG_UPDATE_NOTIFIER": "false",
+    "PNPM_HOME": "/opt/pnpm",
+    "PNPM_STORE_DIR": "/opt/pnpm/store"
    }
   },
   {

@@ -20,7 +20,8 @@ const (
 	PackageManagerYarnBerry PackageManager = "yarnberry"
 
 	DEFAULT_PNPM_VERSION = "9"
-	PNPM_HOME            = "/pnpm"
+	PNPM_HOME            = "/opt/pnpm"
+	PNPM_STORE_DIR       = PNPM_HOME + "/store"
 )
 
 func (p PackageManager) Name() string {
@@ -110,7 +111,7 @@ func (p PackageManager) GetInstallCache(ctx *generate.GenerateContext) string {
 	case PackageManagerNpm:
 		return ctx.Caches.AddCache("npm-install", "/root/.npm")
 	case PackageManagerPnpm:
-		return ctx.Caches.AddCache("pnpm-install", "/root/.local/share/pnpm/store/v3")
+		return ctx.Caches.AddCache("pnpm-install", PNPM_STORE_DIR)
 	case PackageManagerBun:
 		return ctx.Caches.AddCache("bun-install", "/root/.bun/install/cache")
 	case PackageManagerYarn1:
@@ -134,6 +135,11 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 			install.AddCommand(plan.NewExecCommand("npm install"))
 		}
 	case PackageManagerPnpm:
+		install.AddEnvVars(map[string]string{
+			"PNPM_HOME":      PNPM_HOME,
+			"PNPM_STORE_DIR": PNPM_STORE_DIR,
+		})
+
 		// pnpm (standalone) does not bundle node-gyp like npm does, so we must install it globally
 		// to support packages with native dependencies (e.g., better-sqlite3, bcrypt, etc.)
 		// Only needed when using mise to install pnpm (not corepack, which includes node-gyp)
@@ -145,10 +151,6 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 				pnpmBinPath = PNPM_HOME + "/bin"
 			}
 
-			// Set PNPM_HOME so pnpm can create a global bin directory for node-gyp
-			install.AddEnvVars(map[string]string{
-				"PNPM_HOME": PNPM_HOME,
-			})
 			// binaries are installed in the /bin subpath. If this is not added to PATH `pnpm add -g` will fail
 			install.AddPaths([]string{pnpmBinPath})
 			install.AddCommand(plan.NewExecCommand("pnpm add -g node-gyp"))
