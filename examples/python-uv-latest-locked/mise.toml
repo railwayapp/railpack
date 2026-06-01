@@ -1,0 +1,6 @@
+[tools]
+python = "latest"
+uv = "latest"
+
+[settings]
+minimum_release_age = "14d"

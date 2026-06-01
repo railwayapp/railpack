@@ -1,0 +1,6 @@
+[project]
+name = "python-uv-latest-locked"
+version = "0.1.0"
+description = "Verify latest python/uv with minimum_release_age and mise.lock"
+requires-python = ">=3.11"
+dependencies = []
