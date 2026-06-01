@@ -22,6 +22,8 @@ const (
 	InstallDir                = "/tmp/railpack/mise"
 	TestInstallDir            = "/tmp/railpack/mise-test"
 	IdiomaticVersionFileTools = "python,node,ruby,elixir,go,java,yarn"
+	// applied only to the first GetLatestVersion check to skip very recent releases
+	MinimumReleaseAge = "14d"
 )
 
 type Mise struct {
@@ -61,14 +63,25 @@ func (m *Mise) GetLatestVersion(pkg, version string) (string, error) {
 	semverVersion := utils.ExtractSemverVersion(version)
 	query := fmt.Sprintf("%s@%s", pkg, semverVersion)
 
-	// Try with extracted semver version first
-	output, err := m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1", "MISE_PARANOID=1"}, "latest", query)
+	baseEnv := []string{"MISE_NO_CONFIG=1", "MISE_PARANOID=1"}
+	minAgeEnv := append([]string{fmt.Sprintf("MISE_MINIMUM_RELEASE_AGE=%s", MinimumReleaseAge)}, baseEnv...)
+
+	// Prefer versions older than MinimumReleaseAge when resolving fuzzy constraints
+	output, err := m.runCmdWithEnv(minAgeEnv, "latest", query)
+
+	// Fall back without the age filter if nothing matched
+	// this occurs when a user locks to a specific version on their host which does not have a minimum version constraint
+	// NOTE as of 2026-06-01 `latest` on macOS vs linux has a different result when MISE_MINIMUM_RELEASE_AGE is specified. macOS seems to ignore
+	// this completely (at least, on the uv backend).
+	if err != nil || strings.TrimSpace(output) == "" {
+		output, err = m.runCmdWithEnv(baseEnv, "latest", query)
+	}
 
 	// If semver extraction fails, try with original version
 	// https://github.com/railwayapp/railpack/issues/203
 	if (err != nil || strings.TrimSpace(output) == "") && semverVersion != version {
 		query = fmt.Sprintf("%s@%s", pkg, version)
-		output, err = m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1", "MISE_PARANOID=1"}, "latest", query)
+		output, err = m.runCmdWithEnv(baseEnv, "latest", query)
 	}
 
 	if err != nil {
