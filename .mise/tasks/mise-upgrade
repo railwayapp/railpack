@@ -113,6 +113,13 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
   git commit -m "style: fix formatting"
 fi
 
+echo "Updating test files..."
+mise --cd examples/python-uv-latest-locked upgrade --local
+if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+  git add examples/python-uv-latest-locked
+  git commit -m "test: update mise lock with latest version"
+fi
+
 # Push the branch (needed in CI and good practice locally)
 git push -u origin "$branch"
 
