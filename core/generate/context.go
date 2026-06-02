@@ -206,6 +206,10 @@ func (c *GenerateContext) applyConfig() {
 
 	// Update deploy from config
 	if c.Config.Deploy != nil {
+		if c.Config.Deploy.Base != nil && !c.Config.Deploy.Base.IsEmpty() {
+			c.Deploy.Base = *c.Config.Deploy.Base
+		}
+
 		if c.Config.Deploy.StartCmd != "" {
 			c.Deploy.StartCmd = c.Config.Deploy.StartCmd
 		}
