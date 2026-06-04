@@ -308,6 +308,8 @@ func getCompatibleErlangVersion(elixirVersion string) string {
 		return "27"
 	case "1.19":
 		return "28"
+	case "1.20":
+		return "29"
 	default:
 		return DEFAULT_ERLANG_VERSION
 	}
