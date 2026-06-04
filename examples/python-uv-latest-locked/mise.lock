@@ -15,8 +15,8 @@ url = "https://github.com/astral-sh/python-build-standalone/releases/download/20
 provenance = "github-attestations"
 
 [tools.python."platforms.linux-x64"]
-checksum = "sha256:dc10977b0db3bef1ee2275107fde6fe9c148135b556fa352e83c6baa67d17ed6"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260510/cpython-3.14.5+20260510-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
+checksum = "blake3:af8568d9c2dfa6b4b5a1ad44e2ffe67219fcd090818e64a7a8a71148c0f595bc"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5+20260602-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [tools.python."platforms.linux-x64-musl"]
@@ -40,5 +40,5 @@ url = "https://github.com/astral-sh/python-build-standalone/releases/download/20
 provenance = "github-attestations"
 
 [[tools.uv]]
-version = "0.11.17"
+version = "0.11.19"
 backend = "asdf:uv"
