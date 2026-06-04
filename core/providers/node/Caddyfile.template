@@ -44,6 +44,6 @@
 		zstd
 	}
 
-	# Try files with HTML extension and handle SPA routing
-	try_files {path} {path}.html {path}/index.html /index.html
+	# Try files with HTML extension{{if .IndexFallback}} and handle SPA routing{{end}}
+	try_files {path} {path}.html {path}/index.html{{if .IndexFallback}} /index.html{{end}}
 }
