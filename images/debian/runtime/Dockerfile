@@ -7,4 +7,5 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     pkg-config \
     openssl \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*

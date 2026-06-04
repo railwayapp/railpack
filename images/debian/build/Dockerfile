@@ -75,6 +75,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     ssh \
     rsync \
+    tzdata \
     locales && \
     rm -rf /var/lib/apt/lists/*
 
