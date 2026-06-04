@@ -146,12 +146,18 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 		if !usingCorepack {
 			pnpmBinPath := PNPM_HOME
 
-			// newer versions of pnpm use a different bin directory
-			if requestedPnpm := ctx.Resolver.Get("pnpm"); requestedPnpm != nil && usesPnpmBinSubdir(requestedPnpm.Version) {
+			// pnpm 11+ installs global bins under PNPM_HOME/bin.
+			//
+			// We compare against the mise-resolved version rather than the requested one solely to handle
+			// the Node ecosystem's "x-range" engines notation (e.g. `engines.pnpm: "11.5.x"`), which is not
+			// valid semver and so cannot be parsed directly. Mise resolves it to a concrete version
+			// (e.g. "11.5.1") that we can compare. For any other source (exact version, mise.toml, etc.)
+			// resolving vs. using the requested string would yield the same result.
+			if usesPnpmBinSubdir(resolvePnpmVersion(ctx)) {
 				pnpmBinPath = PNPM_HOME + "/bin"
 			}
 
-			// binaries are installed in the /bin subpath. If this is not added to PATH `pnpm add -g` will fail
+			// The path must be added before `pnpm add -g`, otherwise pnpm errors that the global bin dir is not in PATH
 			install.AddPaths([]string{pnpmBinPath})
 			install.AddCommand(plan.NewExecCommand("pnpm add -g node-gyp"))
 		}
@@ -171,7 +177,7 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 	}
 }
 
-// pnpm <= 11 used PNPM_HOME for bins, but pnpm 11+ uses a "bin" subdirectory within the PNPM_HOME directory
+// pnpm < 11 used PNPM_HOME for bins; pnpm 11+ uses a "bin" subdirectory within PNPM_HOME
 func usesPnpmBinSubdir(version string) bool {
 	version = strings.TrimSpace(version)
 	if version == "" {
@@ -188,6 +194,29 @@ func usesPnpmBinSubdir(version string) bool {
 	}
 
 	return pnpmVersion.Compare(pnpmPathLayoutVersion) >= 0
+}
+
+// resolvePnpmVersion returns the mise-resolved pnpm version (e.g. "11.5.1").
+//
+// This exists only to normalize the Node ecosystem's x-range engines notation (e.g. "11.5.x") into a
+// concrete semver. We let mise do the resolution instead of reimplementing npm's range semantics ourselves.
+// Falls back to the requested version string if resolution fails; the real error is surfaced later when
+// the context resolves packages for the plan.
+//
+// Some build configuration depends on the exact pnpm version that exists, which is why this is critical.
+// TODO we should make this a generic function with a mise tool name param
+func resolvePnpmVersion(ctx *generate.GenerateContext) string {
+	if pkgs, err := ctx.Resolver.ResolvePackages(); err == nil {
+		if pnpm, ok := pkgs["pnpm"]; ok && pnpm.ResolvedVersion != nil {
+			return *pnpm.ResolvedVersion
+		}
+	}
+
+	if requested := ctx.Resolver.Get("pnpm"); requested != nil {
+		return requested.Version
+	}
+
+	return ""
 }
 
 func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {

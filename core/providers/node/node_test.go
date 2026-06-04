@@ -285,6 +285,11 @@ func TestUsesPnpmBinSubdir(t *testing.T) {
 			version: "workspace:^",
 			want:    false,
 		},
+		{
+			name:    "resolved mise version",
+			version: "11.5.1",
+			want:    true,
+		},
 	}
 
 	for _, tt := range tests {
