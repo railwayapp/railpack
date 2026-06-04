@@ -1,0 +1,19 @@
+[
+  {
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 80,
+      "expectedOutput": "HI I'M THE HOME PAGE"
+    }
+  },
+  {
+    // Reproduces https://github.com/railwayapp/railpack/issues/553
+    // Staticfile index_fallback: false should return 404 for unknown paths (not index.html)
+    "httpCheck": {
+      "path": "/21312",
+      "expected": 404,
+      "internalPort": 80
+    }
+  }
+]
