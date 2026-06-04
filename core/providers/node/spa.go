@@ -7,6 +7,7 @@ import (
 
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	"github.com/railwayapp/railpack/core/providers/staticfile"
 )
 
 const (
@@ -77,8 +78,15 @@ func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.
 	ctx.Logger.LogInfo("Deploying as %s static site", spaFramework)
 	ctx.Logger.LogInfo("Output directory: %s", outputDir)
 
+	// on node SPA apps, we want to default all paths to use the index
+	indexFallback := true
+	if indexFallbackConfig := staticfile.IndexFallbackFromStaticfile(ctx); indexFallbackConfig != nil {
+		indexFallback = *indexFallbackConfig
+	}
+
 	data := map[string]any{
-		"DIST_DIR": path.Join("/app", outputDir),
+		"DIST_DIR":      path.Join("/app", outputDir),
+		"IndexFallback": indexFallback,
 	}
 
 	caddyfileTemplate, err := ctx.TemplateFiles([]string{"Caddyfile.template", "Caddyfile"}, caddyfileTemplate, data)
