@@ -143,11 +143,20 @@ func getRootDir(ctx *generate.GenerateContext) (string, error) {
 	return "", fmt.Errorf("no static file root dir found")
 }
 
-func getIndexFallback(ctx *generate.GenerateContext) bool {
-	// TODO we probably want to add a ENV var for this config option in the future
+// IndexFallbackFromStaticfile returns index_fallback from a Staticfile when explicitly set.
+func IndexFallbackFromStaticfile(ctx *generate.GenerateContext) *bool {
 	config, err := getStaticfileConfig(ctx)
 	if config != nil && err == nil && config.IndexFallback != nil {
-		return *config.IndexFallback
+		return config.IndexFallback
+	}
+
+	return nil
+}
+
+func getIndexFallback(ctx *generate.GenerateContext) bool {
+	// TODO we probably want to add a ENV var for this config option in the future
+	if indexFallback := IndexFallbackFromStaticfile(ctx); indexFallback != nil {
+		return *indexFallback
 	}
 
 	return false
