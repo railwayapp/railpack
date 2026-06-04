@@ -1,0 +1,17 @@
+{
+  "name": "node-pnpm-11-engines",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Reproduces railpack#577: pnpm 11 via engines (mise) fails on pnpm add -g node-gyp when engines uses .x notation",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "engines": {
+    "node": "24.16.0",
+    "pnpm": "11.5.x"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
