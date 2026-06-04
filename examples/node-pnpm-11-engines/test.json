@@ -1,0 +1,9 @@
+[
+  {
+    "expectedOutput": [
+      "Node.js version: v24.16.0",
+      "PNPM version (from CLI): v11."
+    ],
+    "stderrAllowed": true
+  }
+]
