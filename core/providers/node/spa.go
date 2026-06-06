@@ -27,6 +27,13 @@ func (p *NodeProvider) isSPA(ctx *generate.GenerateContext) bool {
 		return true
 	}
 
+	// Expo SPA detection is driven by explicit web config (expo.web.output =
+	// "static" + react-native-web), so it is unambiguous even when the project
+	// keeps a custom start command for local dev or testing.
+	if p.isExpoSPA(ctx) {
+		return true
+	}
+
 	// If there is a custom start command, we don't want to deploy with Caddy as an SPA
 	if p.hasCustomStartCommand(ctx) {
 		return false
@@ -56,6 +63,8 @@ func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
 		return "CRA"
 	} else if p.isAngular(ctx) {
 		return "Angular"
+	} else if p.isExpoSPA(ctx) {
+		return "expo"
 	}
 
 	return ""
@@ -137,6 +146,8 @@ func (p *NodeProvider) getOutputDirectory(ctx *generate.GenerateContext) string 
 		outputDir = p.getCRAOutputDirectory(ctx)
 	} else if p.isAngular(ctx) {
 		outputDir = p.getAngularOutputDirectory(ctx)
+	} else if p.isExpoSPA(ctx) {
+		outputDir = p.getExpoOutputDirectory(ctx)
 	}
 
 	return outputDir

@@ -17,6 +17,7 @@ func TestVite(t *testing.T) {
 		isCRA         bool
 		isAngular     bool
 		isReactRouter bool
+		isExpo        bool
 		outputDir     string
 	}{
 		{
@@ -81,6 +82,13 @@ func TestVite(t *testing.T) {
 			isReactRouter: true,
 			outputDir:     "build/client/",
 		},
+		{
+			name:      "expo-spa",
+			path:      "../../../examples/expo-spa",
+			isSPA:     true,
+			isExpo:    true,
+			outputDir: "dist",
+		},
 	}
 
 	for _, tt := range tests {
@@ -107,6 +115,9 @@ func TestVite(t *testing.T) {
 
 			isReactRouter := provider.isReactRouter(ctx)
 			require.Equal(t, tt.isReactRouter, isReactRouter)
+
+			isExpo := provider.isExpoSPA(ctx)
+			require.Equal(t, tt.isExpo, isExpo)
 
 			if tt.isSPA {
 				require.Equal(t, tt.outputDir, provider.getOutputDirectory(ctx))
@@ -144,6 +155,13 @@ func TestHasCustomStartCommand(t *testing.T) {
 		{
 			name: "npm",
 			path: "../../../examples/node-npm",
+			want: true,
+		},
+		{
+			// Expo keeps "expo start" as its start command, which counts as custom.
+			// SPA detection still triggers via the explicit web config signals.
+			name: "expo-spa",
+			path: "../../../examples/expo-spa",
 			want: true,
 		},
 	}
