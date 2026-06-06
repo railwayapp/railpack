@@ -9,20 +9,26 @@ differences being:
 - Environment variables are saved in the final image and should not contain
   sensitive information. Since they are in the final image, providers can add
   variables that will be available to the app at runtime.
-- Secrets are never logged or saved in the build logs. They are also only
-  available at build time and not saved to the final image.
+- Secrets are environment variables which never logged or saved in the build logs. They are also *only*
+  available at build time and not saved to the final image (and therefore not available at runtime).
+
+Some examples of where you might use each:
+
+- **Environment Variables**: `NODE_ENV`, `PYTHON_ENV`, `TZ`, etc.
+- **Secrets**: `SENTRY_AUTH_TOKEN` (used to report a new build to Sentry, but not required at runtime). Or an API key used to collect static assets during the build. *Do not* include `DATABASE_URL`, `STRIPE_API_KEY`, or other secrets required at runtime here (unless you need them at build time).
 
 ## Environment Variables
 
-Environment variables can be set in two ways:
+Environment variables can be set in a couple ways:
 
-1. Through step variables:
+1. Through step variables. In this case, the variable is available only during that
+   step:
 
 ```json
 {
   "steps": {
     "install": {
-      "variables": {
+      "env": {
         "NODE_ENV": "production"
       }
     }
@@ -30,14 +36,25 @@ Environment variables can be set in two ways:
 }
 ```
 
-2. Through the deploy section for runtime variables:
+2. Through the deploy section for runtime variables. These variables are only available at runtime and will not be set during the build:
 
 ```json
 {
   "deploy": {
-    "variables": {
+    "env": {
       "NODE_ENV": "production"
     }
+  }
+}
+```
+
+3. Through the top-level `variables` field. These variables are available during all steps of
+   the build *and* at runtime:
+
+```json
+{
+  "env": {
+    "TZ": "America/Los_Angeles"
   }
 }
 ```
@@ -87,7 +104,7 @@ access to all secrets defined in the build plan:
 
 ### Providing Secrets
 
-You can add secrets when building or generating a build plan with the `--env`
+You can add secrets when building or generating a build plan with the `--secret`
 flag. The names of these variables will be added to the build plan as secrets.
 
 #### CLI Build
@@ -96,7 +113,13 @@ If building with [the CLI](/guides/building-with-cli), Railpack will check that
 all the secrets defined in the build plan have variables.
 
 ```bash
-railpack build --env STRIPE_LIVE_KEY=sk_live_asdf
+railpack build --secret SENTRY_AUTH_TOKEN=sk_live_asdf
+```
+
+You can also provide environment variables with the `--env` flag. These will available to all steps and in the final image (using `railpack.json` if you need to customize when a environment variable is available).
+
+```bash
+railpack build --env TZ=UTC --secret SENTRY_AUTH_TOKEN=sk_live_asdf
 ```
 
 #### Custom Frontend
@@ -108,13 +131,13 @@ or BuildKit with the `--secret` flag.
 
 ```bash
 # Generate a build plan
-railpack plan --env STRIPE_LIVE_KEY=sk_live_asdf --out test/railpack-plan.json
+railpack plan --secret STRIPE_LIVE_KEY=sk_live_asdf --out railpack-plan.json
 
 # Build with the custom frontend
-STRIPE_LIVE_KEY=asdf123456789 docker build \
+SENTRY_AUTH_TOKEN=asdf123456789 docker build \
   --build-arg BUILDKIT_SYNTAX="ghcr.io/railwayapp/railpack:railpack-frontend" \
-  -f test/railpack-plan.json \
-  --secret id=STRIPE_LIVE_KEY,env=STRIPE_LIVE_KEY \
+  -f railpack-plan.json \
+  --secret id=SENTRY_AUTH_TOKEN,env=SENTRY_AUTH_TOKEN \
   --build-arg secrets-hash=asdfasdf \
   examples/node-bun
 ```
