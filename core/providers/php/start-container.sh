@@ -10,7 +10,6 @@ if [ "$IS_LARAVEL" = "true" ]; then
   fi
 
   php artisan storage:link
-  php artisan optimize:clear
   php artisan optimize
 
   echo "Starting Laravel server ..."
