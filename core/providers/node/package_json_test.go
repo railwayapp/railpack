@@ -13,6 +13,23 @@ func TestPackageJson(t *testing.T) {
 		assert.Equal(t, packageJson.HasScript("start"), false)
 		assert.Equal(t, packageJson.GetScript("build"), "")
 		assert.Equal(t, packageJson.hasDependency("react"), false)
+		assert.False(t, packageJson.HasBin())
+	})
+
+	t.Run("bin field", func(t *testing.T) {
+		t.Run("string bin", func(t *testing.T) {
+			var packageJson PackageJson
+			err := json.Unmarshal([]byte(`{"bin": "./cli.js"}`), &packageJson)
+			assert.NoError(t, err)
+			assert.True(t, packageJson.HasBin())
+		})
+
+		t.Run("object bin", func(t *testing.T) {
+			var packageJson PackageJson
+			err := json.Unmarshal([]byte(`{"bin": {"hello-cli": "./bin/hello.js"}}`), &packageJson)
+			assert.NoError(t, err)
+			assert.True(t, packageJson.HasBin())
+		})
 	})
 
 	t.Run("full package.json", func(t *testing.T) {
