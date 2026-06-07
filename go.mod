@@ -22,7 +22,7 @@ require (
 	github.com/stretchr/objx v0.5.3
 	github.com/stretchr/testify v1.11.1
 	github.com/tailscale/hujson v0.0.0-20260302212456-ecc657c15afd
-	github.com/tonistiigi/fsutil v0.0.0-20260603212341-ed540e182f8a
+	github.com/tonistiigi/fsutil v0.0.0-20260605065046-8e8fbeee8226
 	github.com/urfave/cli/v3 v3.9.0
 	gopkg.in/yaml.v2 v2.4.0
 	mvdan.cc/sh/v3 v3.13.1
