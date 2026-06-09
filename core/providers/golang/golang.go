@@ -44,13 +44,10 @@ func (p *GoProvider) Plan(ctx *generate.GenerateContext) error {
 
 	ctx.Deploy.StartCmd = fmt.Sprintf("./%s", GO_BINARY_NAME)
 
-	runtimePkgs := []string{"tzdata"}
 	if p.hasCGOEnabled(ctx) {
 		ctx.Logger.LogInfo("CGO is enabled")
-		runtimePkgs = append(runtimePkgs, "libc6")
+		ctx.Deploy.AddAptPackages([]string{"libc6"})
 	}
-
-	ctx.Deploy.AddAptPackages(runtimePkgs)
 	ctx.Deploy.AddInputs([]plan.Layer{
 		plan.NewStepLayer(build.Name(), plan.Filter{
 			Include: []string{"."},
