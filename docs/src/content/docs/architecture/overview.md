@@ -123,6 +123,11 @@ compile time, derived from a single pinned mise version in
 - **Runtime image** (`ghcr.io/railwayapp/railpack-runtime:mise-<version>`):
   a minimal Debian image used as the base for the final output image.
 
+Both images include the `en_US.UTF-8` locale (generated at image build time).
+Railpack does not set `LANG` or `LC_ALL` by default; set them yourself if your
+application needs a UTF-8 locale (for example Python or Ruby apps that call
+`locale.setlocale`).
+
 Because the image tags are pinned to the mise version, upgrading Railpack
 automatically uses the corresponding builder and runtime images. There is no
 `latest` tag ambiguity — a given binary always references the same images.
