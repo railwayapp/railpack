@@ -208,6 +208,14 @@ func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 		if p.isNext() {
 			build.AddVariables(map[string]string{"NEXT_TELEMETRY_DISABLED": "1"})
 		}
+	} else if p.isExpoSPA(ctx) {
+		// The default Expo template has no build script, so to stay zero-config
+		// we export the static web bundle ourselves. The expo CLI is installed
+		// as a local dependency, so it resolves from node_modules/.bin.
+		build.AddPaths([]string{"/app/node_modules/.bin"})
+		build.AddCommands([]plan.Command{
+			plan.NewExecCommand(ExpoWebExportCommand),
+		})
 	}
 
 	p.addCachesToBuildStep(ctx, build)
@@ -594,6 +602,8 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 			return "angular"
 		} else if p.isReactRouter(ctx) {
 			return "react-router"
+		} else if p.isExpoSPA(ctx) {
+			return "expo"
 		}
 
 		return "static"
