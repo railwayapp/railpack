@@ -56,3 +56,14 @@ Railpack uses a custom
 [Caddyfile](https://github.com/railwayapp/railpack/blob/main/core/providers/staticfile/Caddyfile.template)
 that is used to serve the static files. You can overwrite this file with your
 own Caddyfile at the root of your project.
+
+The default Caddyfile includes:
+
+- Security headers (`X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy`, `Permissions-Policy`, `Strict-Transport-Security`)
+- Gzip and Zstandard compression
+- Health check endpoint at `/health` (returning 200)
+- Custom error pages: if a `404.html` (or `500.html`, etc.) exists in your
+  root directory, it will be served automatically for the matching error code
+- Clean URL support (requests for `/about` will serve `about.html` if it
+  exists)
