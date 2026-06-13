@@ -15,6 +15,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var ErrNoFileFound = errors.New("unable to find a matching file")
+
 type App struct {
 	Source    string
 	globCache map[string][]string
@@ -140,6 +142,24 @@ func (a *App) FindFilesWithContent(pattern string, regex *regexp.Regexp) []strin
 	}
 
 	return matches
+}
+
+// ReadFirstFileOf reads the contents of the first file that exists within the application source directory
+func (a *App) ReadFirstFileOf(names ...string) (string, string, error) {
+	for _, name := range names {
+		if !a.HasFile(name) {
+			continue
+		}
+
+		contents, err := a.ReadFile(name)
+		if err != nil {
+			return "", "", err
+		}
+
+		return name, contents, nil
+	}
+
+	return "", "", ErrNoFileFound
 }
 
 // ReadFile reads the contents of a file within the application source directory
