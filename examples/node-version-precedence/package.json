@@ -1,5 +1,5 @@
 {
-  "name": "node-subfolder-node-version",
+  "name": "node-version-precedence",
   "version": "1.0.0",
   "private": true,
   "scripts": {
