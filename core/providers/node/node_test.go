@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
@@ -18,6 +19,7 @@ func TestNode(t *testing.T) {
 		packageManager PackageManager
 		nodeVersion    string
 		pnpmVersion    string
+		envVars        map[string]string
 	}{
 		{
 			name:           "npm",
@@ -62,6 +64,14 @@ func TestNode(t *testing.T) {
 			packageManager: PackageManagerNpm,
 		},
 		{
+			name:           "railpack node version overrides engines",
+			path:           "../../../examples/node-subfolder-node-version",
+			detected:       true,
+			packageManager: PackageManagerNpm,
+			nodeVersion:    "22",
+			envVars:        map[string]string{"RAILPACK_NODE_VERSION": "22"},
+		},
+		{
 			name:     "golang",
 			path:     "../../../examples/go-mod",
 			detected: false,
@@ -71,6 +81,10 @@ func TestNode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := testingUtils.CreateGenerateContext(t, tt.path)
+			if tt.envVars != nil {
+				envVars := tt.envVars
+				ctx.Env = app.NewEnvironment(&envVars)
+			}
 			provider := NodeProvider{}
 			detected, err := provider.Detect(ctx)
 			require.NoError(t, err)
