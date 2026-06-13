@@ -1,0 +1,10 @@
+[
+  {
+    // Reproduces railpack#584: pnpm install runs before workspace source files are
+    // copied, so package-a's bin is not linked for package-b's build script.
+    "expectedOutput": [
+      "Hello from package-a"
+    ],
+    "stderrAllowed": true
+  }
+]
