@@ -3,6 +3,7 @@ package generate
 import (
 	"fmt"
 	"maps"
+	"os"
 	"slices"
 	"sort"
 	"strings"
@@ -80,6 +81,22 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 
 		log.Debugf("Dockerignore exclude patterns: %v", dockerignoreCtx.Excludes)
 		log.Debugf("Dockerignore include patterns: %v", dockerignoreCtx.Includes)
+	}
+
+	// Init env map to avoid nil panics in mocked tests.
+	if env == nil {
+		env = a.NewEnvironment(nil)
+	} else if env.Variables == nil {
+		env.Variables = make(map[string]string)
+	}
+
+	// Preserve host RAILPACK_* overrides when resolving sub-folder configs.
+	if hostEnv, err := a.FromEnvs(os.Environ()); err == nil && hostEnv != nil {
+		for k, v := range hostEnv.Variables {
+			if strings.HasPrefix(k, "RAILPACK_") {
+				env.SetVariable(k, v)
+			}
+		}
 	}
 
 	ctx := &GenerateContext{

@@ -312,12 +312,14 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 // resolve node version selection which is used both for node runtime *and* when bun is used but node is required for
 // build or runtime.
 func (p *NodeProvider) applyNodeVersionResolution(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder, nodeToolRef resolver.PackageRef) {
-	if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
-		miseStep.Version(nodeToolRef, envVersion, varName)
-	}
-
+	// Check package.json first.
 	if p.packageJson != nil && p.packageJson.Engines != nil && p.packageJson.Engines["node"] != "" {
 		miseStep.Version(nodeToolRef, p.packageJson.Engines["node"], "package.json > engines > node")
+	}
+
+	// Env override.
+	if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
+		miseStep.Version(nodeToolRef, envVersion, varName)
 	}
 }
 
