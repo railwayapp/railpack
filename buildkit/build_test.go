@@ -1,6 +1,7 @@
 package buildkit
 
 import (
+	"maps"
 	"path/filepath"
 	"testing"
 )
@@ -48,6 +49,51 @@ func TestGetImageName(t *testing.T) {
 			got := getImageName(tt.appDir)
 			if got != tt.expected {
 				t.Errorf("getImageName(%q) = %q, want %q", tt.appDir, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestExtractCacheType(t *testing.T) {
+	tests := []struct {
+		name          string
+		input         string
+		expectedType  string
+		expectedAttrs map[string]string
+	}{
+		{
+			name:         "registry cache type is extracted",
+			input:        "type=registry,ref=localhost:5555/cache",
+			expectedType: "registry",
+			expectedAttrs: map[string]string{
+				"ref": "localhost:5555/cache",
+			},
+		},
+		{
+			name:         "default cache type is gha",
+			input:        "scope=my-cache,mode=max",
+			expectedType: "gha",
+			expectedAttrs: map[string]string{
+				"scope": "my-cache",
+				"mode":  "max",
+			},
+		},
+		{
+			name:          "empty attrs use default cache type",
+			input:         "",
+			expectedType:  "gha",
+			expectedAttrs: map[string]string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotType, gotAttrs := extractCacheType(parseKeyValue(tt.input))
+			if gotType != tt.expectedType {
+				t.Errorf("extractCacheType(%q) type = %q, want %q", tt.input, gotType, tt.expectedType)
+			}
+			if !maps.Equal(gotAttrs, tt.expectedAttrs) {
+				t.Errorf("extractCacheType(%q) attrs = %v, want %v", tt.input, gotAttrs, tt.expectedAttrs)
 			}
 		})
 	}
