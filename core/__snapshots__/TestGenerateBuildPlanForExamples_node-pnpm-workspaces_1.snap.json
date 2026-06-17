@@ -54,6 +54,7 @@
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
+   "NPM_CONFIG_FETCH_RETRIES": "5",
    "NPM_CONFIG_FUND": "false",
    "NPM_CONFIG_PRODUCTION": "false",
    "NPM_CONFIG_UPDATE_NOTIFIER": "false"
@@ -150,6 +151,7 @@
    "variables": {
     "CI": "true",
     "NODE_ENV": "production",
+    "NPM_CONFIG_FETCH_RETRIES": "5",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",
     "NPM_CONFIG_UPDATE_NOTIFIER": "false",
