@@ -392,7 +392,9 @@ func (p *NodeProvider) GetNodeEnvVars(ctx *generate.GenerateContext) map[string]
 		"NPM_CONFIG_PRODUCTION":      "false",
 		"NPM_CONFIG_UPDATE_NOTIFIER": "false",
 		"NPM_CONFIG_FUND":            "false",
-		"CI":                         "true",
+		// https://docs.npmjs.com/cli/using-npm/config#fetch-retries
+		"NPM_CONFIG_FETCH_RETRIES": "5",
+		"CI":                       "true",
 	}
 
 	if p.packageManager == PackageManagerYarn1 {
