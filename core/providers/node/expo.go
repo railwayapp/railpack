@@ -1,6 +1,8 @@
 package node
 
 import (
+	"strings"
+
 	"github.com/railwayapp/railpack/core/generate"
 )
 
@@ -23,8 +25,8 @@ func (p *NodeProvider) isExpo(ctx *generate.GenerateContext) bool {
 }
 
 // isExpoSPA reports whether the Expo project is configured to export a static
-// web build. Expo produces a single-page app when web output is "static" and
-// react-native-web is present to render the app in the browser.
+// web build. Expo produces a single-page app when web output is "static" or
+// "single" and react-native-web is present to render the app in the browser.
 func (p *NodeProvider) isExpoSPA(ctx *generate.GenerateContext) bool {
 	if !p.isExpo(ctx) {
 		return false
@@ -36,7 +38,10 @@ func (p *NodeProvider) isExpoSPA(ctx *generate.GenerateContext) bool {
 		return false
 	}
 
-	return p.getExpoWebOutput(ctx) == "static"
+	// Expo's web output modes are documented at
+	// https://docs.expo.dev/versions/latest/config/app/#output.
+	output := strings.ToLower(p.getExpoWebOutput(ctx))
+	return output == "static" || output == "single"
 }
 
 // getExpoWebOutput resolves the configured expo.web.output value from app.json.
