@@ -7,10 +7,6 @@ import (
 const (
 	// expo export --platform web writes the static web bundle here by default
 	DefaultExpoOutputDirectory = "dist"
-
-	// Command used to produce the static web bundle when the project does not
-	// define its own build script.
-	ExpoWebExportCommand = "expo export --platform web"
 )
 
 // expoAppConfig models the subset of app.json we care about for web detection.
