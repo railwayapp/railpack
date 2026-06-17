@@ -180,11 +180,14 @@ These frameworks are supported:
   `react-router.config.ts` exists, or if the build script contains
   `react-router build`. To enable SPA mode, set `ssr: false` in your React
   Router config.
+- **Expo Web**: Detected if `expo` and `react-native-web` are in
+  dependencies and `app.json` sets `expo.web.output` to `static`
 
 For all frameworks, Railpack will try to detect the output directory and will
 default to `dist` (or `build/client/` for React Router). Set the
 `RAILPACK_SPA_OUTPUT_DIR` environment variable to specify a custom output
-directory.
+directory. Railpack uses your app's `build` script to produce the static
+output.
 
 Static sites are served using the [Caddy](https://caddyserver.com/) web server
 and a [default
