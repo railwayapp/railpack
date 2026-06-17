@@ -181,7 +181,7 @@ These frameworks are supported:
   `react-router build`. To enable SPA mode, set `ssr: false` in your React
   Router config.
 - **Expo Web**: Detected if `expo` and `react-native-web` are in
-  dependencies and `app.json` sets `expo.web.output` to `static`
+  dependencies and `app.json` sets `expo.web.output` to `static` or `single`
 
 For all frameworks, Railpack will try to detect the output directory and will
 default to `dist` (or `build/client/` for React Router). Set the
