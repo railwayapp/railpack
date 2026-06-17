@@ -596,6 +596,8 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 			return "angular"
 		} else if p.isReactRouter(ctx) {
 			return "react-router"
+		} else if p.isExpoSPA(ctx) {
+			return "expo"
 		}
 
 		return "static"
