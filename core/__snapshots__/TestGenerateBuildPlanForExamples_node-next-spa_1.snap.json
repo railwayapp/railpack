@@ -1,0 +1,222 @@
+{
+ "caches": {
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  },
+  "next": {
+   "directory": "/app/.next/cache",
+   "type": "shared"
+  },
+  "node-modules": {
+   "directory": "/app/node_modules/.cache",
+   "type": "shared"
+  },
+  "npm-install": {
+   "directory": "/root/.npm",
+   "type": "shared"
+  }
+ },
+ "deploy": {
+  "base": {
+   "step": "packages:apt:runtime"
+  },
+  "inputs": [
+   {
+    "include": [
+     "/railpack/caddy"
+    ],
+    "step": "packages:caddy"
+   },
+   {
+    "include": [
+     "/Caddyfile"
+    ],
+    "step": "caddy"
+   },
+   {
+    "include": [
+     "out"
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "caddy run --config /Caddyfile --adapter caddyfile 2\u003e\u00261",
+  "variables": {
+   "CI": "true",
+   "NODE_ENV": "production",
+   "NPM_CONFIG_FETCH_RETRIES": "5",
+   "NPM_CONFIG_FUND": "false",
+   "NPM_CONFIG_PRODUCTION": "false",
+   "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+  }
+ },
+ "steps": [
+  {
+   "assets": {
+    "generated-mise-toml": "[generated-mise-toml]"
+   },
+   "commands": [
+    {
+     "path": "/mise/shims"
+    },
+    {
+     "customName": "create mise config",
+     "name": "generated-mise-toml",
+     "path": "/etc/mise/config.toml"
+    },
+    {
+     "cmd": "mise install",
+     "customName": "install mise packages: node"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.6.11"
+    }
+   ],
+   "name": "packages:mise",
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_SHIMS_DIR": "/mise/shims"
+   }
+  },
+  {
+   "caches": [
+    "npm-install"
+   ],
+   "commands": [
+    {
+     "path": "/app/node_modules/.bin"
+    },
+    {
+     "cmd": "mkdir -p /app/node_modules/.cache"
+    },
+    {
+     "dest": "package-lock.json",
+     "src": "package-lock.json"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
+    },
+    {
+     "cmd": "npm ci"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install",
+   "variables": {
+    "CI": "true",
+    "NODE_ENV": "production",
+    "NPM_CONFIG_FETCH_RETRIES": "5",
+    "NPM_CONFIG_FUND": "false",
+    "NPM_CONFIG_PRODUCTION": "false",
+    "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+   }
+  },
+  {
+   "caches": [
+    "node-modules",
+    "next"
+   ],
+   "commands": [
+    {
+     "cmd": "npm run build"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ],
+   "variables": {
+    "NEXT_TELEMETRY_DISABLED": "1"
+   }
+  },
+  {
+   "commands": [
+    {
+     "cmd": "mise install-into caddy@2.11.4 /railpack/caddy"
+    },
+    {
+     "path": "/railpack/caddy"
+    },
+    {
+     "path": "/railpack/caddy/bin"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.6.11"
+    }
+   ],
+   "name": "packages:caddy",
+   "variables": {
+    "MISE_PARANOID": "1"
+   }
+  },
+  {
+   "assets": {
+    "Caddyfile": "# global options\n{\n\tadmin off\n\tpersist_config off\n\tauto_https off\n\n\tlog {\n\t\tformat json\n\t}\n\n\tservers {\n\t\ttrusted_proxies static private_ranges 100.0.0.0/8 # trust railway's proxy\n\t}\n}\n\n# site block, listens on the $PORT environment variable, automatically assigned by railway\n:{$PORT:80} {\n\tlog {\n\t\tformat json\n\t}\n\n\trespond /health 200\n\n\t# Security headers\n\theader {\n\t\t# Prevent some browsers from MIME-sniffing a response away from the declared Content-Type\n\t\tX-Content-Type-Options \"nosniff\"\n\t\t# Remove Server header\n\t\t-Server\n\t}\n\n\t# serve from the 'dist' folder (Vite builds into the 'dist' folder)\n\troot * /app/out\n\n\t# Handle static files\n\tfile_server {\n\t\thide .git\n\t\thide .env*\n\t}\n\n\t# Compression with more formats\n\tencode {\n\t\tgzip\n\t\tzstd\n\t}\n\n\t# match against direct against HTML file matches, folder-level index.html, and optionally fallback to root index.html\n\ttry_files {path} {path}.html {path}/index.html /index.html\n}\n"
+   },
+   "commands": [
+    {
+     "name": "Caddyfile",
+     "path": "/Caddyfile"
+    },
+    {
+     "cmd": "caddy fmt --overwrite /Caddyfile"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:caddy"
+    }
+   ],
+   "name": "caddy",
+   "secrets": [
+    "*"
+   ]
+  },
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libatomic1'",
+     "customName": "install apt packages: libatomic1"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.6.11"
+    }
+   ],
+   "name": "packages:apt:runtime"
+  }
+ ]
+}

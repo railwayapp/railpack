@@ -30,17 +30,21 @@ func (p *NodeProvider) isSPA(ctx *generate.GenerateContext) bool {
 
 	// If there is a custom start command, we don't want to deploy with Caddy as an SPA
 	if p.hasCustomStartCommand(ctx) {
+		// it's easy for a user to trip over this wire and not understand that it would impact SPA deployment since using the start script
+		// is somewhat if a railpack-convention, so let's make it clear to them.
+		ctx.Logger.LogInfo("Custom start command detected, skipping Caddy start")
 		return false
 	}
 
 	isVite := p.isVite(ctx)
 	isAstro := p.isAstroSPA(ctx)
+	isNext := p.isNextSPA(ctx)
 	isCRA := p.isCRA(ctx)
 	isAngular := p.isAngular(ctx)
 	isReactRouter := p.isReactRouter(ctx)
 	isExpoSPA := p.isExpoSPA(ctx)
 
-	return (isVite || isAstro || isCRA || isAngular || isReactRouter || isExpoSPA) && p.getOutputDirectory(ctx) != ""
+	return (isVite || isAstro || isNext || isCRA || isAngular || isReactRouter || isExpoSPA) && p.getOutputDirectory(ctx) != ""
 }
 
 func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
@@ -54,6 +58,8 @@ func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
 		return "vite"
 	} else if p.isAstro(ctx) {
 		return "astro"
+	} else if p.isNextSPA(ctx) {
+		return "next"
 	} else if p.isCRA(ctx) {
 		return "CRA"
 	} else if p.isAngular(ctx) {
@@ -144,6 +150,8 @@ func (p *NodeProvider) getOutputDirectory(ctx *generate.GenerateContext) string 
 		outputDir = p.getViteOutputDirectory(ctx)
 	} else if p.isAstroSPA(ctx) {
 		outputDir = p.getAstroOutputDirectory(ctx)
+	} else if p.isNextSPA(ctx) {
+		outputDir = p.getNextOutputDirectory(ctx)
 	} else if p.isCRA(ctx) {
 		outputDir = p.getCRAOutputDirectory(ctx)
 	} else if p.isAngular(ctx) {
@@ -160,8 +168,11 @@ func (p *NodeProvider) hasCustomStartCommand(ctx *generate.GenerateContext) bool
 	if startCommand == "" {
 		startCommand = p.packageJson.Scripts["start"]
 	}
+
 	isAngularDefaultStartCommand := startCommand == DefaultAngularStartCommand
 	isCRAStartCommand := startCommand == DefaultCRAStartCommand
 	isExpoStartCommand := startCommand == DefaultExpoStartCommand
-	return startCommand != "" && !isAngularDefaultStartCommand && !isCRAStartCommand && !isExpoStartCommand
+	isNextStartCommand := startCommand == DefaultNextStartCommand
+
+	return startCommand != "" && !isAngularDefaultStartCommand && !isCRAStartCommand && !isExpoStartCommand && !isNextStartCommand
 }
