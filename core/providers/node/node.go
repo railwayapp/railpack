@@ -309,31 +309,35 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 	p.packageManager.installDependencies(ctx, p.workspace, install, p.usesCorepack())
 }
 
-// resolve node version selection which is used both for node runtime *and* when bun is used but node is required for
-// build or runtime.
+// resolve node version from package.json or ENV (takes precedence over mise or railpack defaults)
 func (p *NodeProvider) applyNodeVersionResolution(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder, nodeToolRef resolver.PackageRef) {
-	if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
-		miseStep.Version(nodeToolRef, envVersion, varName)
-	}
+	// the order here is very important: we want to the package.json-defined node version to win out in most cases
+	// however, ENV-level config should always win which is why we check that ENV right after this block
 
 	if p.packageJson != nil && p.packageJson.Engines != nil && p.packageJson.Engines["node"] != "" {
 		miseStep.Version(nodeToolRef, p.packageJson.Engines["node"], "package.json > engines > node")
 	}
+
+	if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
+		miseStep.Version(nodeToolRef, envVersion, varName)
+	}
+}
+
+// assumes that bun is the primary runtime and determines if node is needed as well
+func (p *NodeProvider) needsNodeForBunInstall() bool {
+	// Many packages assume that Node is available. There's not a great way to detect if a package expects Node to be
+	// available so we just check if any packages exist in a package JSON and then install Node in that scenario
+	// TODO this is an extremely limited case, but we create the harness for it here so we can improve it in the future
+	if p.packageJson == nil {
+		return true
+	}
+
+	return len(p.packageJson.Dependencies) > 0 || len(p.packageJson.DevDependencies) > 0 || p.packageJson.hasLocalDependency()
 }
 
 func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	requiresNode := p.requiresNode(ctx)
 	misePackages := []string{}
-
-	if requiresNode {
-		node := miseStep.Default("node", DEFAULT_NODE_VERSION)
-		misePackages = append(misePackages, "node")
-
-		// libatomic1 is required for Node.js v25+
-		ctx.Deploy.AddAptPackages([]string{"libatomic1"})
-
-		p.applyNodeVersionResolution(ctx, miseStep, node)
-	}
 
 	if p.requiresBun(ctx) {
 		// there isn't a bun provider, it's mixed into the node provider
@@ -348,23 +352,28 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			miseStep.Version(bun, envVersion, varName)
 		}
 
+		// TODO mise supports bun-version now, so we should be able to remove this
 		// .bun-version is a community convention for specifying the Bun version.
 		// It is not officially supported by Bun itself, but is recognized by version managers like mise.
 		if bunVersionFile, err := ctx.App.ReadFile(".bun-version"); err == nil {
 			miseStep.Version(bun, string(bunVersionFile), ".bun-version")
 		}
 
-		// If we don't need node in the final image, we still want to include it for the install steps
-		// since many packages need node-gyp to install native modules
-		if !requiresNode && ctx.Config.Packages["node"] == "" {
-			node := miseStep.Default("node", DEFAULT_NODE_VERSION)
-			misePackages = append(misePackages, "node")
-
-			p.applyNodeVersionResolution(ctx, miseStep, node)
-
-			// libatomic1 is required for Node.js v25+
-			ctx.Deploy.AddAptPackages([]string{"libatomic1"})
+		// Bun projects without declared dependencies don't need node-gyp during install, so we can omit Node entirely.
+		if !requiresNode && p.needsNodeForBunInstall() {
+			requiresNode = true
 		}
+	}
+
+	// most, but not all, node project configurations result in node being installed
+	// for instance, if bun is used without any package.json, node is not installed
+	if requiresNode {
+		node := miseStep.Default("node", DEFAULT_NODE_VERSION)
+		misePackages = append(misePackages, "node")
+		p.applyNodeVersionResolution(ctx, miseStep, node)
+
+		// libatomic1 is required for Node.js v25+, but it's easier and harmless to install it anytime node is required
+		ctx.Deploy.AddAptPackages([]string{"libatomic1"})
 	}
 
 	p.packageManager.GetPackageManagerPackages(ctx, p.packageJson, miseStep)
@@ -381,6 +390,7 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		miseStep.AddMiseSetting("node.corepack", true)
 	}
 
+	// IMPORTANT because of mise support for idiomatic version files, this can easily override ENV-specified node versions
 	if len(misePackages) > 0 {
 		miseStep.UseMiseVersions(ctx, misePackages)
 	}
@@ -539,16 +549,19 @@ func (p *NodeProvider) getPackagesWithFramework(ctx *generate.GenerateContext, f
 }
 
 func (p *NodeProvider) requiresNode(ctx *generate.GenerateContext) bool {
+	// TODO why does package.json == nil trigger node?
 	if p.packageManager != PackageManagerBun || p.packageJson == nil || p.packageJson.PackageManager != nil {
 		return true
 	}
 
+	// TODO this check is incredibly naive
 	for _, script := range p.packageJson.Scripts {
 		if strings.Contains(script, "node") {
 			return true
 		}
 	}
 
+	// TODO why are these frameworks special cases?
 	return p.isAstro(ctx) || p.isVite(ctx)
 }
 
@@ -600,6 +613,7 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 			return "expo"
 		}
 
+		// this can occur if a user forces SPA mode via config
 		return "static"
 	} else if p.isNext() {
 		return "next"

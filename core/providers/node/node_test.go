@@ -65,7 +65,7 @@ func TestNode(t *testing.T) {
 		},
 		{
 			name:           "railpack node version overrides engines",
-			path:           "../../../examples/node-subfolder-node-version",
+			path:           "../../../examples/node-version-precedence",
 			detected:       true,
 			packageManager: PackageManagerNpm,
 			nodeVersion:    "22",
