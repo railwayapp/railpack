@@ -158,11 +158,9 @@ func TestHasCustomStartCommand(t *testing.T) {
 			want: true,
 		},
 		{
-			// Expo keeps "expo start" as its start command, which counts as custom.
-			// SPA detection still triggers via the explicit web config signals.
 			name: "expo-spa",
 			path: "../../../examples/expo-spa",
-			want: true,
+			want: false,
 		},
 	}
 

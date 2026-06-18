@@ -194,6 +194,11 @@ and a [default
 Caddyfile](https://github.com/railwayapp/railpack/blob/main/core/providers/node/Caddyfile.template).
 You can overwrite this file with your own Caddyfile at the root of your project.
 
+Node SPA deploys honor the `index_fallback` key in a `Staticfile` at the
+project root when set. SPA routing behavior is unchanged unless you set
+`index_fallback: false` (for example on multi-page Astro static sites) so
+unknown paths return 404 and serve `404.html` when present.
+
 ## Framework Support
 
 Railpack detects and configures caches and commands for popular frameworks.

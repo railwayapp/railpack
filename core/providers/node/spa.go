@@ -7,6 +7,7 @@ import (
 
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	"github.com/railwayapp/railpack/core/providers/staticfile"
 )
 
 const (
@@ -22,15 +23,8 @@ func (p *NodeProvider) isSPA(ctx *generate.GenerateContext) bool {
 		return false
 	}
 
-	// Setting the output dir directly will force an SPA build
+	// Setting the output dir directly via a ENV will force an SPA build regardless of framework detection
 	if value, _ := ctx.Env.GetConfigVariable(OUTPUT_DIR_VAR); value != "" {
-		return true
-	}
-
-	// Expo SPA detection is driven by explicit web config (expo.web.output =
-	// "static" + react-native-web), so it is unambiguous even when the project
-	// keeps a custom start command for local dev or testing.
-	if p.isExpoSPA(ctx) {
 		return true
 	}
 
@@ -44,8 +38,9 @@ func (p *NodeProvider) isSPA(ctx *generate.GenerateContext) bool {
 	isCRA := p.isCRA(ctx)
 	isAngular := p.isAngular(ctx)
 	isReactRouter := p.isReactRouter(ctx)
+	isExpoSPA := p.isExpoSPA(ctx)
 
-	return (isVite || isAstro || isCRA || isAngular || isReactRouter) && p.getOutputDirectory(ctx) != ""
+	return (isVite || isAstro || isCRA || isAngular || isReactRouter || isExpoSPA) && p.getOutputDirectory(ctx) != ""
 }
 
 func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
@@ -64,7 +59,7 @@ func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
 	} else if p.isAngular(ctx) {
 		return "Angular"
 	} else if p.isExpoSPA(ctx) {
-		return "expo"
+		return "Expo"
 	}
 
 	return ""
@@ -77,8 +72,15 @@ func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.
 	ctx.Logger.LogInfo("Deploying as %s static site", spaFramework)
 	ctx.Logger.LogInfo("Output directory: %s", outputDir)
 
+	// default all paths to use the root index.html by default on SPA apps, but allow the user to override
+	indexFallback := true
+	if indexFallbackConfig := staticfile.GetIndexFallback(ctx); indexFallbackConfig != nil {
+		indexFallback = *indexFallbackConfig
+	}
+
 	data := map[string]any{
-		"DIST_DIR": path.Join("/app", outputDir),
+		"DIST_DIR":      path.Join("/app", outputDir),
+		"IndexFallback": indexFallback,
 	}
 
 	caddyfileTemplate, err := ctx.TemplateFiles([]string{"Caddyfile.template", "Caddyfile"}, caddyfileTemplate, data)
@@ -160,5 +162,6 @@ func (p *NodeProvider) hasCustomStartCommand(ctx *generate.GenerateContext) bool
 	}
 	isAngularDefaultStartCommand := startCommand == DefaultAngularStartCommand
 	isCRAStartCommand := startCommand == DefaultCRAStartCommand
-	return startCommand != "" && !isAngularDefaultStartCommand && !isCRAStartCommand
+	isExpoStartCommand := startCommand == DefaultExpoStartCommand
+	return startCommand != "" && !isAngularDefaultStartCommand && !isCRAStartCommand && !isExpoStartCommand
 }
