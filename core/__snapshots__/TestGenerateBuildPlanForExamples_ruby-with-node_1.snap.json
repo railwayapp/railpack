@@ -204,7 +204,7 @@
    ],
    "commands": [
     {
-     "cmd": "npm prune --omit=dev --ignore-scripts"
+     "cmd": "npm prune --ignore-scripts"
     }
    ],
    "inputs": [
@@ -214,7 +214,7 @@
    ],
    "name": "prune:node",
    "variables": {
-    "NPM_CONFIG_PRODUCTION": "true"
+    "NPM_CONFIG_OMIT": "dev,optional"
    }
   },
   {
