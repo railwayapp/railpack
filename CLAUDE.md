@@ -1,8 +1,7 @@
 # What is Railpack
 
 Zero-config application builder that automatically analyzes your code and turns
-it into a container image. It's built on BuildKit
-with support for Node, Python, Go, PHP, and more.
+it into a container image. It's built on BuildKit with support for Node, Python, Go, PHP, and more.
 
 # Architecture
 
@@ -21,7 +20,7 @@ with support for Node, Python, Go, PHP, and more.
 - When writing a comment describing a function, do not start the comment with the name of the function
 - Assume the person reading this code is an expert software engineer, but is not familiar with the internals of every system. Include concise one-line comments explaining key hooks, API usage, blocks of logic, etc., to help the reader quickly understand the code you've written.
 - Follow Go conventions and existing patterns in the codebase
-- Prefer early returns or early continues to `if` nesting
+- Prefer early `return`s or `continue`s to `if` nesting
 - Use appropriate error handling with proper error wrapping
 - Do not write comments that are obvious from the code itself; focus on
   explaining why something is done, not what it does
@@ -59,9 +58,11 @@ with support for Node, Python, Go, PHP, and more.
 
 There are normal unit tests, snapshot tests, and integration tests. The integration tests are most unique to this project:
 
+* They are located in `examples/` directories, and each example has a `test.json` and optionally a `docker-compose.yml` file
 * They represent example projects that would be built using the `railpack` CLI
-* On CI, they are built and run to make sure `railpack` properly builds *and* runs the project
+* CI builds and runs each example project in a distinct job to make sure `railpack` properly builds *and* runs the project
 * `test.json` and `docker-compose.yml` are used to help determine what assertions should be made and what services should be run for the test
+* The `size.json` is auto-generated and should never be manually created or updated.
 
 ## Integration Tests
 

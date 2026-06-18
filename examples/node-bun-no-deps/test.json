@@ -1,6 +1,9 @@
 [
   {
-    "expectedOutput": "hi from bun without a lock - using Bun major version 1",
+    "expectedOutput": [
+      "hi from bun without a lock - using Bun major version 1",
+      "bun runtime without node binary"
+    ],
     // Bun routes console.log/console.error to stderr by default in script mode
     "stderrAllowed": true
   }

@@ -1,0 +1,9 @@
+[
+  {
+    "expectedOutput": "Node version: v22",
+    "stderrAllowed": true,
+    "envs": {
+      "RAILPACK_NODE_VERSION": "22"
+    }
+  }
+]

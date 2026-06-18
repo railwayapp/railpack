@@ -1,17 +1,25 @@
 {
  "caches": {
-  "bun-install": {
-   "directory": "/root/.bun/install/cache",
-   "type": "shared"
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
   },
   "node-modules": {
    "directory": "/app/node_modules/.cache",
+   "type": "shared"
+  },
+  "npm-install": {
+   "directory": "/root/.npm",
    "type": "shared"
   }
  },
  "deploy": {
   "base": {
-   "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.6.11"
+   "step": "packages:apt:runtime"
   },
   "inputs": [
    {
@@ -42,7 +50,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "bun run start",
+  "startCommand": "npm run start",
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
@@ -68,7 +76,7 @@
     },
     {
      "cmd": "mise install",
-     "customName": "install mise packages: bun"
+     "customName": "install mise packages: node"
     }
    ],
    "inputs": [
@@ -87,7 +95,7 @@
   },
   {
    "caches": [
-    "bun-install"
+    "npm-install"
    ],
    "commands": [
     {
@@ -101,7 +109,7 @@
      "src": "package.json"
     },
     {
-     "cmd": "bun install --frozen-lockfile"
+     "cmd": "npm install"
     }
    ],
    "inputs": [
@@ -138,6 +146,24 @@
    "secrets": [
     "*"
    ]
+  },
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libatomic1'",
+     "customName": "install apt packages: libatomic1"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.6.11"
+    }
+   ],
+   "name": "packages:apt:runtime"
   }
  ]
 }
