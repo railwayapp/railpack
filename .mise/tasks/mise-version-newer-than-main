@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+# Description: exit successfully when the pinned mise version is newer than origin/main.
+
+import subprocess
+import sys
+from pathlib import Path
+
+"""Exit successfully only when the pinned mise version is newer than origin/main.
+
+`version.txt` uses dot-separated numeric versions like `2026.6.5`, so plain string
+comparison is not sufficient once any segment reaches multiple digits.
+
+This also prevents contributor PRs that carry an older mise version from triggering
+an unnecessary image rebuild, which could fail because those image tags may not
+exist in the registry.
+"""
+
+
+def parse_version(value: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in value.strip().split("."))
+
+
+repo_root = subprocess.run(
+    ["git", "rev-parse", "--show-toplevel"],
+    capture_output=True,
+    text=True,
+    check=True,
+).stdout.strip()
+
+current = Path(repo_root, "core/mise/version.txt").read_text().strip()
+result = subprocess.run(
+    ["git", "show", "origin/main:core/mise/version.txt"],
+    cwd=repo_root,
+    capture_output=True,
+    text=True,
+)
+main = result.stdout.strip() if result.returncode == 0 else ""
+
+sys.exit(0 if not main or parse_version(current) > parse_version(main) else 1)
