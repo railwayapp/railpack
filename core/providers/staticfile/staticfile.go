@@ -60,7 +60,14 @@ func (p *StaticfileProvider) Plan(ctx *generate.GenerateContext) error {
 	build.AddInput(plan.NewStepLayer(installCaddyStep.Name()))
 	build.AddInput(ctx.NewLocalLayer())
 
-	if err := p.addCaddyfileToStep(ctx, build, rootDir, getIndexFallback(ctx)); err != nil {
+	// the Staticfile provider is also used by Node SPA, but in that case we want index fallback to default to true
+	// for the Staticfile provider, want to default to false, which is why we set the default here instead of upstream
+	indexFallback := false
+	if configuredIndexFallback := GetIndexFallback(ctx); configuredIndexFallback != nil {
+		indexFallback = *configuredIndexFallback
+	}
+
+	if err := p.addCaddyfileToStep(ctx, build, rootDir, indexFallback); err != nil {
 		return err
 	}
 
@@ -143,23 +150,15 @@ func getRootDir(ctx *generate.GenerateContext) (string, error) {
 	return "", fmt.Errorf("no static file root dir found")
 }
 
-// IndexFallbackFromStaticfile returns index_fallback from a Staticfile when explicitly set.
-func IndexFallbackFromStaticfile(ctx *generate.GenerateContext) *bool {
+// returns index_fallback from a Staticfile when explicitly set
+// we use a bool pointer so we can indicate that no user default was set with a nil return value
+func GetIndexFallback(ctx *generate.GenerateContext) *bool {
 	config, err := getStaticfileConfig(ctx)
 	if config != nil && err == nil && config.IndexFallback != nil {
 		return config.IndexFallback
 	}
 
 	return nil
-}
-
-func getIndexFallback(ctx *generate.GenerateContext) bool {
-	// TODO we probably want to add a ENV var for this config option in the future
-	if indexFallback := IndexFallbackFromStaticfile(ctx); indexFallback != nil {
-		return *indexFallback
-	}
-
-	return false
 }
 
 // convert a Staticfile in the app source into a struct that we can read options from
