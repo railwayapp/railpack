@@ -199,26 +199,29 @@ func (b *MiseStepBuilder) GetMisePackageVersions(ctx *GenerateContext) (map[stri
 	return packages, nil
 }
 
-// Use mise-specified versions for all packages in the input list
-func (b *MiseStepBuilder) UseMiseVersions(ctx *GenerateContext, packages []string) {
-	miseVersions, err := b.GetMisePackageVersions(ctx)
+// Use mise-specified versions (including idiomatic version files) for all packages in the input list, this will overwrite any previously-specified package versions
+func (b *MiseStepBuilder) UseMiseVersions(ctx *GenerateContext, packageNamesToOverride []string) {
+	miseSpecifiedPackageVersions, err := b.GetMisePackageVersions(ctx)
 	if err != nil {
 		ctx.Logger.LogWarn("Failed to get package versions from mise: %s", err.Error())
 		return
 	}
 
-	if miseVersions == nil {
+	if miseSpecifiedPackageVersions == nil {
 		return
 	}
 
-	for _, packageName := range packages {
-		if pkg := miseVersions[packageName]; pkg != nil {
-			// Find the existing package reference
-			for _, pkgRef := range b.MisePackages {
-				if pkgRef.Name == packageName {
-					b.Version(*pkgRef, pkg.Version, pkg.Source)
-					break
-				}
+	for _, packageName := range packageNamesToOverride {
+		pkg := miseSpecifiedPackageVersions[packageName]
+		if pkg == nil {
+			continue
+		}
+
+		// Find the existing package reference in our build configuration
+		for _, pkgRef := range b.MisePackages {
+			if pkgRef.Name == packageName {
+				b.Version(*pkgRef, pkg.Version, pkg.Source)
+				break
 			}
 		}
 	}
