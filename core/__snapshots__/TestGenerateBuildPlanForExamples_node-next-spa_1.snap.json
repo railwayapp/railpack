@@ -49,6 +49,7 @@
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
+   "NPM_CONFIG_FETCH_RETRIES": "5",
    "NPM_CONFIG_FUND": "false",
    "NPM_CONFIG_PRODUCTION": "false",
    "NPM_CONFIG_UPDATE_NOTIFIER": "false"
@@ -75,7 +76,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.6.11"
     }
    ],
    "name": "packages:mise",
@@ -119,6 +120,7 @@
    "variables": {
     "CI": "true",
     "NODE_ENV": "production",
+    "NPM_CONFIG_FETCH_RETRIES": "5",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",
     "NPM_CONFIG_UPDATE_NOTIFIER": "false"
@@ -156,7 +158,7 @@
   {
    "commands": [
     {
-     "cmd": "mise install-into caddy@2.11.3 /railpack/caddy"
+     "cmd": "mise install-into caddy@2.11.4 /railpack/caddy"
     },
     {
      "path": "/railpack/caddy"
@@ -167,7 +169,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.6.11"
     }
    ],
    "name": "packages:caddy",
@@ -177,7 +179,7 @@
   },
   {
    "assets": {
-    "Caddyfile": "# global options\n{\n\tadmin off\n\tpersist_config off\n\tauto_https off\n\n\tlog {\n\t\tformat json\n\t}\n\n\tservers {\n\t\ttrusted_proxies static private_ranges 100.0.0.0/8 # trust railway's proxy\n\t}\n}\n\n# site block, listens on the $PORT environment variable, automatically assigned by railway\n:{$PORT:80} {\n\tlog {\n\t\tformat json\n\t}\n\n\trespond /health 200\n\n\t# Security headers\n\theader {\n\t\t# Prevent some browsers from MIME-sniffing a response away from the declared Content-Type\n\t\tX-Content-Type-Options \"nosniff\"\n\t\t# Remove Server header\n\t\t-Server\n\t}\n\n\t# serve from the 'dist' folder (Vite builds into the 'dist' folder)\n\troot * /app/out\n\n\t# Handle static files\n\tfile_server {\n\t\thide .git\n\t\thide .env*\n\t}\n\n\t# Compression with more formats\n\tencode {\n\t\tgzip\n\t\tzstd\n\t}\n\n\t# Try files with HTML extension and handle SPA routing\n\ttry_files {path} {path}.html {path}/index.html /index.html\n}\n"
+    "Caddyfile": "# global options\n{\n\tadmin off\n\tpersist_config off\n\tauto_https off\n\n\tlog {\n\t\tformat json\n\t}\n\n\tservers {\n\t\ttrusted_proxies static private_ranges 100.0.0.0/8 # trust railway's proxy\n\t}\n}\n\n# site block, listens on the $PORT environment variable, automatically assigned by railway\n:{$PORT:80} {\n\tlog {\n\t\tformat json\n\t}\n\n\trespond /health 200\n\n\t# Security headers\n\theader {\n\t\t# Prevent some browsers from MIME-sniffing a response away from the declared Content-Type\n\t\tX-Content-Type-Options \"nosniff\"\n\t\t# Remove Server header\n\t\t-Server\n\t}\n\n\t# serve from the 'dist' folder (Vite builds into the 'dist' folder)\n\troot * /app/out\n\n\t# Handle static files\n\tfile_server {\n\t\thide .git\n\t\thide .env*\n\t}\n\n\t# Compression with more formats\n\tencode {\n\t\tgzip\n\t\tzstd\n\t}\n\n\t# match against direct against HTML file matches, folder-level index.html, and optionally fallback to root index.html\n\ttry_files {path} {path}.html {path}/index.html /index.html\n}\n"
    },
    "commands": [
     {
@@ -211,7 +213,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.6.1"
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.6.11"
     }
    ],
    "name": "packages:apt:runtime"
