@@ -183,6 +183,7 @@ export default defineConfig({
         {
           label: "Architecture",
           items: [
+            { label: "Design Goals", link: "/architecture/design-goals" },
             { label: "High Level Overview", link: "/architecture/overview" },
             {
               label: "Package Resolution",
@@ -195,6 +196,10 @@ export default defineConfig({
             { label: "BuildKit Generation", link: "/architecture/buildkit" },
             { label: "Caching", link: "/architecture/caching" },
             { label: "User Config", link: "/architecture/user-config" },
+            {
+              label: "Recommendations",
+              link: "/architecture/recommendations",
+            },
           ],
         },
         {

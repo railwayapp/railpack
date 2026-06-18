@@ -1,11 +1,5 @@
 # Contributing to Railpack
 
-## Project Status
-
-This is an early-stage project that is expected to undergo frequent changes.
-While we welcome contributions, please note that the API and functionality may
-change significantly as we evolve.
-
 ## Pull Requests
 
 We welcome pull requests that push the project forward in meaningful ways.
@@ -18,16 +12,12 @@ Please ensure your PRs:
 Note: We prefer focused, well-thought-out contributions over "drive-by" PRs that
 make superficial changes.
 
-## Setup
+DO NOT submit completely AI-generated PRs. If we suspect PRs are completely generated,
+we will close them with a note indicating this (feel free to reopen if we got it wrong!).
 
-We use [Mise](https://mise.jdx.dev/) for managing language dependencies and
-tasks for building and testing Railpack.
+## Development Workflow
 
-To set up your local environment, follow these steps:
-
-```bash
-mise run setup
-```
+[Checkout this guide for more information.](https://railpack.com/guides/developing-locally/)
 
 ## Testing
 
