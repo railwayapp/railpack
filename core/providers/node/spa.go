@@ -162,5 +162,6 @@ func (p *NodeProvider) hasCustomStartCommand(ctx *generate.GenerateContext) bool
 	}
 	isAngularDefaultStartCommand := startCommand == DefaultAngularStartCommand
 	isCRAStartCommand := startCommand == DefaultCRAStartCommand
-	return startCommand != "" && !isAngularDefaultStartCommand && !isCRAStartCommand
+	isExpoStartCommand := startCommand == DefaultExpoStartCommand
+	return startCommand != "" && !isAngularDefaultStartCommand && !isCRAStartCommand && !isExpoStartCommand
 }

@@ -9,6 +9,7 @@ import (
 const (
 	// expo export --platform web writes the static web bundle here by default
 	DefaultExpoOutputDirectory = "dist"
+	DefaultExpoStartCommand    = "expo start"
 )
 
 // expoAppConfig models the subset of app.json we care about for web detection.
