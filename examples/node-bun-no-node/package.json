@@ -1,0 +1,12 @@
+{
+  "name": "node-bun-no-node",
+  "private": true,
+  "scripts": {
+    "start": "bun app.js"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}

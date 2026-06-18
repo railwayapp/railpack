@@ -1,0 +1,6 @@
+[
+  {
+    "expectedOutput": "bun runtime without node binary",
+    "stderrAllowed": true
+  }
+]
