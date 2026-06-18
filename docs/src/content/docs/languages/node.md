@@ -175,6 +175,10 @@ These frameworks are supported:
   build script contains `vite build`
 - **Astro**: Detected if `astro.config.js` exists and the output is not type
   `"server"`
+- **Next.js**: Detected if `next` is in dependencies and `next.config.js`,
+  `next.config.mjs`, or `next.config.ts` sets `output: 'export'` (or
+  `output: "export"`). The default `next start` start script does not
+  disable SPA mode.
 - **CRA**: Detected if `react-scripts` is in dependencies and build script
   contains `react-scripts build`
 - **Angular**: Detected if `angular.json` exists
@@ -186,7 +190,8 @@ These frameworks are supported:
   dependencies and `app.json` sets `expo.web.output` to `static` or `single`
 
 For all frameworks, Railpack will try to detect the output directory and will
-default to `dist` (or `build/client/` for React Router). Set the
+default to `dist` (or `build/client/` for React Router, or `out` for Next.js
+static exports). Next.js reads `distDir` from your config when set. Set the
 `RAILPACK_SPA_OUTPUT_DIR` environment variable to specify a custom output
 directory. Railpack uses your app's `build` script to produce the static
 output.
