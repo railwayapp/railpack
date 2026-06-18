@@ -33,9 +33,9 @@ jobs:
           echo "examples=$examples" >> "$GITHUB_OUTPUT"
 
   # integration tests plan, build, and run example projects. Running the example projects requires both the builder and runtime
-  # images. If the mise version changes, we want to ensure there are no breakages, which means we need to use fresh images
-  # that contain the pinned mise version. The code below builds these requires images, and pushes them to a production
-  # registry so they can be used properly in the matrix jobs (which all run in an isolated runner, so they must reference a remote registry).
+  # images. If the mise version in version.txt is newer than origin/main, we build fresh images containing the pinned mise version.
+  # The code below builds these required images, and pushes them to a production registry so they can be used properly in the
+  # matrix jobs (which all run in an isolated runner, so they must reference a remote registry).
   # These images are *not* tagged with `latest` or other more generic tags used in the release workflow. Additionally,
   # since railpack uses a image tag from the mise version compiled into the binary, pushes to the registry should not cause
   # any production impacts.
@@ -48,7 +48,7 @@ jobs:
       # duplicated on the release.yml job, keep these in sync
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          # we need the full history to determine if the mise version has changed
+          # we need the full history to compare the mise version against origin/main
           fetch-depth: 0
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
       - uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3
@@ -60,19 +60,19 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # since railpack binary is pinned to a specific image version, we only want to build and push the images if the mise version
-      # has changed. This isn't *exactly* true, as there could be a world where we want to build a new image with a changed
-      # dockerfile, but this should be extremely rare and could be a breaking change since it would mutate the state in an existing image.
+      # in version.txt is newer than what is on origin/main. We intentionally only trigger on upgrades to avoid mutating images
+      # that may already be referenced by released railpack binaries or production usage.
       # Mise versions are updated frequently, which means we'll pick up any updates to the `FROM` images regularly, so we shouldn't need
-      # to update these images outside of a mise version update. Updating images in the test workflow when a mise version has
-      # NOT changes is dangerous: it could cause changes in an image that is used by existing production code.
+      # to update these images outside of a mise version update.
       - name: Check for image input changes
         id: mise_version
         run: |
-          if ! git diff --quiet origin/main HEAD -- core/mise/version.txt; then
+          if mise run mise-version-newer-than-main; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
+
 
       - name: Build Builder Image
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf
