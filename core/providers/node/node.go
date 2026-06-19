@@ -411,6 +411,7 @@ func (p *NodeProvider) GetNodeEnvVars(ctx *generate.GenerateContext) map[string]
 		envVars["YARN_PRODUCTION"] = "false"
 	}
 
+	// TODO why are we special-casing astro here? Smells like a misunderstanding of how astro works...
 	if p.isAstro(ctx) && !p.isAstroSPA(ctx) {
 		maps.Copy(envVars, p.getAstroEnvVars())
 	}
@@ -518,11 +519,7 @@ func (p *NodeProvider) getScripts(packageJson *PackageJson, name string) string 
 }
 
 func (p *NodeProvider) SetNodeMetadata(ctx *generate.GenerateContext) {
-	runtime := p.getRuntime(ctx)
-	spaFramework := p.getSPAFramework(ctx)
-
-	ctx.Metadata.Set("nodeRuntime", runtime)
-	ctx.Metadata.Set("nodeSPAFramework", spaFramework)
+	ctx.Metadata.Set("nodeRuntime", p.getRuntime(ctx))
 	ctx.Metadata.Set("nodePackageManager", string(p.packageManager))
 	ctx.Metadata.SetBool("nodeIsSPA", p.isSPA(ctx))
 	ctx.Metadata.SetBool("nodeUsesCorepack", p.usesCorepack())
@@ -599,18 +596,9 @@ func (p *NodeProvider) requiresBun(ctx *generate.GenerateContext) bool {
 
 func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 	if p.isSPA(ctx) {
-		if p.isAstro(ctx) {
-			return "astro"
-		} else if p.isVite(ctx) {
-			return "vite"
-		} else if p.isCRA(ctx) {
-			return "cra"
-		} else if p.isAngular(ctx) {
-			return "angular"
-		} else if p.isReactRouter(ctx) {
-			return "react-router"
-		} else if p.isExpoSPA(ctx) {
-			return "expo"
+		// note that some of the frameworks can be both SPA and traditional node, and they are checked in the same way
+		if name := p.getSPAName(ctx); name != "" {
+			return name
 		}
 
 		// this can occur if a user forces SPA mode via config
@@ -627,6 +615,8 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 		return "vite"
 	} else if p.isReactRouter(ctx) {
 		return "react-router"
+	} else if p.isAstro(ctx) {
+		return "astro"
 	} else if p.packageManager == PackageManagerBun {
 		return "bun"
 	}
