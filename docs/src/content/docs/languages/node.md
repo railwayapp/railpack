@@ -196,6 +196,9 @@ static exports). Next.js reads `distDir` from your config when set. Set the
 directory. Railpack uses your app's `build` script to produce the static
 output.
 
+Note that is an SPA framework is *not* detected automatically, can you force SPA mode
+by specifying a `RAILPACK_SPA_OUTPUT_DIR` environment variable. This will enable SPA mode and serve the specified directory as a static site.
+
 Static sites are served using the [Caddy](https://caddyserver.com/) web server
 and a [default
 Caddyfile](https://github.com/railwayapp/railpack/blob/main/core/providers/node/Caddyfile.template).

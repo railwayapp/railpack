@@ -60,6 +60,7 @@ func (p *NodeProvider) getAstroConfigFileContents(ctx *generate.GenerateContext)
 	return contents
 }
 
+// TODO feels like we should be able to specify this in the start command and avoid injecting additional vars into the container?
 func (p *NodeProvider) getAstroEnvVars() map[string]string {
 	envVars := map[string]string{
 		"HOST": "0.0.0.0",

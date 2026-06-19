@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/providers/staticfile"
@@ -47,11 +48,9 @@ func (p *NodeProvider) isSPA(ctx *generate.GenerateContext) bool {
 	return (isVite || isAstro || isNext || isCRA || isAngular || isReactRouter || isExpoSPA) && p.getOutputDirectory(ctx) != ""
 }
 
-func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
-	if !p.isSPA(ctx) {
-		return ""
-	}
-
+// returns the canonical lowercase SPA framework name, or "" when none is detected.
+func (p *NodeProvider) getSPAName(ctx *generate.GenerateContext) string {
+	// TODO react router is not always SPA!
 	if p.isReactRouter(ctx) {
 		return "react-router"
 	} else if p.isVite(ctx) {
@@ -61,11 +60,14 @@ func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
 	} else if p.isNextSPA(ctx) {
 		return "next"
 	} else if p.isCRA(ctx) {
-		return "CRA"
+		return "cra"
 	} else if p.isAngular(ctx) {
-		return "Angular"
+		return "angular"
 	} else if p.isExpoSPA(ctx) {
-		return "Expo"
+		return "expo"
+	} else {
+		// this could happen if the user forces SPA with env
+		log.Infof("No SPA framework detected")
 	}
 
 	return ""
@@ -73,7 +75,7 @@ func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
 
 func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) error {
 	outputDir := p.getOutputDirectory(ctx)
-	spaFramework := p.getSPAFramework(ctx)
+	spaFramework := p.getSPAName(ctx)
 
 	ctx.Logger.LogInfo("Deploying as %s static site", spaFramework)
 	ctx.Logger.LogInfo("Output directory: %s", outputDir)
@@ -89,6 +91,8 @@ func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.
 		"IndexFallback": indexFallback,
 	}
 
+	// TODO this template stuff is a bit odd: I don't see the use case for passing these specific variables to the template.
+	//      if the user is customizing the Caddyfile, they can just hardcode what they want into the Caddyfile?
 	caddyfileTemplate, err := ctx.TemplateFiles([]string{"Caddyfile.template", "Caddyfile"}, caddyfileTemplate, data)
 	if err != nil {
 		return err
@@ -122,19 +126,6 @@ func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.
 			Include: []string{outputDir},
 		}),
 	})
-
-	// ctx.Deploy.Inputs = []plan.Layer{
-	// 	ctx.DefaultRuntimeInput(),
-	// 	plan.NewStepLayer(installCaddyStep.Name(), plan.InputOptions{
-	// 		Include: installCaddyStep.GetOutputPaths(),
-	// 	}),
-	// 	plan.NewStepLayer(caddy.Name(), plan.InputOptions{
-	// 		Include: []string{DefaultCaddyfilePath},
-	// 	}),
-	// 	plan.NewStepLayer(build.Name(), plan.InputOptions{
-	// 		Include: []string{outputDir},
-	// 	}),
-	// }
 
 	return nil
 }
