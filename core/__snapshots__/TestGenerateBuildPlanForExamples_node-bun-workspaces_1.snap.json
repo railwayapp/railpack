@@ -70,6 +70,10 @@
      "path": "/mise/shims"
     },
     {
+     "dest": ".bun-version",
+     "src": ".bun-version"
+    },
+    {
      "customName": "create mise config",
      "name": "generated-mise-toml",
      "path": "/etc/mise/config.toml"
