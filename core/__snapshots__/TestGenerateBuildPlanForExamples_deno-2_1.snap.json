@@ -34,6 +34,10 @@
      "path": "/mise/shims"
     },
     {
+     "dest": ".deno-version",
+     "src": ".deno-version"
+    },
+    {
      "customName": "create mise config",
      "name": "generated-mise-toml",
      "path": "/etc/mise/config.toml"
