@@ -1,5 +1,7 @@
 [
   {
-    "expectedOutput": "Hello from Deno (deno 2."
+    "expectedOutput": [
+      "Hello from Deno (deno 2.2.2)"
+    ]
   }
 ]
