@@ -21,7 +21,7 @@ import (
 const (
 	InstallDir                = "/tmp/railpack/mise"
 	TestInstallDir            = "/tmp/railpack/mise-test"
-	IdiomaticVersionFileTools = "python,node,ruby,elixir,go,java,yarn"
+	IdiomaticVersionFileTools = "python,node,ruby,elixir,go,java,yarn,bun"
 	// applied only to the first GetLatestVersion check to skip very recent releases
 	MinimumReleaseAge = "14d"
 )
