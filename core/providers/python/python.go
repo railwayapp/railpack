@@ -305,16 +305,14 @@ func (p *PythonProvider) GetBuilderDeps(ctx *generate.GenerateContext) *generate
 func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	python := miseStep.Default("python", DEFAULT_PYTHON_VERSION)
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("PYTHON_VERSION"); envVersion != "" {
-		miseStep.Version(python, envVersion, varName)
+	// NOTE: Version resolution precedence matters here.
+	// We evaluate manifest files (Pipfile, runtime.txt) first to establish the baseline.
+	if pipfileVersion, pipfileVarName := parseVersionFromPipfile(ctx); pipfileVersion != "" {
+		miseStep.Version(python, pipfileVersion, fmt.Sprintf("Pipfile > %s", pipfileVarName))
 	}
 
 	if runtimeFile, err := ctx.App.ReadFile("runtime.txt"); err == nil {
 		miseStep.Version(python, utils.ExtractSemverVersion(string(runtimeFile)), "runtime.txt")
-	}
-
-	if pipfileVersion, pipfileVarName := parseVersionFromPipfile(ctx); pipfileVersion != "" {
-		miseStep.Version(python, pipfileVersion, fmt.Sprintf("Pipfile > %s", pipfileVarName))
 	}
 
 	// Collect all packages that will be used by the provider
@@ -355,7 +353,14 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		packages = append(packages, "pipx:pipenv")
 	}
 
+	// UseMiseVersions internally executes a forced override based on mise config files (.python-version, mise.toml)
 	miseStep.UseMiseVersions(ctx, packages)
+
+	// IMPORTANT: The ENV check MUST be placed AFTER UseMiseVersions to guarantee it retains ultimate precedence
+	// over all manifest and mise configurations, strictly adhering to the documentation.
+	if envVersion, varName := ctx.Env.GetConfigVariable("PYTHON_VERSION"); envVersion != "" {
+		miseStep.Version(python, envVersion, varName)
+	}
 
 	// Disable Python compilation to avoid incompatibility issues with some packages
 	// https://mise.jdx.dev/lang/python.html#python.compile

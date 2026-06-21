@@ -251,15 +251,24 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	// rdoc (a) slows down builds (b) increases build size and (c) mostly importantly, will cause builds to fail if the locale is not properly set
 	miseStep.Variables["RUBY_CONFIGURE_OPTS"] = "--disable-install-doc"
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("RUBY_VERSION"); envVersion != "" {
-		miseStep.Version(ruby, envVersion, varName)
-	}
+	// NOTE: Version resolution precedence matters here.
+	// We evaluate manifest files (Gemfile, .ruby-version) first to establish the baseline.
+	// The environment variable (RUBY_VERSION) must be checked last to act as the ultimate override,
+	// strictly guaranteeing the 'Last Write Wins' behavior as expected by the docs.
 
 	if gemfileVersion := parseVersionFromGemfile(ctx); gemfileVersion != "" {
 		miseStep.Version(ruby, gemfileVersion, "Gemfile")
 	}
 
+	// UseMiseVersions internally executes a forced override based on mise config files (mise.toml, .tool-versions)
+	// and idiomatic files (.ruby-version, Gemfile).
 	miseStep.UseMiseVersions(ctx, []string{"ruby"})
+
+	// IMPORTANT: The ENV check MUST be placed AFTER UseMiseVersions to guarantee it retains ultimate precedence
+	// over all idiomatic and mise configurations.
+	if envVersion, varName := ctx.Env.GetConfigVariable("RUBY_VERSION"); envVersion != "" {
+		miseStep.Version(ruby, envVersion, varName)
+	}
 
 	miseStep.AddSupportingAptPackage("libyaml-dev")
 	miseStep.AddSupportingAptPackage("libjemalloc-dev")
