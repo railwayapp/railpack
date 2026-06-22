@@ -8,6 +8,7 @@ _.path = './bin'
 go = "1.26"
 golangci-lint = "latest"
 bun = "1.3"
+"cargo:retry-cli" = "latest"
 
 [settings]
 experimental = true
