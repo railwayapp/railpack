@@ -199,7 +199,8 @@ func (b *MiseStepBuilder) GetMisePackageVersions(ctx *GenerateContext) (map[stri
 	return packages, nil
 }
 
-// Use mise-specified versions (including idiomatic version files) for all packages in the input list, this will overwrite any previously-specified package versions
+// Use mise-specified versions (including idiomatic version files) for all packages in the input list
+// this overwrites any previously-specified package versions, so ENV-soured versions must be applied after this is called.
 func (b *MiseStepBuilder) UseMiseVersions(ctx *GenerateContext, packageNamesToOverride []string) {
 	miseSpecifiedPackageVersions, err := b.GetMisePackageVersions(ctx)
 	if err != nil {
