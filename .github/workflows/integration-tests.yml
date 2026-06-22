@@ -131,9 +131,10 @@ jobs:
           registry: ${{ env.PRODUCTION_CONTAINER_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
+      
+      # intermittent docker pull failures kept failing the entire pipeline, which is why we are retrying
       - name: Start BuildKit
-        run: mise run run-buildkit-container
+        run: retry --attempts 5 mise run run-buildkit-container
 
       # required for integration tests that use multiple platforms
       - name: Set up QEMU
