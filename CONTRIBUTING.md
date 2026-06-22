@@ -2,60 +2,29 @@
 
 ## Pull Requests
 
-We welcome pull requests that push the project forward in meaningful ways.
-Please ensure your PRs:
+We love contributions from the community! Please ensure your PRs:
 
 - Address a specific problem or add a well-defined feature
 - Include tests for new functionality
 - Follow the existing code style
+- Do not just make superficial changes (e.g., formatting, comments, version updated)
+- PR title and description should follow [the PR template](.github/PULL_REQUEST_TEMPLATE.md)
+- Be concise when writing your PR description. Fine to use AI, but make sure to review and deslop any writing.
 
-Note: We prefer focused, well-thought-out contributions over "drive-by" PRs that
-make superficial changes.
+## AI Policy
 
-DO NOT submit completely AI-generated PRs. If we suspect PRs are completely generated,
-we will close them with a note indicating this (feel free to reopen if we got it wrong!).
+We love AI and encourage its use. However, in order to maintain a high-quality codebase and optimize the time
+of maintainers of the project, we have some guidelines around the use of AI in contributions:
+
+- **DO NOT submit completely AI-generated PRs.** If we suspect PRs is AI generated without careful human review,
+  we will close them with a note indicating this (feel free to reopen if we got it wrong!). We use AI extensively in our
+  development process, and it's easier for us to generate a PR from a well-written issue than it is review an AI generated
+  PR with no human in the loop.
+
+- **The human-in-the-loop must fully understand all code.** A rule of thumb: if you
+  can't explain what your changes do and how they interact with the
+  greater system without the aid of AI tools, create a well-written GitHub issue instead so an engineer with a deeper understanding of the system can quickly generate a PR.
 
 ## Development Workflow
 
-[Checkout this guide for more information.](https://railpack.com/guides/developing-locally/)
-
-## Testing
-
-### Core Tests
-
-- All example plans are snapshot tested in `core_test.go`
-- Tests with a `test.json` file will be built and run automatically
-- The test output must contain the `expectedOutput` specified in the test file
-
-### Snapshot Tests
-
-Railpack uses [go-snaps](https://github.com/gkampitakis/go-snaps) for snapshot
-testing. This helps prevent regressions to generated build plans.
-
-If you see a test failure because of a snapshot change, please confirm that the
-change is intentional, and then update the snapshot by running:
-
-```bash
-mise run test-update-snapshots
-```
-
-### Integration Tests
-
-Example directories with a `test.json` file will be automatically built and run
-in CI. You can run them locally with:
-
-```bash
-mise run test-integration
-```
-
-The `test.json` file contains an array of build configurations and expected
-outputs. See [this
-file](https://github.com/railwayapp/railpack/blob/main/integration_tests/run_test.go#L26)
-for the schema.
-
-## Useful Commands
-
-- `mise check` - Run linting and type checking
-- `mise test` - Run unit tests
-- `mise test-integration` - Run integration tests
-- `mise run test-update-snapshots` - Update snapshot tests
+[Checkout this guide.](https://railpack.com/guides/developing-locally/)

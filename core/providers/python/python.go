@@ -353,11 +353,8 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		packages = append(packages, "pipx:pipenv")
 	}
 
-	// UseMiseVersions internally executes a forced override based on mise config files (.python-version, mise.toml)
 	miseStep.UseMiseVersions(ctx, packages)
 
-	// IMPORTANT: The ENV check MUST be placed AFTER UseMiseVersions to guarantee it retains ultimate precedence
-	// over all manifest and mise configurations, strictly adhering to the documentation.
 	if envVersion, varName := ctx.Env.GetConfigVariable("PYTHON_VERSION"); envVersion != "" {
 		miseStep.Version(python, envVersion, varName)
 	}
