@@ -149,3 +149,13 @@ func (w *Workspace) AllPackageJson() []*PackageJson {
 
 	return packageJsons
 }
+
+func (w *Workspace) HasPackageBins() bool {
+	for _, pkg := range w.Packages {
+		if pkg.PackageJson.HasBin() {
+			return true
+		}
+	}
+
+	return false
+}

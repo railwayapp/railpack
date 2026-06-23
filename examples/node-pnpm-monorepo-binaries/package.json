@@ -1,0 +1,15 @@
+{
+  "name": "node-pnpm-monorepo-binaries",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Reproduces railpack#584: pnpm workspace bin scripts are not relinked after source files are copied",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm --filter package-b build",
+    "start": "hello-cli"
+  },
+  "dependencies": {
+    "package-a": "workspace:*",
+    "package-b": "workspace:*"
+  }
+}

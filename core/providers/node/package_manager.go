@@ -85,14 +85,17 @@ func (p PackageManager) installDependencies(ctx *generate.GenerateContext, works
 	}
 
 	usesLocalFile := p.usesLocalFile(ctx)
+	hasWorkspaceBins := p == PackageManagerPnpm && workspace != nil && workspace.HasPackageBins()
 
 	// If there are any pre/post install scripts, we need the entire app to be copied
 	// This is to handle things like patch-package
-	if hasPreInstall || hasPostInstall || hasPrepare || usesLocalFile {
+	if hasPreInstall || hasPostInstall || hasPrepare || usesLocalFile || hasWorkspaceBins {
 		install.AddInput(ctx.NewLocalLayer())
 
 		// Use all secrets for the install step if there are any pre/post install scripts
-		install.UseSecrets([]string{"*"})
+		if hasPreInstall || hasPostInstall || hasPrepare {
+			install.UseSecrets([]string{"*"})
+		}
 	} else {
 		files := p.SupportingInstallFiles(ctx)
 		for _, file := range files {
