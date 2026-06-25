@@ -40,6 +40,7 @@ railpack build [options] DIRECTORY
 | `--progress`  | BuildKit progress output mode (auto, plain, tty)      | `auto`  |
 | `--show-plan` | Show the build plan before building                   | `false` |
 | `--cache-key` | Unique id to prefix to cache keys                     |         |
+| `--no-cache`  | Do not use cache when building (boolean flag)         | `false` |
 
 ### prepare
 
