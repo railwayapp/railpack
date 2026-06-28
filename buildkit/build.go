@@ -206,17 +206,19 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 
 	// Add cache import if specified
 	if opts.ImportCache != "" {
+		cacheType, attrs := extractCacheType(parseKeyValue(opts.ImportCache))
 		solveOpts.CacheImports = append(solveOpts.CacheImports, client.CacheOptionsEntry{
-			Type:  "gha",
-			Attrs: parseKeyValue(opts.ImportCache),
+			Type:  cacheType,
+			Attrs: attrs,
 		})
 	}
 
 	// Add cache export if specified
 	if opts.ExportCache != "" {
+		cacheType, attrs := extractCacheType(parseKeyValue(opts.ExportCache))
 		solveOpts.CacheExports = append(solveOpts.CacheExports, client.CacheOptionsEntry{
-			Type:  "gha",
-			Attrs: parseKeyValue(opts.ExportCache),
+			Type:  cacheType,
+			Attrs: attrs,
 		})
 	}
 
@@ -227,15 +229,10 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 			return fmt.Errorf("error creating output directory: %w", err)
 		}
 
-		solveOpts = client.SolveOpt{
-			LocalMounts: map[string]fsutil.FS{
-				"context": appFS,
-			},
-			Exports: []client.ExportEntry{
-				{
-					Type:      client.ExporterLocal,
-					OutputDir: opts.OutputDir,
-				},
+		solveOpts.Exports = []client.ExportEntry{
+			{
+				Type:      client.ExporterLocal,
+				OutputDir: opts.OutputDir,
 			},
 		}
 	}
@@ -294,4 +291,21 @@ func parseKeyValue(s string) map[string]string {
 		}
 	}
 	return attrs
+}
+
+func extractCacheType(attrs map[string]string) (string, map[string]string) {
+	cacheType, ok := attrs["type"]
+	if !ok {
+		return "gha", attrs
+	}
+
+	cleanedAttrs := make(map[string]string, len(attrs)-1)
+	for key, value := range attrs {
+		if key == "type" {
+			continue
+		}
+		cleanedAttrs[key] = value
+	}
+
+	return cacheType, cleanedAttrs
 }
