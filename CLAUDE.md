@@ -37,15 +37,16 @@ it into a container image. It's built on BuildKit with support for Node, Python,
 
 # Workflow
 
-- If mise is not available in your environment, install it using the instructions at https://mise.jdx.dev/installing-mise.html.
+- If mise is not available in your environment, [install it](https://mise.jdx.dev/installing-mise.html)
 - Take a careful look at @mise.toml to understand what commands should be run at different points in the project lifecycle
-- Do not worry about docker cache, etc. Never run `docker system prune` or any other similar commands.
+- Do not worry about docker cache, etc. Never run `docker system prune` or other similar commands.
 - Do not run `go` directly. Instead, inspect @mise.toml and use `mise run <task>` to run various dev lifecycle commands. For instance, you should not run `go vet`, `go fmt`, `go test`, etc directly.
-- After making code changes, first run `mise run check`
-- Then, run unit tests and a couple of relevant integration tests to verify your changes
+- After making code changes, run `mise run check`
+- Then, run unit tests (`mise run test`) and a couple of relevant integration tests to verify your changes.
   - Don't run tests manually using `go test` unless instructed to do so
   - If tests are failing that are unrelated to your changes, let me know and stop working.
 - Use the `cli` mise task to test your changes on a specific example project, i.e. `mise run cli -- --verbose build --show-plan examples/node-vite-react-router-spa/`
+- Run before finishing your work `mise run test-update-snapshots` and review the (possibly) updated snapshot files to make sure there are no unexpected changes. 
 - Do not run any write operations with `git`
 - Do not use `bin/railpack` instead use `mise run cli` (which is the development build of `railpack`)
   - Therefore do not run `mise build`, we don't need a `railpack` binary for local testing
