@@ -16,11 +16,13 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/containerd/platforms"
+	"github.com/docker/cli/cli/config"
 	"github.com/moby/buildkit/client"
 	_ "github.com/moby/buildkit/client/connhelper/dockercontainer"
 	_ "github.com/moby/buildkit/client/connhelper/nerdctlcontainer"
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/buildkit/session"
+	"github.com/moby/buildkit/session/auth/authprovider"
 	"github.com/moby/buildkit/session/secrets/secretsprovider"
 	"github.com/moby/buildkit/util/appcontext"
 	_ "github.com/moby/buildkit/util/grpcutil/encoding/proto"
@@ -188,11 +190,22 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 	}
 	secrets := secretsprovider.FromMap(secretsMap)
 
+	// BuildKit keeps no static credential store on its side; ship the caller's
+	// docker CLI config ($DOCKER_CONFIG, default ~/.docker/config.json) into this
+	// solve's session so the daemon can authenticate pulls/pushes to private regs.
+	dockerConfig := config.LoadDefaultConfigFile(os.Stderr)
+	sessionAttachables := []session.Attachable{
+		secrets,
+		authprovider.NewDockerAuthProvider(authprovider.DockerAuthProviderConfig{
+			AuthConfigProvider: authprovider.LoadAuthConfig(dockerConfig),
+		}),
+	}
+
 	solveOpts := client.SolveOpt{
 		LocalMounts: map[string]fsutil.FS{
 			"context": appFS,
 		},
-		Session: []session.Attachable{secrets},
+		Session: sessionAttachables,
 		Exports: []client.ExportEntry{
 			{
 				Type: client.ExporterDocker,
@@ -220,6 +233,8 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 			return fmt.Errorf("error creating output directory: %w", err)
 		}
 
+		// Only swap the export target; keep Session (secrets + docker auth) and
+		// any cache import/export entries already attached to solveOpts.
 		solveOpts.Exports = []client.ExportEntry{
 			{
 				Type:      client.ExporterLocal,
