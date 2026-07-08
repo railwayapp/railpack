@@ -21,7 +21,7 @@
    ],
    "inputs": [
     {
-     "image": "dunglas/frankenphp:php8.2.31-bookworm"
+     "image": "dunglas/frankenphp:php8.2.32-bookworm"
     }
    ],
    "name": "packages:image"
