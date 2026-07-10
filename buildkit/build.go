@@ -1,3 +1,6 @@
+// called by the build CLI entrypoint and runs the build using the buildkit client
+// also used by the integration tests to run builds in a test environment
+
 package buildkit
 
 import (
@@ -40,7 +43,7 @@ Most likely the $BUILDKIT_HOST is not running. Here's an example of how to start
 	docker run --rm --privileged -d --name buildkit moby/buildkit
 
 Use 'railpack --verbose' to view more error details.
-		`
+`
 )
 
 type BuildWithBuildkitClientOptions struct {
@@ -204,7 +207,9 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		},
 	}
 
-	// Add cache import if specified
+	// TODO right now, import/export cache is only supported in `build` when building the integration tests and is not
+	// exposed to the user via the `build` subcommand
+
 	if opts.ImportCache != "" {
 		cacheType, attrs := extractCacheType(parseKeyValue(opts.ImportCache))
 		solveOpts.CacheImports = append(solveOpts.CacheImports, client.CacheOptionsEntry{
@@ -213,7 +218,6 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		})
 	}
 
-	// Add cache export if specified
 	if opts.ExportCache != "" {
 		cacheType, attrs := extractCacheType(parseKeyValue(opts.ExportCache))
 		solveOpts.CacheExports = append(solveOpts.CacheExports, client.CacheOptionsEntry{
@@ -273,14 +277,17 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 func getImageName(appDir string) string {
 	parts := strings.Split(appDir, string(os.PathSeparator))
 	name := parts[len(parts)-1]
+
+	// TODO how could this happen in practice?
 	if name == "" {
 		name = "railpack-app" // Fallback if path ends in separator
 	}
+
 	// Docker requires image names to be lowercase
 	return strings.ToLower(name)
 }
 
-// Helper function to parse key=value strings into a map
+// parse comma-separated key=value strings into a map
 func parseKeyValue(s string) map[string]string {
 	attrs := make(map[string]string)
 	parts := strings.SplitSeq(s, ",")

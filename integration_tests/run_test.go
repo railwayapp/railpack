@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO we should be able to just pull these from GHA environment variables instead
 var buildkitCacheImport = flag.String("buildkit-cache-import", "", "BuildKit cache import configuration")
 var buildkitCacheExport = flag.String("buildkit-cache-export", "", "BuildKit cache export configuration")
 
