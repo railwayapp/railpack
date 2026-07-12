@@ -207,27 +207,8 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		},
 	}
 
-	for _, entry := range opts.ImportCache {
-		if entry == "" {
-			continue
-		}
-		cacheType, attrs := extractCacheType(parseKeyValue(entry))
-		solveOpts.CacheImports = append(solveOpts.CacheImports, client.CacheOptionsEntry{
-			Type:  cacheType,
-			Attrs: attrs,
-		})
-	}
-
-	for _, entry := range opts.ExportCache {
-		if entry == "" {
-			continue
-		}
-		cacheType, attrs := extractCacheType(parseKeyValue(entry))
-		solveOpts.CacheExports = append(solveOpts.CacheExports, client.CacheOptionsEntry{
-			Type:  cacheType,
-			Attrs: attrs,
-		})
-	}
+	solveOpts.CacheImports = cacheEntriesFromFlags(opts.ImportCache)
+	solveOpts.CacheExports = cacheEntriesFromFlags(opts.ExportCache)
 
 	log.Infof("cache imports: %v", solveOpts.CacheImports)
 	log.Infof("cache exports: %v", solveOpts.CacheExports)
@@ -292,6 +273,23 @@ func getImageName(appDir string) string {
 
 	// Docker requires image names to be lowercase
 	return strings.ToLower(name)
+}
+
+// Converts docker buildx-style cache flag values (e.g. type=registry,ref=...)
+// into BuildKit CacheOptionsEntry values. Empty strings are skipped.
+func cacheEntriesFromFlags(entries []string) []client.CacheOptionsEntry {
+	var out []client.CacheOptionsEntry
+	for _, entry := range entries {
+		if entry == "" {
+			continue
+		}
+		cacheType, attrs := extractCacheType(parseKeyValue(entry))
+		out = append(out, client.CacheOptionsEntry{
+			Type:  cacheType,
+			Attrs: attrs,
+		})
+	}
+	return out
 }
 
 // parse comma-separated key=value strings into a map, ignoring entries without an "="
