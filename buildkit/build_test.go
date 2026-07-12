@@ -70,18 +70,18 @@ func TestExtractCacheType(t *testing.T) {
 			},
 		},
 		{
-			name:         "default cache type is gha",
+			name:         "missing type is not defaulted",
 			input:        "scope=my-cache,mode=max",
-			expectedType: "gha",
+			expectedType: "",
 			expectedAttrs: map[string]string{
 				"scope": "my-cache",
 				"mode":  "max",
 			},
 		},
 		{
-			name:          "empty attrs use default cache type",
+			name:          "empty attrs",
 			input:         "",
-			expectedType:  "gha",
+			expectedType:  "",
 			expectedAttrs: map[string]string{},
 		},
 	}

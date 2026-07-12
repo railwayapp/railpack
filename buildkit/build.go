@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"strings"
@@ -42,8 +43,7 @@ Most likely the $BUILDKIT_HOST is not running. Here's an example of how to start
 
 	docker run --rm --privileged -d --name buildkit moby/buildkit
 
-Use 'railpack --verbose' to view more error details.
-`
+Use 'railpack --verbose' to view more error details`
 )
 
 type BuildWithBuildkitClientOptions struct {
@@ -54,8 +54,8 @@ type BuildWithBuildkitClientOptions struct {
 	SecretsHash  string
 	Secrets      map[string]string
 	Platform     string
-	ImportCache  string
-	ExportCache  string
+	ImportCache  []string
+	ExportCache  []string
 	CacheKey     string
 	GitHubToken  string
 }
@@ -207,24 +207,30 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		},
 	}
 
-	// TODO right now, import/export cache is only supported in `build` when building the integration tests and is not
-	// exposed to the user via the `build` subcommand
-
-	if opts.ImportCache != "" {
-		cacheType, attrs := extractCacheType(parseKeyValue(opts.ImportCache))
+	for _, entry := range opts.ImportCache {
+		if entry == "" {
+			continue
+		}
+		cacheType, attrs := extractCacheType(parseKeyValue(entry))
 		solveOpts.CacheImports = append(solveOpts.CacheImports, client.CacheOptionsEntry{
 			Type:  cacheType,
 			Attrs: attrs,
 		})
 	}
 
-	if opts.ExportCache != "" {
-		cacheType, attrs := extractCacheType(parseKeyValue(opts.ExportCache))
+	for _, entry := range opts.ExportCache {
+		if entry == "" {
+			continue
+		}
+		cacheType, attrs := extractCacheType(parseKeyValue(entry))
 		solveOpts.CacheExports = append(solveOpts.CacheExports, client.CacheOptionsEntry{
 			Type:  cacheType,
 			Attrs: attrs,
 		})
 	}
+
+	log.Infof("cache imports: %v", solveOpts.CacheImports)
+	log.Infof("cache exports: %v", solveOpts.CacheExports)
 
 	// Save the resulting filesystem to a directory
 	if opts.OutputDir != "" {
@@ -274,6 +280,7 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 	return nil
 }
 
+// determine the image name from the app dir path
 func getImageName(appDir string) string {
 	parts := strings.Split(appDir, string(os.PathSeparator))
 	name := parts[len(parts)-1]
@@ -287,32 +294,25 @@ func getImageName(appDir string) string {
 	return strings.ToLower(name)
 }
 
-// parse comma-separated key=value strings into a map
+// parse comma-separated key=value strings into a map, ignoring entries without an "="
 func parseKeyValue(s string) map[string]string {
 	attrs := make(map[string]string)
 	parts := strings.SplitSeq(s, ",")
 	for part := range parts {
-		kv := strings.SplitN(part, "=", 2)
-		if len(kv) == 2 {
-			attrs[kv[0]] = kv[1]
+		key, value, found := strings.Cut(part, "=")
+		if !found {
+			continue
 		}
+		attrs[strings.TrimSpace(key)] = strings.TrimSpace(value)
 	}
 	return attrs
 }
 
 func extractCacheType(attrs map[string]string) (string, map[string]string) {
-	cacheType, ok := attrs["type"]
-	if !ok {
-		return "gha", attrs
-	}
+	cacheType := attrs["type"]
 
-	cleanedAttrs := make(map[string]string, len(attrs)-1)
-	for key, value := range attrs {
-		if key == "type" {
-			continue
-		}
-		cleanedAttrs[key] = value
-	}
+	cleanedAttrs := maps.Clone(attrs)
+	delete(cleanedAttrs, "type")
 
 	return cacheType, cleanedAttrs
 }

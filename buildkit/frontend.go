@@ -1,4 +1,7 @@
-// for platforms: used by `ghcr.io/railwayapp/railpack-frontend` to accept railpack plans via BuildKit
+// for platforms: used by `ghcr.io/railwayapp/railpack-frontend` as a buildkit frontend
+// the buildkit library consumes buildkit input and exposes it to us via the client.Client interface
+// note that `frontend` and `build` are completely separate paths
+
 package buildkit
 
 import (
@@ -27,14 +30,18 @@ const (
 	// default filename for the serialized Railpack plan
 	defaultRailpackPlan = "railpack-plan.json"
 
-	// Build arg keys
+	// railpack build args
 	secretsHash = "secrets-hash"
 	cacheKey    = "cache-key"
 	githubToken = "github-token"
+
+	// buildctl --import-cache is serialized into this frontend opt by the BuildKit client
+	// `docker buildx` uses a different arg name, but the buildkit frontend normalizes the opt name the frontend receives
+	keyCacheImports = "cache-imports"
 )
 
 func StartFrontend() {
-	log.Info("Starting frontend")
+	log.Info("starting frontend")
 
 	ctx := appcontext.Context()
 	if err := gw.RunFromEnvironment(ctx, Build); err != nil {
@@ -43,6 +50,7 @@ func StartFrontend() {
 	}
 }
 
+// handler for the buildkit gateway to let us read the railplan plan and generate a buildkit solve
 func Build(ctx context.Context, c client.Client) (*client.Result, error) {
 	opts := c.BuildOpts().Opts
 	buildArgs := parseBuildArgs(opts)
@@ -88,8 +96,18 @@ func Build(ctx context.Context, c client.Client) (*client.Result, error) {
 		return nil, fmt.Errorf("error marshalling image: %w", err)
 	}
 
+	// buildkit does not auto-apply --import-cache to this solve, we need to parse the frontend opt and set the CacheImports explicitly
+	// cache exports are applied automatically for us since they do not impact the solve
+	cacheImports, err := parseCacheImports(opts)
+	if err != nil {
+		return nil, err
+	}
+	// NOTE logs are swallowed and outputted to the buildkit container logs, not the buildctl logs
+	log.Infof("frontend cache imports: %v", cacheImports)
+
 	res, err := c.Solve(ctx, client.SolveRequest{
-		Definition: def.ToPB(),
+		Definition:   def.ToPB(),
+		CacheImports: cacheImports,
 	})
 	if err != nil {
 		return nil, err
@@ -121,7 +139,7 @@ func readRailpackPlan(ctx context.Context, c client.Client) (*plan.BuildPlan, er
 	return plan, nil
 }
 
-// validatePlatform checks if the platform is supported and returns the corresponding specs.Platform
+// checks if the platform is supported and returns the corresponding platform specs
 func validatePlatform(opts map[string]string) (specs.Platform, error) {
 	platformStr := opts["platform"]
 
@@ -130,7 +148,6 @@ func validatePlatform(opts map[string]string) (specs.Platform, error) {
 		return specs.Platform{}, fmt.Errorf("multiple platforms are not supported, got: %s", platformStr)
 	}
 
-	// Parse the platform using our helper function
 	platform, err := ParsePlatformWithDefaults(platformStr)
 	if err != nil {
 		return specs.Platform{}, fmt.Errorf("invalid platform format: %s. Must be one of: linux/amd64, linux/arm64, etc", platformStr)
@@ -139,7 +156,8 @@ func validatePlatform(opts map[string]string) (specs.Platform, error) {
 	return platform, nil
 }
 
-// Read a file from the build context
+// Read a file from the build context. The frontend does not have a full `App` struct, which is why we have this helper
+// to read railpack-plan.json.
 func readFile(ctx context.Context, c client.Client, filename string) (string, error) {
 	// Create a Local source for the dockerfile
 	src := llb.Local(configMountName,
@@ -177,6 +195,12 @@ func readFile(ctx context.Context, c client.Client, filename string) (string, er
 	return fileContents, nil
 }
 
+// Extracts Docker/buildx --build-arg values from frontend opts.
+//
+// Docker/buildx always namespaces those as "build-arg:<name>" (e.g.
+// --build-arg cache-key=x → opts["build-arg:cache-key"]). bare buildctl
+// --opt cache-key=x is opts["cache-key"] and is not returned here; use
+// --opt build-arg:cache-key=x for the same shape as Docker.
 func parseBuildArgs(opts map[string]string) map[string]string {
 	buildArgs := make(map[string]string)
 
@@ -185,10 +209,32 @@ func parseBuildArgs(opts map[string]string) map[string]string {
 			continue
 		}
 
-		// Remove the "build-arg:" prefix
 		name := strings.TrimPrefix(key, "build-arg:")
 		buildArgs[name] = arg
 	}
 
 	return buildArgs
+}
+
+// reads the "cache-imports" frontend opt set by the BuildKit
+func parseCacheImports(opts map[string]string) ([]client.CacheOptionsEntry, error) {
+	cacheImportsStr := opts[keyCacheImports]
+	if cacheImportsStr == "" {
+		return nil, nil
+	}
+
+	// Same JSON shape as control API CacheOptionsEntry (Type / Attrs).
+	var entries []struct {
+		Type  string            `json:"Type"`
+		Attrs map[string]string `json:"Attrs"`
+	}
+	if err := json.Unmarshal([]byte(cacheImportsStr), &entries); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal %s (%q)", keyCacheImports, cacheImportsStr)
+	}
+
+	cacheImports := make([]client.CacheOptionsEntry, 0, len(entries))
+	for _, e := range entries {
+		cacheImports = append(cacheImports, client.CacheOptionsEntry{Type: e.Type, Attrs: e.Attrs})
+	}
+	return cacheImports, nil
 }
