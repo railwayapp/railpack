@@ -1,0 +1,9 @@
+# Allow HTTP pulls/pushes to the local registry:2 used for frontend images and cache.
+# See .mise/tasks/images.toml (image-run-registry / image-frontend-build).
+[registry."host.docker.internal:7890"]
+  http = true
+  insecure = true
+
+[registry."localhost:7890"]
+  http = true
+  insecure = true

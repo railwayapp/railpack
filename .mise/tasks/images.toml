@@ -1,0 +1,70 @@
+[image-builder-build]
+run = "docker build --build-arg MISE_VERSION=$RAILPACK_MISE_VERSION -f images/debian/build/Dockerfile -t railpack-builder:local ."
+
+[mise-builder-shell]
+description = "Shell into the railpack-builder image"
+usage = 'flag "--local" help="Build and use railpack-builder:local instead of the ghcr image"'
+run = '''
+if [ "${usage_local:-false}" = "true" ]; then
+  mise run image-builder-build
+  image="railpack-builder:local"
+else
+  image="ghcr.io/railwayapp/railpack-builder:mise-$RAILPACK_MISE_VERSION"
+fi
+exec docker run -it --rm "$image" bash
+'''
+
+[image-runtime-build]
+run = "docker build -f images/debian/runtime/Dockerfile -t railpack-runtime:local ."
+
+[image-frontend-build]
+description = "Build the railpack frontend image and push to local registry"
+run = [
+  "docker build -f images/alpine/frontend/Dockerfile -t railpack-frontend:local .",
+  # in order for builtctl to use this image, it needs to exist on a registry
+  "docker tag railpack-frontend:local localhost:7890/railpack-frontend:local",
+  "docker push localhost:7890/railpack-frontend:local",
+]
+
+[image-run-registry]
+description = "Local image registry for frontend images and BuildKit cache (HTTP on :7890)"
+run = '''
+docker rm -f railpack-registry 2>/dev/null || true
+docker run -d --rm \
+  --name railpack-registry \
+  -p 7890:5000 \
+  registry:2
+'''
+
+[image-frontend-build-project]
+description = "Build a project dir with the local railpack frontend via buildctl with debug logging enabled and a local cache registry"
+usage = 'arg "<dir>" help="Project directory to build (e.g. examples/node-bun)"'
+run = '''
+set -euxo pipefail
+
+dir="${usage_dir:?dir is required}"
+if [ ! -d "$dir" ]; then
+  echo "directory not found: $dir" >&2
+  exit 1
+fi
+
+project_name="$(basename "$dir")"
+
+plan_dir="tmp/frontend-plan"
+mkdir -p "$plan_dir"
+mise run cli plan "$dir" --out "$plan_dir/railpack-plan.json"
+
+# host.docker.internal is required since the frontend container is running inside a buildx container
+buildctl --debug build \
+  --frontend=gateway.v0 \
+  --opt source=host.docker.internal:7890/railpack-frontend:local \
+  --opt build-arg:verbose=true \
+  --opt image-resolve-mode=pull \
+  --local "context=$dir" \
+  --local "dockerfile=$plan_dir" \
+  --progress=plain \
+  --trace="$plan_dir/build.trace" \
+  --debug-json-cache-metrics stdout \
+  --export-cache type=registry,ref=host.docker.internal:7890/"$project_name":cache,mode=max \
+  --import-cache type=registry,ref=host.docker.internal:7890/"$project_name":cache
+'''
