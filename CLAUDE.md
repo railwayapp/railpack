@@ -5,17 +5,17 @@ it into a container image. It's built on BuildKit with support for Node, Python,
 
 # Architecture
 
-- **Core**: Analyzes apps and generates JSON build plans using language
-  providers
+- **CLI**: Main entry point that coordinates core analysis and BuildKit execution
+- **Core**: Analyzes apps and generates JSON build plans using language providers
 - **BuildKit**: Converts build plans to BuildKit LLB (Low-Level Builder) format
-  for efficient image construction
-- **CLI**: Main entry point that coordinates core analysis and BuildKit
-  execution
+  for image construction.
 - **Providers**: Language-specific modules that detect project types (e.g. Node
-  detects package.json) and generate appropriate build steps
+  detects package.json) and generate appropriate build steps.
 - **Runtime**: The built images are based on @images/debian/runtime/Dockerfile
 
 # Code style
+
+Follow these instructions carefully when writing code:
 
 - When writing a comment describing a function, do not start the comment with the name of the function
 - Assume the person reading this code is an expert software engineer, but is not familiar with the internals of every system. Include concise one-line comments explaining key hooks, API usage, blocks of logic, etc., to help the reader quickly understand the code you've written.
