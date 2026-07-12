@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -24,9 +23,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO we should be able to just pull these from GHA environment variables instead
-var buildkitCacheImport = flag.String("buildkit-cache-import", "", "BuildKit cache import configuration")
-var buildkitCacheExport = flag.String("buildkit-cache-export", "", "BuildKit cache export configuration")
+// Integration builds intentionally do not use BuildKit remote cache (e.g. type=gha).
+// Example images would overrun GitHub Actions' 10GB cache limit and thrash eviction:
+// https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#usage-limits-and-eviction-policy
 
 type StringOrArray []string
 
@@ -162,12 +161,10 @@ func TestExamplesIntegration(t *testing.T) {
 					strings.ToLower(uuid.New().String()))
 
 				if err := buildkit.BuildWithBuildkitClient(examplePath, buildResult.Plan, buildkit.BuildWithBuildkitClientOptions{
-					ImageName:   imageName,
-					Platform:    testCase.Platform,
-					ImportCache: *buildkitCacheImport,
-					ExportCache: *buildkitCacheExport,
-					Secrets:     testCase.Envs,
-					CacheKey:    imageName,
+					ImageName: imageName,
+					Platform:  testCase.Platform,
+					Secrets:   testCase.Envs,
+					CacheKey:  imageName,
 					// Pass through GITHUB_TOKEN if it exists, this avoids mise timeouts during build
 					// this can easily occur since we run all integration tests in parallel via GHA
 					GitHubToken: os.Getenv("GITHUB_TOKEN"),
