@@ -90,9 +90,9 @@ func TestExtractCacheType(t *testing.T) {
 			},
 		},
 		{
-			name:         "type only",
-			input:        "type=registry",
-			expectedType: "registry",
+			name:          "type only",
+			input:         "type=registry",
+			expectedType:  "registry",
 			expectedAttrs: map[string]string{},
 		},
 		{
