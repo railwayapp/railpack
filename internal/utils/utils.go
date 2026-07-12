@@ -22,6 +22,19 @@ func RemoveDuplicates[T comparable](sliceList []T) []T {
 	return list
 }
 
+// Parses common true/false string values (true/1/yes/on and false/0/no/off).
+// The second return is false when the string is empty or unrecognized.
+func ParseBool(s string) (value bool, ok bool) {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "true", "1", "yes", "on":
+		return true, true
+	case "false", "0", "no", "off":
+		return false, true
+	default:
+		return false, false
+	}
+}
+
 // MergeStringSlicePointers combines multiple string slice pointers, deduplicates values, and sorts them
 func MergeStringSlicePointers(slices ...*[]string) *[]string {
 	if len(slices) == 0 {
