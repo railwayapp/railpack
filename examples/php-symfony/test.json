@@ -1,0 +1,15 @@
+[
+  {
+    "expectedOutput": "starting server loop"
+  },
+  {
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 80
+    },
+    "envs": {
+      "APP_SECRET": "305166dce994d8cc37ba607fe4b4f31b"
+    }
+  }
+]
