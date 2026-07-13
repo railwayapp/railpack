@@ -8,7 +8,7 @@ builds.
 
 ## Layer Cache
 
-Railpack takes advantage of BuildKit's layer cache and avoids busting the cache
+Railpack uses BuildKit's layer cache and avoids busting the cache
 when possible. Cache busting events are defined in a granular way as part of the
 [steps commands list](/architecture/overview/#build-step). These include:
 
@@ -16,6 +16,13 @@ when possible. Cache busting events are defined in a granular way as part of the
 - Changing environment variables
 - Adding new generated files to the build context
 - Executing shell commands in the build context
+
+### Cache Backends
+
+Railpack supports all [BuildKit cache backends](https://docs.docker.com/build/cache/backends/).
+
+* `railpack build` supports the same CLI arguments as `docker buildx` for cache import/export. See the [CLI reference](../reference/cli/#build) for more information.
+* Cache import/export references are supported when using the Railpack frontend directly with `docker buildx` or `buildctl`. See the [frontend reference](../reference/frontend/#configuration) for more information.
 
 ## Mount Cache
 
