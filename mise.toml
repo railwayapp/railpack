@@ -20,11 +20,20 @@ env_shell_expand = true
 [tasks.setup]
 run = [
   "mise install",
-  "mise run run-buildkit-container || true",
+  "mise run run-buildkit-container",
 ]
 
 [tasks.run-buildkit-container]
-run = "docker run --rm --privileged -d --name buildkit -e BUILDKIT_DEBUG=1 moby/buildkit:latest"
+# Mount buildkitd.toml so host.docker.internal:7890 (local registry) is reachable over HTTP
+# `.template` ensures it isn't picked up by the mise task management
+run = '''
+docker rm -f buildkit 2>/dev/null || true
+docker run --rm --privileged -d --name buildkit \
+  -e BUILDKIT_DEBUG=1 \
+  -v "$PWD/.mise/tasks/buildkitd.toml.template:/etc/buildkit/buildkitd.toml:ro" \
+  moby/buildkit:latest \
+  --config /etc/buildkit/buildkitd.toml
+'''
 
 [tasks.cli]
 run = "go run cmd/cli/main.go"
@@ -140,21 +149,3 @@ run = ["bun install --frozen-lockfile", "bun run build"]
 dir = "docs"
 run = ["bun install", "bun run dev"]
 
-[tasks.image-builder-build]
-run = "docker build --build-arg MISE_VERSION=$RAILPACK_MISE_VERSION -f images/debian/build/Dockerfile -t railpack-builder:local ."
-
-[tasks.mise-builder-shell]
-description = "Shell into the railpack-builder image"
-usage = 'flag "--local" help="Build and use railpack-builder:local instead of the ghcr image"'
-run = '''
-if [ "${usage_local:-false}" = "true" ]; then
-  mise run image-builder-build
-  image="railpack-builder:local"
-else
-  image="ghcr.io/railwayapp/railpack-builder:mise-$RAILPACK_MISE_VERSION"
-fi
-exec docker run -it --rm "$image" bash
-'''
-
-[tasks.image-runtime-build]
-run = "docker build -f images/debian/runtime/Dockerfile -t railpack-runtime:local ."

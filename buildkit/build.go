@@ -1,3 +1,6 @@
+// called by the build CLI entrypoint and runs the build using the buildkit client
+// also used by the integration tests to run builds in a test environment
+
 package buildkit
 
 import (
@@ -5,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"strings"
@@ -39,8 +43,7 @@ Most likely the $BUILDKIT_HOST is not running. Here's an example of how to start
 
 	docker run --rm --privileged -d --name buildkit moby/buildkit
 
-Use 'railpack --verbose' to view more error details.
-		`
+Use 'railpack --verbose' to view more error details`
 )
 
 type BuildWithBuildkitClientOptions struct {
@@ -51,8 +54,8 @@ type BuildWithBuildkitClientOptions struct {
 	SecretsHash  string
 	Secrets      map[string]string
 	Platform     string
-	ImportCache  string
-	ExportCache  string
+	ImportCache  []string
+	ExportCache  []string
 	CacheKey     string
 	GitHubToken  string
 }
@@ -204,21 +207,11 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		},
 	}
 
-	// Add cache import if specified
-	if opts.ImportCache != "" {
-		solveOpts.CacheImports = append(solveOpts.CacheImports, client.CacheOptionsEntry{
-			Type:  "gha",
-			Attrs: parseKeyValue(opts.ImportCache),
-		})
-	}
+	solveOpts.CacheImports = cacheEntriesFromFlags(opts.ImportCache)
+	solveOpts.CacheExports = cacheEntriesFromFlags(opts.ExportCache)
 
-	// Add cache export if specified
-	if opts.ExportCache != "" {
-		solveOpts.CacheExports = append(solveOpts.CacheExports, client.CacheOptionsEntry{
-			Type:  "gha",
-			Attrs: parseKeyValue(opts.ExportCache),
-		})
-	}
+	log.Infof("cache imports: %v", solveOpts.CacheImports)
+	log.Infof("cache exports: %v", solveOpts.CacheExports)
 
 	// Save the resulting filesystem to a directory
 	if opts.OutputDir != "" {
@@ -227,15 +220,10 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 			return fmt.Errorf("error creating output directory: %w", err)
 		}
 
-		solveOpts = client.SolveOpt{
-			LocalMounts: map[string]fsutil.FS{
-				"context": appFS,
-			},
-			Exports: []client.ExportEntry{
-				{
-					Type:      client.ExporterLocal,
-					OutputDir: opts.OutputDir,
-				},
+		solveOpts.Exports = []client.ExportEntry{
+			{
+				Type:      client.ExporterLocal,
+				OutputDir: opts.OutputDir,
 			},
 		}
 	}
@@ -273,25 +261,61 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 	return nil
 }
 
+// determine the image name from the app dir path
 func getImageName(appDir string) string {
 	parts := strings.Split(appDir, string(os.PathSeparator))
 	name := parts[len(parts)-1]
+
+	// TODO how could this happen in practice?
 	if name == "" {
 		name = "railpack-app" // Fallback if path ends in separator
 	}
+
 	// Docker requires image names to be lowercase
 	return strings.ToLower(name)
 }
 
-// Helper function to parse key=value strings into a map
+// Converts docker buildx-style cache flag values (e.g. type=registry,ref=...)
+// into BuildKit CacheOptionsEntry values. Empty strings are skipped.
+//
+// Intentionally hand-rolled instead of using github.com/docker/buildx/util/buildflags
+// (or pulling buildx solely for ParseCacheEntry). BuildKit has no public parser for
+// these strings; buildx does, but the dependency cost outweighs the small amount of
+// logic we need for the type=... form we document.
+func cacheEntriesFromFlags(entries []string) []client.CacheOptionsEntry {
+	var out []client.CacheOptionsEntry
+	for _, entry := range entries {
+		if entry == "" {
+			continue
+		}
+		cacheType, attrs := extractCacheType(parseKeyValue(entry))
+		out = append(out, client.CacheOptionsEntry{
+			Type:  cacheType,
+			Attrs: attrs,
+		})
+	}
+	return out
+}
+
+// parse comma-separated key=value strings into a map, ignoring entries without an "="
 func parseKeyValue(s string) map[string]string {
 	attrs := make(map[string]string)
 	parts := strings.SplitSeq(s, ",")
 	for part := range parts {
-		kv := strings.SplitN(part, "=", 2)
-		if len(kv) == 2 {
-			attrs[kv[0]] = kv[1]
+		key, value, found := strings.Cut(part, "=")
+		if !found {
+			continue
 		}
+		attrs[strings.TrimSpace(key)] = strings.TrimSpace(value)
 	}
 	return attrs
+}
+
+func extractCacheType(attrs map[string]string) (string, map[string]string) {
+	cacheType := attrs["type"]
+
+	cleanedAttrs := maps.Clone(attrs)
+	delete(cleanedAttrs, "type")
+
+	return cacheType, cleanedAttrs
 }

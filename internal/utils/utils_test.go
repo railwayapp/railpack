@@ -6,6 +6,36 @@ import (
 	"testing"
 )
 
+func TestParseBool(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantValue bool
+		wantOK    bool
+	}{
+		{name: "true", input: "true", wantValue: true, wantOK: true},
+		{name: "TRUE spaced", input: " TRUE ", wantValue: true, wantOK: true},
+		{name: "1", input: "1", wantValue: true, wantOK: true},
+		{name: "yes", input: "yes", wantValue: true, wantOK: true},
+		{name: "on", input: "on", wantValue: true, wantOK: true},
+		{name: "false", input: "false", wantValue: false, wantOK: true},
+		{name: "0", input: "0", wantValue: false, wantOK: true},
+		{name: "no", input: "no", wantValue: false, wantOK: true},
+		{name: "off", input: "off", wantValue: false, wantOK: true},
+		{name: "empty", input: "", wantValue: false, wantOK: false},
+		{name: "unknown", input: "maybe", wantValue: false, wantOK: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotValue, gotOK := ParseBool(tt.input)
+			if gotValue != tt.wantValue || gotOK != tt.wantOK {
+				t.Errorf("ParseBool(%q) = (%v, %v), want (%v, %v)", tt.input, gotValue, gotOK, tt.wantValue, tt.wantOK)
+			}
+		})
+	}
+}
+
 func TestParseSemver(t *testing.T) {
 	tests := []struct {
 		name        string

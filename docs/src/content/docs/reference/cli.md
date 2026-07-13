@@ -32,14 +32,16 @@ railpack build [options] DIRECTORY
 
 **Options:**
 
-| Flag          | Description                                           | Default |
-| ------------- | ----------------------------------------------------- | ------- |
-| `--name`      | Name of the image to build                            |         |
-| `--output`    | Output the final filesystem to a local directory      |         |
-| `--platform`  | Platform to build for (e.g. linux/amd64, linux/arm64) |         |
-| `--progress`  | BuildKit progress output mode (auto, plain, tty)      | `auto`  |
-| `--show-plan` | Show the build plan before building                   | `false` |
-| `--cache-key` | Unique id to prefix to cache keys                     |         |
+| Flag           | Description                                                                 | Default |
+| -------------- | --------------------------------------------------------------------------- | ------- |
+| `--name`       | Name of the image to build                                                  |         |
+| `--output`     | Output the final filesystem to a local directory                            |         |
+| `--platform`   | Platform to build for (e.g. linux/amd64, linux/arm64)                       |         |
+| `--progress`   | BuildKit progress output mode (auto, plain, tty)                            | `auto`  |
+| `--show-plan`  | Show the build plan before building                                         | `false` |
+| `--cache-key`  | Unique id to prefix to cache keys                                           |         |
+| `--cache-from` | External cache sources (same as docker buildx). e.g. type=registry,ref=...  |         |
+| `--cache-to`   | Cache export destinations (same as docker buildx). e.g. type=registry,ref=... |       |
 
 ### prepare
 

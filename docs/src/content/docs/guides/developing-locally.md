@@ -3,14 +3,17 @@ title: Developing Locally
 description: Learn how to develop Railpack locally
 ---
 
-Once you've [checked out the repo](https://github.com/railwayapp/railpack), you
-can follow this to start developing locally.
+We love contributions to Railpack! This guide is to help Railpack developers understand the system quickly.
+
+Some pre-requisites:
+
+* [Check out the repo](https://github.com/railwayapp/railpack)
+* [Install Mise](https://mise.jdx.dev/installing-mise.html)
 
 ## Getting Setup
 
-We use [Mise](https://mise.jdx.dev/) for managing language dependencies and
-tasks for building and testing Railpack. You don't have to use Mise, but it's
-recommended.
+[Mise](https://mise.jdx.dev/) is used to manage language dependencies and
+tasks for building and testing Railpack.
 
 Install and use all versions of tools needed for Railpack
 
@@ -71,11 +74,10 @@ Multiple Docker images are used in Railpack:
 You can build with a [custom BuildKit frontend](/guides/custom-frontend), but
 this is a bit tedious for local iteration.
 
-The frontend needs to be built into an image and accessible to the BuildKit
-instance. You can build this image locally using standard Docker commands from the root of the repository:
+The frontend needs to be built into an image and accessible to the BuildKit instance:
 
 ```bash
-docker build -f images/alpine/frontend/Dockerfile -t railpack-frontend:local .
+mise run image-runtime-build
 ```
 
 Then, generate a build plan for an app:
@@ -93,22 +95,71 @@ docker buildx \
   examples/node-bun
 ```
 
-By default, `ghcr.io/railwayapp/railpack:railpack-frontend` is used when running `railpack build`.
+You can also use the `buildctl` command to run BuildKit directly. This is helpful as it's a lower level command which
+exposes helpful debugging flags. However, you can't reference the locally built image without loading it into a registry first.
 
-You can also use the `buildctl` command to run BuildKit directly:
+This is done automatically for you with `image-runtime-build` but you must start the registry first with `image-run-registry`.
+
+Then, you can run the build with the locally-build frontend:
 
 ```bash
 buildctl build \
+  --frontend=gateway.v0 \
+  --opt source=railpack-frontend:local \
   --local context=examples/node-bun \
   --local dockerfile=test \
-  --frontend=gateway.v0 \
-  --opt source=ghcr.io/railwayapp/railpack:railpack-frontend \
   --output type=docker,name=test | docker load
 ```
 
-*Note the `docker load` here to load the image into Docker. However, you can
+The `dockerfile=` param instructs railpack to use that directory to look for the `railpack-plan.json` file. The `context=` param is the path to the app to build. More specifically, `--local` 'uploads' the referenced directories
+to the buildkit daemon.
+
+Note the `docker load` here to load the image into Docker. However, you can
 change the [output](https://github.com/moby/buildkit?tab=readme-ov-file#output)
-or push to a registry instead.*
+or push to a registry instead.
+
+You can also provide additional configuration to buildctl, like registry
+cache import/export (use top-level flags, not `--opt`):
+
+```bash
+buildctl build \
+  --frontend=gateway.v0 \
+  --opt source=host.docker.internal:7890/railpack-frontend:local \
+  --local context=examples/node-bun \
+  --local dockerfile=tmp/frontend-plan \
+  --export-cache type=registry,ref=host.docker.internal:7890/node-bun:cache,mode=max \
+  --import-cache type=registry,ref=host.docker.internal:7890/node-bun:cache
+```
+
+Note that the cache arguments are different than what `docker buildx`. The equivalent `docker buildx` command would be:
+
+
+```bash
+docker buildx build \
+  --build-arg BUILDKIT_SYNTAX="host.docker.internal:7890/railpack-frontend:local" \
+  --cache-to=type=registry,ref=host.docker.internal:7890/node-bun:cache,mode=max \
+  --cache-from=type=registry,ref=host.docker.internal:7890/node-bun:cache \ 
+  -f tmp/frontend-plan/railpack-plan.json \
+  examples/node-bun
+```
+
+Debugging a buildkit related problem? Enable debug logging:
+
+```bash
+buildctl --debug build \
+  --frontend=gateway.v0 \
+  --opt source=railpack-frontend:local \
+  --local context=examples/node-bun \
+  --progress=plain \
+  --trace=tmp/builtctl-build-trace.log \
+  --debug-json-cache-metrics stdout
+```
+
+Quick note about `builtctl` vs `docker buildx`. These two ways of invoking the railpack frontend handle arguments differently:
+
+* `--build-arg` prefixes the argument with `build-arg:`.
+* `--opt` does not prefix the build arg at all. You must prefix args with `build-arg:` if they are
+  arguments handled by the railpack frontend.
 
 ## Integration Tests
 
@@ -252,6 +303,10 @@ mise exec pipx:httpie -- http google.com
 Here's some helpful debugging tricks:
 
 * `URFAVE_CLI_TRACING=on` for debugging CLI argument parsing
+* `RAILPACK_DEBUG=1` for debugging Railpack debug logging
+* `--build-arg verbose=true` for debugging the frontend (or `--opt build-arg:verbose=true` with `buildctl`)
+* `docker logs -f buildkit` to see the BuildKit daemon logs, which includes railpack logs when it's used as a frontend
+* `docker logs -f railpack-registry` to inspect local registry logs. Helpful for debugging cache import/export issues.
 * `mise run cli -- --verbose build --show-plan --progress plain examples/node-bun`
 * `mise run build`, add `./bin/` to your `$PATH`, and then run `railpack` in a separate local directory
 * `docker exec buildkit buildctl prune` to clean the builder cache
@@ -304,6 +359,21 @@ continue
 ```
 
 The commands you probably want: `ls`, `print build.Commands`, `continue`, `next`, `locals`,
+
+## Docker / BuildKit
+
+### Frontend
+
+* When using Railpack as a frontend, all logs go to the buildkit container logs, and are not outputted to the build progress logs.
+* `buildctl` is the lower level interface to BuildKit compared to `docker buildx`. There are more options available for debugging.
+* `builtctl` and `docker buildx` handle arguments differently. `--build-arg` prefixes the argument with `build-arg:`. `--opt` does not prefix the build arg at all. You must prefix args with `build-arg:` if they are arguments handled by the railpack frontend.
+
+### Cache
+
+* Cache export does not require any logic within railpack. This is given "for free" since we are using BuildKit LLB.
+* However, all import cache support must be implemented in Railpack. BuildKit is careful not to be too opinionated about defaults.
+* If you use a registry cache you can tail the logs to inspect what is actually being pulled/pushed when building an image.
+* There's no util methods for parsing the cache kv comma-separated strings in the buildkit module.
 
 ## Node
 

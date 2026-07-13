@@ -51,6 +51,14 @@ var BuildCommand = &cli.Command{
 			Name:  "cache-key",
 			Usage: "Unique id to prefix to cache keys",
 		},
+		&cli.StringSliceFlag{
+			Name:  "cache-from",
+			Usage: "External cache sources",
+		},
+		&cli.StringSliceFlag{
+			Name:  "cache-to",
+			Usage: "Cache export destinations",
+		},
 		&cli.BoolFlag{
 			Name:   "dump-llb",
 			Hidden: true,
@@ -99,10 +107,13 @@ var BuildCommand = &cli.Command{
 			OutputDir:    cmd.String("output"),
 			ProgressMode: cmd.String("progress"),
 			CacheKey:     cmd.String("cache-key"),
-			SecretsHash:  secretsHash,
-			Secrets:      env.Variables,
-			Platform:     platformStr,
-			GitHubToken:  os.Getenv("GITHUB_TOKEN"),
+			// StringSlice to support multiple cache-from / cache-to entries, same shape as docker buildx
+			ImportCache: cmd.StringSlice("cache-from"),
+			ExportCache: cmd.StringSlice("cache-to"),
+			SecretsHash: secretsHash,
+			Secrets:     env.Variables,
+			Platform:    platformStr,
+			GitHubToken: os.Getenv("GITHUB_TOKEN"),
 		})
 		if err != nil {
 			return cli.Exit(err, 1)
@@ -112,10 +123,11 @@ var BuildCommand = &cli.Command{
 	},
 }
 
+// make sure all secrets referenced in the build plan are present in the environment
 func validateSecrets(plan *plan.BuildPlan, env *app.Environment) error {
 	for _, secret := range plan.Secrets {
 		if _, ok := env.Variables[secret]; !ok {
-			return fmt.Errorf("missing environment variable: %s. Please set the envvar with --env %s=%s", secret, secret, "...")
+			return fmt.Errorf("missing environment variable: %s. Please set using --env %s=%s", secret, secret, "...")
 		}
 	}
 	return nil
