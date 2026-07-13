@@ -3,7 +3,18 @@
   "base": {
    "step": "build"
   },
-  "startCommand": "/start-container.sh"
+  "startCommand": "/start-container.sh",
+  "variables": {
+   "APP_DEBUG": "false",
+   "APP_ENV": "production",
+   "APP_LOCALE": "en",
+   "IS_LARAVEL": "false",
+   "LOG_CHANNEL": "stderr",
+   "LOG_LEVEL": "debug",
+   "OCTANE_SERVER": "frankenphp",
+   "PHP_INI_DIR": "/usr/local/etc/php",
+   "SERVER_NAME": ":80"
+  }
  },
  "steps": [
   {
@@ -24,7 +35,7 @@
    "assets": {
     "Caddyfile": "{\n\tadmin off\n\tpersist_config off\n\tauto_https off\n\n  {$CADDY_GLOBAL_OPTIONS}\n\n  log {\n    format json\n    output stderr\n    level DEBUG\n  }\n\n\tfrankenphp {\n\t\t{$FRANKENPHP_CONFIG}\n\t}\n}\n\n{$CADDY_EXTRA_CONFIG}\n\n:{$PORT:80} {\n  \n    root * /app\n  \n\n\tencode zstd br gzip\n\n\tfile_server {\n\t\thide .git\n\t\thide .env*\n\t}\n\n\t{$CADDY_SERVER_EXTRA_DIRECTIVES}\n\n\tphp_server\n}\n",
     "php.ini": ";; Based on https://github.com/php/php-src/blob/master/php.ini-production\n\n[PHP]\nengine = On\nshort_open_tag = Off\nprecision = 14\noutput_buffering = 4096\nzlib.output_compression = Off\nimplicit_flush = Off\nunserialize_callback_func =\nserialize_precision = -1\ndisable_functions =\ndisable_classes =\nzend.enable_gc = On\nzend.exception_ignore_args = On\nzend.exception_string_param_max_len = 0\nexpose_php = On\nmax_execution_time = 30\nmax_input_time = 60\nmemory_limit = -1\nerror_reporting = E_ALL \u0026 ~E_DEPRECATED \u0026 ~E_STRICT\ndisplay_errors = Off\ndisplay_startup_errors = Off\nlog_errors = On\nignore_repeated_errors = Off\nignore_repeated_source = Off\nreport_memleaks = On\nvariables_order = \"GPCS\"\nrequest_order = \"GP\"\nregister_argc_argv = Off\nauto_globals_jit = On\npost_max_size = 0\nauto_prepend_file =\nauto_append_file =\ndefault_mimetype = \"text/html\"\ndefault_charset = \"UTF-8\"\ndoc_root =\nuser_dir =\nenable_dl = Off\nfile_uploads = On\nupload_max_filesize = 0\nmax_file_uploads = 20\nallow_url_fopen = On\nallow_url_include = Off\ndefault_socket_timeout = 60\nSMTP = localhost\nsmtp_port = 25\nmail.add_x_header = Off\nmail.mixed_lf_and_crlf = Off\nodbc.allow_persistent = On\nodbc.check_persistent = On\nodbc.max_persistent = -1\nodbc.max_links = -1\nodbc.defaultlrl = 4096\nodbc.defaultbinmode = 1\nmysqli.max_persistent = -1\nmysqli.allow_persistent = On\nmysqli.max_links = -1\nmysqli.default_port = 3306\nmysqli.default_socket =\nmysqli.default_host =\nmysqli.default_user =\nmysqli.default_pw =\nmysqlnd.collect_statistics = On\nmysqlnd.collect_memory_statistics = Off\npgsql.allow_persistent = On\npgsql.auto_reset_persistent = Off\npgsql.max_persistent = -1\npgsql.max_links = -1\npgsql.ignore_notice = 0\npgsql.log_notice = 0\nbcmath.scale = 0\nsession.save_handler = files\nsession.use_strict_mode = 0\nsession.use_cookies = 1\nsession.use_only_cookies = 1\nsession.name = PHPSESSID\nsession.auto_start = 0\nsession.cookie_lifetime = 0\nsession.cookie_path = /\nsession.cookie_domain =\nsession.cookie_httponly =\nsession.cookie_samesite =\nsession.serialize_handler = php\nsession.gc_probability = 1\nsession.gc_divisor = 1000\nsession.gc_maxlifetime = 1440\nsession.cache_limiter = nocache\nsession.cache_expire = 180\nsession.use_trans_sid = 0\nsession.sid_length = 26\nsession.trans_sid_tags = \"a=href,area=href,frame=src,form=\"\nsession.sid_bits_per_character = 5\nzend.assertions = -1\ntidy.clean_output = Off\nsoap.wsdl_cache_enabled = 1\nsoap.wsdl_cache_dir = \"/tmp\"\nsoap.wsdl_cache_ttl = 86400\nsoap.wsdl_cache_limit = 5\nldap.max_links = -1\n\n[Pdo_mysql]\npdo_mysql.default_socket =\n",
-    "start-container.sh": "#!/bin/bash\n\nset -e\n\nif [ \"$IS_LARAVEL\" = \"true\" ]; then\n  if [ \"$RAILPACK_SKIP_MIGRATIONS\" != \"true\" ]; then\n    # Run migrations and seeding\n    echo \"Running migrations and seeding database ...\"\n    php artisan migrate --force\n  fi\n\n  php artisan storage:link\n  php artisan optimize:clear\n  php artisan optimize\n\n  echo \"Starting Laravel server ...\"\nfi\n\n# Start the FrankenPHP server\ndocker-php-entrypoint --config /Caddyfile --adapter caddyfile 2\u003e\u00261\n"
+    "start-container.sh": "#!/bin/bash\n\nset -e\n\n# Start the FrankenPHP server\ndocker-php-entrypoint --config /Caddyfile --adapter caddyfile 2\u003e\u00261\n"
    },
    "commands": [
     {
