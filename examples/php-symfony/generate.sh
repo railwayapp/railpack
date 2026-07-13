@@ -34,5 +34,25 @@ cat >> .gitignore <<'EOF'
 !/.env.test
 EOF
 
+# Skeleton has no homepage route; add one for integration httpCheck.
+mkdir -p src/Controller
+cat > src/Controller/HomeController.php <<'EOF'
+<?php
+
+namespace App\Controller;
+
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+
+class HomeController
+{
+    #[Route('/', name: 'home')]
+    public function index(): Response
+    {
+        return new Response('Welcome to Symfony');
+    }
+}
+EOF
+
 mv "$meta_dir"/generate.sh "$meta_dir"/test.json .
 rmdir "$meta_dir"
