@@ -319,7 +319,7 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	packages := []string{"python"}
 
 	// Install package managers
-	if p.hasPoetry(ctx) || p.hasPdm(ctx) || p.hasPipfile(ctx) {
+	if p.hasPdm(ctx) || p.hasPipfile(ctx) {
 		miseStep.Default("pipx", "latest")
 		packages = append(packages, "pipx")
 
@@ -332,10 +332,8 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	}
 
 	if p.hasPoetry(ctx) {
-		// as of 2025-10-18 the default mise poetry backend is asdf, which is very poorly maintained and has caused build
-		// issues for users, which is why we install poetry via pipx here.
-		miseStep.Default("pipx:poetry", "latest")
-		packages = append(packages, "pipx:poetry")
+		miseStep.Default("poetry", "latest")
+		packages = append(packages, "poetry")
 	}
 
 	if p.hasPdm(ctx) {

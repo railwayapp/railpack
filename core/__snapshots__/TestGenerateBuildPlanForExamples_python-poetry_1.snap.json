@@ -30,7 +30,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "poetry run python main.py",
+  "startCommand": "python main.py",
   "variables": {
    "PIP_DEFAULT_TIMEOUT": "100",
    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
@@ -56,7 +56,7 @@
     },
     {
      "cmd": "mise install",
-     "customName": "install mise packages: pipx, pipx:poetry, python, uv"
+     "customName": "install mise packages: poetry, python"
     }
    ],
    "inputs": [
