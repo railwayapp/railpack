@@ -16,7 +16,7 @@ idiomatic_version_file_enable_tools = ["python", "node", "ruby", "bun"]
 # ensures homebrew go, etc doesn't take precedence
 activate_aggressive = true
 env_shell_expand = true
-locked = true
+# locked = true
 
 [tasks.setup]
 run = [
