@@ -13,16 +13,18 @@ Some pre-requisites:
 ## Getting Setup
 
 [Mise](https://mise.jdx.dev/) is used to manage language dependencies and
-tasks for building and testing Railpack.
+tasks for building and testing Railpack. Checkout `mise.toml` in the root
+repo for more information on various lifecycle tasks.
 
 Install and use all versions of tools needed for Railpack
 
 ```bash
-# Assuming you are cd'd into the repo root
+cd ~/railpack
+mise install
 mise run setup
 ```
 
-This command will also start a BuildKit container (check out `mise.toml` in the root directory for more information).
+This command starts a BuildKit container (check out `mise.toml` in the root directory for more information).
 
 Use the `cli` task to run the Railpack CLI (this is like `railpack --help`)
 
@@ -38,6 +40,21 @@ mise run build
 # add the Railpack repo `bin/` directory to your path to use the newly-compiled Railpack on your machine
 export PATH="$PWD/bin:$PATH"
 ```
+
+## Lifecyle of a Change
+
+Most improvements to Railpack look like:
+
+1. There's a motivating problem: a new javascript framework that doesn't work without tinkering, a new language feature we want to support, etc.
+2. Reproduce the failure in a new `example/` project and make sure it fails with `mise run test-integration-cwd`.
+3. Point AI at the failing project and work out a solution.
+4. Deslop edits, tests, etc.
+5. Make sure documentation is updated.
+6. Update snapshots with `mise run test-update-snapshots` and manually review changes to make sure there were weren't any unintended side effects.
+7. Run `mise run test` and `mise run check` to make sure unit tests and all linters are clean.
+8. Submit a PR using this [PR template](.github/PULL_REQUEST_TEMPLATE.md).
+
+Pro-tip: point your agent at this guide.
 
 ## Building directly with BuildKit
 
@@ -57,8 +74,6 @@ Remember, `mise run` runs the cli in the root project directory. So, if you are 
 cd examples/node-angular/
 mise run cli build $(pwd)
 ```
-
-You need to have a BuildKit instance running (see below).
 
 ## Docker Images
 
@@ -161,10 +176,21 @@ Quick note about `builtctl` vs `docker buildx`. These two ways of invoking the r
 * `--opt` does not prefix the build arg at all. You must prefix args with `build-arg:` if they are
   arguments handled by the railpack frontend.
 
+## Unit Tests
+
+Railpack uses [go-snaps](https://github.com/gkampitakis/go-snaps) for snapshot
+testing. This helps prevent regressions to generated build plans. All example plans are snapshot tested in `core_test.go`
+
+If you see a test failure because of a snapshot change, please confirm that the
+change is intentional, and then update the snapshot by running:
+
+```bash
+mise run test-update-snapshots
+```
+
 ## Integration Tests
 
-Integration tests build and run example applications in containers to verify
-end-to-end functionality. Each example with a `test.json` file gets tested
+Integration tests build and run example applications (in `examples/`) in containers to verify end-to-end functionality. Each example with a `test.json` file gets tested
 automatically.
 
 ```bash
@@ -180,7 +206,9 @@ mise run test-integration-cwd
 ```
 
 The `test.json` file contains an array of test cases. Each case builds and runs the same
-image but checks for different expected output strings.
+image but checks for different expected output strings. See [this
+file](https://github.com/railwayapp/railpack/blob/main/integration_tests/run_test.go#L26)
+for the schema.
 
 ### HTTP Checks
 
@@ -266,7 +294,7 @@ docker run -it --network python-django_default --env DATABASE_URL="postgresql://
 
 ## Mise
 
-Mise is absolutely central to this entire project, so you'll have to dig into the details.
+Mise is critical to this project. For any serious change, you'll need to understand how mise works in detail.
 
 * `mise trust` state is located in `~/.local/state/mise/trusted-configs`
 * There are two mise 'environments' to keep in mind: the host environment, which uses a specific version of mise downloaded

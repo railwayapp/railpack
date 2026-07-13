@@ -81,17 +81,8 @@ func (p *DenoProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 func (p *DenoProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	deno := miseStep.Default("deno", DEFAULT_DENO_VERSION)
 
-	// NOTE: Version resolution precedence matters here.
-	// We evaluate manifest files (.deno-version) and mise configs first to establish the baseline.
-	// The environment variable (DENO_VERSION) must be checked last to act as the ultimate override,
-	// strictly guaranteeing the 'Last Write Wins' behavior as expected by the docs.
-
-	// UseMiseVersions internally executes a forced override based on mise config files (.tool-versions, mise.toml)
-	// and idiomatic files (.deno-version).
 	miseStep.UseMiseVersions(ctx, []string{"deno"})
 
-	// IMPORTANT: The ENV check MUST be placed AFTER UseMiseVersions to guarantee it retains ultimate precedence
-	// over all idiomatic and mise configurations, strictly adhering to the documentation.
 	if envVersion, varName := ctx.Env.GetConfigVariable("DENO_VERSION"); envVersion != "" {
 		miseStep.Version(deno, envVersion, varName)
 	}
