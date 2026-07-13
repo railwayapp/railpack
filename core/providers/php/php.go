@@ -298,7 +298,19 @@ func (p *PhpProvider) ComposerSupportingFiles(ctx *generate.GenerateContext) []s
 		allFiles = append(allFiles, dirs...)
 	}
 
-	return allFiles
+	// Exclude dependency trees so local vendor/ (or var/) does not pollute the plan
+	filtered := allFiles[:0]
+	for _, file := range allFiles {
+		if strings.HasPrefix(file, "vendor/") || strings.Contains(file, "/vendor/") {
+			continue
+		}
+		if strings.HasPrefix(file, "var/") || strings.Contains(file, "/var/") {
+			continue
+		}
+		filtered = append(filtered, file)
+	}
+
+	return filtered
 }
 
 func (p *PhpProvider) getPhpExtensions(ctx *generate.GenerateContext) []string {
