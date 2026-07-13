@@ -12,25 +12,31 @@ func TestPhpProvider(t *testing.T) {
 		name      string
 		path      string
 		isPhp     bool
-		isLaravel bool
+		framework string
 	}{
 		{
 			name:      "vanilla php with index.php",
 			path:      "../../../examples/php-vanilla",
 			isPhp:     true,
-			isLaravel: false,
+			framework: "",
 		},
 		{
 			name:      "laravel project with composer.json",
 			path:      "../../../examples/php-laravel-12-react",
 			isPhp:     true,
-			isLaravel: true,
+			framework: "laravel",
+		},
+		{
+			name:      "symfony project",
+			path:      "../../../examples/php-symfony",
+			isPhp:     true,
+			framework: "symfony",
 		},
 		{
 			name:      "non-php project",
 			path:      "../../../examples/node-npm",
 			isPhp:     false,
-			isLaravel: false,
+			framework: "",
 		},
 	}
 
@@ -43,8 +49,7 @@ func TestPhpProvider(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tt.isPhp, isPhp)
 
-			isLaravel := provider.usesLaravel(ctx)
-			require.Equal(t, tt.isLaravel, isLaravel)
+			require.Equal(t, tt.framework, provider.getFramework(ctx))
 		})
 	}
 }
