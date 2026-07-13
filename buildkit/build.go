@@ -16,11 +16,13 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/containerd/platforms"
+	"github.com/docker/cli/cli/config"
 	"github.com/moby/buildkit/client"
 	_ "github.com/moby/buildkit/client/connhelper/dockercontainer"
 	_ "github.com/moby/buildkit/client/connhelper/nerdctlcontainer"
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/buildkit/session"
+	"github.com/moby/buildkit/session/auth/authprovider"
 	"github.com/moby/buildkit/session/secrets/secretsprovider"
 	"github.com/moby/buildkit/util/appcontext"
 	_ "github.com/moby/buildkit/util/grpcutil/encoding/proto"
@@ -188,11 +190,20 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 	}
 	secrets := secretsprovider.FromMap(secretsMap)
 
+	dockerConfig := config.LoadDefaultConfigFile(os.Stderr)
+	sessionAttachables := []session.Attachable{
+		secrets,
+		// buildkit does not use the local auth arguments by default, which prevents private repo access when running `railpack build`
+		authprovider.NewDockerAuthProvider(authprovider.DockerAuthProviderConfig{
+			AuthConfigProvider: authprovider.LoadAuthConfig(dockerConfig),
+		}),
+	}
+
 	solveOpts := client.SolveOpt{
 		LocalMounts: map[string]fsutil.FS{
 			"context": appFS,
 		},
-		Session: []session.Attachable{secrets},
+		Session: sessionAttachables,
 		Exports: []client.ExportEntry{
 			{
 				Type: client.ExporterDocker,

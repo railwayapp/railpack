@@ -43,6 +43,10 @@ railpack build [options] DIRECTORY
 | `--cache-from` | External cache sources (same as docker buildx). e.g. type=registry,ref=...  |         |
 | `--cache-to`   | Cache export destinations (same as docker buildx). e.g. type=registry,ref=... |       |
 
+`railpack build` uses credentials from your Docker CLI config
+(`$DOCKER_CONFIG`, default `~/.docker/config.json`) so BuildKit can pull or
+push private registry images. Log in with `docker login` first if needed.
+
 ### prepare
 
 Generates build configuration files without performing the actual build. This is
