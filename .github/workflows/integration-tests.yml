@@ -134,7 +134,7 @@ jobs:
       
       # intermittent docker pull failures kept failing the entire pipeline, which is why we are retrying
       - name: Start BuildKit
-        run: retry --attempts 5 mise run run-buildkit-container
+        run: mise run retry --attempts 5 -- mise run run-buildkit-container
 
       # required for integration tests that use multiple platforms
       - name: Set up QEMU
