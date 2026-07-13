@@ -231,8 +231,6 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 			return fmt.Errorf("error creating output directory: %w", err)
 		}
 
-		// Only swap the export target; keep Session (secrets + docker auth) and
-		// any cache import/export entries already attached to solveOpts.
 		solveOpts.Exports = []client.ExportEntry{
 			{
 				Type:      client.ExporterLocal,
