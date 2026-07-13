@@ -3,14 +3,17 @@ title: Developing Locally
 description: Learn how to develop Railpack locally
 ---
 
-Once you've [checked out the repo](https://github.com/railwayapp/railpack), you
-can follow this to start developing locally.
+We love contributions to Railpack! This guide is to help Railpack developers understand the system quickly.
+
+Some pre-requisites:
+
+* [Check out the repo](https://github.com/railwayapp/railpack)
+* [Install Mise](https://mise.jdx.dev/installing-mise.html)
 
 ## Getting Setup
 
-We use [Mise](https://mise.jdx.dev/) for managing language dependencies and
-tasks for building and testing Railpack. You don't have to use Mise, but it's
-recommended.
+[Mise](https://mise.jdx.dev/) is used to manage language dependencies and
+tasks for building and testing Railpack.
 
 Install and use all versions of tools needed for Railpack
 
@@ -356,6 +359,21 @@ continue
 ```
 
 The commands you probably want: `ls`, `print build.Commands`, `continue`, `next`, `locals`,
+
+## Docker / BuildKit
+
+### Frontend
+
+* When using Railpack as a frontend, all logs go to the buildkit container logs, and are not outputted to the build progress logs.
+* `buildctl` is the lower level interface to BuildKit compared to `docker buildx`. There are more options available for debugging.
+* `builtctl` and `docker buildx` handle arguments differently. `--build-arg` prefixes the argument with `build-arg:`. `--opt` does not prefix the build arg at all. You must prefix args with `build-arg:` if they are arguments handled by the railpack frontend.
+
+### Cache
+
+* Cache export does not require any logic within railpack. This is given "for free" since we are using BuildKit LLB.
+* However, all import cache support must be implemented in Railpack. BuildKit is careful not to be too opinionated about defaults.
+* If you use a registry cache you can tail the logs to inspect what is actually being pulled/pushed when building an image.
+* There's no util methods for parsing the cache kv comma-separated strings in the buildkit module.
 
 ## Node
 
