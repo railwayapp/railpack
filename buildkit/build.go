@@ -190,12 +190,10 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 	}
 	secrets := secretsprovider.FromMap(secretsMap)
 
-	// BuildKit keeps no static credential store on its side; ship the caller's
-	// docker CLI config ($DOCKER_CONFIG, default ~/.docker/config.json) into this
-	// solve's session so the daemon can authenticate pulls/pushes to private regs.
 	dockerConfig := config.LoadDefaultConfigFile(os.Stderr)
 	sessionAttachables := []session.Attachable{
 		secrets,
+		// buildkit does not use the local auth arguments by default, which prevents private repo access when running `railpack build`
 		authprovider.NewDockerAuthProvider(authprovider.DockerAuthProviderConfig{
 			AuthConfigProvider: authprovider.LoadAuthConfig(dockerConfig),
 		}),
