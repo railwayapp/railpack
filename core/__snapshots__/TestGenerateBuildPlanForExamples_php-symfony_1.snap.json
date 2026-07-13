@@ -1,0 +1,700 @@
+{
+ "caches": {
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  },
+  "composer": {
+   "directory": "/opt/cache/composer",
+   "type": "shared"
+  }
+ },
+ "deploy": {
+  "base": {
+   "step": "build"
+  },
+  "startCommand": "/start-container.sh",
+  "variables": {
+   "APP_DEBUG": "0",
+   "APP_ENV": "prod",
+   "APP_LOCALE": "en",
+   "IS_LARAVEL": "false",
+   "LOG_CHANNEL": "stderr",
+   "LOG_LEVEL": "debug",
+   "OCTANE_SERVER": "frankenphp",
+   "PHP_INI_DIR": "/usr/local/etc/php",
+   "SERVER_NAME": ":80"
+  }
+ },
+ "steps": [
+  {
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y ca-certificates git unzip zip'",
+     "customName": "install apt packages: ca-certificates git unzip zip"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "dunglas/frankenphp:php8.5.8-bookworm"
+    }
+   ],
+   "name": "packages:image"
+  },
+  {
+   "assets": {
+    "Caddyfile": "{\n\tadmin off\n\tpersist_config off\n\tauto_https off\n\n  {$CADDY_GLOBAL_OPTIONS}\n\n  log {\n    format json\n    output stderr\n    level DEBUG\n  }\n\n\tfrankenphp {\n\t\t{$FRANKENPHP_CONFIG}\n\t}\n}\n\n{$CADDY_EXTRA_CONFIG}\n\n:{$PORT:80} {\n  \n    root * /app/public\n  \n\n\tencode zstd br gzip\n\n\tfile_server {\n\t\thide .git\n\t\thide .env*\n\t}\n\n\t{$CADDY_SERVER_EXTRA_DIRECTIVES}\n\n\tphp_server\n}\n",
+    "php.ini": ";; Based on https://github.com/php/php-src/blob/master/php.ini-production\n\n[PHP]\nengine = On\nshort_open_tag = Off\nprecision = 14\noutput_buffering = 4096\nzlib.output_compression = Off\nimplicit_flush = Off\nunserialize_callback_func =\nserialize_precision = -1\ndisable_functions =\ndisable_classes =\nzend.enable_gc = On\nzend.exception_ignore_args = On\nzend.exception_string_param_max_len = 0\nexpose_php = On\nmax_execution_time = 30\nmax_input_time = 60\nmemory_limit = -1\nerror_reporting = E_ALL \u0026 ~E_DEPRECATED \u0026 ~E_STRICT\ndisplay_errors = Off\ndisplay_startup_errors = Off\nlog_errors = On\nignore_repeated_errors = Off\nignore_repeated_source = Off\nreport_memleaks = On\nvariables_order = \"GPCS\"\nrequest_order = \"GP\"\nregister_argc_argv = Off\nauto_globals_jit = On\npost_max_size = 0\nauto_prepend_file =\nauto_append_file =\ndefault_mimetype = \"text/html\"\ndefault_charset = \"UTF-8\"\ndoc_root =\nuser_dir =\nenable_dl = Off\nfile_uploads = On\nupload_max_filesize = 0\nmax_file_uploads = 20\nallow_url_fopen = On\nallow_url_include = Off\ndefault_socket_timeout = 60\nSMTP = localhost\nsmtp_port = 25\nmail.add_x_header = Off\nmail.mixed_lf_and_crlf = Off\nodbc.allow_persistent = On\nodbc.check_persistent = On\nodbc.max_persistent = -1\nodbc.max_links = -1\nodbc.defaultlrl = 4096\nodbc.defaultbinmode = 1\nmysqli.max_persistent = -1\nmysqli.allow_persistent = On\nmysqli.max_links = -1\nmysqli.default_port = 3306\nmysqli.default_socket =\nmysqli.default_host =\nmysqli.default_user =\nmysqli.default_pw =\nmysqlnd.collect_statistics = On\nmysqlnd.collect_memory_statistics = Off\npgsql.allow_persistent = On\npgsql.auto_reset_persistent = Off\npgsql.max_persistent = -1\npgsql.max_links = -1\npgsql.ignore_notice = 0\npgsql.log_notice = 0\nbcmath.scale = 0\nsession.save_handler = files\nsession.use_strict_mode = 0\nsession.use_cookies = 1\nsession.use_only_cookies = 1\nsession.name = PHPSESSID\nsession.auto_start = 0\nsession.cookie_lifetime = 0\nsession.cookie_path = /\nsession.cookie_domain =\nsession.cookie_httponly =\nsession.cookie_samesite =\nsession.serialize_handler = php\nsession.gc_probability = 1\nsession.gc_divisor = 1000\nsession.gc_maxlifetime = 1440\nsession.cache_limiter = nocache\nsession.cache_expire = 180\nsession.use_trans_sid = 0\nsession.sid_length = 26\nsession.trans_sid_tags = \"a=href,area=href,frame=src,form=\"\nsession.sid_bits_per_character = 5\nzend.assertions = -1\ntidy.clean_output = Off\nsoap.wsdl_cache_enabled = 1\nsoap.wsdl_cache_dir = \"/tmp\"\nsoap.wsdl_cache_ttl = 86400\nsoap.wsdl_cache_limit = 5\nldap.max_links = -1\n\n[Pdo_mysql]\npdo_mysql.default_socket =\n",
+    "start-container.sh": "#!/bin/bash\n\nset -e\n\nif [ \"$RAILPACK_SKIP_MIGRATIONS\" != \"true\" ]; then\n  # Only when Doctrine Migrations is available (webapp pack / doctrine-migrations-bundle)\n  if php bin/console list --raw 2\u003e/dev/null | grep -q '^doctrine:migrations:migrate'; then\n    echo \"Running Doctrine migrations ...\"\n    php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration\n  fi\nfi\n\nmkdir -p var/cache var/log\nchmod -R a+rw var 2\u003e/dev/null || true\nphp bin/console cache:warmup\n\necho \"Starting Symfony server ...\"\n\n# Start the FrankenPHP server\ndocker-php-entrypoint --config /Caddyfile --adapter caddyfile 2\u003e\u00261\n"
+   },
+   "commands": [
+    {
+     "cmd": "mkdir -p /usr/local/etc/php/conf.d"
+    },
+    {
+     "cmd": "mkdir -p /conf.d/"
+    },
+    {
+     "name": "php.ini",
+     "path": "/usr/local/etc/php/conf.d/php.ini"
+    },
+    {
+     "name": "Caddyfile",
+     "path": "/Caddyfile"
+    },
+    {
+     "customName": "create start container script",
+     "mode": 493,
+     "name": "start-container.sh",
+     "path": "/start-container.sh"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:image"
+    }
+   ],
+   "name": "prepare",
+   "variables": {
+    "APP_DEBUG": "0",
+    "APP_ENV": "prod",
+    "APP_LOCALE": "en",
+    "IS_LARAVEL": "false",
+    "LOG_CHANNEL": "stderr",
+    "LOG_LEVEL": "debug",
+    "OCTANE_SERVER": "frankenphp",
+    "PHP_INI_DIR": "/usr/local/etc/php",
+    "SERVER_NAME": ":80"
+   }
+  },
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "install-php-extensions ctype iconv intl"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "prepare"
+    }
+   ],
+   "name": "extensions"
+  },
+  {
+   "caches": [
+    "composer"
+   ],
+   "commands": [
+    {
+     "dest": "/usr/bin/composer",
+     "image": "composer:latest",
+     "src": "/usr/bin/composer"
+    },
+    {
+     "dest": "composer.json",
+     "src": "composer.json"
+    },
+    {
+     "dest": "vendor/composer/semver/composer.json",
+     "src": "vendor/composer/semver/composer.json"
+    },
+    {
+     "dest": "vendor/doctrine/collections/composer.json",
+     "src": "vendor/doctrine/collections/composer.json"
+    },
+    {
+     "dest": "vendor/doctrine/collections/docs/composer.json",
+     "src": "vendor/doctrine/collections/docs/composer.json"
+    },
+    {
+     "dest": "vendor/doctrine/dbal/composer.json",
+     "src": "vendor/doctrine/dbal/composer.json"
+    },
+    {
+     "dest": "vendor/doctrine/deprecations/composer.json",
+     "src": "vendor/doctrine/deprecations/composer.json"
+    },
+    {
+     "dest": "vendor/doctrine/doctrine-bundle/composer.json",
+     "src": "vendor/doctrine/doctrine-bundle/composer.json"
+    },
+    {
+     "dest": "vendor/doctrine/doctrine-migrations-bundle/composer.json",
+     "src": "vendor/doctrine/doctrine-migrations-bundle/composer.json"
+    },
+    {
+     "dest": "vendor/doctrine/event-manager/composer.json",
+     "src": "vendor/doctrine/event-manager/composer.json"
+    },
+    {
+     "dest": "vendor/doctrine/inflector/composer.json",
+     "src": "vendor/doctrine/inflector/composer.json"
+    },
+    {
+     "dest": "vendor/doctrine/instantiator/composer.json",
+     "src": "vendor/doctrine/instantiator/composer.json"
+    },
+    {
+     "dest": "vendor/doctrine/lexer/composer.json",
+     "src": "vendor/doctrine/lexer/composer.json"
+    },
+    {
+     "dest": "vendor/doctrine/migrations/composer.json",
+     "src": "vendor/doctrine/migrations/composer.json"
+    },
+    {
+     "dest": "vendor/doctrine/orm/composer.json",
+     "src": "vendor/doctrine/orm/composer.json"
+    },
+    {
+     "dest": "vendor/doctrine/persistence/composer.json",
+     "src": "vendor/doctrine/persistence/composer.json"
+    },
+    {
+     "dest": "vendor/doctrine/sql-formatter/composer.json",
+     "src": "vendor/doctrine/sql-formatter/composer.json"
+    },
+    {
+     "dest": "vendor/egulias/email-validator/composer.json",
+     "src": "vendor/egulias/email-validator/composer.json"
+    },
+    {
+     "dest": "vendor/monolog/monolog/composer.json",
+     "src": "vendor/monolog/monolog/composer.json"
+    },
+    {
+     "dest": "vendor/myclabs/deep-copy/composer.json",
+     "src": "vendor/myclabs/deep-copy/composer.json"
+    },
+    {
+     "dest": "vendor/nikic/php-parser/composer.json",
+     "src": "vendor/nikic/php-parser/composer.json"
+    },
+    {
+     "dest": "vendor/phar-io/manifest/composer.json",
+     "src": "vendor/phar-io/manifest/composer.json"
+    },
+    {
+     "dest": "vendor/phar-io/version/composer.json",
+     "src": "vendor/phar-io/version/composer.json"
+    },
+    {
+     "dest": "vendor/phpdocumentor/reflection-common/composer.json",
+     "src": "vendor/phpdocumentor/reflection-common/composer.json"
+    },
+    {
+     "dest": "vendor/phpdocumentor/reflection-docblock/composer.json",
+     "src": "vendor/phpdocumentor/reflection-docblock/composer.json"
+    },
+    {
+     "dest": "vendor/phpdocumentor/type-resolver/composer.json",
+     "src": "vendor/phpdocumentor/type-resolver/composer.json"
+    },
+    {
+     "dest": "vendor/phpstan/phpdoc-parser/composer.json",
+     "src": "vendor/phpstan/phpdoc-parser/composer.json"
+    },
+    {
+     "dest": "vendor/phpunit/php-code-coverage/composer.json",
+     "src": "vendor/phpunit/php-code-coverage/composer.json"
+    },
+    {
+     "dest": "vendor/phpunit/php-file-iterator/composer.json",
+     "src": "vendor/phpunit/php-file-iterator/composer.json"
+    },
+    {
+     "dest": "vendor/phpunit/php-invoker/composer.json",
+     "src": "vendor/phpunit/php-invoker/composer.json"
+    },
+    {
+     "dest": "vendor/phpunit/php-text-template/composer.json",
+     "src": "vendor/phpunit/php-text-template/composer.json"
+    },
+    {
+     "dest": "vendor/phpunit/php-timer/composer.json",
+     "src": "vendor/phpunit/php-timer/composer.json"
+    },
+    {
+     "dest": "vendor/phpunit/phpunit/composer.json",
+     "src": "vendor/phpunit/phpunit/composer.json"
+    },
+    {
+     "dest": "vendor/psr/cache/composer.json",
+     "src": "vendor/psr/cache/composer.json"
+    },
+    {
+     "dest": "vendor/psr/clock/composer.json",
+     "src": "vendor/psr/clock/composer.json"
+    },
+    {
+     "dest": "vendor/psr/container/composer.json",
+     "src": "vendor/psr/container/composer.json"
+    },
+    {
+     "dest": "vendor/psr/event-dispatcher/composer.json",
+     "src": "vendor/psr/event-dispatcher/composer.json"
+    },
+    {
+     "dest": "vendor/psr/link/composer.json",
+     "src": "vendor/psr/link/composer.json"
+    },
+    {
+     "dest": "vendor/psr/log/composer.json",
+     "src": "vendor/psr/log/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/cli-parser/composer.json",
+     "src": "vendor/sebastian/cli-parser/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/comparator/composer.json",
+     "src": "vendor/sebastian/comparator/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/complexity/composer.json",
+     "src": "vendor/sebastian/complexity/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/diff/composer.json",
+     "src": "vendor/sebastian/diff/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/environment/composer.json",
+     "src": "vendor/sebastian/environment/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/exporter/composer.json",
+     "src": "vendor/sebastian/exporter/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/file-filter/composer.json",
+     "src": "vendor/sebastian/file-filter/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/git-state/composer.json",
+     "src": "vendor/sebastian/git-state/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/global-state/composer.json",
+     "src": "vendor/sebastian/global-state/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/lines-of-code/composer.json",
+     "src": "vendor/sebastian/lines-of-code/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/object-enumerator/composer.json",
+     "src": "vendor/sebastian/object-enumerator/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/object-reflector/composer.json",
+     "src": "vendor/sebastian/object-reflector/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/recursion-context/composer.json",
+     "src": "vendor/sebastian/recursion-context/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/type/composer.json",
+     "src": "vendor/sebastian/type/composer.json"
+    },
+    {
+     "dest": "vendor/sebastian/version/composer.json",
+     "src": "vendor/sebastian/version/composer.json"
+    },
+    {
+     "dest": "vendor/staabm/side-effects-detector/composer.json",
+     "src": "vendor/staabm/side-effects-detector/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/asset/composer.json",
+     "src": "vendor/symfony/asset/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/asset-mapper/composer.json",
+     "src": "vendor/symfony/asset-mapper/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/browser-kit/composer.json",
+     "src": "vendor/symfony/browser-kit/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/cache/composer.json",
+     "src": "vendor/symfony/cache/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/cache-contracts/composer.json",
+     "src": "vendor/symfony/cache-contracts/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/clock/composer.json",
+     "src": "vendor/symfony/clock/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/config/composer.json",
+     "src": "vendor/symfony/config/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/console/composer.json",
+     "src": "vendor/symfony/console/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/css-selector/composer.json",
+     "src": "vendor/symfony/css-selector/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/debug-bundle/composer.json",
+     "src": "vendor/symfony/debug-bundle/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/dependency-injection/composer.json",
+     "src": "vendor/symfony/dependency-injection/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/deprecation-contracts/composer.json",
+     "src": "vendor/symfony/deprecation-contracts/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/doctrine-bridge/composer.json",
+     "src": "vendor/symfony/doctrine-bridge/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/doctrine-messenger/composer.json",
+     "src": "vendor/symfony/doctrine-messenger/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/dom-crawler/composer.json",
+     "src": "vendor/symfony/dom-crawler/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/dotenv/composer.json",
+     "src": "vendor/symfony/dotenv/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/error-handler/composer.json",
+     "src": "vendor/symfony/error-handler/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/event-dispatcher/composer.json",
+     "src": "vendor/symfony/event-dispatcher/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/event-dispatcher-contracts/composer.json",
+     "src": "vendor/symfony/event-dispatcher-contracts/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/expression-language/composer.json",
+     "src": "vendor/symfony/expression-language/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/filesystem/composer.json",
+     "src": "vendor/symfony/filesystem/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/finder/composer.json",
+     "src": "vendor/symfony/finder/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/flex/composer.json",
+     "src": "vendor/symfony/flex/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/form/composer.json",
+     "src": "vendor/symfony/form/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/framework-bundle/composer.json",
+     "src": "vendor/symfony/framework-bundle/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/http-client/composer.json",
+     "src": "vendor/symfony/http-client/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/http-client-contracts/composer.json",
+     "src": "vendor/symfony/http-client-contracts/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/http-foundation/composer.json",
+     "src": "vendor/symfony/http-foundation/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/http-kernel/composer.json",
+     "src": "vendor/symfony/http-kernel/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/intl/composer.json",
+     "src": "vendor/symfony/intl/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/mailer/composer.json",
+     "src": "vendor/symfony/mailer/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/maker-bundle/composer.json",
+     "src": "vendor/symfony/maker-bundle/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/messenger/composer.json",
+     "src": "vendor/symfony/messenger/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/mime/composer.json",
+     "src": "vendor/symfony/mime/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/monolog-bridge/composer.json",
+     "src": "vendor/symfony/monolog-bridge/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/monolog-bundle/composer.json",
+     "src": "vendor/symfony/monolog-bundle/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/notifier/composer.json",
+     "src": "vendor/symfony/notifier/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/options-resolver/composer.json",
+     "src": "vendor/symfony/options-resolver/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/password-hasher/composer.json",
+     "src": "vendor/symfony/password-hasher/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/polyfill-deepclone/composer.json",
+     "src": "vendor/symfony/polyfill-deepclone/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/polyfill-intl-grapheme/composer.json",
+     "src": "vendor/symfony/polyfill-intl-grapheme/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/polyfill-intl-icu/composer.json",
+     "src": "vendor/symfony/polyfill-intl-icu/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/polyfill-intl-idn/composer.json",
+     "src": "vendor/symfony/polyfill-intl-idn/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/polyfill-intl-normalizer/composer.json",
+     "src": "vendor/symfony/polyfill-intl-normalizer/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/polyfill-mbstring/composer.json",
+     "src": "vendor/symfony/polyfill-mbstring/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/polyfill-php85/composer.json",
+     "src": "vendor/symfony/polyfill-php85/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/process/composer.json",
+     "src": "vendor/symfony/process/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/property-access/composer.json",
+     "src": "vendor/symfony/property-access/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/property-info/composer.json",
+     "src": "vendor/symfony/property-info/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/routing/composer.json",
+     "src": "vendor/symfony/routing/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/runtime/composer.json",
+     "src": "vendor/symfony/runtime/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/security-bundle/composer.json",
+     "src": "vendor/symfony/security-bundle/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/security-core/composer.json",
+     "src": "vendor/symfony/security-core/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/security-csrf/composer.json",
+     "src": "vendor/symfony/security-csrf/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/security-http/composer.json",
+     "src": "vendor/symfony/security-http/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/serializer/composer.json",
+     "src": "vendor/symfony/serializer/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/service-contracts/composer.json",
+     "src": "vendor/symfony/service-contracts/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/stimulus-bundle/composer.json",
+     "src": "vendor/symfony/stimulus-bundle/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/stopwatch/composer.json",
+     "src": "vendor/symfony/stopwatch/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/string/composer.json",
+     "src": "vendor/symfony/string/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/translation/composer.json",
+     "src": "vendor/symfony/translation/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/translation-contracts/composer.json",
+     "src": "vendor/symfony/translation-contracts/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/twig-bridge/composer.json",
+     "src": "vendor/symfony/twig-bridge/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/twig-bundle/composer.json",
+     "src": "vendor/symfony/twig-bundle/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/type-info/composer.json",
+     "src": "vendor/symfony/type-info/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/ux-turbo/composer.json",
+     "src": "vendor/symfony/ux-turbo/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/validator/composer.json",
+     "src": "vendor/symfony/validator/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/var-dumper/composer.json",
+     "src": "vendor/symfony/var-dumper/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/var-exporter/composer.json",
+     "src": "vendor/symfony/var-exporter/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/web-link/composer.json",
+     "src": "vendor/symfony/web-link/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/web-profiler-bundle/composer.json",
+     "src": "vendor/symfony/web-profiler-bundle/composer.json"
+    },
+    {
+     "dest": "vendor/symfony/yaml/composer.json",
+     "src": "vendor/symfony/yaml/composer.json"
+    },
+    {
+     "dest": "vendor/theseer/tokenizer/composer.json",
+     "src": "vendor/theseer/tokenizer/composer.json"
+    },
+    {
+     "dest": "vendor/twig/extra-bundle/composer.json",
+     "src": "vendor/twig/extra-bundle/composer.json"
+    },
+    {
+     "dest": "vendor/twig/twig/composer.json",
+     "src": "vendor/twig/twig/composer.json"
+    },
+    {
+     "dest": "vendor/webmozart/assert/composer.json",
+     "src": "vendor/webmozart/assert/composer.json"
+    },
+    {
+     "dest": "composer.lock",
+     "src": "composer.lock"
+    },
+    {
+     "dest": "vendor/phar-io/manifest/composer.lock",
+     "src": "vendor/phar-io/manifest/composer.lock"
+    },
+    {
+     "dest": "vendor/phpunit/phpunit/composer.lock",
+     "src": "vendor/phpunit/phpunit/composer.lock"
+    },
+    {
+     "dest": "vendor/theseer/tokenizer/composer.lock",
+     "src": "vendor/theseer/tokenizer/composer.lock"
+    },
+    {
+     "dest": "bin/console",
+     "src": "bin/console"
+    },
+    {
+     "cmd": "composer install --optimize-autoloader --no-scripts --no-interaction"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "extensions"
+    }
+   ],
+   "name": "install:composer",
+   "variables": {
+    "COMPOSER_CACHE_DIR": "/opt/cache/composer",
+    "COMPOSER_FUND": "0"
+   }
+  },
+  {
+   "commands": [
+    {
+     "cmd": "sh -c 'mkdir -p var/cache var/log \u0026\u0026 chmod -R a+rw var'",
+     "customName": "mkdir -p var/cache var/log \u0026\u0026 chmod -R a+rw var"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "install:composer"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ]
+  }
+ ]
+}
