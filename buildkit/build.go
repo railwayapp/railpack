@@ -277,6 +277,11 @@ func getImageName(appDir string) string {
 
 // Converts docker buildx-style cache flag values (e.g. type=registry,ref=...)
 // into BuildKit CacheOptionsEntry values. Empty strings are skipped.
+//
+// Intentionally hand-rolled instead of using github.com/docker/buildx/util/buildflags
+// (or pulling buildx solely for ParseCacheEntry). BuildKit has no public parser for
+// these strings; buildx does, but the dependency cost outweighs the small amount of
+// logic we need for the type=... form we document.
 func cacheEntriesFromFlags(entries []string) []client.CacheOptionsEntry {
 	var out []client.CacheOptionsEntry
 	for _, entry := range entries {

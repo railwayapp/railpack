@@ -184,6 +184,7 @@ func usesPnpmBinSubdir(version string) bool {
 		return false
 	}
 
+	// `latest` is definitely >= 11
 	if version == "latest" {
 		return true
 	}
