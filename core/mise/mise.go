@@ -179,6 +179,7 @@ func (m *Mise) runCmdWithEnv(extraEnv []string, args ...string) (string, error) 
 
 	// Mise also discovers configs from process CWD, not only --cd. Run outside the monorepo so
 	// host mise.toml (e.g. locked=true) does not pollute app version resolution.
+	// cacheDir is the install root for the host mise binary (e.g. /tmp/railpack/mise).
 	cmd.Dir = m.cacheDir
 
 	// https://github.com/jdx/mise/blob/main/src/dirs.rs
