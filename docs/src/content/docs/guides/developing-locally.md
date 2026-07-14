@@ -16,15 +16,17 @@ Some pre-requisites:
 tasks for building and testing Railpack. Checkout `mise.toml` in the root
 repo for more information on various lifecycle tasks.
 
-Install and use all versions of tools needed for Railpack
+Install and use all versions of tools needed for Railpack:
 
 ```bash
-cd ~/railpack
+# optional: load dev tools from mise.dev.toml
+echo 'env = ["dev"]' > .miserc.toml
 mise install
 mise run setup
 ```
 
-This command starts a BuildKit container (check out `mise.toml` in the root directory for more information).
+This command starts a BuildKit container (check out `mise.toml` in the root
+directory for more information).
 
 Use the `cli` task to run the Railpack CLI (this is like `railpack --help`)
 
