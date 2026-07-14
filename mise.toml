@@ -60,6 +60,8 @@ run = [
   "docker images 'railpack-test-*' -q | xargs -r docker rmi -f",
   # remove images created by manually running `railpack build` against a project example
   "find examples -name test.json -exec dirname {} \\; | xargs -n 1 basename | xargs -r -I {} docker rmi -f {}",
+  # tear down Apple container machine + host Docker TCP proxy used by mise-linux-shell
+  "mise run mise-linux-shell --stop",
   "go clean -testcache",
   "mise cache clear",
   "rm -rf /tmp/railpack",
