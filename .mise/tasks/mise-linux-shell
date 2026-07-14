@@ -1,0 +1,200 @@
+#!/usr/bin/env bash
+#MISE description="Linux shell (Apple container machine) using host Docker"
+#MISE interactive=true
+#USAGE flag "--restart" help="Delete and recreate the machine from scratch"
+#USAGE flag "--stop" help="Delete the machine and stop the host Docker TCP proxy (socat)"
+
+set -euo pipefail
+
+NAME=railpack-linux
+# Alpine is used because Apple container machines require /sbin/init in the
+# image. Stock ubuntu:24.04 does not have it (needs a custom systemd image /
+# Dockerfile). Alpine ships busybox init and needs no image build.
+IMAGE=alpine:3.22
+# Host gateway on Apple's container-machine bridge (not OrbStack, not loopback).
+GATEWAY=192.168.64.1
+PORT=2375
+DOCKER_HOST_TCP="tcp://${GATEWAY}:${PORT}"
+# Keep all mise state on the machine disk. The Mac home is mounted at
+# /Users/...; if mise used ~/.local/share or ~/.config there it would mix
+# host (darwin) installs with guest (linux) ones.
+MISE_DATA_DIR_GUEST=/var/lib/mise
+MISE_CACHE_DIR_GUEST=/var/cache/mise
+MISE_CONFIG_DIR_GUEST=/var/lib/mise/config
+
+log() { echo "$*" >&2; }
+
+# Kill host-side socat proxying Docker on the machine bridge (if any).
+# Prefer lsof by listen address so we don't need pkill -f (matches wrapper argv).
+stop_docker_proxy() {
+	local lsof_bin pids=""
+	lsof_bin="$(command -v lsof || true)"
+	[[ -x /usr/sbin/lsof ]] && lsof_bin=/usr/sbin/lsof
+	if [[ -n "$lsof_bin" ]]; then
+		pids="$("$lsof_bin" -t -nP "-iTCP@${GATEWAY}:${PORT}" -sTCP:LISTEN 2>/dev/null || true)"
+	fi
+	if [[ -z "$pids" ]]; then
+		log "==> No Docker TCP proxy on ${GATEWAY}:${PORT}"
+		return 0
+	fi
+	log "==> Stopping Docker TCP proxy on ${GATEWAY}:${PORT} (pids: ${pids//$'\n'/ })"
+	# shellcheck disable=SC2086
+	kill $pids 2>/dev/null || true
+}
+
+destroy_machine() {
+	log "==> Stopping machine: $NAME"
+	container machine stop "$NAME" 2>/dev/null || true
+	container machine delete "$NAME" 2>/dev/null || true
+}
+
+if [[ "${usage_stop:-false}" == "true" ]]; then
+	if [[ "${usage_restart:-false}" == "true" ]]; then
+		log "error: --stop and --restart are mutually exclusive"
+		exit 1
+	fi
+	destroy_machine
+	stop_docker_proxy
+	log "==> Stopped"
+	exit 0
+fi
+
+guest_mise_env=(
+	-e "MISE_DATA_DIR=${MISE_DATA_DIR_GUEST}"
+	-e "MISE_CACHE_DIR=${MISE_CACHE_DIR_GUEST}"
+	-e "MISE_CONFIG_DIR=${MISE_CONFIG_DIR_GUEST}"
+	-e "MISE_GLOBAL_CONFIG_FILE=${MISE_CONFIG_DIR_GUEST}/config.toml"
+)
+
+ensure_mise_dirs() {
+	container machine run -n "$NAME" --root -- \
+		mkdir -p "$MISE_DATA_DIR_GUEST" "$MISE_CACHE_DIR_GUEST" "$MISE_CONFIG_DIR_GUEST"
+	container machine run -n "$NAME" --root -- \
+		chmod 1777 "$MISE_DATA_DIR_GUEST" "$MISE_CACHE_DIR_GUEST" "$MISE_CONFIG_DIR_GUEST"
+	container machine run -n "$NAME" --root -- \
+		touch "${MISE_CONFIG_DIR_GUEST}/config.toml"
+}
+
+# Packages + Linux mise + zsh. container machine run mangles `sh -c '...'`.
+bootstrap_machine() {
+	log "==> Bootstrapping machine packages"
+	# docker-cli: talk to host Docker via DOCKER_HOST
+	# zsh: interactive shell
+	# libstdc++/libgcc/gcompat: many mise tools ship glibc/musl hybrids
+	# curl: mise installer
+	container machine run -n "$NAME" --root -- \
+		apk add docker-cli zsh curl libstdc++ libgcc gcompat
+
+	log "==> Installing mise"
+	container machine run -n "$NAME" --root -- \
+		curl -fsSL -o /tmp/mise-install.sh https://mise.run
+	# Alpine is musl — force the musl build (see mise.run / server.sh tip).
+	container machine run -n "$NAME" --root \
+		-e MISE_INSTALL_MUSL=1 \
+		-e MISE_INSTALL_PATH=/usr/local/bin/mise \
+		-- sh /tmp/mise-install.sh
+
+	ensure_mise_dirs
+	setup_zsh
+}
+
+# zsh + mise (modeled on https://github.com/wintermi/zsh-mise/blob/main/zsh-mise.plugin.zsh).
+# usage is a prerequisite for mise completions (same as that plugin's README).
+setup_zsh() {
+	log "==> Configuring zsh + mise"
+	container machine run -n "$NAME" \
+		"${guest_mise_env[@]}" \
+		-- mise use -g usage
+
+	container machine run -n "$NAME" --root -- mkdir -p /etc/zsh
+
+	# Mirrors wintermi/zsh-mise: activate, hook-env, fpath + background completion gen.
+	printf '%s\n' \
+		'# railpack-linux-shell — https://github.com/wintermi/zsh-mise' \
+		'if (( $+commands[mise] )); then' \
+		'  source <(mise activate zsh)' \
+		'  source <(mise hook-env -s zsh)' \
+		'  _mise_comp_dir="${MISE_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/mise}/zsh-completions"' \
+		'  mkdir -p "$_mise_comp_dir"' \
+		'  fpath=("$_mise_comp_dir" $fpath)' \
+		'  if [[ ! -f "$_mise_comp_dir/_mise" ]]; then' \
+		'    typeset -g -A _comps' \
+		'    autoload -Uz _mise' \
+		'    _comps[mise]=_mise' \
+		'  fi' \
+		'  mise completion zsh >| "$_mise_comp_dir/_mise" &|' \
+		'fi' \
+		'autoload -Uz compinit && compinit' |
+		container machine run -n "$NAME" --root -- tee /etc/zsh/zshrc >/dev/null
+
+	container machine run -n "$NAME" --root -- \
+		chsh -s /bin/zsh "$USER" 2>/dev/null ||
+		container machine run -n "$NAME" --root -- \
+			usermod -s /bin/zsh "$USER" 2>/dev/null || true
+}
+
+run_mise_install() {
+	local ceiling="${MISE_CEILING_PATHS:-$(cd .. && pwd)}"
+	log "==> mise install (project tools)"
+	container machine run -n "$NAME" \
+		-e "MISE_CEILING_PATHS=${ceiling}" \
+		"${guest_mise_env[@]}" \
+		-- mise trust --all
+	container machine run -n "$NAME" \
+		-e "MISE_CEILING_PATHS=${ceiling}" \
+		"${guest_mise_env[@]}" \
+		-- mise install
+}
+
+create_machine() {
+	log "==> Creating $NAME ($IMAGE)"
+	container machine create "$IMAGE" --name "$NAME" --cpus 4 --memory 8G
+	bootstrap_machine
+	run_mise_install
+}
+
+if ! curl -fsS --connect-timeout 1 "http://${GATEWAY}:${PORT}/_ping" 2>/dev/null | grep -qx OK; then
+	log "error: host Docker API not reachable at ${DOCKER_HOST_TCP}"
+	log ""
+	log "Expose Docker on the Apple container-machine bridge (${GATEWAY}), then re-run:"
+	log ""
+	log "  # temporary proxy (brew install socat)"
+	log "  socat TCP-LISTEN:${PORT},bind=${GATEWAY},reuseaddr,fork UNIX-CONNECT:\$(realpath /var/run/docker.sock)"
+	log ""
+	log "  # or OrbStack hosts config (prefer ${GATEWAY}, not 0.0.0.0):"
+	log "  # https://docs.orbstack.dev/docker/"
+	log ""
+	log "  mise run mise-linux-shell"
+	exit 1
+fi
+
+if [[ "${usage_restart:-false}" == "true" ]]; then
+	log "==> --restart: deleting $NAME"
+	destroy_machine
+fi
+
+if ! container machine inspect "$NAME" &>/dev/null; then
+	create_machine
+elif ! container machine run -n "$NAME" -- command -v mise >/dev/null 2>&1; then
+	bootstrap_machine
+	run_mise_install
+else
+	ensure_mise_dirs
+fi
+
+container machine run -n "$NAME" -- true 2>/dev/null || {
+	container machine stop "$NAME" 2>/dev/null || true
+	container machine run -n "$NAME" -- true
+}
+
+CEILING="${MISE_CEILING_PATHS:-$(cd .. && pwd)}"
+
+log "==> DOCKER_HOST=$DOCKER_HOST_TCP"
+log "==> MISE_DATA_DIR=$MISE_DATA_DIR_GUEST (machine-local, not Mac home)"
+log "==> MISE_CEILING_PATHS=$CEILING"
+exec container machine run -it \
+	-n "$NAME" \
+	-e "DOCKER_HOST=${DOCKER_HOST_TCP}" \
+	-e "MISE_CEILING_PATHS=${CEILING}" \
+	"${guest_mise_env[@]}" \
+	-- zsh -l

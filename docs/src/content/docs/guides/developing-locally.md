@@ -304,6 +304,15 @@ Mise is critical to this project. For any serious change, you'll need to underst
   is different.
 * If `mise tool erlang` reports a `core:` plugin it means this plugin is compiled into the mise binary and its source is available with the mise monorepo. This can be confusing since there are often open source shell-based repos available for a tool as well, but they are unused by default.
 
+### Linux shell (Apple container machine)
+
+On Apple Silicon Macs you can open a Linux environment that uses the
+host Docker daemon and a Linux-native mise install via
+`mise run mise-linux-shell`.
+
+This creates (or reuses) an Alpine-based [container machine](https://github.com/apple/container)
+that connects to the host docker. This is helpful for debugging linux-only issues with the test suite.
+
 ### Mise Commands
 
 Some helpful commands for debugging issues with mise:
