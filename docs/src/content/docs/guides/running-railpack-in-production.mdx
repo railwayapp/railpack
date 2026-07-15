@@ -68,7 +68,9 @@ buildctl build \
 
 Building with the Docker or BuildKit command is useful because you can pass any
 additional flags you want to the build, without them having to be supported by
-the Railpack CLI.
+the Railpack CLI. This includes standard networking flags such as
+`--network=host` and `--add-host` (see the
+[frontend reference](../reference/frontend#build-networking)).
 
 ## Secrets
 

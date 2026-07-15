@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/moby/buildkit/client/llb"
+	"github.com/moby/buildkit/solver/pb"
 	"github.com/moby/buildkit/util/system"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/railwayapp/railpack/buildkit/graph"
@@ -30,6 +31,13 @@ type BuildGraph struct {
 	githubToken     string
 	secretsFile     *llb.State
 	usedSecretsBase *llb.State
+
+	// networkMode and extraHosts come from dockerui-compatible frontend opts
+	// (force-network-mode / add-hosts). Applied to plan exec steps like the
+	// Dockerfile frontend:
+	// https://github.com/moby/buildkit/blob/v0.31.1/frontend/dockerfile/dockerfile2llb/convert.go
+	networkMode pb.NetMode
+	extraHosts  []llb.HostIP
 }
 
 type BuildGraphOutput struct {
@@ -37,7 +45,7 @@ type BuildGraphOutput struct {
 	GraphEnv BuildEnvironment
 }
 
-func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *BuildKitCacheStore, secretsHash string, platform *specs.Platform, githubToken string) (*BuildGraph, error) {
+func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *BuildKitCacheStore, secretsHash string, platform *specs.Platform, githubToken string, networkMode pb.NetMode, extraHosts []llb.HostIP) (*BuildGraph, error) {
 	var secretsFile *llb.State
 	if secretsHash != "" {
 		st := llb.Scratch().File(llb.Mkfile("/secrets-hash", 0644, []byte(secretsHash)), llb.WithCustomName("[railpack] secrets hash"))
@@ -55,6 +63,8 @@ func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *Buil
 		githubToken:     githubToken,
 		secretsFile:     secretsFile,
 		usedSecretsBase: &usedSecretsBase,
+		networkMode:     networkMode,
+		extraHosts:      extraHosts,
 	}
 
 	// Create a node for each step
@@ -283,6 +293,17 @@ func (g *BuildGraph) convertExecCommandToLLB(node *StepNode, cmd plan.ExecComman
 	githubTokenOpts := g.addGitHubTokenToMiseInstall(cmd)
 	if githubTokenOpts != nil {
 		opts = append(opts, githubTokenOpts...)
+	}
+
+	// Apply dockerui-compatible network mode and extra hosts so buildx
+	// --network / --add-host affect plan execs the same way as Dockerfile RUN.
+	// Dockerfile frontend: stage.Network(mode) + llb.AddExtraHost per RUN
+	// https://github.com/moby/buildkit/blob/v0.31.1/frontend/dockerfile/dockerfile2llb/convert.go
+	if g.networkMode != llb.NetModeSandbox {
+		opts = append(opts, llb.Network(g.networkMode))
+	}
+	for _, h := range g.extraHosts {
+		opts = append(opts, llb.AddExtraHost(h.Host, h.IP))
 	}
 
 	s := state.Run(opts...).Root()
