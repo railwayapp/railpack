@@ -27,7 +27,10 @@
     "step": "build"
    }
   ],
-  "startCommand": "java $JAVA_OPTS -jar  $(ls -1 */build/libs/*jar | grep -v plain)"
+  "startCommand": "java $JAVA_OPTS -jar  $(ls -1 */build/libs/*jar | grep -v plain)",
+  "variables": {
+   "RAILPACK_VERSION": "dev"
+  }
  },
  "steps": [
   {

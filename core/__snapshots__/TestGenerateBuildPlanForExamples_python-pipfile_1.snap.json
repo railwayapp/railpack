@@ -37,7 +37,8 @@
    "PYTHONDONTWRITEBYTECODE": "1",
    "PYTHONFAULTHANDLER": "1",
    "PYTHONHASHSEED": "random",
-   "PYTHONUNBUFFERED": "1"
+   "PYTHONUNBUFFERED": "1",
+   "RAILPACK_VERSION": "dev"
   }
  },
  "steps": [

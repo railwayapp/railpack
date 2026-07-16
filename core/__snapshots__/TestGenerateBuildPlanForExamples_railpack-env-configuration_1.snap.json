@@ -11,7 +11,10 @@
     "step": "build"
    }
   ],
-  "startCommand": "bash start.sh"
+  "startCommand": "bash start.sh",
+  "variables": {
+   "RAILPACK_VERSION": "dev"
+  }
  },
  "steps": [
   {

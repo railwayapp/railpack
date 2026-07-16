@@ -11,7 +11,10 @@
     "step": "build"
    }
   ],
-  "startCommand": "/build/cpp-meson"
+  "startCommand": "/build/cpp-meson",
+  "variables": {
+   "RAILPACK_VERSION": "dev"
+  }
  },
  "steps": [
   {

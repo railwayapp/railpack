@@ -32,7 +32,8 @@
    "ASPNETCORE_CONTENTROOT": "/app/out",
    "ASPNETCORE_ENVIRONMENT": "Production",
    "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
-   "DOTNET_ROOT": "/mise/installs/dotnet/6.0"
+   "DOTNET_ROOT": "/mise/installs/dotnet/6.0",
+   "RAILPACK_VERSION": "dev"
   }
  },
  "steps": [

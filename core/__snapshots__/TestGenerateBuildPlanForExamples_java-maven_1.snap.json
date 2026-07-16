@@ -27,7 +27,10 @@
     "step": "build"
    }
   ],
-  "startCommand": "java  $JAVA_OPTS -jar target/*jar"
+  "startCommand": "java  $JAVA_OPTS -jar target/*jar",
+  "variables": {
+   "RAILPACK_VERSION": "dev"
+  }
  },
  "steps": [
   {
