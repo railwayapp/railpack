@@ -236,7 +236,7 @@ func (p *PhpProvider) DeployWithNode(ctx *generate.GenerateContext, nodeProvider
 
 // Include mise and packages in the final image if the user has specified any additional packages
 func (p *PhpProvider) ConditionallyIncludeMise(ctx *generate.GenerateContext) {
-	if len(ctx.GetMiseStepBuilder().MisePackages) > 1 {
+	if len(ctx.GetMiseStepBuilder().MisePackages) >= 1 {
 		ctx.Deploy.AddInputs([]plan.Layer{
 			ctx.GetMiseStepBuilder().GetLayer(),
 		})
