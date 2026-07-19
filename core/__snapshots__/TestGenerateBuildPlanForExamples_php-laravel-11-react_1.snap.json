@@ -32,6 +32,16 @@
   "inputs": [
    {
     "include": [
+     "/mise/shims",
+     "/mise/installs",
+     "/usr/local/bin/mise",
+     "/etc/mise/config.toml",
+     "/root/.local/state/mise"
+    ],
+    "step": "packages:mise"
+   },
+   {
+    "include": [
      "/app/node_modules"
     ],
     "step": "prune:node"
