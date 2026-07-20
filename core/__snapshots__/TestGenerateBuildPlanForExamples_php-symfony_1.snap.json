@@ -11,57 +11,18 @@
   "composer": {
    "directory": "/opt/cache/composer",
    "type": "shared"
-  },
-  "node-modules": {
-   "directory": "/app/node_modules/.cache",
-   "type": "shared"
-  },
-  "npm-install": {
-   "directory": "/root/.npm",
-   "type": "shared"
-  },
-  "vite": {
-   "directory": "/app/node_modules/.vite",
-   "type": "shared"
   }
  },
  "deploy": {
   "base": {
-   "step": "packages:apt:runtime"
+   "step": "build"
   },
-  "inputs": [
-   {
-    "include": [
-     "/mise/shims",
-     "/mise/installs",
-     "/usr/local/bin/mise",
-     "/etc/mise/config.toml",
-     "/root/.local/state/mise"
-    ],
-    "step": "packages:mise"
-   },
-   {
-    "include": [
-     "/app/node_modules"
-    ],
-    "step": "prune:node"
-   },
-   {
-    "exclude": [
-     "node_modules"
-    ],
-    "include": [
-     "."
-    ],
-    "step": "build"
-   }
-  ],
   "startCommand": "/start-container.sh",
   "variables": {
-   "APP_DEBUG": "false",
-   "APP_ENV": "production",
+   "APP_DEBUG": "0",
+   "APP_ENV": "prod",
    "APP_LOCALE": "en",
-   "IS_LARAVEL": "true",
+   "IS_LARAVEL": "false",
    "LOG_CHANNEL": "stderr",
    "LOG_LEVEL": "debug",
    "OCTANE_SERVER": "frankenphp",
@@ -71,38 +32,6 @@
  },
  "steps": [
   {
-   "assets": {
-    "generated-mise-toml": "[generated-mise-toml]"
-   },
-   "commands": [
-    {
-     "path": "/mise/shims"
-    },
-    {
-     "customName": "create mise config",
-     "name": "generated-mise-toml",
-     "path": "/etc/mise/config.toml"
-    },
-    {
-     "cmd": "mise install",
-     "customName": "install mise packages: node"
-    }
-   ],
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.7.6"
-    }
-   ],
-   "name": "packages:mise",
-   "variables": {
-    "MISE_CACHE_DIR": "/mise/cache",
-    "MISE_CONFIG_DIR": "/mise",
-    "MISE_DATA_DIR": "/mise",
-    "MISE_INSTALLS_DIR": "/mise/installs",
-    "MISE_SHIMS_DIR": "/mise/shims"
-   }
-  },
-  {
    "commands": [
     {
      "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y ca-certificates git unzip zip'",
@@ -111,7 +40,7 @@
    ],
    "inputs": [
     {
-     "image": "dunglas/frankenphp:php8.2.32-bookworm"
+     "image": "dunglas/frankenphp:php8.5.8-bookworm"
     }
    ],
    "name": "packages:image"
@@ -120,7 +49,7 @@
    "assets": {
     "Caddyfile": "{\n\tadmin off\n\tpersist_config off\n\tauto_https off\n\n  {$CADDY_GLOBAL_OPTIONS}\n\n  log {\n    format json\n    output stderr\n    level DEBUG\n  }\n\n\tfrankenphp {\n\t\t{$FRANKENPHP_CONFIG}\n\t}\n}\n\n{$CADDY_EXTRA_CONFIG}\n\n:{$PORT:80} {\n  \n    root * /app/public\n  \n\n\tencode zstd br gzip\n\n\tfile_server {\n\t\thide .git\n\t\thide .env*\n\t}\n\n\t{$CADDY_SERVER_EXTRA_DIRECTIVES}\n\n\tphp_server\n}\n",
     "php.ini": ";; Based on https://github.com/php/php-src/blob/master/php.ini-production\n\n[PHP]\nengine = On\nshort_open_tag = Off\nprecision = 14\noutput_buffering = 4096\nzlib.output_compression = Off\nimplicit_flush = Off\nunserialize_callback_func =\nserialize_precision = -1\ndisable_functions =\ndisable_classes =\nzend.enable_gc = On\nzend.exception_ignore_args = On\nzend.exception_string_param_max_len = 0\nexpose_php = On\nmax_execution_time = 30\nmax_input_time = 60\nmemory_limit = -1\nerror_reporting = E_ALL \u0026 ~E_DEPRECATED \u0026 ~E_STRICT\ndisplay_errors = Off\ndisplay_startup_errors = Off\nlog_errors = On\nignore_repeated_errors = Off\nignore_repeated_source = Off\nreport_memleaks = On\nvariables_order = \"GPCS\"\nrequest_order = \"GP\"\nregister_argc_argv = Off\nauto_globals_jit = On\npost_max_size = 0\nauto_prepend_file =\nauto_append_file =\ndefault_mimetype = \"text/html\"\ndefault_charset = \"UTF-8\"\ndoc_root =\nuser_dir =\nenable_dl = Off\nfile_uploads = On\nupload_max_filesize = 0\nmax_file_uploads = 20\nallow_url_fopen = On\nallow_url_include = Off\ndefault_socket_timeout = 60\nSMTP = localhost\nsmtp_port = 25\nmail.add_x_header = Off\nmail.mixed_lf_and_crlf = Off\nodbc.allow_persistent = On\nodbc.check_persistent = On\nodbc.max_persistent = -1\nodbc.max_links = -1\nodbc.defaultlrl = 4096\nodbc.defaultbinmode = 1\nmysqli.max_persistent = -1\nmysqli.allow_persistent = On\nmysqli.max_links = -1\nmysqli.default_port = 3306\nmysqli.default_socket =\nmysqli.default_host =\nmysqli.default_user =\nmysqli.default_pw =\nmysqlnd.collect_statistics = On\nmysqlnd.collect_memory_statistics = Off\npgsql.allow_persistent = On\npgsql.auto_reset_persistent = Off\npgsql.max_persistent = -1\npgsql.max_links = -1\npgsql.ignore_notice = 0\npgsql.log_notice = 0\nbcmath.scale = 0\nsession.save_handler = files\nsession.use_strict_mode = 0\nsession.use_cookies = 1\nsession.use_only_cookies = 1\nsession.name = PHPSESSID\nsession.auto_start = 0\nsession.cookie_lifetime = 0\nsession.cookie_path = /\nsession.cookie_domain =\nsession.cookie_httponly =\nsession.cookie_samesite =\nsession.serialize_handler = php\nsession.gc_probability = 1\nsession.gc_divisor = 1000\nsession.gc_maxlifetime = 1440\nsession.cache_limiter = nocache\nsession.cache_expire = 180\nsession.use_trans_sid = 0\nsession.sid_length = 26\nsession.trans_sid_tags = \"a=href,area=href,frame=src,form=\"\nsession.sid_bits_per_character = 5\nzend.assertions = -1\ntidy.clean_output = Off\nsoap.wsdl_cache_enabled = 1\nsoap.wsdl_cache_dir = \"/tmp\"\nsoap.wsdl_cache_ttl = 86400\nsoap.wsdl_cache_limit = 5\nldap.max_links = -1\n\n[Pdo_mysql]\npdo_mysql.default_socket =\n",
-    "start-container.sh": "#!/bin/bash\n\nset -e\n\nif [ \"$RAILPACK_SKIP_MIGRATIONS\" != \"true\" ]; then\n  # Run migrations and seeding\n  echo \"Running migrations and seeding database ...\"\n  php artisan migrate --force\nfi\n\nphp artisan storage:link\nphp artisan optimize:clear\nphp artisan optimize\n\necho \"Starting Laravel server ...\"\n\n# Start the FrankenPHP server\ndocker-php-entrypoint --config /Caddyfile --adapter caddyfile 2\u003e\u00261\n"
+    "start-container.sh": "#!/bin/bash\n\nset -e\n\nif [ \"$RAILPACK_SKIP_MIGRATIONS\" != \"true\" ]; then\n  # Only when Doctrine Migrations is available (webapp pack / doctrine-migrations-bundle)\n  if php bin/console list --raw 2\u003e/dev/null | grep -q '^doctrine:migrations:migrate'; then\n    echo \"Running Doctrine migrations ...\"\n    php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration\n  fi\nfi\n\nmkdir -p var/cache var/log\nchmod -R a+rw var 2\u003e/dev/null || true\nphp bin/console cache:warmup\n\necho \"Starting Symfony server ...\"\n\n# Start the FrankenPHP server\ndocker-php-entrypoint --config /Caddyfile --adapter caddyfile 2\u003e\u00261\n"
    },
    "commands": [
     {
@@ -151,10 +80,10 @@
    ],
    "name": "prepare",
    "variables": {
-    "APP_DEBUG": "false",
-    "APP_ENV": "production",
+    "APP_DEBUG": "0",
+    "APP_ENV": "prod",
     "APP_LOCALE": "en",
-    "IS_LARAVEL": "true",
+    "IS_LARAVEL": "false",
     "LOG_CHANNEL": "stderr",
     "LOG_LEVEL": "debug",
     "OCTANE_SERVER": "frankenphp",
@@ -169,7 +98,7 @@
    ],
    "commands": [
     {
-     "cmd": "install-php-extensions ctype curl dom fileinfo filter hash mbstring openssl pcre pdo session tokenizer xml"
+     "cmd": "install-php-extensions ctype iconv intl"
     }
    ],
    "inputs": [
@@ -198,8 +127,8 @@
      "src": "composer.lock"
     },
     {
-     "dest": "artisan",
-     "src": "artisan"
+     "dest": "bin/console",
+     "src": "bin/console"
     },
     {
      "cmd": "composer install --optimize-autoloader --no-scripts --no-interaction"
@@ -217,102 +146,15 @@
    }
   },
   {
-   "caches": [
-    "npm-install"
-   ],
    "commands": [
     {
-     "path": "/app/node_modules/.bin"
-    },
-    {
-     "cmd": "mkdir -p /app/node_modules/.cache"
-    },
-    {
-     "dest": "package-lock.json",
-     "src": "package-lock.json"
-    },
-    {
-     "dest": "package.json",
-     "src": "package.json"
-    },
-    {
-     "cmd": "npm ci"
-    }
-   ],
-   "inputs": [
-    {
-     "step": "packages:mise"
-    }
-   ],
-   "name": "install:node",
-   "variables": {
-    "CI": "true",
-    "NODE_ENV": "production",
-    "NPM_CONFIG_FETCH_RETRIES": "5",
-    "NPM_CONFIG_FUND": "false",
-    "NPM_CONFIG_PRODUCTION": "false",
-    "NPM_CONFIG_UPDATE_NOTIFIER": "false"
-   }
-  },
-  {
-   "caches": [
-    "npm-install"
-   ],
-   "commands": [
-    {
-     "cmd": "npm prune --omit=dev --ignore-scripts"
-    }
-   ],
-   "inputs": [
-    {
-     "step": "install:node"
-    }
-   ],
-   "name": "prune:node",
-   "variables": {
-    "NPM_CONFIG_PRODUCTION": "true"
-   }
-  },
-  {
-   "caches": [
-    "node-modules",
-    "vite"
-   ],
-   "commands": [
-    {
-     "cmd": "npm run build"
-    },
-    {
-     "cmd": "sh -c 'mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs bootstrap/cache \u0026\u0026 chmod -R a+rw storage'",
-     "customName": "mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs bootstrap/cache \u0026\u0026 chmod -R a+rw storage"
-    },
-    {
-     "cmd": "php artisan config:cache"
-    },
-    {
-     "cmd": "php artisan event:cache"
-    },
-    {
-     "cmd": "php artisan route:cache"
-    },
-    {
-     "cmd": "php artisan view:cache"
+     "cmd": "sh -c 'mkdir -p var/cache var/log \u0026\u0026 chmod -R a+rw var'",
+     "customName": "mkdir -p var/cache var/log \u0026\u0026 chmod -R a+rw var"
     }
    ],
    "inputs": [
     {
      "step": "install:composer"
-    },
-    {
-     "include": [
-      ".",
-      "/mise/shims",
-      "/mise/installs",
-      "/usr/local/bin/mise",
-      "/etc/mise/config.toml",
-      "/root/.local/state/mise"
-     ],
-     "step": "install:node"
     },
     {
      "include": [
@@ -325,24 +167,6 @@
    "secrets": [
     "*"
    ]
-  },
-  {
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
-   "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libatomic1'",
-     "customName": "install apt packages: libatomic1"
-    }
-   ],
-   "inputs": [
-    {
-     "step": "install:composer"
-    }
-   ],
-   "name": "packages:apt:runtime"
   }
  ]
 }

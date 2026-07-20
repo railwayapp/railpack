@@ -26,8 +26,8 @@ Only PHP 8.2 and above are supported.
 ## Configuration
 
 Railpack will configure [FrankenPHP](https://frankenphp.dev/) for your
-application. For Laravel applications, the document root is set to the `public`
-directory.
+application. For Laravel and Symfony applications, the document root is set to
+the `public` directory.
 
 ### Config Variables
 
@@ -35,7 +35,7 @@ directory.
 | -------------------------- | --------------------------------------------------- | ------------------ |
 | `RAILPACK_PHP_ROOT_DIR`    | Override the document root                          | `/app/public`      |
 | `RAILPACK_PHP_EXTENSIONS`  | Additional PHP extensions to install                | `gd,imagick,redis` |
-| `RAILPACK_SKIP_MIGRATIONS` | Disable running Laravel migrations (default: false) | `true`             |
+| `RAILPACK_SKIP_MIGRATIONS` | Disable DB migrations on start (default: false)     | `true`             |
 
 ### Custom Configuration
 
@@ -51,15 +51,18 @@ project root:
 
 ### Startup Process
 
-The application is started using a
-[start-container.sh](https://github.com/railwayapp/railpack/blob/main/core/providers/php/start-container.sh)
-script that:
+The application is started with `/start-container.sh`. Railpack picks a
+framework-specific default at build time (vanilla, Laravel, or Symfony) and
+installs it under that path:
 
-- For Laravel applications:
-  - Runs database migrations and seeding (enabled by default, can be disabled with `RAILPACK_SKIP_MIGRATIONS`)
-  - Creates storage symlinks
-  - Optimizes the application
-- Starts the FrankenPHP server using the Caddyfile configuration
+- [Vanilla](https://github.com/railwayapp/railpack/blob/main/core/providers/php/start-container.sh)
+- [Laravel](https://github.com/railwayapp/railpack/blob/main/core/providers/php/start-container.laravel.sh)
+  — migrations (disable with `RAILPACK_SKIP_MIGRATIONS`), storage link, optimize
+- [Symfony](https://github.com/railwayapp/railpack/blob/main/core/providers/php/start-container.symfony.sh)
+  — Doctrine migrations when available (disable with
+  `RAILPACK_SKIP_MIGRATIONS`), cache warmup
+
+All variants start FrankenPHP via the Caddyfile configuration.
 
 You can customize the startup process by placing your own `start-container.sh`
 in the project root.
@@ -96,6 +99,21 @@ detected:
   - Event cache
   - Route cache
   - View cache
+
+## Symfony Support
+
+Symfony applications are detected when either:
+
+- `composer.json` requires `symfony/framework-bundle`, or
+- Both `bin/console` and `symfony.lock` exist (Symfony Flex projects)
+
+When detected:
+
+- The document root is set to the `/app/public` directory
+- `APP_ENV` is set to `prod` and `APP_DEBUG` to `0`
+- `var/cache` and `var/log` are made writable at build time
+- On startup, Doctrine migrations run when available (unless
+  `RAILPACK_SKIP_MIGRATIONS` is set) and the production cache is warmed
 
 ## Node.js Integration
 
