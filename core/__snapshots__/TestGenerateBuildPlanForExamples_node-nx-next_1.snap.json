@@ -1,0 +1,206 @@
+{
+ "caches": {
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  },
+  "next-apps-web": {
+   "directory": "/app/apps/web/.next/cache",
+   "type": "shared"
+  },
+  "node-modules": {
+   "directory": "/app/node_modules/.cache",
+   "type": "shared"
+  },
+  "pnpm-install": {
+   "directory": "/opt/pnpm/store",
+   "type": "shared"
+  }
+ },
+ "deploy": {
+  "base": {
+   "step": "packages:apt:runtime"
+  },
+  "inputs": [
+   {
+    "include": [
+     "/mise/shims",
+     "/mise/installs",
+     "/usr/local/bin/mise",
+     "/etc/mise/config.toml",
+     "/root/.local/state/mise"
+    ],
+    "step": "packages:mise"
+   },
+   {
+    "include": [
+     "/app/node_modules"
+    ],
+    "step": "build"
+   },
+   {
+    "exclude": [
+     "node_modules",
+     ".yarn"
+    ],
+    "include": [
+     "/root/.cache",
+     "."
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "cd apps/web \u0026\u0026 next start",
+  "variables": {
+   "CI": "true",
+   "NODE_ENV": "production",
+   "NPM_CONFIG_FETCH_RETRIES": "5",
+   "NPM_CONFIG_FUND": "false",
+   "NPM_CONFIG_PRODUCTION": "false",
+   "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+  }
+ },
+ "steps": [
+  {
+   "assets": {
+    "generated-mise-toml": "[generated-mise-toml]"
+   },
+   "commands": [
+    {
+     "path": "/mise/shims"
+    },
+    {
+     "customName": "create mise config",
+     "name": "generated-mise-toml",
+     "path": "/etc/mise/config.toml"
+    },
+    {
+     "cmd": "mise install",
+     "customName": "install mise packages: node, pnpm"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.6.11"
+    }
+   ],
+   "name": "packages:mise",
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_SHIMS_DIR": "/mise/shims"
+   }
+  },
+  {
+   "caches": [
+    "pnpm-install"
+   ],
+   "commands": [
+    {
+     "path": "/app/node_modules/.bin"
+    },
+    {
+     "cmd": "mkdir -p /app/node_modules/.cache"
+    },
+    {
+     "dest": ".npmrc",
+     "src": ".npmrc"
+    },
+    {
+     "dest": "apps/web/package.json",
+     "src": "apps/web/package.json"
+    },
+    {
+     "dest": "package.json",
+     "src": "package.json"
+    },
+    {
+     "dest": "pnpm-lock.yaml",
+     "src": "pnpm-lock.yaml"
+    },
+    {
+     "dest": "pnpm-workspace.yaml",
+     "src": "pnpm-workspace.yaml"
+    },
+    {
+     "path": "/opt/pnpm"
+    },
+    {
+     "cmd": "pnpm add -g node-gyp"
+    },
+    {
+     "cmd": "pnpm install --frozen-lockfile --prefer-offline"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install",
+   "variables": {
+    "CI": "true",
+    "NODE_ENV": "production",
+    "NPM_CONFIG_FETCH_RETRIES": "5",
+    "NPM_CONFIG_FUND": "false",
+    "NPM_CONFIG_PRODUCTION": "false",
+    "NPM_CONFIG_UPDATE_NOTIFIER": "false",
+    "PNPM_HOME": "/opt/pnpm",
+    "PNPM_STORE_DIR": "/opt/pnpm/store"
+   }
+  },
+  {
+   "caches": [
+    "node-modules",
+    "next-apps-web"
+   ],
+   "commands": [
+    {
+     "cmd": "nx build @node-nx-next/web"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ],
+   "variables": {
+    "NEXT_TELEMETRY_DISABLED": "1"
+   }
+  },
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libatomic1'",
+     "customName": "install apt packages: libatomic1"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.6.11"
+    }
+   ],
+   "name": "packages:apt:runtime"
+  }
+ ]
+}
