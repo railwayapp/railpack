@@ -42,6 +42,7 @@ railpack build [options] DIRECTORY
 | `--cache-key`  | Unique id to prefix to cache keys                                           |         |
 | `--cache-from` | External cache sources (same as docker buildx). e.g. type=registry,ref=...  |         |
 | `--cache-to`   | Cache export destinations (same as docker buildx). e.g. type=registry,ref=... |       |
+| `--no-cache`   | Do not use cache when building (boolean flag)                               | `false` |
 
 `railpack build` uses credentials from your Docker CLI config
 (`$DOCKER_CONFIG`, default `~/.docker/config.json`) so BuildKit can pull or
