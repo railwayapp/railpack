@@ -92,6 +92,16 @@ var (
 
 	metadataValueStyle = lipgloss.NewStyle().
 				Bold(true)
+
+	boxStyle = lipgloss.NewStyle().
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForeground(highlight).
+			MarginTop(1).
+			Padding(0, 1)
+
+	highlightedTextStyle = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(lipgloss.Color(AnsiBrightCyan))
 )
 
 type PrintOptions struct {
@@ -102,6 +112,21 @@ type PrintOptions struct {
 func PrettyPrintBuildResult(buildResult *BuildResult, options ...PrintOptions) {
 	output := FormatBuildResult(buildResult, options...)
 	fmt.Print(output)
+}
+
+func PrettyPrintSectionHeader(title string) {
+	style := sectionHeaderStyle.
+		MarginTop(0).
+		Width(max(10, lipgloss.Width(title)))
+	fmt.Printf("%s\n\n", style.Render(title))
+}
+
+func PrettyPrintBox(content string) {
+	fmt.Println(boxStyle.Render(content))
+}
+
+func FormatHighlight(content string) string {
+	return highlightedTextStyle.Render(content)
 }
 
 func FormatBuildResult(br *BuildResult, options ...PrintOptions) string {
