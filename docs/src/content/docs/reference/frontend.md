@@ -80,6 +80,60 @@ buildctl build \
 
 Note that the `build-arg:` prefix is required only when using `buildctl` to ensure the arg structure matches `docker buildx`.
 
+## Build networking
+
+The frontend honors the same network-related options as the Dockerfile
+frontend. Docker/buildx map CLI flags to frontend opts that railpack applies to
+every plan exec step:
+
+| Flag | Frontend opt | Effect |
+| ---- | ------------ | ------ |
+| `--network=host` | `force-network-mode=host` | Host networking for exec |
+| `--network=none` | `force-network-mode=none` | No network for exec |
+| `--add-host=name:ip` | `add-hosts=name=ip` | Host entries during build |
+
+**Docker:**
+
+```sh
+docker buildx build \
+  --build-arg BUILDKIT_SYNTAX="ghcr.io/railwayapp/railpack-frontend" \
+  --network=host \
+  --add-host=my-service:10.0.0.5 \
+  -f /path/to/railpack-plan.json \
+  /path/to/app/to/build
+```
+
+**BuildKit:**
+
+```sh
+buildctl build \
+  --frontend=gateway.v0 \
+  --opt source=ghcr.io/railwayapp/railpack-frontend:latest \
+  --opt force-network-mode=host \
+  --opt add-hosts=my-service=10.0.0.5 \
+  --allow network.host \
+  --local context=/path/to/app/to/build \
+  --local dockerfile=/path/to/dir/containing/railpack-plan.json
+```
+
+`--network=host` requires the `network.host` entitlement. Docker buildx grants
+this when you pass `--network=host`. With `buildctl`, pass
+`--allow network.host`.
+
+Custom Docker networks (for example so build steps can reach other containers
+by hostname) are configured on the **builder**, not via `--network=<name>`:
+
+```sh
+docker buildx create \
+  --name custom_network_builder \
+  --driver docker-container \
+  --driver-opt network=my-network
+```
+
+Then build with that builder and `--network=host` so exec steps share the
+builder container network (including Docker embedded DNS). This matches how
+plain Dockerfiles work with a networked builder.
+
 ## Secrets
 
 To use secrets in your build, you must:

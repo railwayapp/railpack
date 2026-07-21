@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/moby/buildkit/client/llb"
+	"github.com/moby/buildkit/solver/pb"
 	"github.com/moby/buildkit/util/system"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/railwayapp/railpack/buildkit/build_llb"
@@ -28,6 +29,13 @@ type ConvertPlanOptions struct {
 
 	// Token used to make authenticated API requests to GitHub to increase rate limits
 	GitHubToken string
+
+	// NetworkMode for RUN/exec steps (from docker buildx --network / force-network-mode).
+	// Default is sandbox (NetMode_UNSET).
+	NetworkMode pb.NetMode
+
+	// ExtraHosts for RUN/exec steps (from docker buildx --add-host / add-hosts).
+	ExtraHosts []llb.HostIP
 }
 
 const (
@@ -45,7 +53,7 @@ func ConvertPlanToLLB(plan *p.BuildPlan, opts ConvertPlanOptions) (*llb.State, *
 	)
 
 	cacheStore := build_llb.NewBuildKitCacheStore(opts.CacheKey)
-	graph, err := build_llb.NewBuildGraph(plan, &localState, cacheStore, opts.SecretsHash, &platform, opts.GitHubToken)
+	graph, err := build_llb.NewBuildGraph(plan, &localState, cacheStore, opts.SecretsHash, &platform, opts.GitHubToken, opts.NetworkMode, opts.ExtraHosts)
 	if err != nil {
 		return nil, nil, err
 	}

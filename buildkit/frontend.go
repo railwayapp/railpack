@@ -65,6 +65,17 @@ func Build(ctx context.Context, c client.Client) (*client.Result, error) {
 		return nil, err
 	}
 
+	// docker buildx --network / --add-host → force-network-mode / add-hosts
+	// (same dockerui opts as the Dockerfile frontend; see network_opts.go)
+	networkMode, err := parseNetMode(opts[keyForceNetwork])
+	if err != nil {
+		return nil, err
+	}
+	extraHosts, err := parseExtraHosts(opts[keyGlobalAddHosts])
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse additional hosts")
+	}
+
 	plan, err := readRailpackPlan(ctx, c)
 	if err != nil {
 		return nil, err
@@ -81,6 +92,8 @@ func Build(ctx context.Context, c client.Client) (*client.Result, error) {
 		CacheKey:      cacheKey,
 		SessionID:     c.BuildOpts().SessionID,
 		GitHubToken:   githubToken,
+		NetworkMode:   networkMode,
+		ExtraHosts:    extraHosts,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error converting plan to LLB: %w", err)
