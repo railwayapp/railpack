@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
+# Keep this host-side orchestration in Bash so ShellCheck can analyze it;
+# ShellCheck does not support zsh scripts.
 #MISE description="Linux shell (Apple container machine) using host Docker"
 #MISE interactive=true
 #USAGE flag "--restart" help="Delete and recreate the machine from scratch"
 #USAGE flag "--stop" help="Delete the machine and stop the host Docker TCP proxy (socat)"
+
+# mise tool installation and project builds can behave differently on Linux
+# than on macOS. This task provides a persistent Linux environment for
+# reproducing and debugging those differences while sharing the Mac project
+# tree and host Docker daemon.
 
 set -euo pipefail
 
@@ -10,36 +17,412 @@ NAME=railpack-linux
 # Alpine is used because Apple container machines require /sbin/init in the
 # image. Stock ubuntu:24.04 does not have it (needs a custom systemd image /
 # Dockerfile). Alpine ships busybox init and needs no image build.
-IMAGE=alpine:3.22
-# Host gateway on Apple's container-machine bridge (not OrbStack, not loopback).
-GATEWAY=192.168.64.1
+IMAGE=alpine:latest
 PORT=2375
-DOCKER_HOST_TCP="tcp://${GATEWAY}:${PORT}"
 # Keep all mise state on the machine disk. The Mac home is mounted at
 # /Users/...; if mise used ~/.local/share or ~/.config there it would mix
 # host (darwin) installs with guest (linux) ones.
 MISE_DATA_DIR_GUEST=/var/lib/mise
 MISE_CACHE_DIR_GUEST=/var/cache/mise
 MISE_CONFIG_DIR_GUEST=/var/lib/mise/config
+# Host path of this repo (same path inside the machine via the /Users mount).
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+RUNTIME_ROOT="${TMPDIR:-/tmp}"
+PROXY_STATE_DIR="${RUNTIME_ROOT%/}/railpack-linux-shell-${UID}"
+PROXY_STATE_FILE="${PROXY_STATE_DIR}/socat.state"
+PROXY_LOCK_FILE="${PROXY_STATE_DIR}/socat.lock"
+PROXY_LOG_FILE="${PROXY_STATE_DIR}/socat.log"
+
+GATEWAY=""
+DOCKER_HOST_TCP=""
+DOCKER_SOCKET=""
+PROXY_LOCK_HELD=false
+PROXY_START_PID=""
+MANAGED_PROXY_PID=""
+MANAGED_PROXY_GATEWAY=""
+MANAGED_PROXY_SOCKET=""
+WAIT_PID=""
 
 log() { echo "$*" >&2; }
 
-# Kill host-side socat proxying Docker on the machine bridge (if any).
-# Prefer lsof by listen address so we don't need pkill -f (matches wrapper argv).
-stop_docker_proxy() {
-	local lsof_bin pids=""
-	lsof_bin="$(command -v lsof || true)"
-	[[ -x /usr/sbin/lsof ]] && lsof_bin=/usr/sbin/lsof
-	if [[ -n "$lsof_bin" ]]; then
-		pids="$("$lsof_bin" -t -nP "-iTCP@${GATEWAY}:${PORT}" -sTCP:LISTEN 2>/dev/null || true)"
+sleep_ms() {
+	local milliseconds="$1"
+	local duration
+	printf -v duration '%d.%03d' "$((milliseconds / 1000))" "$((milliseconds % 1000))"
+	sleep "$duration"
+}
+
+# Retry a predicate or explicitly retryable command with capped exponential backoff.
+retry_command() {
+	local max_attempts="$1"
+	local delay_ms="$2"
+	local max_delay_ms="$3"
+	local label="$4"
+	local report_retries="$5"
+	shift 5
+
+	local attempt=1
+	local ec=0
+	while ((attempt <= max_attempts)); do
+		if "$@"; then
+			return 0
+		else
+			ec=$?
+		fi
+
+		if ((attempt == max_attempts)); then
+			return "$ec"
+		fi
+		if [[ "$report_retries" == "true" ]]; then
+			log "==> ${label} failed (exit ${ec}); retry $((attempt + 1))/${max_attempts}"
+		fi
+		sleep_ms "$delay_ms"
+		delay_ms=$((delay_ms * 2))
+		if ((delay_ms > max_delay_ms)); then
+			delay_ms="$max_delay_ms"
+		fi
+		attempt=$((attempt + 1))
+	done
+}
+
+# Host gateway on Apple's default container network (not OrbStack, not loopback).
+discover_gateway() {
+	local quiet="${1:-false}"
+	local network_json gateway
+
+	if ! command -v container >/dev/null 2>&1; then
+		[[ "$quiet" == "true" ]] || log "error: Apple container CLI is not installed"
+		return 1
 	fi
-	if [[ -z "$pids" ]]; then
-		log "==> No Docker TCP proxy on ${GATEWAY}:${PORT}"
+	if ! command -v jq >/dev/null 2>&1; then
+		[[ "$quiet" == "true" ]] || log "error: jq is required to inspect the container network"
+		return 1
+	fi
+	if ! network_json="$(container network inspect default 2>&1)"; then
+		if [[ "$quiet" != "true" ]]; then
+			log "error: could not inspect the default container network (is 'container system' running?)"
+			log "$network_json"
+		fi
+		return 1
+	fi
+	if ! gateway="$(printf '%s\n' "$network_json" | jq -er '.[0].status.ipv4Gateway | select(type == "string" and length > 0)' 2>/dev/null)"; then
+		[[ "$quiet" == "true" ]] || log "error: default container network has no IPv4 gateway"
+		return 1
+	fi
+
+	GATEWAY="$gateway"
+	DOCKER_HOST_TCP="tcp://${GATEWAY}:${PORT}"
+}
+
+resolve_docker_socket() {
+	local quiet="${1:-false}"
+	local socket
+	if ! socket="$(realpath /var/run/docker.sock 2>/dev/null)" || [[ ! -S "$socket" ]]; then
+		[[ "$quiet" == "true" ]] || log "error: Docker socket not found at /var/run/docker.sock (is Docker/OrbStack running?)"
+		return 1
+	fi
+	DOCKER_SOCKET="$socket"
+}
+
+docker_api_ok() {
+	curl -fsS --connect-timeout 1 "http://${GATEWAY}:${PORT}/_ping" 2>/dev/null | grep -qx OK
+}
+
+# Guest commands run once so a real guest failure is not mistaken for a
+# transient machine transport failure. Readiness checks are retried separately.
+machine_run() {
+	container machine run -n "$NAME" "$@"
+}
+
+machine_is_ready() {
+	container machine run -n "$NAME" -- true >/dev/null 2>&1
+}
+
+wait_machine_ready() {
+	if retry_command 10 250 2000 "container machine readiness" false machine_is_ready; then
 		return 0
 	fi
-	log "==> Stopping Docker TCP proxy on ${GATEWAY}:${PORT} (pids: ${pids//$'\n'/ })"
-	# shellcheck disable=SC2086
-	kill $pids 2>/dev/null || true
+	log "error: container machine $NAME did not become ready after repeated attempts"
+	return 1
+}
+
+wait_docker_proxy_ready() {
+	retry_command 6 100 1000 "Docker proxy readiness" false docker_api_ok
+}
+
+lsof_path() {
+	if [[ -x /usr/sbin/lsof ]]; then
+		echo /usr/sbin/lsof
+	else
+		command -v lsof 2>/dev/null
+	fi
+}
+
+load_proxy_state() {
+	MANAGED_PROXY_PID=""
+	MANAGED_PROXY_GATEWAY=""
+	MANAGED_PROXY_SOCKET=""
+	[[ -f "$PROXY_STATE_FILE" ]] || return 1
+	{
+		IFS= read -r MANAGED_PROXY_PID
+		IFS= read -r MANAGED_PROXY_GATEWAY
+		IFS= read -r MANAGED_PROXY_SOCKET
+	} <"$PROXY_STATE_FILE"
+	[[ "$MANAGED_PROXY_PID" =~ ^[0-9]+$ ]] &&
+		[[ -n "$MANAGED_PROXY_GATEWAY" ]] &&
+		[[ -n "$MANAGED_PROXY_SOCKET" ]]
+}
+
+write_proxy_state() {
+	local pid="$1" gateway="$2" socket="$3"
+	local state_tmp
+	mkdir -p "$PROXY_STATE_DIR"
+	chmod 0700 "$PROXY_STATE_DIR"
+	state_tmp="$(mktemp "${PROXY_STATE_FILE}.XXXXXX")"
+	printf '%s\n%s\n%s\n' "$pid" "$gateway" "$socket" >"$state_tmp"
+	mv -f "$state_tmp" "$PROXY_STATE_FILE"
+}
+
+clear_proxy_state() {
+	rm -f -- "$PROXY_STATE_FILE"
+}
+
+try_acquire_proxy_lock() {
+	local owner=""
+	mkdir -p "$PROXY_STATE_DIR"
+	chmod 0700 "$PROXY_STATE_DIR"
+	if ln -s "$$" "$PROXY_LOCK_FILE" 2>/dev/null; then
+		PROXY_LOCK_HELD=true
+		return 0
+	fi
+	owner="$(readlink "$PROXY_LOCK_FILE" 2>/dev/null || true)"
+	if [[ "$owner" =~ ^[0-9]+$ ]] && ! kill -0 "$owner" 2>/dev/null; then
+		# Recheck before removing a stale lock in case another process replaced it.
+		if [[ "$(readlink "$PROXY_LOCK_FILE" 2>/dev/null || true)" == "$owner" ]]; then
+			rm -f -- "$PROXY_LOCK_FILE"
+		fi
+	fi
+	return 1
+}
+
+acquire_proxy_lock() {
+	if retry_command 40 50 250 "Docker proxy lock" false try_acquire_proxy_lock; then
+		return 0
+	fi
+	log "error: timed out waiting for the Docker proxy lock: $PROXY_LOCK_FILE"
+	return 1
+}
+
+release_proxy_lock() {
+	if [[ "$PROXY_LOCK_HELD" == "true" ]] &&
+		[[ "$(readlink "$PROXY_LOCK_FILE" 2>/dev/null || true)" == "$$" ]]; then
+		rm -f -- "$PROXY_LOCK_FILE"
+	fi
+	PROXY_LOCK_HELD=false
+}
+
+socat_process_matches() {
+	local pid="$1" gateway="$2" socket="$3"
+	local lsof_bin comm args listen_arg connect_arg
+	[[ "$pid" =~ ^[0-9]+$ ]] || return 1
+	[[ -n "$gateway" && -n "$socket" ]] || return 1
+	if ! lsof_bin="$(lsof_path)" || [[ -z "$lsof_bin" ]]; then
+		return 1
+	fi
+	comm="$(ps -p "$pid" -o comm= 2>/dev/null || true)"
+	comm="${comm#"${comm%%[![:space:]]*}"}"
+	comm="${comm%"${comm##*[![:space:]]}"}"
+	[[ "${comm##*/}" == "socat" ]] || return 1
+	args="$(ps -p "$pid" -o command= 2>/dev/null || true)"
+	listen_arg="TCP-LISTEN:${PORT},bind=${gateway},reuseaddr,fork"
+	connect_arg="UNIX-CONNECT:${socket}"
+	[[ "$args" == *"$listen_arg"* && "$args" == *"$connect_arg"* ]] || return 1
+	"$lsof_bin" -a -p "$pid" -t -nP "-iTCP@${gateway}:${PORT}" -sTCP:LISTEN 2>/dev/null |
+		grep -qx "$pid"
+}
+
+listener_pids() {
+	local gateway="$1" lsof_bin
+	if ! lsof_bin="$(lsof_path)" || [[ -z "$lsof_bin" ]]; then
+		return 1
+	fi
+	"$lsof_bin" -t -nP "-iTCP@${gateway}:${PORT}" -sTCP:LISTEN 2>/dev/null
+}
+
+find_matching_socat() {
+	local gateway="$1" socket="$2" pid
+	while IFS= read -r pid; do
+		if socat_process_matches "$pid" "$gateway" "$socket"; then
+			echo "$pid"
+			return 0
+		fi
+	done < <(listener_pids "$gateway" || true)
+	return 1
+}
+
+process_is_gone() {
+	! kill -0 "$WAIT_PID" 2>/dev/null
+}
+
+cleanup_proxy_setup() {
+	if [[ -n "$PROXY_START_PID" ]] && kill -0 "$PROXY_START_PID" 2>/dev/null; then
+		kill "$PROXY_START_PID" 2>/dev/null || true
+	fi
+	PROXY_START_PID=""
+	release_proxy_lock
+}
+
+# Stop only a listener proven to be socat with the expected bridge and socket arguments.
+stop_docker_proxy() {
+	local pid="" gateway="" socket=""
+	acquire_proxy_lock
+	trap cleanup_proxy_setup EXIT
+
+	if load_proxy_state; then
+		gateway="$MANAGED_PROXY_GATEWAY"
+		socket="$MANAGED_PROXY_SOCKET"
+		if socat_process_matches "$MANAGED_PROXY_PID" "$gateway" "$socket"; then
+			pid="$MANAGED_PROXY_PID"
+		else
+			pid="$(find_matching_socat "$gateway" "$socket" || true)"
+		fi
+	else
+		# Best-effort adoption supports proxies started before state tracking existed.
+		if discover_gateway true && resolve_docker_socket true; then
+			gateway="$GATEWAY"
+			socket="$DOCKER_SOCKET"
+			pid="$(find_matching_socat "$gateway" "$socket" || true)"
+		fi
+	fi
+
+	if [[ -z "$pid" ]]; then
+		log "==> No matching socat Docker proxy found"
+		clear_proxy_state
+		release_proxy_lock
+		trap - EXIT
+		return 0
+	fi
+
+	if ! socat_process_matches "$pid" "$gateway" "$socket"; then
+		log "error: refusing to stop PID ${pid}; it no longer matches the expected socat proxy"
+		clear_proxy_state
+		release_proxy_lock
+		trap - EXIT
+		return 1
+	fi
+	log "==> Stopping socat Docker proxy on ${gateway}:${PORT} (PID ${pid})"
+	kill "$pid"
+	WAIT_PID="$pid"
+	if ! retry_command 10 100 500 "socat shutdown" false process_is_gone; then
+		log "error: socat process ${pid} did not stop"
+		release_proxy_lock
+		trap - EXIT
+		return 1
+	fi
+	clear_proxy_state
+	log "==> Stopped socat Docker proxy (PID ${pid})"
+	release_proxy_lock
+	trap - EXIT
+}
+
+# The container machine cannot use the host's Unix Docker socket directly: the
+# socket lives on macOS, while Docker commands run inside the Linux guest. socat
+# bridges a TCP endpoint on Apple's container-machine gateway to that host Unix
+# socket, allowing the guest Docker CLI to use it through DOCKER_HOST.
+#
+# Reuse an existing Docker API listener (OrbStack/etc.) when possible. Otherwise
+# start our own proxy bound only to the machine bridge address, never 0.0.0.0,
+# because access to this unauthenticated endpoint grants control of host Docker.
+ensure_docker_proxy() {
+	local pid="" existing_pids="" socat_bin=""
+	acquire_proxy_lock
+	trap cleanup_proxy_setup EXIT
+
+	if docker_api_ok; then
+		if load_proxy_state &&
+			socat_process_matches "$MANAGED_PROXY_PID" "$MANAGED_PROXY_GATEWAY" "$MANAGED_PROXY_SOCKET"; then
+			log "==> Using managed socat Docker proxy at ${DOCKER_HOST_TCP} (PID ${MANAGED_PROXY_PID})"
+		elif resolve_docker_socket true &&
+			pid="$(find_matching_socat "$GATEWAY" "$DOCKER_SOCKET" || true)" && [[ -n "$pid" ]]; then
+			write_proxy_state "$pid" "$GATEWAY" "$DOCKER_SOCKET"
+			log "==> Using recognized socat Docker proxy at ${DOCKER_HOST_TCP} (PID ${pid})"
+			log "==> mise-linux-shell --stop will stop this exact proxy"
+		else
+			clear_proxy_state
+			log "==> Using existing Docker API listener at ${DOCKER_HOST_TCP}"
+			log "==> Listener is not a matching socat proxy and will not be stopped by --stop"
+		fi
+		release_proxy_lock
+		trap - EXIT
+		return 0
+	fi
+
+	if ! socat_bin="$(command -v socat 2>/dev/null)" || [[ -z "$socat_bin" ]]; then
+		log "error: host Docker API not reachable at ${DOCKER_HOST_TCP} and socat is not installed"
+		log ""
+		log "  brew install socat"
+		log "  # then re-run: mise run mise-linux-shell"
+		release_proxy_lock
+		trap - EXIT
+		return 1
+	fi
+	if ! resolve_docker_socket; then
+		release_proxy_lock
+		trap - EXIT
+		return 1
+	fi
+
+	pid="$(find_matching_socat "$GATEWAY" "$DOCKER_SOCKET" || true)"
+	if [[ -n "$pid" ]]; then
+		write_proxy_state "$pid" "$GATEWAY" "$DOCKER_SOCKET"
+		log "error: matching socat proxy is listening at ${DOCKER_HOST_TCP} (PID ${pid}), but the Docker API did not respond"
+		log "  check that Docker is running and the socket is healthy: ${DOCKER_SOCKET}"
+		release_proxy_lock
+		trap - EXIT
+		return 1
+	fi
+	existing_pids="$(listener_pids "$GATEWAY" || true)"
+	if [[ -n "$existing_pids" ]]; then
+		log "error: ${GATEWAY}:${PORT} is already occupied by a non-matching listener (pids: ${existing_pids//$'\n'/ })"
+		release_proxy_lock
+		trap - EXIT
+		return 1
+	fi
+
+	# Bind only to the bridge gateway — not 0.0.0.0 — so the API stays off the LAN.
+	: >"$PROXY_LOG_FILE"
+	nohup "$socat_bin" \
+		"TCP-LISTEN:${PORT},bind=${GATEWAY},reuseaddr,fork" \
+		"UNIX-CONNECT:${DOCKER_SOCKET}" >"$PROXY_LOG_FILE" 2>&1 &
+	PROXY_START_PID=$!
+	disown 2>/dev/null || true
+	log "==> Starting socat Docker proxy on ${GATEWAY}:${PORT} -> ${DOCKER_SOCKET} (PID ${PROXY_START_PID})"
+
+	if ! wait_docker_proxy_ready; then
+		log "error: started socat but Docker API still not reachable at ${DOCKER_HOST_TCP}"
+		if [[ -s "$PROXY_LOG_FILE" ]]; then
+			log "==> socat output ($PROXY_LOG_FILE):"
+			sed -n '1,20p' "$PROXY_LOG_FILE" >&2
+		fi
+		cleanup_proxy_setup
+		trap - EXIT
+		return 1
+	fi
+
+	PROXY_START_PID="$(find_matching_socat "$GATEWAY" "$DOCKER_SOCKET" || true)"
+	if [[ -z "$PROXY_START_PID" ]]; then
+		log "error: Docker API became reachable, but the expected socat listener could not be identified"
+		cleanup_proxy_setup
+		trap - EXIT
+		return 1
+	fi
+	write_proxy_state "$PROXY_START_PID" "$GATEWAY" "$DOCKER_SOCKET"
+	log "==> Started managed socat Docker proxy at ${DOCKER_HOST_TCP} (PID ${PROXY_START_PID})"
+	log "==> Run 'mise run mise-linux-shell --stop' to stop it"
+	PROXY_START_PID=""
+	release_proxy_lock
+	trap - EXIT
+	return 0
 }
 
 destroy_machine() {
@@ -67,29 +450,40 @@ guest_mise_env=(
 )
 
 ensure_mise_dirs() {
-	container machine run -n "$NAME" --root -- \
+	machine_run --root -- \
 		mkdir -p "$MISE_DATA_DIR_GUEST" "$MISE_CACHE_DIR_GUEST" "$MISE_CONFIG_DIR_GUEST"
-	container machine run -n "$NAME" --root -- \
-		chmod 1777 "$MISE_DATA_DIR_GUEST" "$MISE_CACHE_DIR_GUEST" "$MISE_CONFIG_DIR_GUEST"
-	container machine run -n "$NAME" --root -- \
+	# The machine user owns mise state; other guest users only need traversal.
+	machine_run --root -- \
+		chown "$USER" "$MISE_DATA_DIR_GUEST" "$MISE_CACHE_DIR_GUEST" "$MISE_CONFIG_DIR_GUEST"
+	machine_run --root -- \
+		chmod 0755 "$MISE_DATA_DIR_GUEST" "$MISE_CACHE_DIR_GUEST" "$MISE_CONFIG_DIR_GUEST"
+	machine_run -- \
 		touch "${MISE_CONFIG_DIR_GUEST}/config.toml"
+	# Empty global config used for project `mise install` so guest-only tools
+	# like usage (completions) are not required to be in the project lockfile.
+	machine_run -- \
+		rm -f "${MISE_CONFIG_DIR_GUEST}/empty.toml"
+	machine_run -- \
+		touch "${MISE_CONFIG_DIR_GUEST}/empty.toml"
 }
 
 # Packages + Linux mise + zsh. container machine run mangles `sh -c '...'`.
 bootstrap_machine() {
+	wait_machine_ready
+
 	log "==> Bootstrapping machine packages"
 	# docker-cli: talk to host Docker via DOCKER_HOST
 	# zsh: interactive shell
 	# libstdc++/libgcc/gcompat: many mise tools ship glibc/musl hybrids
 	# curl: mise installer
-	container machine run -n "$NAME" --root -- \
+	machine_run --root -- \
 		apk add docker-cli zsh curl libstdc++ libgcc gcompat
 
 	log "==> Installing mise"
-	container machine run -n "$NAME" --root -- \
+	machine_run --root -- \
 		curl -fsSL -o /tmp/mise-install.sh https://mise.run
 	# Alpine is musl — force the musl build (see mise.run / server.sh tip).
-	container machine run -n "$NAME" --root \
+	machine_run --root \
 		-e MISE_INSTALL_MUSL=1 \
 		-e MISE_INSTALL_PATH=/usr/local/bin/mise \
 		-- sh /tmp/mise-install.sh
@@ -98,17 +492,61 @@ bootstrap_machine() {
 	setup_zsh
 }
 
+# mise stops at the ceiling and does not load configs *at* that path. Use the
+# project's parent so this repo's mise.toml loads, but never parent dirs or ~.
+guest_ceiling() {
+	echo "${MISE_CEILING_PATHS:-$(dirname "$PROJECT_ROOT")}"
+}
+
+# Host project tree is mounted into the machine; guest mise state is fresh after
+# create/restart, so trust the project before any command that loads its config.
+# Trust PROJECT_ROOT only — not --all (that walks parents too).
+trust_guest_mise() {
+	local ceiling
+	ceiling="$(guest_ceiling)"
+	machine_run \
+		-e "MISE_CEILING_PATHS=${ceiling}" \
+		"${guest_mise_env[@]}" \
+		-- mise trust "$PROJECT_ROOT"
+}
+
+# Install usage CLI for mise task completions without adding it to any mise
+# config. Project settings.locked=true would reject a global `usage` tool that
+# is not in mise.lock.
+install_usage_cli() {
+	log "==> Installing usage (completions helper, not a project tool)"
+	# Isolate from project + guest global config so locked mode cannot apply.
+	machine_run \
+		-w /var/tmp \
+		-e MISE_CEILING_PATHS=/var/tmp \
+		-e "MISE_DATA_DIR=${MISE_DATA_DIR_GUEST}" \
+		-e "MISE_CACHE_DIR=${MISE_CACHE_DIR_GUEST}" \
+		-e "MISE_CONFIG_DIR=${MISE_CONFIG_DIR_GUEST}" \
+		-e "MISE_GLOBAL_CONFIG_FILE=${MISE_CONFIG_DIR_GUEST}/empty.toml" \
+		-e MISE_LOCKED=0 \
+		-e CI=1 \
+		-- mise install usage@latest
+	# Keep global config free of usage so project activate stays clean.
+	machine_run -- \
+		cp "${MISE_CONFIG_DIR_GUEST}/empty.toml" "${MISE_CONFIG_DIR_GUEST}/config.toml"
+	machine_run --root -- \
+		ln -sfn "${MISE_DATA_DIR_GUEST}/installs/usage/latest/usage" /usr/local/bin/usage
+}
+
 # zsh + mise (modeled on https://github.com/wintermi/zsh-mise/blob/main/zsh-mise.plugin.zsh).
 # usage is a prerequisite for mise completions (same as that plugin's README).
 setup_zsh() {
 	log "==> Configuring zsh + mise"
-	container machine run -n "$NAME" \
-		"${guest_mise_env[@]}" \
-		-- mise use -g usage
+	local zshrc_host
+	trust_guest_mise
+	install_usage_cli
 
-	container machine run -n "$NAME" --root -- mkdir -p /etc/zsh
+	machine_run --root -- mkdir -p /etc/zsh
 
-	# Mirrors wintermi/zsh-mise: activate, hook-env, fpath + background completion gen.
+	# Write zshrc via the shared project mount (no stdin pipe into machine run).
+	mkdir -p "${PROJECT_ROOT}/tmp"
+	zshrc_host="$(mktemp "${PROJECT_ROOT}/tmp/railpack-linux-zshrc.XXXXXX")"
+	trap 'rm -f -- "$zshrc_host"' EXIT
 	printf '%s\n' \
 		'# railpack-linux-shell — https://github.com/wintermi/zsh-mise' \
 		'if (( $+commands[mise] )); then' \
@@ -124,25 +562,29 @@ setup_zsh() {
 		'  fi' \
 		'  mise completion zsh >| "$_mise_comp_dir/_mise" &|' \
 		'fi' \
-		'autoload -Uz compinit && compinit' |
-		container machine run -n "$NAME" --root -- tee /etc/zsh/zshrc >/dev/null
+		'autoload -Uz compinit && compinit' \
+		>"$zshrc_host"
+	machine_run --root -- cp "$zshrc_host" /etc/zsh/zshrc
+	rm -f -- "$zshrc_host"
+	trap - EXIT
 
-	container machine run -n "$NAME" --root -- \
-		chsh -s /bin/zsh "$USER" 2>/dev/null ||
-		container machine run -n "$NAME" --root -- \
-			usermod -s /bin/zsh "$USER" 2>/dev/null || true
+	# Alpine has neither chsh nor usermod; interactive entry always runs zsh -l.
 }
 
 run_mise_install() {
-	local ceiling="${MISE_CEILING_PATHS:-$(cd .. && pwd)}"
+	local ceiling
+	ceiling="$(guest_ceiling)"
 	log "==> mise install (project tools)"
-	container machine run -n "$NAME" \
+	trust_guest_mise
+	# Use empty global config: guest global config may list `usage` for shell
+	# completions, which is not in the project lockfile (settings.locked=true).
+	machine_run \
 		-e "MISE_CEILING_PATHS=${ceiling}" \
-		"${guest_mise_env[@]}" \
-		-- mise trust --all
-	container machine run -n "$NAME" \
-		-e "MISE_CEILING_PATHS=${ceiling}" \
-		"${guest_mise_env[@]}" \
+		-e "MISE_DATA_DIR=${MISE_DATA_DIR_GUEST}" \
+		-e "MISE_CACHE_DIR=${MISE_CACHE_DIR_GUEST}" \
+		-e "MISE_CONFIG_DIR=${MISE_CONFIG_DIR_GUEST}" \
+		-e "MISE_GLOBAL_CONFIG_FILE=${MISE_CONFIG_DIR_GUEST}/empty.toml" \
+		-e CI=1 \
 		-- mise install
 }
 
@@ -153,20 +595,8 @@ create_machine() {
 	run_mise_install
 }
 
-if ! curl -fsS --connect-timeout 1 "http://${GATEWAY}:${PORT}/_ping" 2>/dev/null | grep -qx OK; then
-	log "error: host Docker API not reachable at ${DOCKER_HOST_TCP}"
-	log ""
-	log "Expose Docker on the Apple container-machine bridge (${GATEWAY}), then re-run:"
-	log ""
-	log "  # temporary proxy (brew install socat)"
-	log "  socat TCP-LISTEN:${PORT},bind=${GATEWAY},reuseaddr,fork UNIX-CONNECT:\$(realpath /var/run/docker.sock)"
-	log ""
-	log "  # or OrbStack hosts config (prefer ${GATEWAY}, not 0.0.0.0):"
-	log "  # https://docs.orbstack.dev/docker/"
-	log ""
-	log "  mise run mise-linux-shell"
-	exit 1
-fi
+discover_gateway
+ensure_docker_proxy
 
 if [[ "${usage_restart:-false}" == "true" ]]; then
 	log "==> --restart: deleting $NAME"
@@ -175,19 +605,19 @@ fi
 
 if ! container machine inspect "$NAME" &>/dev/null; then
 	create_machine
-elif ! container machine run -n "$NAME" -- command -v mise >/dev/null 2>&1; then
-	bootstrap_machine
-	run_mise_install
 else
-	ensure_mise_dirs
+	wait_machine_ready
+	if ! machine_run -- command -v mise >/dev/null 2>&1; then
+		bootstrap_machine
+		run_mise_install
+	else
+		ensure_mise_dirs
+	fi
 fi
 
-container machine run -n "$NAME" -- true 2>/dev/null || {
-	container machine stop "$NAME" 2>/dev/null || true
-	container machine run -n "$NAME" -- true
-}
+wait_machine_ready
 
-CEILING="${MISE_CEILING_PATHS:-$(cd .. && pwd)}"
+CEILING="$(guest_ceiling)"
 
 log "==> DOCKER_HOST=$DOCKER_HOST_TCP"
 log "==> MISE_DATA_DIR=$MISE_DATA_DIR_GUEST (machine-local, not Mac home)"
