@@ -42,6 +42,10 @@ func (p *PackageJson) GetScript(name string) string {
 	return p.Scripts[name]
 }
 
+func (p *PackageJson) BuildScriptContains(value string) bool {
+	return strings.Contains(p.GetScript("build"), value)
+}
+
 func (p *PackageJson) hasDependency(dependency string) bool {
 	if p.Dependencies != nil {
 		if _, ok := p.Dependencies[dependency]; ok {

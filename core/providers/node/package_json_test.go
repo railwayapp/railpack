@@ -12,6 +12,7 @@ func TestPackageJson(t *testing.T) {
 		packageJson := NewPackageJson()
 		assert.Equal(t, packageJson.HasScript("start"), false)
 		assert.Equal(t, packageJson.GetScript("build"), "")
+		assert.False(t, packageJson.BuildScriptContains("next build"))
 		assert.Equal(t, packageJson.hasDependency("react"), false)
 	})
 
@@ -53,6 +54,8 @@ func TestPackageJson(t *testing.T) {
 		assert.True(t, packageJson.HasScript("start"))
 		assert.Equal(t, "next start", packageJson.GetScript("start"))
 		assert.Equal(t, "next build", packageJson.GetScript("build"))
+		assert.True(t, packageJson.BuildScriptContains("next build"))
+		assert.False(t, packageJson.BuildScriptContains("vite build"))
 		assert.Equal(t, "next dev", packageJson.GetScript("dev"))
 		assert.False(t, packageJson.HasScript("test"))
 
