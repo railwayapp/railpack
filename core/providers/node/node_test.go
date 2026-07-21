@@ -94,8 +94,7 @@ func TestNode(t *testing.T) {
 				err = provider.Initialize(ctx)
 				require.NoError(t, err)
 
-				packageManager := provider.getPackageManager(ctx.App)
-				require.Equal(t, tt.packageManager, packageManager)
+				require.Equal(t, tt.packageManager, provider.packageManager)
 
 				err = provider.Plan(ctx)
 				require.NoError(t, err)
