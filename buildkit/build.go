@@ -27,6 +27,7 @@ import (
 	"github.com/moby/buildkit/util/appcontext"
 	_ "github.com/moby/buildkit/util/grpcutil/encoding/proto"
 	"github.com/moby/buildkit/util/progress/progressui"
+	"github.com/railwayapp/railpack/core"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/tonistiigi/fsutil"
 )
@@ -124,6 +125,8 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		}
 		return nil
 	}
+
+	core.PrettyPrintSectionHeader("Starting Docker Build...")
 
 	ch := make(chan *client.SolveStatus)
 
@@ -260,14 +263,16 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		}
 	}
 
+	// output nice build output
 	buildDuration := time.Since(startTime)
-	log.Infof("Successfully built image in %.2fs", buildDuration.Seconds())
-
+	buildOutput := fmt.Sprintf("Successfully built image in %.2fs", buildDuration.Seconds())
 	if opts.OutputDir != "" {
-		log.Infof("Saved image filesystem to directory `%s`", opts.OutputDir)
+		buildOutput += fmt.Sprintf("\n\nSaved to:\n%s", core.FormatHighlight(opts.OutputDir))
 	} else {
-		log.Infof("Run with `docker run -it %s`", imageName)
+		command := fmt.Sprintf("docker run -it %s", imageName)
+		buildOutput += fmt.Sprintf("\n\nRun:\n%s", core.FormatHighlight(command))
 	}
+	core.PrettyPrintBox(buildOutput)
 
 	return nil
 }
