@@ -30,6 +30,7 @@
   ],
   "startCommand": "./bin/rust-custom-version",
   "variables": {
+   "RAILPACK_VERSION": "dev",
    "ROCKET_ADDRESS": "0.0.0.0"
   }
  },

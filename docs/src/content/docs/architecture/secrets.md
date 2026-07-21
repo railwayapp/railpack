@@ -42,6 +42,9 @@ Environment variables can be set in two ways:
 }
 ```
 
+Railpack always sets `RAILPACK_VERSION` on the final runtime image to the
+Railpack version that produced the image (for example `0.12.3`).
+
 ## Secrets
 
 The names of all secrets that should be used during the build are added to the

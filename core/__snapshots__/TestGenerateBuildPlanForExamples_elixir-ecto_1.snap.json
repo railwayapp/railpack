@@ -19,7 +19,8 @@
    "LC_ALL": "en_US.UTF-8",
    "MIX_ARCHIVES": "/root/.mix/archives",
    "MIX_ENV": "prod",
-   "MIX_HOME": "/root/.mix"
+   "MIX_HOME": "/root/.mix",
+   "RAILPACK_VERSION": "dev"
   }
  },
  "steps": [

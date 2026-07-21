@@ -21,7 +21,10 @@
     "step": "build"
    }
   ],
-  "startCommand": "zsh start.sh"
+  "startCommand": "zsh start.sh",
+  "variables": {
+   "RAILPACK_VERSION": "dev"
+  }
  },
  "steps": [
   {

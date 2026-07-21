@@ -3,7 +3,10 @@
   "base": {
    "step": "build"
   },
-  "startCommand": "/start-container.sh"
+  "startCommand": "/start-container.sh",
+  "variables": {
+   "RAILPACK_VERSION": "dev"
+  }
  },
  "steps": [
   {

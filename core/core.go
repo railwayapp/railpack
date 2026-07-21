@@ -115,6 +115,13 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		return &BuildResult{Success: false, Logs: logger.Logs}
 	}
 
+	railpackVersion := options.RailpackVersion
+	if railpackVersion == "" {
+		railpackVersion = "dev"
+	}
+	// Bake the builder version into the runtime image for observability
+	buildPlan.Deploy.Variables["RAILPACK_VERSION"] = railpackVersion
+
 	if providerToUse != nil {
 		providerToUse.CleansePlan(buildPlan)
 	}
@@ -127,7 +134,7 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 	}
 
 	buildResult := &BuildResult{
-		RailpackVersion:   options.RailpackVersion,
+		RailpackVersion:   railpackVersion,
 		Plan:              buildPlan,
 		ResolvedPackages:  resolvedPackages,
 		Metadata:          ctx.Metadata.Properties,
