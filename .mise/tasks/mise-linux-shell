@@ -27,6 +27,8 @@ MISE_CACHE_DIR_GUEST=/var/cache/mise
 MISE_CONFIG_DIR_GUEST=/var/lib/mise/config
 # Host path of this repo (same path inside the machine via the /Users mount).
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+RAILPACK_MISE_VERSION="$(<"${PROJECT_ROOT}/core/mise/version.txt")"
+RAILPACK_MISE_DIR=/tmp/railpack/mise
 RUNTIME_ROOT="${TMPDIR:-/tmp}"
 PROXY_STATE_DIR="${RUNTIME_ROOT%/}/railpack-linux-shell-${UID}"
 PROXY_STATE_FILE="${PROXY_STATE_DIR}/socat.state"
@@ -472,12 +474,13 @@ bootstrap_machine() {
 	wait_machine_ready
 
 	log "==> Bootstrapping machine packages"
+	# bash/git: mise's Python backend uses python-build to resolve versions
 	# docker-cli: talk to host Docker via DOCKER_HOST
 	# zsh: interactive shell
 	# libstdc++/libgcc/gcompat: many mise tools ship glibc/musl hybrids
 	# curl: mise installer
 	machine_run --root -- \
-		apk add docker-cli zsh curl libstdc++ libgcc gcompat
+		apk add bash git docker-cli zsh curl libstdc++ libgcc gcompat
 
 	log "==> Installing mise"
 	machine_run --root -- \
@@ -486,10 +489,21 @@ bootstrap_machine() {
 	machine_run --root \
 		-e MISE_INSTALL_MUSL=1 \
 		-e MISE_INSTALL_PATH=/usr/local/bin/mise \
+		-e "MISE_VERSION=${RAILPACK_MISE_VERSION}" \
 		-- sh /tmp/mise-install.sh
 
 	ensure_mise_dirs
 	setup_zsh
+}
+
+# Railpack caches a separate mise binary for host-side version resolution. Its
+# generic Linux download is glibc-linked, so reuse the pinned musl binary that
+# this Alpine machine already installed instead.
+configure_railpack_mise() {
+	log "==> Configuring Railpack to use musl mise ${RAILPACK_MISE_VERSION}"
+	machine_run -- mkdir -p "$RAILPACK_MISE_DIR"
+	machine_run -- \
+		ln -sfn /usr/local/bin/mise "${RAILPACK_MISE_DIR}/mise-${RAILPACK_MISE_VERSION}"
 }
 
 # mise stops at the ceiling and does not load configs *at* that path. Use the
@@ -616,6 +630,7 @@ else
 fi
 
 wait_machine_ready
+configure_railpack_mise
 
 CEILING="$(guest_ceiling)"
 
