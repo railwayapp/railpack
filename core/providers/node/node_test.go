@@ -2,7 +2,6 @@ package node
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/railwayapp/railpack/core/app"
@@ -175,6 +174,11 @@ func TestGetNextApps(t *testing.T) {
 			path: "../../../examples/node-turborepo",
 			want: []string{"apps/web"},
 		},
+		{
+			name: "nx next workspace",
+			path: "../../../examples/node-nx-next",
+			want: []string{"apps/web"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -185,10 +189,10 @@ func TestGetNextApps(t *testing.T) {
 			require.NoError(t, err)
 
 			nextPackages, err := provider.getPackagesWithFramework(ctx, func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
-				if pkg.PackageJson.HasScript("build") {
-					return strings.Contains(pkg.PackageJson.Scripts["build"], "next build")
+				if pkg.PackageJson.BuildScriptContains("next build") {
+					return true
 				}
-				return false
+				return provider.isNextAppPackage(pkg, ctx)
 			})
 			require.NoError(t, err)
 

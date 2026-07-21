@@ -95,6 +95,7 @@ Railpack determines the start command in the following order:
 | `RAILPACK_NODE_PRUNE_CMD`        | Custom command to prune dependencies    | `npm prune --omit=dev --ignore-scripts` |
 | `RAILPACK_NODE_INSTALL_PATTERNS` | Custom patterns to install dependencies | `prisma`                                |
 | `RAILPACK_ANGULAR_PROJECT`       | Name of the Angular project to build    | `my-app`                                |
+| `RAILPACK_NX_APP`                | Nx app to build and start (project name, package name, or path) | `web` or `@org/web` |
 
 ### Package Managers
 
@@ -124,18 +125,20 @@ Railpack supports building native modules and automatically configures `node-gyp
 ### Monorepo Support
 
 Railpack automatically supports monorepo (workspaces) configurations with all major
-package managers. No special configuration is required. 
+package managers. No special configuration is required.
 
 **Supported Approaches:**
 
 - **npm, bun, yarn**: Uses the `workspaces` field in `package.json`
 - **pnpm**: Uses `pnpm-workspace.yaml` configuration
+- **Nx**: Detects `nx.json` and builds Next.js apps even when targets are
+  inferred (no root `build`/`start` scripts)
 
 See the [examples
 folder](https://github.com/railwayapp/railpack/tree/main/examples) in the
 repository for workspace examples across different package managers (e.g.,
 `node-pnpm-workspaces`, `node-npm-workspaces`, `node-yarn-workspaces`,
-`node-bun-workspaces`).
+`node-bun-workspaces`, `node-nx-next`).
 
 When building a monorepo, Railpack will:
 
@@ -145,8 +148,24 @@ When building a monorepo, Railpack will:
 - Cache workspace node_modules appropriately
 
 If your monorepo requires building a specific workspace package, ensure
-your build and start scripts are defined in the root `package.json` or use
-a [config file](/architecture/user-config) to specify custom commands.
+your build and start scripts are defined in the root `package.json`, set
+`RAILPACK_NX_APP` for multi-app Nx workspaces, or use a
+[config file](/architecture/user-config) to specify custom commands.
+
+#### Nx
+
+Stock Nx workspaces often rely on [inferred
+tasks](https://nx.dev/docs/concepts/inferred-tasks) instead of `package.json`
+scripts. When Railpack detects Nx and the root has no `build`/`start` scripts:
+
+- **Build**: `nx build <project>` (uses the package name, e.g.
+  `@org/web`)
+- **Start** (Next.js): `cd apps/web && next start` so runtime does not depend
+  on the `nx` CLI
+
+With a single Next.js app, selection is automatic. With multiple apps, set
+`RAILPACK_NX_APP` to the project name, package name, or package path (e.g.
+`web`, `@org/web`, or `apps/web`).
 
 ### Install
 

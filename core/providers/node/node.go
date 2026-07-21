@@ -177,8 +177,10 @@ func (p *NodeProvider) StartCommandHelp() string {
 		"2. A \"main\" field in your package.json pointing to your entry file:\n" +
 		"   \"main\": \"src/server.js\"\n\n" +
 		"3. An index.js or index.ts file in your project root\n\n" +
+		"4. An Nx workspace with a Next.js app (nx.json + next)\n\n" +
 		"If you have a static site, you can set the RAILPACK_SPA_OUTPUT_DIR environment variable\n" +
-		"containing the directory of your built static files."
+		"containing the directory of your built static files.\n\n" +
+		"For multi-app Nx workspaces, set RAILPACK_NX_APP to select which app to deploy."
 }
 
 func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
@@ -191,6 +193,11 @@ func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	} else if p.isNuxt() {
 		// Default Nuxt start command
 		return "node .output/server/index.mjs"
+	} else if pkg, _, ok := p.resolveNxDeployPackage(ctx); ok {
+		// Prefer next start from the app dir so prune does not require the nx CLI at runtime
+		if p.isNextAppPackage(pkg, ctx) {
+			return nxNextStartCommand(pkg)
+		}
 	}
 
 	return ""
@@ -199,15 +206,23 @@ func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
 	build.AddInput(ctx.NewLocalLayer())
 
-	_, ok := p.packageJson.Scripts["build"]
-	if ok {
+	if p.packageJson.HasScript("build") {
 		build.AddCommands([]plan.Command{
 			plan.NewExecCommand(p.packageManager.RunCmd("build")),
 		})
 
 		if p.isNext() {
+			// TODO I don't love how we are adding runtime config vars in `build`
 			build.AddVariables(map[string]string{"NEXT_TELEMETRY_DISABLED": "1"})
 		}
+	} else if _, projectName, ok := p.resolveNxDeployPackage(ctx); ok {
+		// TODO this `resolveNxDeployPackage` logic feels messy, we should refactor this a bit
+
+		// Nx infers targets from plugins; root package.json often has no build script
+		build.AddCommands([]plan.Command{
+			plan.NewExecCommand(nxBuildCommand(projectName)),
+		})
+		build.AddVariables(map[string]string{"NEXT_TELEMETRY_DISABLED": "1"})
 	}
 
 	p.addCachesToBuildStep(ctx, build)
@@ -237,10 +252,12 @@ func (p *NodeProvider) addCachesToBuildStep(ctx *generate.GenerateContext, build
 	build.AddCache(ctx.Caches.AddCache("node-modules", NODE_MODULES_CACHE))
 
 	p.addFrameworkCaches(ctx, build, "next", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
-		if pkg.PackageJson.HasScript("build") {
-			return strings.Contains(pkg.PackageJson.Scripts["build"], "next build")
+		// Script-based Next apps (including monorepo packages with explicit next build)
+		if pkg.PackageJson.BuildScriptContains("next build") {
+			return true
 		}
-		return false
+		// Nx and similar toolchains infer targets; detect via next dep / next.config
+		return p.isNextAppPackage(pkg, ctx)
 	}, ".next/cache")
 
 	p.addFrameworkCaches(ctx, build, "remix", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
