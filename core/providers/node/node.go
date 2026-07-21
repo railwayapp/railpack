@@ -66,7 +66,7 @@ func (p *NodeProvider) Initialize(ctx *generate.GenerateContext) error {
 	}
 	p.packageJson = packageJson
 
-	p.packageManager = p.getPackageManager(ctx.App)
+	p.packageManager = p.getPackageManager(ctx)
 
 	workspace, err := NewWorkspace(ctx.App)
 	if err != nil {
@@ -430,7 +430,9 @@ func parseYarnPackageManager(pmVersion string) PackageManager {
 	return PackageManagerYarnBerry
 }
 
-func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
+func (p *NodeProvider) getPackageManager(ctx *generate.GenerateContext) PackageManager {
+	app := ctx.App
+
 	// Check packageManager field first
 	if packageJson, err := p.GetPackageJson(app); err == nil && packageJson.PackageManager != nil {
 		pmName, pmVersion := packageJson.GetPackageManagerInfo()
@@ -475,7 +477,7 @@ func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
 		}
 	}
 
-	log.Info("No package manager inferred, using npm default")
+	ctx.Logger.LogWarn("No node package manager detected, using npm")
 
 	return PackageManagerNpm
 }
