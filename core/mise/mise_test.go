@@ -1,6 +1,7 @@
 package mise
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -126,7 +127,36 @@ func TestMiseGetAllVersions(t *testing.T) {
 }
 
 func TestMiseVersion(t *testing.T) {
-	require.NotEmpty(t, miseVersionRaw, "mise version file should not be empty")
-	require.Equal(t, strings.TrimSpace(miseVersionRaw), miseVersionRaw, "mise version file should be trimmed")
-	require.Regexp(t, `^\d+\.\d+\.\d+$`, miseVersionRaw, "mise version should match format YYYY.M.D")
+	require.NotEmpty(t, Version, "mise version file should not be empty")
+	require.Equal(t, strings.TrimSpace(Version), Version, "mise version file should be trimmed")
+	require.Regexp(t, `^\d+\.\d+\.\d+$`, Version, "mise version should match format YYYY.M.D")
+}
+
+func TestGetAssetName(t *testing.T) {
+	tests := []struct {
+		goos     string
+		goarch   string
+		expected string
+	}{
+		{goos: "linux", goarch: "amd64", expected: "linux-x64-musl.tar.gz"},
+		{goos: "linux", goarch: "arm64", expected: "linux-arm64-musl.tar.gz"},
+		{goos: "linux", goarch: "arm", expected: "linux-armv7-musl.tar.gz"},
+		{goos: "darwin", goarch: "amd64", expected: "macos-x64.tar.gz"},
+		{goos: "darwin", goarch: "arm64", expected: "macos-arm64.tar.gz"},
+		{goos: "windows", goarch: "amd64", expected: "windows-x64.zip"},
+		{goos: "windows", goarch: "arm64", expected: "windows-arm64.zip"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.goos+"-"+tt.goarch, func(t *testing.T) {
+			assetName, err := getAssetName(tt.goos, tt.goarch)
+			require.NoError(t, err)
+			require.Equal(t, fmt.Sprintf("mise-v%s-%s", Version, tt.expected), assetName)
+		})
+	}
+}
+
+func TestGetAssetNameUnsupportedPlatform(t *testing.T) {
+	_, err := getAssetName("plan9", "amd64")
+	require.EqualError(t, err, "unsupported platform: plan9 amd64")
 }
