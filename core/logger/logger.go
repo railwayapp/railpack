@@ -5,9 +5,10 @@ import "fmt"
 type Level string
 
 const (
-	Info  Level = "info"
-	Warn  Level = "warn"
-	Error Level = "error"
+	Info        Level = "info"
+	Warn        Level = "warn"
+	Deprecation Level = "deprecation"
+	Error       Level = "error"
 )
 
 type Msg struct {
@@ -26,34 +27,28 @@ func NewLogger() *Logger {
 }
 
 func (l *Logger) LogInfo(format string, args ...any) {
-	msg := format
-	if len(args) > 0 {
-		msg = fmt.Sprintf(format, args...)
-	}
-	l.Logs = append(l.Logs, Msg{
-		Level: Info,
-		Msg:   msg,
-	})
+	l.log(Info, format, args...)
 }
 
 func (l *Logger) LogWarn(format string, args ...any) {
-	msg := format
-	if len(args) > 0 {
-		msg = fmt.Sprintf(format, args...)
-	}
-	l.Logs = append(l.Logs, Msg{
-		Level: Warn,
-		Msg:   msg,
-	})
+	l.log(Warn, format, args...)
+}
+
+func (l *Logger) LogDeprecation(format string, args ...any) {
+	l.log(Deprecation, format, args...)
 }
 
 func (l *Logger) LogError(format string, args ...any) {
+	l.log(Error, format, args...)
+}
+
+func (l *Logger) log(level Level, format string, args ...any) {
 	msg := format
 	if len(args) > 0 {
 		msg = fmt.Sprintf(format, args...)
 	}
 	l.Logs = append(l.Logs, Msg{
-		Level: Error,
+		Level: level,
 		Msg:   msg,
 	})
 }

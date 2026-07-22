@@ -78,6 +78,10 @@ var (
 			Foreground(lipgloss.Color(AnsiYellow)).
 			MarginLeft(2)
 
+	logDeprecationStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color(AnsiBrightMagenta)).
+				MarginLeft(2)
+
 	logErrorStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color(AnsiRed)).
 			Bold(true).
@@ -168,6 +172,8 @@ func formatLogs(output *strings.Builder, logs []logger.Msg) {
 			output.WriteString(logInfoStyle.Render(fmt.Sprintf("↳ %s", msg)))
 		case logger.Warn:
 			output.WriteString(logWarnStyle.Render(fmt.Sprintf("⚠ %s", msg)))
+		case logger.Deprecation:
+			output.WriteString(logDeprecationStyle.Render(fmt.Sprintf("⚑ Deprecated: %s", msg)))
 		case logger.Error:
 			lines := strings.Split(msg, "\n")
 			for i, line := range lines {
