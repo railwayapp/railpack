@@ -99,6 +99,46 @@ jobs:
           cache-from: type=registry,ref=${{ env.PRODUCTION_BUILDER_IMAGE_REF }}
           cache-to: type=inline
 
+  frontend-e2e:
+    name: Frontend E2E
+    needs: [build-images, find-examples]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+
+      - name: Build Frontend Image
+        run: |
+          docker build \
+            -f images/alpine/frontend/Dockerfile \
+            -t railpack-frontend:local \
+            .
+
+      - name: Select Random Example
+        id: example
+        env:
+          EXAMPLES: ${{ needs.find-examples.outputs.examples }}
+        run: |
+          example=$(jq -r '.[]' <<< "$EXAMPLES" | shuf -n 1)
+          echo "Selected $example"
+          echo "name=$example" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Build Plan
+        env:
+          EXAMPLE: ${{ steps.example.outputs.name }}
+        run: |
+          mkdir -p tmp/frontend-plan
+          mise run cli plan "examples/$EXAMPLE" --out tmp/frontend-plan/railpack-plan.json
+
+      - name: Build Example With Frontend Image
+        env:
+          EXAMPLE: ${{ steps.example.outputs.name }}
+        run: |
+          docker buildx build \
+            --build-arg BUILDKIT_SYNTAX="railpack-frontend:local" \
+            -f tmp/frontend-plan/railpack-plan.json \
+            "examples/$EXAMPLE"
+
   test:
     needs: [build-images, find-examples]
     runs-on: ubuntu-latest
