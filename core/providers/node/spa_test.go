@@ -17,6 +17,7 @@ func TestVite(t *testing.T) {
 		isCRA         bool
 		isAngular     bool
 		isReactRouter bool
+		isRRSPA       bool
 		isExpo        bool
 		outputDir     string
 	}{
@@ -80,7 +81,16 @@ func TestVite(t *testing.T) {
 			isSPA:         true,
 			isVite:        true,
 			isReactRouter: true,
+			isRRSPA:       true,
 			outputDir:     "build/client/",
+		},
+		{
+			name:          "react-router-ssr",
+			path:          "../../../examples/node-vite-react-router-ssr",
+			isSPA:         false,
+			isVite:        true,
+			isReactRouter: true,
+			isRRSPA:       false,
 		},
 		{
 			name:      "expo-spa",
@@ -115,6 +125,9 @@ func TestVite(t *testing.T) {
 
 			isReactRouter := provider.isReactRouter(ctx)
 			require.Equal(t, tt.isReactRouter, isReactRouter)
+
+			isReactRouterSPA := provider.isReactRouterSPA(ctx)
+			require.Equal(t, tt.isRRSPA, isReactRouterSPA)
 
 			isExpo := provider.isExpoSPA(ctx)
 			require.Equal(t, tt.isExpo, isExpo)
@@ -160,6 +173,16 @@ func TestHasCustomStartCommand(t *testing.T) {
 		{
 			name: "expo-spa",
 			path: "../../../examples/expo-spa",
+			want: false,
+		},
+		{
+			name: "react router spa default",
+			path: "../../../examples/node-vite-react-router-spa",
+			want: false,
+		},
+		{
+			name: "react router ssr default",
+			path: "../../../examples/node-vite-react-router-ssr",
 			want: false,
 		},
 	}
