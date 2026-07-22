@@ -18,15 +18,9 @@ import (
 )
 
 //go:embed version.txt
-var miseVersionRaw string
-
 var Version string
 
 const githubReleaseBase = "https://github.com/jdx/mise/releases/download"
-
-func init() {
-	Version = miseVersionRaw
-}
 
 // returns name of the mise binary based on the operating system
 func getBinaryName() string {
@@ -37,30 +31,30 @@ func getBinaryName() string {
 }
 
 // returns platform-specific mise github asset download name
-func getAssetName() (string, error) {
+func getAssetName(goos, goarch string) (string, error) {
 	var platform string
 
 	switch {
-	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
-		platform = "linux-x64"
-	case runtime.GOOS == "linux" && runtime.GOARCH == "arm64":
-		platform = "linux-arm64"
-	case runtime.GOOS == "linux" && runtime.GOARCH == "arm":
-		platform = "linux-armv7"
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
+	case goos == "linux" && goarch == "amd64":
+		platform = "linux-x64-musl"
+	case goos == "linux" && goarch == "arm64":
+		platform = "linux-arm64-musl"
+	case goos == "linux" && goarch == "arm":
+		platform = "linux-armv7-musl"
+	case goos == "darwin" && goarch == "amd64":
 		platform = "macos-x64"
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
+	case goos == "darwin" && goarch == "arm64":
 		platform = "macos-arm64"
-	case runtime.GOOS == "windows" && runtime.GOARCH == "amd64":
+	case goos == "windows" && goarch == "amd64":
 		platform = "windows-x64"
-	case runtime.GOOS == "windows" && runtime.GOARCH == "arm64":
+	case goos == "windows" && goarch == "arm64":
 		platform = "windows-arm64"
 	default:
-		return "", fmt.Errorf("unsupported platform: %s %s", runtime.GOOS, runtime.GOARCH)
+		return "", fmt.Errorf("unsupported platform: %s %s", goos, goarch)
 	}
 
 	extension := "tar.gz"
-	if runtime.GOOS == "windows" {
+	if goos == "windows" {
 		extension = "zip"
 	}
 
@@ -101,7 +95,7 @@ func ensureInstalled(cacheDir string) (string, error) {
 }
 
 func downloadAndInstall(cacheDir string) error {
-	assetName, err := getAssetName()
+	assetName, err := getAssetName(runtime.GOOS, runtime.GOARCH)
 	if err != nil {
 		return err
 	}
