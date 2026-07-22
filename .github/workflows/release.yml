@@ -21,6 +21,9 @@ jobs:
       # duplicated on the integration-tests.yml job, keep these in sync
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      - uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1
+        with:
+          version: ${{ env.DOCKER_VERSION }}
       - uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3
       - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5
       - uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee
@@ -61,6 +64,9 @@ jobs:
       # duplicated on the integration-tests.yml job, keep these in sync
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      - uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1
+        with:
+          version: ${{ env.DOCKER_VERSION }}
       - uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3
       - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5
       - uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee
@@ -104,6 +110,9 @@ jobs:
         with:
           fetch-depth: 0
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      - uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1
+        with:
+          version: ${{ env.DOCKER_VERSION }}
       - uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3
       - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5
       - uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee
