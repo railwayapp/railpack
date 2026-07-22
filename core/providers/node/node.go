@@ -124,6 +124,8 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 		return err
 	}
 
+	p.configureSvelteKit(ctx, build)
+
 	// All the files we need to include in the deploy
 	buildIncludeDirs := []string{"/root/.cache", "."}
 
@@ -193,6 +195,8 @@ func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	} else if p.isNuxt() {
 		// Default Nuxt start command
 		return "node .output/server/index.mjs"
+	} else if start := p.getSvelteKitStartCommand(); start != "" {
+		return start
 	} else if pkg, _, ok := p.resolveNxDeployPackage(ctx); ok {
 		// Prefer next start from the app dir so prune does not require the nx CLI at runtime
 		if p.isNextAppPackage(pkg, ctx) {

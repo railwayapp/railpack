@@ -66,7 +66,3 @@ func (p *NodeProvider) getViteOutputDirectory(ctx *generate.GenerateContext) str
 
 	return DefaultViteOutputDirectory
 }
-
-func (p *NodeProvider) isSvelteKitPackage(pkg *WorkspacePackage) bool {
-	return pkg.PackageJson.hasDependency("svelte") && pkg.PackageJson.hasDependency("@sveltejs/kit")
-}

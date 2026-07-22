@@ -36,6 +36,12 @@ func TestVite(t *testing.T) {
 			outputDir: "theoutput",
 		},
 		{
+			name:   "svelte-kit",
+			path:   "../../../examples/node-svelte-kit",
+			isSPA:  false,
+			isVite: false,
+		},
+		{
 			name:      "cra",
 			path:      "../../../examples/node-cra",
 			isSPA:     true,
