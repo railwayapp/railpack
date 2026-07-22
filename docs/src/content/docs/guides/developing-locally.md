@@ -230,7 +230,8 @@ for the schema.
 
 ### HTTP Checks
 
-In addition to a basic `justBuild: true` check or an output assertion, you can also run an HTTP check that starts the container and asserts that a specific route returns an expected HTTP code:
+In addition to an output assertion, you can run an HTTP check that starts the
+container and asserts that a specific route returns an expected HTTP code:
 
 ```json
 {
