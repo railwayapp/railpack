@@ -1,6 +1,9 @@
 # define all required variables for CI, so we can limit the configuration and logic within GHA to test more of the CI process locally
 
 [env]
+# Check https://docs.docker.com/engine/release-notes/ for newer stable releases.
+DOCKER_VERSION = "v29.6.2"
+
 PRODUCTION_CONTAINER_REGISTRY = "ghcr.io"
 PRODUCTION_GITHUB_REPOSITORY = "railwayapp/railpack"
 PRODUCTION_MISE_TAG = "mise-${RAILPACK_MISE_VERSION}"

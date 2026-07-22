@@ -51,6 +51,9 @@ jobs:
           # we need the full history to compare the mise version against origin/main
           fetch-depth: 0
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      - uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1
+        with:
+          version: ${{ env.DOCKER_VERSION }}
       - uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3
       - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5
       - uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee
@@ -99,6 +102,52 @@ jobs:
           cache-from: type=registry,ref=${{ env.PRODUCTION_BUILDER_IMAGE_REF }}
           cache-to: type=inline
 
+  frontend-e2e:
+    name: Frontend E2E
+    needs: [build-images, find-examples]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+
+      # GitHub's preinstalled Docker 28 uses the classic image store, which disables
+      # Railpack's merge operations. Fresh Docker 29+ daemons use containerd by default.
+      - uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1
+        with:
+          version: ${{ env.DOCKER_VERSION }}
+
+      - name: Build Frontend Image
+        run: |
+          docker build \
+            -f images/alpine/frontend/Dockerfile \
+            -t railpack-frontend:local \
+            .
+
+      - name: Select Random Example
+        id: example
+        env:
+          EXAMPLES: ${{ needs.find-examples.outputs.examples }}
+        run: |
+          example=$(jq -r '.[]' <<< "$EXAMPLES" | shuf -n 1)
+          echo "Selected $example"
+          echo "name=$example" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Build Plan
+        env:
+          EXAMPLE: ${{ steps.example.outputs.name }}
+        run: |
+          mkdir -p tmp/frontend-plan
+          mise run cli plan "examples/$EXAMPLE" --out tmp/frontend-plan/railpack-plan.json
+
+      - name: Build Example With Frontend Image
+        env:
+          EXAMPLE: ${{ steps.example.outputs.name }}
+        run: |
+          docker buildx build \
+            --build-arg BUILDKIT_SYNTAX="railpack-frontend:local" \
+            -f tmp/frontend-plan/railpack-plan.json \
+            "examples/$EXAMPLE"
+
   test:
     needs: [build-images, find-examples]
     runs-on: ubuntu-latest
@@ -111,6 +160,9 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      - uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1
+        with:
+          version: ${{ env.DOCKER_VERSION }}
 
       - name: Cache Go modules and build artifacts
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
@@ -175,6 +227,9 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      - uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1
+        with:
+          version: ${{ env.DOCKER_VERSION }}
 
       - name: Cache Go modules and build artifacts
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
