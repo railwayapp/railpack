@@ -1,5 +1,5 @@
 [
   {
-    "justBuild": true
+    "expectedOutput": "Connection: postgresql://localhost/test"
   }
 ]
