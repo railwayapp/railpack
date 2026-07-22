@@ -1,0 +1,7 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "buildAptPackages": ["curl"],
+  "deploy": {
+    "aptPackages": ["curl"]
+  }
+}

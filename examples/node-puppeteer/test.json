@@ -4,5 +4,11 @@
     // Puppeteer's bundled Chromium does not ship ARM64 binaries; skip on ARM runners
     // See https://github.com/puppeteer/puppeteer/issues/7740
     "skipArch": ["arm64"]
+  },
+  {
+    "expectedOutput": "Hello from puppeteer",
+    "platform": "linux/amd64",
+    // Reproduces https://github.com/railwayapp/railpack/issues/637 on ARM hosts too.
+    "configFile": "railpack.custom-apt-packages.json"
   }
 ]
