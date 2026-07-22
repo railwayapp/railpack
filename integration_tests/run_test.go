@@ -52,7 +52,6 @@ type TestCase struct {
 	ExpectedOutput StringOrArray     `json:"expectedOutput"`
 	Envs           map[string]string `json:"envs"`
 	ConfigFilePath string            `json:"configFile"`
-	JustBuild      bool              `json:"justBuild"`
 	ShouldFail     bool              `json:"shouldFail"`
 	HTTPCheck      *HTTPCheck        `json:"httpCheck"`
 	StderrAllowed  bool              `json:"stderrAllowed"`
@@ -102,11 +101,6 @@ func TestExamplesIntegration(t *testing.T) {
 			// Check if both httpCheck and expectedOutput are specified in the same test case
 			if testCase.HTTPCheck != nil && len(testCase.ExpectedOutput) > 0 {
 				t.Fatalf("%s case-%d: cannot have both httpCheck and expectedOutput in the same test case", entry.Name(), i)
-			}
-
-			// Check if justBuild is used alongside other test cases
-			if testCase.JustBuild && len(testCases) > 1 {
-				t.Fatalf("%s: justBuild can only be used alone (no other test cases allowed in the same file)", entry.Name())
 			}
 		}
 
@@ -189,10 +183,6 @@ func TestExamplesIntegration(t *testing.T) {
 					}
 				}
 
-				if testCase.JustBuild {
-					return
-				}
-
 				// Start docker-compose services for this test case if they exist
 				composeConfig, err := detectAndStartCompose(examplePath, t)
 				if err != nil {
@@ -206,7 +196,6 @@ func TestExamplesIntegration(t *testing.T) {
 						}
 					})
 				}
-
 				networkName := ""
 				if composeConfig != nil {
 					networkName = composeConfig.NetworkName
