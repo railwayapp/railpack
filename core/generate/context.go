@@ -203,6 +203,7 @@ func (c *GenerateContext) applyPackagesFromConfig() {
 
 func (c *GenerateContext) applyConfig() {
 	c.applyPackagesFromConfig()
+	c.applyBuildAptPackages()
 
 	// Apply the cache config to the context
 	maps.Copy(c.Caches.Caches, c.Config.Caches)
@@ -218,7 +219,7 @@ func (c *GenerateContext) applyConfig() {
 			c.Deploy.StartCmd = c.Config.Deploy.StartCmd
 		}
 
-		c.Deploy.AptPackages = plan.SpreadStrings(c.Config.Deploy.AptPackages, c.Deploy.AptPackages)
+		c.applyDeployAptPackages()
 		c.Deploy.DeployInputs = plan.Spread(c.Config.Deploy.Inputs, c.Deploy.DeployInputs)
 		c.Deploy.Paths = plan.SpreadStrings(c.Config.Deploy.Paths, c.Deploy.Paths)
 		maps.Copy(c.Deploy.Variables, c.Config.Deploy.Variables)
@@ -271,6 +272,33 @@ func (c *GenerateContext) applyConfig() {
 			}
 		}
 	}
+}
+
+func (c *GenerateContext) applyBuildAptPackages() {
+	configuredPackages := c.Config.BuildAptPackages
+	if configuredPackages == nil {
+		return
+	}
+
+	if !slices.Contains(configuredPackages, "...") {
+		c.Logger.LogDeprecation("`buildAptPackages` without `...` will replace Railpack-specified packages in a future release.")
+		c.Logger.LogInfo("To retain Railpack-specified build Apt packages, include `...` in `buildAptPackages`. See https://railpack.com/guides/installing-packages")
+
+		// TODO: Remove this implicit spread so lists without "..." replace generated packages.
+		configuredPackages = append([]string{"..."}, configuredPackages...)
+	}
+
+	miseStep := c.GetMiseStepBuilder()
+	miseStep.SupportingAptPackages = plan.SpreadStrings(configuredPackages, miseStep.SupportingAptPackages)
+}
+
+func (c *GenerateContext) applyDeployAptPackages() {
+	configuredPackages := c.Config.Deploy.AptPackages
+	if configuredPackages != nil && !slices.Contains(configuredPackages, "...") {
+		c.Logger.LogInfo("`deploy.aptPackages` does not include `...` and replaces Railpack-specified packages. To retain them, include `...`. See https://railpack.com/guides/installing-packages")
+	}
+
+	c.Deploy.AptPackages = plan.SpreadStrings(configuredPackages, c.Deploy.AptPackages)
 }
 
 // creates a local layer with dockerignore patterns applied
