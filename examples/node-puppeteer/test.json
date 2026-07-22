@@ -8,7 +8,7 @@
   {
     "expectedOutput": "Hello from puppeteer",
     "platform": "linux/amd64",
-    // Reproduces https://github.com/railwayapp/railpack/issues/637 on ARM hosts too.
+    // Custom packages must retain Railpack's required Puppeteer dependencies.
     "configFile": "railpack.custom-apt-packages.json"
   }
 ]
