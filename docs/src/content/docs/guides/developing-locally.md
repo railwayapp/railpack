@@ -86,6 +86,12 @@ Multiple Docker images are used in Railpack:
   * `images/debian/build` used during the llb build process. These contain common tools, languages, mise, etc that might be used during the build process. Note that all of these utilities are *not* included in the final image in order to reduce the total image size.
   * `images/debian/runtime` a bare bones debian image used at runtime. The tools, build artifacts, etc generated during the railpack build are added to this base image.
 
+Build the runtime image for local development with:
+
+```bash
+mise run image-runtime-build
+```
+
 ## Custom frontend
 
 You can build with a [custom BuildKit frontend](/guides/custom-frontend), but
@@ -94,7 +100,10 @@ this is a bit tedious for local iteration.
 The frontend needs to be built into an image and accessible to the BuildKit instance:
 
 ```bash
-mise run image-runtime-build
+docker build \
+  -f images/alpine/frontend/Dockerfile \
+  -t railpack-frontend:local \
+  .
 ```
 
 Then, generate a build plan for an app:
@@ -106,7 +115,7 @@ mise run cli plan examples/node-bun --out test/railpack-plan.json
 With the image you built previously, you can now run the build:
 
 ```bash
-docker buildx \
+docker buildx build \
   --build-arg BUILDKIT_SYNTAX="railpack-frontend:local" \
   -f test/railpack-plan.json \
   examples/node-bun
@@ -115,14 +124,20 @@ docker buildx \
 You can also use the `buildctl` command to run BuildKit directly. This is helpful as it's a lower level command which
 exposes helpful debugging flags. However, you can't reference the locally built image without loading it into a registry first.
 
-This is done automatically for you with `image-runtime-build` but you must start the registry first with `image-run-registry`.
+Start the registry, then build and push the frontend image with
+`image-frontend-build`:
+
+```bash
+mise run image-run-registry
+mise run image-frontend-build
+```
 
 Then, you can run the build with the locally-build frontend:
 
 ```bash
 buildctl build \
   --frontend=gateway.v0 \
-  --opt source=railpack-frontend:local \
+  --opt source=host.docker.internal:7890/railpack-frontend:local \
   --local context=examples/node-bun \
   --local dockerfile=test \
   --output type=docker,name=test | docker load
@@ -143,7 +158,7 @@ buildctl build \
   --frontend=gateway.v0 \
   --opt source=host.docker.internal:7890/railpack-frontend:local \
   --local context=examples/node-bun \
-  --local dockerfile=tmp/frontend-plan \
+  --local dockerfile=test \
   --export-cache type=registry,ref=host.docker.internal:7890/node-bun:cache,mode=max \
   --import-cache type=registry,ref=host.docker.internal:7890/node-bun:cache
 ```
@@ -155,8 +170,8 @@ Note that the cache arguments are different than what `docker buildx`. The equiv
 docker buildx build \
   --build-arg BUILDKIT_SYNTAX="host.docker.internal:7890/railpack-frontend:local" \
   --cache-to=type=registry,ref=host.docker.internal:7890/node-bun:cache,mode=max \
-  --cache-from=type=registry,ref=host.docker.internal:7890/node-bun:cache \ 
-  -f tmp/frontend-plan/railpack-plan.json \
+  --cache-from=type=registry,ref=host.docker.internal:7890/node-bun:cache \
+  -f test/railpack-plan.json \
   examples/node-bun
 ```
 
@@ -165,14 +180,15 @@ Debugging a buildkit related problem? Enable debug logging:
 ```bash
 buildctl --debug build \
   --frontend=gateway.v0 \
-  --opt source=railpack-frontend:local \
+  --opt source=host.docker.internal:7890/railpack-frontend:local \
   --local context=examples/node-bun \
+  --local dockerfile=test \
   --progress=plain \
-  --trace=tmp/builtctl-build-trace.log \
+  --trace=tmp/buildctl-build-trace.log \
   --debug-json-cache-metrics stdout
 ```
 
-Quick note about `builtctl` vs `docker buildx`. These two ways of invoking the railpack frontend handle arguments differently:
+Quick note about `buildctl` vs `docker buildx`. These two ways of invoking the railpack frontend handle arguments differently:
 
 * `--build-arg` prefixes the argument with `build-arg:`.
 * `--opt` does not prefix the build arg at all. You must prefix args with `build-arg:` if they are
