@@ -103,9 +103,6 @@
      "path": "/app/node_modules/.bin"
     },
     {
-     "cmd": "mkdir -p /app/node_modules/.cache"
-    },
-    {
      "dest": "package-lock.json",
      "src": "package-lock.json"
     },
@@ -114,7 +111,8 @@
      "src": "package.json"
     },
     {
-     "cmd": "npm ci"
+     "cmd": "sh -c 'npm ci'",
+     "customName": "npm ci"
     }
    ],
    "inputs": [

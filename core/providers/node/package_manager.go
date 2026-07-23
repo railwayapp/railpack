@@ -128,12 +128,17 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 
 	switch p {
 	case PackageManagerNpm:
-		hasLockfile := ctx.App.HasFile("package-lock.json")
-		if hasLockfile {
-			install.AddCommand(plan.NewExecCommand("npm ci"))
-		} else {
-			install.AddCommand(plan.NewExecCommand("npm install"))
+		if !ctx.App.HasFile("package-lock.json") {
+			ctx.Logger.LogSuggestion("Add a `package-lock.json` for more deterministic installs", "/architecture/recommendations")
 		}
+
+		// ideally, `npm ci` should be used instead of `npm install`, but we default to npm install to avoid build failures
+		// https://github.com/railwayapp/railpack/pull/643
+		installCmd := "npm install"
+		if customInstallCmd, _ := ctx.Env.GetConfigVariable("NODE_NPM_INSTALL"); customInstallCmd != "" {
+			installCmd = customInstallCmd
+		}
+		install.AddCommand(plan.NewExecCommand(installCmd))
 	case PackageManagerPnpm:
 		install.AddEnvVars(map[string]string{
 			"PNPM_HOME":      PNPM_HOME,
@@ -162,10 +167,10 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 			install.AddCommand(plan.NewExecCommand("pnpm add -g node-gyp"))
 		}
 
-		hasLockfile := ctx.App.HasFile("pnpm-lock.yaml")
-		if hasLockfile {
+		if ctx.App.HasFile("pnpm-lock.yaml") {
 			install.AddCommand(plan.NewExecCommand("pnpm install --frozen-lockfile --prefer-offline"))
 		} else {
+			ctx.Logger.LogSuggestion("Add a `pnpm-lock.yaml` for more deterministic installs", "/architecture/recommendations")
 			install.AddCommand(plan.NewExecCommand("pnpm install"))
 		}
 	case PackageManagerBun:

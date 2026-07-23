@@ -115,3 +115,63 @@ locked = true
 
 Commit the generated `mise.lock` file alongside your `mise.toml`. Railpack
 automatically includes `mise.lock` files in the build when present.
+
+## Commit Package Manager Lockfiles
+
+Always generate and commit a lockfile from your package manager
+(`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `Cargo.lock`,
+`poetry.lock`, etc.), and keep it in sync with your dependency manifests.
+
+Without a lockfile (or with one that has drifted) installs resolve versions
+at build time. That leads to non-deterministic images and therefore possible
+bugs that don't occur locally.
+
+## Prefer `npm ci` for npm Node Projects
+
+When using npm as your package manager, set `RAILPACK_NODE_NPM_INSTALL` to
+opt into `npm ci` instead of the default `npm install`:
+
+```bash
+RAILPACK_NODE_NPM_INSTALL="npm ci"
+```
+
+You can also customize the install command in `railpack.json` if you need more
+control over the install step:
+
+```json
+{
+  "$schema": "https://schema.railpack.com",
+  "steps": {
+    "install": {
+      // Configuring a step auto-adds it to deploy with include: ["."]. Use an empty
+      // deployOutputs so install is not copied into the final image; node_modules
+      // still reach the image via the build step.
+      "deployOutputs": [],
+      "commands": [
+        // auto-generated commands from railpack
+        { "path": "/app/node_modules/.bin" },
+        { "src": "package-lock.json", "dest": "package-lock.json" },
+        { "src": "package.json", "dest": "package.json" },
+        // by default, `npm install` is used here; use `npm ci` for increased determinism
+        "npm ci"
+      ]
+    }
+  }
+}
+```
+
+Railpack defaults to `npm install` because `package.json` and
+`package-lock.json` often drift out of sync — usually from npm bugs rather than
+intentional local changes. That mismatch rarely shows up in development and only
+fails at image build time with:
+
+> `npm ci` can only install packages when your package.json and package-lock.json
+> or npm-shrinkwrap.json are in sync.
+
+Using `npm install` avoids build failures at the cost of weaker
+determinism. You should keep your lockfile in sync and opt into `npm ci` for:
+
+- **Deterministic installs** — exact versions from the lockfile, matching local
+  and CI environments, with no silent drift in production
+- **Faster installs** — `npm ci` installs from the lockfile instead of resolving
+  `package.json` again

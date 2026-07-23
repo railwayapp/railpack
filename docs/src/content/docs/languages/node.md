@@ -92,6 +92,7 @@ Railpack determines the start command in the following order:
 | `RAILPACK_NO_SPA`                | Disable SPA mode                        | `true`                                  |
 | `RAILPACK_SPA_OUTPUT_DIR`        | Directory containing built static files | `dist`                                  |
 | `RAILPACK_PRUNE_DEPS`            | Remove development dependencies         | `true`                                  |
+| `RAILPACK_NODE_NPM_INSTALL`      | Custom npm install command              | `npm ci`                                |
 | `RAILPACK_NODE_PRUNE_CMD`        | Custom command to prune dependencies    | `npm prune --omit=dev --ignore-scripts` |
 | `RAILPACK_NODE_INSTALL_PATTERNS` | Custom patterns to install dependencies | `prisma`                                |
 | `RAILPACK_ANGULAR_PROJECT`       | Name of the Angular project to build    | `my-app`                                |
