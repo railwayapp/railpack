@@ -57,7 +57,8 @@
    "NPM_CONFIG_FETCH_RETRIES": "5",
    "NPM_CONFIG_FUND": "false",
    "NPM_CONFIG_PRODUCTION": "false",
-   "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+   "NPM_CONFIG_UPDATE_NOTIFIER": "false",
+   "RAILPACK_VERSION": "dev"
   }
  },
  "steps": [
@@ -81,7 +82,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.7.7"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.7.11"
     }
    ],
    "name": "packages:mise",
@@ -164,7 +165,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.7.7"
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.7.11"
     }
    ],
    "name": "packages:apt:runtime"
