@@ -9,6 +9,9 @@
     "expectedOutput": "Hello from puppeteer",
     "platform": "linux/amd64",
     // Custom packages must retain Railpack's required Puppeteer dependencies.
+    // Skip on ARM: GHA arm runners emulate amd64 via QEMU, and Chrome never
+    // finishes launching within the container timeout. Covered on native amd64 CI.
+    "skipArch": ["arm64"],
     "configFile": "railpack.custom-apt-packages.json"
   }
 ]
