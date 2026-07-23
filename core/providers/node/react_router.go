@@ -9,14 +9,32 @@ import (
 
 const (
 	DefaultReactRouterOutputDirectory = "build/client/"
+	DefaultReactRouterStartCommand    = "react-router-serve ./build/server/index.js"
 	ReactRouterConfigJS               = "react-router.config.js"
 	ReactRouterConfigTS               = "react-router.config.ts"
 )
 
+var reactRouterSPAConfigRegex = regexp.MustCompile(`(?m)(?:^|[{,])\s*['"]?ssr['"]?\s*:\s*false\b`)
+
+func (p *NodeProvider) getReactRouterConfigFileContents(ctx *generate.GenerateContext) string {
+	_, contents, _ := ctx.App.ReadFirstFileOf(ReactRouterConfigJS, ReactRouterConfigTS)
+	return contents
+}
+
+// SPA mode requires an explicit opt-out because React Router enables SSR by default.
+func (p *NodeProvider) isReactRouterSPA(ctx *generate.GenerateContext) bool {
+	if !p.isReactRouter(ctx) {
+		return false
+	}
+
+	configContent := p.getReactRouterConfigFileContents(ctx)
+	return reactRouterSPAConfigRegex.MatchString(configContent)
+}
+
 // getReactRouterOutputDirectory attempts to read the output directory from react-router.config.{ts,js} by extracting
 // the buildDirectory option in the config object.
 func (p *NodeProvider) getReactRouterOutputDirectory(ctx *generate.GenerateContext) string {
-	_, configContent, _ := ctx.App.ReadFirstFileOf(ReactRouterConfigJS, ReactRouterConfigTS)
+	configContent := p.getReactRouterConfigFileContents(ctx)
 
 	if configContent != "" {
 		// TODO this field can be an expression `buildDirectory: "build/" + process.env.NODE_ENV,` so we should tighten

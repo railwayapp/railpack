@@ -37,39 +37,49 @@ func (p *NodeProvider) isSPA(ctx *generate.GenerateContext) bool {
 		return false
 	}
 
+	if p.isReactRouter(ctx) {
+		return p.isReactRouterSPA(ctx) && p.getOutputDirectory(ctx) != ""
+	}
+
 	isVite := p.isVite(ctx)
 	isAstro := p.isAstroSPA(ctx)
 	isNext := p.isNextSPA(ctx)
 	isCRA := p.isCRA(ctx)
 	isAngular := p.isAngular(ctx)
-	isReactRouter := p.isReactRouter(ctx)
 	isExpoSPA := p.isExpoSPA(ctx)
 
-	return (isVite || isAstro || isNext || isCRA || isAngular || isReactRouter || isExpoSPA) && p.getOutputDirectory(ctx) != ""
+	return (isVite || isAstro || isNext || isCRA || isAngular || isExpoSPA) && p.getOutputDirectory(ctx) != ""
 }
 
 // returns the canonical lowercase SPA framework name, or "" when none is detected.
 func (p *NodeProvider) getSPAName(ctx *generate.GenerateContext) string {
-	// TODO react router is not always SPA!
 	if p.isReactRouter(ctx) {
-		return "react-router"
-	} else if p.isVite(ctx) {
+		if p.isReactRouterSPA(ctx) {
+			return "react-router"
+		}
+		return ""
+	}
+	if p.isVite(ctx) {
 		return "vite"
-	} else if p.isAstro(ctx) {
+	}
+	if p.isAstro(ctx) {
 		return "astro"
-	} else if p.isNextSPA(ctx) {
+	}
+	if p.isNextSPA(ctx) {
 		return "next"
-	} else if p.isCRA(ctx) {
+	}
+	if p.isCRA(ctx) {
 		return "cra"
-	} else if p.isAngular(ctx) {
+	}
+	if p.isAngular(ctx) {
 		return "angular"
-	} else if p.isExpoSPA(ctx) {
+	}
+	if p.isExpoSPA(ctx) {
 		return "expo"
-	} else {
-		// this could happen if the user forces SPA with env
-		log.Infof("No SPA framework detected")
 	}
 
+	// This can happen when the output directory environment variable forces SPA mode.
+	log.Infof("No SPA framework detected")
 	return ""
 }
 
@@ -136,7 +146,9 @@ func (p *NodeProvider) getOutputDirectory(ctx *generate.GenerateContext) string 
 	if dir, _ := ctx.Env.GetConfigVariable(OUTPUT_DIR_VAR); dir != "" {
 		outputDir = dir
 	} else if p.isReactRouter(ctx) {
-		outputDir = p.getReactRouterOutputDirectory(ctx)
+		if p.isReactRouterSPA(ctx) {
+			outputDir = p.getReactRouterOutputDirectory(ctx)
+		}
 	} else if p.isVite(ctx) {
 		outputDir = p.getViteOutputDirectory(ctx)
 	} else if p.isAstroSPA(ctx) {
@@ -164,6 +176,7 @@ func (p *NodeProvider) hasCustomStartCommand(ctx *generate.GenerateContext) bool
 	isCRAStartCommand := startCommand == DefaultCRAStartCommand
 	isExpoStartCommand := startCommand == DefaultExpoStartCommand
 	isNextStartCommand := startCommand == DefaultNextStartCommand
+	isReactRouterStartCommand := startCommand == DefaultReactRouterStartCommand
 
-	return startCommand != "" && !isAngularDefaultStartCommand && !isCRAStartCommand && !isExpoStartCommand && !isNextStartCommand
+	return startCommand != "" && !isAngularDefaultStartCommand && !isCRAStartCommand && !isExpoStartCommand && !isNextStartCommand && !isReactRouterStartCommand
 }

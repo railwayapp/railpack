@@ -1,12 +1,18 @@
 #!/usr/bin/env zsh
+# Description: autogen this repo from the latest version of the RR template
 
 cd "${0:A:h}"
-# Description: autogen this repo from the latest version of the RR template
 
 pnpx create-react-router@latest . --yes --overwrite --no-git-init
 
-# remove the start script otherwise it won't be treated as an SPA
-yq eval -i 'del(.scripts.start)' package.json
-
-# disable SSR for SPA buildg st
+# disable SSR for SPA build
 sed -i '' 's/ssr: true/ssr: false/' react-router.config.ts
+
+# Pin the build-time preview server to IPv4 until React Router connects to its bound address.
+# https://github.com/remix-run/react-router/issues/15255
+sed -i '' '/plugins: \[tailwindcss(), reactRouter()\],/a\
+  // Keep React Router'\''s preview server and prerender request on the same address family.\
+  preview: {\
+    host: "127.0.0.1",\
+  },
+' vite.config.ts
