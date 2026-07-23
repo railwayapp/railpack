@@ -30,3 +30,20 @@ func TestPrettyPrintDeprecationLog(t *testing.T) {
 
 	require.Contains(t, output, "⚑ Deprecated: Old behavior will change")
 }
+
+func TestPrettyPrintSuggestionLog(t *testing.T) {
+	buildResult := &BuildResult{
+		Logs: []logger.Msg{
+			{
+				Level:    logger.Suggestion,
+				Msg:      "include `...` in `buildAptPackages`",
+				DocsPath: "/guides/installing-packages",
+			},
+		},
+	}
+
+	output := FormatBuildResult(buildResult)
+
+	require.Contains(t, output, "→ Include `...` in `buildAptPackages`")
+	require.Contains(t, output, "https://railpack.com/guides/installing-packages")
+}

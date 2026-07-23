@@ -82,6 +82,14 @@ var (
 				Foreground(lipgloss.Color(AnsiBrightMagenta)).
 				MarginLeft(2)
 
+	logSuggestionStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color(AnsiCyan)).
+				MarginLeft(2)
+
+	logDocsLinkStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color(AnsiBrightBlue)).
+				Underline(true)
+
 	logErrorStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color(AnsiRed)).
 			Bold(true).
@@ -174,6 +182,12 @@ func formatLogs(output *strings.Builder, logs []logger.Msg) {
 			output.WriteString(logWarnStyle.Render(fmt.Sprintf("⚠ %s", msg)))
 		case logger.Deprecation:
 			output.WriteString(logDeprecationStyle.Render(fmt.Sprintf("⚑ Deprecated: %s", msg)))
+		case logger.Suggestion:
+			rendered := logSuggestionStyle.Render(fmt.Sprintf("→ %s", msg))
+			if log.DocsPath != "" {
+				rendered += " " + logDocsLinkStyle.Render(logger.DocsURL(log.DocsPath))
+			}
+			output.WriteString(rendered)
 		case logger.Error:
 			lines := strings.Split(msg, "\n")
 			for i, line := range lines {
