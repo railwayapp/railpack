@@ -132,9 +132,13 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 			ctx.Logger.LogSuggestion("Add a `package-lock.json` for more deterministic installs", "/architecture/recommendations")
 		}
 
-		// ideally, `npm ci` should be used instead of `npm install`, but we always use npm install to avoid build failures
+		// ideally, `npm ci` should be used instead of `npm install`, but we default to npm install to avoid build failures
 		// https://github.com/railwayapp/railpack/pull/643
-		install.AddCommand(plan.NewExecCommand("npm install"))
+		installCmd := "npm install"
+		if customInstallCmd, _ := ctx.Env.GetConfigVariable("NODE_NPM_INSTALL"); customInstallCmd != "" {
+			installCmd = customInstallCmd
+		}
+		install.AddCommand(plan.NewExecCommand(installCmd))
 	case PackageManagerPnpm:
 		install.AddEnvVars(map[string]string{
 			"PNPM_HOME":      PNPM_HOME,
