@@ -118,6 +118,9 @@ automatically includes `mise.lock` files in the build when present.
 
 ## Prefer `npm ci` for npm Node Projects
 
+Commit a `package-lock.json` (run `npm install` locally and check it in).
+Without one, installs are non-deterministic and you cannot use `npm ci`.
+
 When using npm as your package manager, customize the install command in
 `railpack.json` to use `npm ci` instead of the default `npm install`:
 

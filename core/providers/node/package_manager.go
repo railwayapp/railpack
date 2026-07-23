@@ -129,7 +129,7 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 	switch p {
 	case PackageManagerNpm:
 		if !ctx.App.HasFile("package-lock.json") {
-			ctx.Logger.LogWarn("No package-lock.json found, consider generating this file")
+			ctx.Logger.LogSuggestion("Add a `package-lock.json` for more deterministic installs", "/architecture/recommendations")
 		}
 
 		// ideally, `npm ci` should be used instead of `npm install`, but we always use npm install to avoid build failures
@@ -163,10 +163,10 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 			install.AddCommand(plan.NewExecCommand("pnpm add -g node-gyp"))
 		}
 
-		hasLockfile := ctx.App.HasFile("pnpm-lock.yaml")
-		if hasLockfile {
+		if ctx.App.HasFile("pnpm-lock.yaml") {
 			install.AddCommand(plan.NewExecCommand("pnpm install --frozen-lockfile --prefer-offline"))
 		} else {
+			ctx.Logger.LogSuggestion("Add a `pnpm-lock.yaml` for more deterministic installs", "/architecture/recommendations")
 			install.AddCommand(plan.NewExecCommand("pnpm install"))
 		}
 	case PackageManagerBun:
