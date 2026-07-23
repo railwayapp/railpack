@@ -128,12 +128,13 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 
 	switch p {
 	case PackageManagerNpm:
-		hasLockfile := ctx.App.HasFile("package-lock.json")
-		if hasLockfile {
-			install.AddCommand(plan.NewExecCommand("npm ci"))
-		} else {
-			install.AddCommand(plan.NewExecCommand("npm install"))
+		if !ctx.App.HasFile("package-lock.json") {
+			ctx.Logger.LogWarn("No package-lock.json found, consider generating this file")
 		}
+
+		// ideally, `npm ci` should be used instead of `npm install`, but we always use npm install to avoid build failures
+		// https://github.com/railwayapp/railpack/pull/643
+		install.AddCommand(plan.NewExecCommand("npm install"))
 	case PackageManagerPnpm:
 		install.AddEnvVars(map[string]string{
 			"PNPM_HOME":      PNPM_HOME,
