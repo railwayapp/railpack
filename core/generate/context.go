@@ -281,8 +281,9 @@ func (c *GenerateContext) applyBuildAptPackages() {
 	}
 
 	if !slices.Contains(configuredPackages, "...") {
-		c.Logger.LogDeprecation("`buildAptPackages` without `...` will replace Railpack-specified packages in a future release.")
-		c.Logger.LogInfo("To retain Railpack-specified build Apt packages, include `...` in `buildAptPackages`. See https://railpack.com/guides/installing-packages")
+		// TODO the names of these configs will probably change in a future release as well...
+		c.Logger.LogDeprecation("`buildAptPackages` without a `...` entry will replace Railpack packages in the future")
+		c.Logger.LogSuggestion("Add `...` to `buildAptPackages` to retain Railpack packages", "/guides/installing-packages")
 
 		// TODO: Remove this implicit spread so lists without "..." replace generated packages.
 		configuredPackages = append([]string{"..."}, configuredPackages...)
@@ -295,7 +296,7 @@ func (c *GenerateContext) applyBuildAptPackages() {
 func (c *GenerateContext) applyDeployAptPackages() {
 	configuredPackages := c.Config.Deploy.AptPackages
 	if configuredPackages != nil && !slices.Contains(configuredPackages, "...") {
-		c.Logger.LogInfo("`deploy.aptPackages` does not include `...` and replaces Railpack-specified packages. To retain them, include `...`. See https://railpack.com/guides/installing-packages")
+		c.Logger.LogSuggestion("Add `...` to `deploy.aptPackages` to retain Railpack packages", "/guides/installing-packages")
 	}
 
 	c.Deploy.AptPackages = plan.SpreadStrings(configuredPackages, c.Deploy.AptPackages)

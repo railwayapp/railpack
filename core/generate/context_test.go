@@ -116,8 +116,9 @@ func TestGenerateContextAppliesConfiguredAptPackages(t *testing.T) {
 		require.Len(t, ctx.Logger.Logs, 2)
 		require.Equal(t, logger.Deprecation, ctx.Logger.Logs[0].Level)
 		require.Contains(t, ctx.Logger.Logs[0].Msg, "future release")
-		require.Equal(t, logger.Info, ctx.Logger.Logs[1].Level)
-		require.Contains(t, ctx.Logger.Logs[1].Msg, "https://railpack.com/guides/installing-packages")
+		require.Equal(t, logger.Suggestion, ctx.Logger.Logs[1].Level)
+		require.Contains(t, ctx.Logger.Logs[1].Msg, "include `...`")
+		require.Equal(t, "/guides/installing-packages", ctx.Logger.Logs[1].DocsPath)
 	})
 
 	t.Run("build packages explicitly extend generated packages", func(t *testing.T) {
@@ -146,8 +147,9 @@ func TestGenerateContextAppliesConfiguredAptPackages(t *testing.T) {
 
 		require.Equal(t, []string{"curl"}, ctx.Deploy.AptPackages)
 		require.Len(t, ctx.Logger.Logs, 1)
-		require.Equal(t, logger.Info, ctx.Logger.Logs[0].Level)
-		require.Contains(t, ctx.Logger.Logs[0].Msg, "https://railpack.com/guides/installing-packages")
+		require.Equal(t, logger.Suggestion, ctx.Logger.Logs[0].Level)
+		require.Contains(t, ctx.Logger.Logs[0].Msg, "replaces Railpack-specified packages")
+		require.Equal(t, "/guides/installing-packages", ctx.Logger.Logs[0].DocsPath)
 	})
 
 	t.Run("deploy packages explicitly extend generated packages", func(t *testing.T) {
