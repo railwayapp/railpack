@@ -24,14 +24,38 @@ You can find a list of available packages in the [Mise registry](https://mise.jd
 Apt packages are split into those needed for the build and those needed at
 runtime.
 
-You can set the `RAILPACK_BUILD_APT_PACKAGES` and `RAILPACK_DEPLOY_APT_PACKAGES`
-environment variables to install additional Apt packages during the build and
-deployment steps respectively.
+You can set the `RAILPACK_BUILD_APT_PACKAGES` and
+`RAILPACK_DEPLOY_APT_PACKAGES` environment variables to customize the Apt
+packages installed during the build and deployment steps respectively.
 
 In this example, we install `build-essential` during the build step and `ffmpeg`
-at runtime.
+at runtime while retaining packages Railpack adds automatically.
 
 ```bash
-RAILPACK_BUILD_APT_PACKAGES="build-essential"
-RAILPACK_DEPLOY_APT_PACKAGES="ffmpeg"
+RAILPACK_BUILD_APT_PACKAGES="... build-essential"
+RAILPACK_DEPLOY_APT_PACKAGES="... ffmpeg"
+```
+
+The `...` entry extends Railpack's generated package list. Without it, the
+configured list replaces the packages Railpack specifies:
+
+```json
+{
+  "$schema": "https://schema.railpack.com",
+  "buildAptPackages": ["...", "build-essential"],
+  "deploy": {
+    "aptPackages": ["...", "ffmpeg"]
+  }
+}
+```
+
+To intentionally replace Railpack's runtime packages, omit `...`:
+
+```json
+{
+  "$schema": "https://schema.railpack.com",
+  "deploy": {
+    "aptPackages": ["ffmpeg"]
+  }
+}
 ```

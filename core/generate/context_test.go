@@ -101,6 +101,72 @@ func TestGenerateContext(t *testing.T) {
 	snaps.MatchJSON(t, serializedPlan)
 }
 
+func TestGenerateContextAppliesConfiguredAptPackages(t *testing.T) {
+	t.Run("deprecated build packages remain additive", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+		ctx.GetMiseStepBuilder().AddSupportingAptPackage("gcc")
+
+		cfg := config.EmptyConfig()
+		cfg.BuildAptPackages = []string{"curl"}
+		ctx.Config = cfg
+
+		ctx.applyConfig()
+
+		require.Equal(t, []string{"gcc", "curl"}, ctx.GetMiseStepBuilder().SupportingAptPackages)
+		require.Len(t, ctx.Logger.Logs, 2)
+		require.Equal(t, logger.Deprecation, ctx.Logger.Logs[0].Level)
+		require.Contains(t, ctx.Logger.Logs[0].Msg, "in the future")
+		require.Equal(t, logger.Suggestion, ctx.Logger.Logs[1].Level)
+		require.Contains(t, ctx.Logger.Logs[1].Msg, "Add `...` to `buildAptPackages`")
+		require.Equal(t, "/guides/installing-packages", ctx.Logger.Logs[1].DocsPath)
+	})
+
+	t.Run("build packages explicitly extend generated packages", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+		ctx.GetMiseStepBuilder().AddSupportingAptPackage("gcc")
+
+		cfg := config.EmptyConfig()
+		cfg.BuildAptPackages = []string{"...", "curl"}
+		ctx.Config = cfg
+
+		ctx.applyConfig()
+
+		require.Equal(t, []string{"gcc", "curl"}, ctx.GetMiseStepBuilder().SupportingAptPackages)
+		require.Empty(t, ctx.Logger.Logs)
+	})
+
+	t.Run("deploy packages replace generated packages", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+		ctx.Deploy.AddAptPackages([]string{"libnss3"})
+
+		cfg := config.EmptyConfig()
+		cfg.Deploy.AptPackages = []string{"curl"}
+		ctx.Config = cfg
+
+		ctx.applyConfig()
+
+		require.Equal(t, []string{"curl"}, ctx.Deploy.AptPackages)
+		require.Len(t, ctx.Logger.Logs, 1)
+		require.Equal(t, logger.Suggestion, ctx.Logger.Logs[0].Level)
+		require.Contains(t, ctx.Logger.Logs[0].Msg, "Add `...` to `deploy.aptPackages`")
+		require.Equal(t, "/guides/installing-packages", ctx.Logger.Logs[0].DocsPath)
+	})
+
+	t.Run("deploy packages explicitly extend generated packages", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+		ctx.Deploy.AddAptPackages([]string{"libnss3"})
+
+		cfg := config.EmptyConfig()
+		cfg.Deploy.AptPackages = []string{"...", "curl"}
+		ctx.Config = cfg
+
+		ctx.applyConfig()
+
+		require.Equal(t, []string{"libnss3", "curl"}, ctx.Deploy.AptPackages)
+		require.Empty(t, ctx.Logger.Logs)
+	})
+}
+
 func TestGenerateContextAppliesConfiguredDeployBase(t *testing.T) {
 	t.Run("direct deploy base", func(t *testing.T) {
 		ctx := CreateTestContext(t, "../../examples/node-npm")

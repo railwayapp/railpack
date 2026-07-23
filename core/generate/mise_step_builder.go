@@ -69,13 +69,11 @@ type MiseStepBuilder struct {
 }
 
 func (c *GenerateContext) NewMiseStepBuilder(displayName string) *MiseStepBuilder {
-	supportingAptPackages := c.Config.BuildAptPackages
-
 	step := &MiseStepBuilder{
 		DisplayName:           displayName,
 		Resolver:              c.Resolver,
 		MisePackages:          []*resolver.PackageRef{},
-		SupportingAptPackages: append(supportingAptPackages, c.Config.BuildAptPackages...),
+		SupportingAptPackages: []string{},
 		Assets:                map[string]string{},
 		Inputs:                []plan.Layer{},
 		Variables:             map[string]string{},
