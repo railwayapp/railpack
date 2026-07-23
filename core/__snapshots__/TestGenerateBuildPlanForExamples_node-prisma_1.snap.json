@@ -118,7 +118,7 @@
      "src": "prisma"
     },
     {
-     "cmd": "npm ci"
+     "cmd": "npm install"
     }
    ],
    "inputs": [

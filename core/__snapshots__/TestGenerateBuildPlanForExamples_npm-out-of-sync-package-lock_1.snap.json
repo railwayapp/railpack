@@ -45,10 +45,7 @@
     ],
     "include": [
      "/root/.cache",
-     ".",
-     "/opt/corepack",
-     "/mise/installs",
-     "/mise/shims"
+     "."
     ],
     "step": "build"
    }
@@ -60,8 +57,7 @@
    "NPM_CONFIG_FETCH_RETRIES": "5",
    "NPM_CONFIG_FUND": "false",
    "NPM_CONFIG_PRODUCTION": "false",
-   "NPM_CONFIG_UPDATE_NOTIFIER": "false",
-   "RAILPACK_VERSION": "dev"
+   "NPM_CONFIG_UPDATE_NOTIFIER": "false"
   }
  },
  "steps": [
@@ -72,10 +68,6 @@
    "commands": [
     {
      "path": "/mise/shims"
-    },
-    {
-     "dest": "mise.toml",
-     "src": "mise.toml"
     },
     {
      "customName": "create mise config",
@@ -89,7 +81,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.7.11"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.7.7"
     }
    ],
    "name": "packages:mise",
@@ -108,14 +100,6 @@
    "commands": [
     {
      "path": "/app/node_modules/.bin"
-    },
-    {
-     "dest": "package.json",
-     "src": "package.json"
-    },
-    {
-     "cmd": "sh -c 'npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate'",
-     "customName": "npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate"
     },
     {
      "cmd": "mkdir -p /app/node_modules/.cache"
@@ -140,7 +124,6 @@
    "name": "install",
    "variables": {
     "CI": "true",
-    "COREPACK_HOME": "/opt/corepack",
     "NODE_ENV": "production",
     "NPM_CONFIG_FETCH_RETRIES": "5",
     "NPM_CONFIG_FUND": "false",
@@ -181,7 +164,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.7.11"
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.7.7"
     }
    ],
    "name": "packages:apt:runtime"
