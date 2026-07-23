@@ -116,10 +116,17 @@ locked = true
 Commit the generated `mise.lock` file alongside your `mise.toml`. Railpack
 automatically includes `mise.lock` files in the build when present.
 
-## Prefer `npm ci` for npm Node Projects
+## Commit Package Manager Lockfiles
 
-Commit a `package-lock.json` (run `npm install` locally and check it in).
-Without one, installs are non-deterministic and you cannot use `npm ci`.
+Always generate and commit a lockfile from your package manager
+(`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `Cargo.lock`,
+`poetry.lock`, etc.), and keep it in sync with your dependency manifests.
+
+Without a lockfile (or with one that has drifted) installs resolve versions
+at build time. That leads to non-deterministic images and therefore possible
+bugs that don't occur locally.
+
+## Prefer `npm ci` for npm Node Projects
 
 When using npm as your package manager, set `RAILPACK_NODE_NPM_INSTALL` to
 opt into `npm ci` instead of the default `npm install`:
