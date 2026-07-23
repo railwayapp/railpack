@@ -31,6 +31,9 @@ type GenerateBuildPlanOptions struct {
 	PreviousVersions         map[string]string
 	ConfigFilePath           string
 	ErrorMissingStartCommand bool // enabled on railway
+
+	// replaces the built-in providers; empty uses GetLanguageProviders()
+	Providers []providers.Provider
 }
 
 type BuildResult struct {
@@ -85,8 +88,13 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		}
 	}
 
-	// Figure out what providers to use
-	providerToUse, detectedProviderName := getProviders(ctx, config)
+	// Figure out what providers to use, defaulting to the built-ins
+	availableProviders := options.Providers
+	if len(availableProviders) == 0 {
+		availableProviders = providers.GetLanguageProviders()
+	}
+
+	providerToUse, detectedProviderName := getProviders(ctx, config, availableProviders)
 	ctx.Metadata.Set("providers", detectedProviderName)
 
 	// TODO: We should indicate if we have packages specified in the config
@@ -129,6 +137,7 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 	if !ValidatePlan(buildPlan, app, logger, &ValidatePlanOptions{
 		ErrorMissingStartCommand: options.ErrorMissingStartCommand,
 		ProviderToUse:            providerToUse,
+		AvailableProviders:       availableProviders,
 	}) {
 		return &BuildResult{Success: false, Logs: logger.Logs}
 	}
@@ -266,9 +275,7 @@ func GenerateConfigFromOptions(options *GenerateBuildPlanOptions) *c.Config {
 	return config
 }
 
-func getProviders(ctx *generate.GenerateContext, config *c.Config) (providers.Provider, string) {
-	allProviders := providers.GetLanguageProviders()
-
+func getProviders(ctx *generate.GenerateContext, config *c.Config, allProviders []providers.Provider) (providers.Provider, string) {
 	var providerToUse providers.Provider
 	var detectedProvider string
 
@@ -300,7 +307,7 @@ func getProviders(ctx *generate.GenerateContext, config *c.Config) (providers.Pr
 	}
 
 	if config.Provider != nil {
-		provider := providers.GetProvider(*config.Provider)
+		provider := providers.GetProviderFrom(*config.Provider, allProviders)
 
 		if provider == nil {
 			ctx.Logger.LogWarn("Provider `%s` not found", *config.Provider)
