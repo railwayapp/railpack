@@ -115,9 +115,9 @@ func TestGenerateContextAppliesConfiguredAptPackages(t *testing.T) {
 		require.Equal(t, []string{"gcc", "curl"}, ctx.GetMiseStepBuilder().SupportingAptPackages)
 		require.Len(t, ctx.Logger.Logs, 2)
 		require.Equal(t, logger.Deprecation, ctx.Logger.Logs[0].Level)
-		require.Contains(t, ctx.Logger.Logs[0].Msg, "future release")
+		require.Contains(t, ctx.Logger.Logs[0].Msg, "in the future")
 		require.Equal(t, logger.Suggestion, ctx.Logger.Logs[1].Level)
-		require.Contains(t, ctx.Logger.Logs[1].Msg, "include `...`")
+		require.Contains(t, ctx.Logger.Logs[1].Msg, "Add `...` to `buildAptPackages`")
 		require.Equal(t, "/guides/installing-packages", ctx.Logger.Logs[1].DocsPath)
 	})
 
@@ -148,7 +148,7 @@ func TestGenerateContextAppliesConfiguredAptPackages(t *testing.T) {
 		require.Equal(t, []string{"curl"}, ctx.Deploy.AptPackages)
 		require.Len(t, ctx.Logger.Logs, 1)
 		require.Equal(t, logger.Suggestion, ctx.Logger.Logs[0].Level)
-		require.Contains(t, ctx.Logger.Logs[0].Msg, "replaces Railpack-specified packages")
+		require.Contains(t, ctx.Logger.Logs[0].Msg, "Add `...` to `deploy.aptPackages`")
 		require.Equal(t, "/guides/installing-packages", ctx.Logger.Logs[0].DocsPath)
 	})
 
