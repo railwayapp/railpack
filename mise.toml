@@ -123,7 +123,7 @@ echo "Running example: 'docker run $example_name'"
 [tasks.test-update-snapshots]
 run = [
   "UPDATE_SNAPS=true go test -short ./...",
-  "find . -type d -name '__snapshots__' -exec git add -- {} +",
+  "find . -path ./tmp -prune -o -type d -name '__snapshots__' -exec git add -- {} +",
   "echo 'test: update snapshots' > $(git rev-parse --git-dir)/COMMIT_EDITMSG",
 ]
 

@@ -50,6 +50,7 @@
     "step": "build"
    }
   ],
+  "startCommand": "node build",
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
@@ -160,7 +161,10 @@
    "name": "build",
    "secrets": [
     "*"
-   ]
+   ],
+   "variables": {
+    "GCP_BUILDPACKS": "true"
+   }
   },
   {
    "caches": [
