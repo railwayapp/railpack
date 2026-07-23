@@ -87,7 +87,9 @@ run = "go test -short ./..."
 run = "go test -v ./integration_tests"
 
 # run integration test for the example directory you're currently in
+# optionally filter to a single test.json case: `mise run test-integration-cwd -- 1`
 [tasks.test-integration-cwd]
+usage = 'arg "[case]" help="Optional 0-based test.json case index (e.g. 1 for the second case)"'
 run = """
 if [[ ! "$MISE_ORIGINAL_CWD" =~ /examples/ ]]; then
   echo "Error: must be run from within an examples/ directory"
@@ -95,8 +97,14 @@ if [[ ! "$MISE_ORIGINAL_CWD" =~ /examples/ ]]; then
 fi
 
 example_name=$(basename "$MISE_ORIGINAL_CWD")
-echo "Running integration test for: $example_name"
-go test -v ./integration_tests -run "TestExamplesIntegration/$example_name"
+run_filter="TestExamplesIntegration/$example_name"
+if [[ -n "${usage_case:-}" ]]; then
+  run_filter="$run_filter/case-${usage_case}$"
+  echo "Running integration test for: $example_name (case $usage_case)"
+else
+  echo "Running integration test for: $example_name"
+fi
+go test -v ./integration_tests -run "$run_filter"
 """
 
 [tasks.run-example-cwd]
