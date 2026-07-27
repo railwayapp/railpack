@@ -20,7 +20,7 @@ The Node.js version is determined in the following order of priority:
 3. Read from the `.nvmrc` file
 4. Read from the `.node-version` file
 5. Read from `mise.toml` or `.tool-versions` files
-6. Defaults to `22`
+6. Defaults to `lts`
 
 This version resolution logic is applied consistently across all scenarios where
 Node is needed, including when Bun is the primary package manager but Node is
