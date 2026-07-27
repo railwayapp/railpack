@@ -10,8 +10,8 @@ const { chromium } = require("playwright");
   console.log(`Chromium version: ${version}`);
   console.log("Creating Page");
   const page = await browser.newPage();
-  console.log("Navigating to hackernews");
-  await page.goto("https://news.ycombinator.com", {
+  console.log("Navigating to example.com");
+  await page.goto("https://example.com", {
     waitUntil: "networkidle",
   });
 
