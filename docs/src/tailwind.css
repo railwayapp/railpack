@@ -130,6 +130,31 @@ site-search button[data-open-modal] {
 /* MARKDOWN CONTENT STYLES */
 
 .sl-markdown-content {
+  /* Match wrapper sizes to custom headings so anchor icons stay aligned. */
+  .sl-heading-wrapper.level-h1 {
+    @apply text-3xl;
+  }
+
+  .sl-heading-wrapper.level-h2 {
+    @apply text-2xl;
+  }
+
+  .sl-heading-wrapper.level-h3 {
+    @apply text-xl;
+  }
+
+  .sl-heading-wrapper.level-h4 {
+    @apply text-lg;
+  }
+
+  .sl-heading-wrapper.level-h5 {
+    @apply text-base;
+  }
+
+  .sl-heading-wrapper.level-h6 {
+    @apply text-sm;
+  }
+
   h1 {
     @apply text-3xl font-bold dark:text-white;
   }
@@ -162,7 +187,7 @@ site-search button[data-open-modal] {
     @apply text-violet-600 dark:text-violet-400 no-underline hover:underline hover:text-violet-700 dark:hover:text-violet-300;
   }
 
-  code {
+  :not(pre) > code {
     @apply font-mono bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-1.5 py-0.5 text-sm text-gray-600 dark:text-gray-300 rounded-md;
   }
 
@@ -173,6 +198,16 @@ site-search button[data-open-modal] {
 
   :not(a, strong, em, del, span, input, code, br) + hr {
     @apply my-8;
+  }
+}
+
+/* Keep code-copy actions discoverable without requiring hover. */
+.expressive-code .copy button {
+  opacity: 0.75;
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
   }
 }
 
