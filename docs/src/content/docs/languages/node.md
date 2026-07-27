@@ -97,6 +97,19 @@ Railpack determines the start command in the following order:
 | `RAILPACK_NODE_INSTALL_PATTERNS` | Custom patterns to install dependencies | `prisma`                                |
 | `RAILPACK_ANGULAR_PROJECT`       | Name of the Angular project to build    | `my-app`                                |
 | `RAILPACK_NX_APP`                | Nx app to build and start (project name, package name, or path) | `web` or `@org/web` |
+| `RAILPACK_NODE_PLAYWRIGHT_INSTALL` | Install Playwright browsers | `1` |
+
+### Playwright
+
+When Playwright is a production dependency, Railpack suggests setting
+`RAILPACK_NODE_PLAYWRIGHT_INSTALL=1`. Browser installation is opt-in because
+it increases image size and is not required by every application that includes
+Playwright.
+
+When enabled, Railpack runs Playwright through the detected package manager to
+install its browser binaries and adds the required runtime system packages.
+Ensure Playwright is included in your production dependencies so its CLI is
+available during the build.
 
 ### Package Managers
 
@@ -270,7 +283,7 @@ commands used.
 
 ### System Dependencies
 
-Railpack automatically installs system dependencies for certain packages:
+Railpack automatically installs system dependencies for Puppeteer:
 
 - **Puppeteer**: When detected in workspace dependencies, Railpack installs
   all necessary system packages for running headless Chrome, including
@@ -278,7 +291,5 @@ Railpack automatically installs system dependencies for certain packages:
   Puppeteer's bundled Chromium [does not support
   ARM64](https://github.com/puppeteer/puppeteer/issues/7740); if you need
   to run on ARM hardware, consider switching to
-  [Playwright](#system-dependencies) or implementing a custom workaround
+  [Playwright](#playwright) or implementing a custom workaround
   (e.g. installing a system Chromium and pointing `executablePath` at it).
-- **Playwright**: When detected in workspace dependencies, Railpack installs
-  the necessary system packages and the headless shell version of Chromium
