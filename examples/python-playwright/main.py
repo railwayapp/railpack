@@ -7,8 +7,9 @@ with sync_playwright() as p:
     print(f"Chromium version: {version}")
     print("Creating Page")
     page = browser.new_page()
-    print("Navigating to hackernews")
-    page.goto("https://news.ycombinator.com", wait_until="networkidle")
+    print("Navigating to example.com")
+    page.goto("https://example.com", wait_until="networkidle")
+    assert page.title() == "Example Domain"
     browser.close()
 
 print("Hello from playwright")
