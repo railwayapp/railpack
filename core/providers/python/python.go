@@ -19,7 +19,14 @@ const (
 	VENV_PATH              = "/app/.venv"
 	LOCAL_BIN_PATH         = "/root/.local/bin"
 	PLAYWRIGHT_CACHE_DIR   = "/root/.cache/ms-playwright"
+	PLAYWRIGHT_INSTALL_VAR = "PYTHON_PLAYWRIGHT_INSTALL"
 )
+
+// Playwright runtime dependencies for the Chromium browser.
+// To find the latest list, run `playwright install-deps chromium` and inspect
+// the apt-get install output, or check Playwright's browsers.json:
+// https://github.com/microsoft/playwright/blob/main/packages/playwright-core/browsers.json
+var pythonPlaywrightRuntimeDependencies = []string{"libglib2.0-0", "libatk1.0-0", "libatk-bridge2.0-0", "libcups2", "libxkbcommon0", "libatspi2.0-0", "libxcomposite1", "libxdamage1", "libxfixes3", "libxrandr2", "libgbm1", "libcairo2", "libpango-1.0-0", "libasound2", "libnspr4", "libnss3"}
 
 type PythonProvider struct{}
 
@@ -68,12 +75,23 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 		installOutputs = p.InstallPipenv(ctx, install)
 	}
 
-	if p.usesDep(ctx, "playwright") {
+	usesPlaywright := p.usesProductionDep(ctx, "playwright")
+	installPlaywright := ctx.Env.IsConfigVariableTruthy(PLAYWRIGHT_INSTALL_VAR)
+
+	// Automatic browser installation caused issues for an existing user, so keep this opt-in.
+	if usesPlaywright && !installPlaywright {
+		ctx.Logger.LogSuggestion(
+			"Set `RAILPACK_PYTHON_PLAYWRIGHT_INSTALL=1` to install Playwright browsers",
+			"/languages/python#playwright",
+		)
+	}
+
+	if installPlaywright {
 		ctx.Logger.LogInfo("Installing Playwright chromium browser")
-		// --only-shell installs only the headless shell version (chromium_headless_shell)
-		// This is smaller and more appropriate for server environments than full chromium
+		// --only-shell installs the smaller Chromium headless shell, which is
+		// more appropriate for server environments than full Chromium.
 		install.AddCommand(plan.NewExecCommand("playwright install --only-shell"))
-		// Include Playwright browser cache so browsers are available in deploy stage
+		// Include the browser cache so its binaries are available in the deploy stage.
 		installOutputs = append(installOutputs, PLAYWRIGHT_CACHE_DIR)
 	}
 
@@ -284,6 +302,11 @@ func (p *PythonProvider) AddRuntimeDeps(ctx *generate.GenerateContext) {
 		}
 	}
 
+	if ctx.Env.IsConfigVariableTruthy(PLAYWRIGHT_INSTALL_VAR) {
+		ctx.Logger.LogInfo("Installing runtime apt packages for playwright: %v", pythonPlaywrightRuntimeDependencies)
+		ctx.Deploy.AddAptPackages(pythonPlaywrightRuntimeDependencies)
+	}
+
 	if p.usesPostgres(ctx) {
 		ctx.Deploy.AddAptPackages([]string{"libpq5"})
 	}
@@ -484,6 +507,7 @@ func (p *PythonProvider) addMetadata(ctx *generate.GenerateContext) {
 	ctx.Metadata.Set("pythonRuntime", p.getRuntime(ctx))
 }
 
+// TODO this is incredibly naive: we should parse the files we can distinguish between prod and dev
 func (p *PythonProvider) usesDep(ctx *generate.GenerateContext, dep string) bool {
 	files, err := ctx.App.FindFiles("**/{requirements.txt,pyproject.toml,Pipfile}")
 	if err != nil {
@@ -580,8 +604,4 @@ var pythonRuntimeDepRequirements = map[string][]string{
 	"pdf2image": {"poppler-utils"},
 	"pydub":     {"ffmpeg"},
 	"pymovie":   {"ffmpeg", "qt5-qmake", "qtbase5-dev", "qtbase5-dev-tools", "qttools5-dev-tools", "libqt5core5a", "python3-pyqt5"},
-	// Playwright runtime dependencies for Chromium browser
-	// To find the latest list: run `playwright install-deps chromium` and inspect the apt-get install output
-	// Or check: https://github.com/microsoft/playwright/blob/main/packages/playwright-core/browsers.json
-	"playwright": {"libglib2.0-0", "libatk1.0-0", "libatk-bridge2.0-0", "libcups2", "libxkbcommon0", "libatspi2.0-0", "libxcomposite1", "libxdamage1", "libxfixes3", "libxrandr2", "libgbm1", "libcairo2", "libpango-1.0-0", "libasound2", "libnspr4", "libnss3"},
 }

@@ -6,3 +6,8 @@ requires-python = ">=3.11"
 dependencies = [
     "playwright>=1.49",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
