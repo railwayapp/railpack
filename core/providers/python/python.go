@@ -22,11 +22,31 @@ const (
 	PLAYWRIGHT_INSTALL_VAR = "PYTHON_PLAYWRIGHT_INSTALL"
 )
 
-// Playwright runtime dependencies for the Chromium browser.
-// To find the latest list, run `playwright install-deps chromium` and inspect
-// the apt-get install output, or check Playwright's browsers.json:
-// https://github.com/microsoft/playwright/blob/main/packages/playwright-core/browsers.json
-var pythonPlaywrightRuntimeDependencies = []string{"libglib2.0-0", "libatk1.0-0", "libatk-bridge2.0-0", "libcups2", "libxkbcommon0", "libatspi2.0-0", "libxcomposite1", "libxdamage1", "libxfixes3", "libxrandr2", "libgbm1", "libcairo2", "libpango-1.0-0", "libasound2", "libnspr4", "libnss3"}
+// Keep this aligned with the Debian 12 Chromium list in Playwright's nativeDeps.ts:
+// https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/registry/nativeDeps.ts
+var pythonPlaywrightRuntimeDependencies = []string{
+	"libasound2",
+	"libatk-bridge2.0-0",
+	"libatk1.0-0",
+	"libatspi2.0-0",
+	"libcairo2",
+	"libcups2",
+	"libdbus-1-3",
+	"libdrm2",
+	"libgbm1",
+	"libglib2.0-0",
+	"libnspr4",
+	"libnss3",
+	"libpango-1.0-0",
+	"libx11-6",
+	"libxcb1",
+	"libxcomposite1",
+	"libxdamage1",
+	"libxext6",
+	"libxfixes3",
+	"libxkbcommon0",
+	"libxrandr2",
+}
 
 type PythonProvider struct{}
 
