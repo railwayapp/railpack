@@ -102,10 +102,22 @@ Railpack supports multiple Python package managers:
 
 ### Config Variables
 
-| Variable                   | Description                 | Example      |
-| -------------------------- | --------------------------- | ------------ |
-| `RAILPACK_PYTHON_VERSION`  | Override the Python version | `3.11`       |
-| `RAILPACK_DJANGO_APP_NAME` | Django app name             | `myapp.wsgi` |
+| Variable | Description | Example |
+| --- | --- | --- |
+| `RAILPACK_PYTHON_VERSION` | Override the Python version | `3.11` |
+| `RAILPACK_DJANGO_APP_NAME` | Django app name | `myapp.wsgi` |
+| `RAILPACK_PYTHON_PLAYWRIGHT_INSTALL` | Install browser binaries | `1` |
+
+### Playwright
+
+When Playwright is a production dependency, Railpack suggests setting
+`RAILPACK_PYTHON_PLAYWRIGHT_INSTALL=1`. Railpack does not install browser
+binaries automatically because doing so can unexpectedly change existing
+builds and increase image size.
+
+When enabled, Railpack installs Playwright's browser binaries and the system
+packages needed to run them. Ensure Playwright is included in your production
+dependencies so its CLI is available during the build.
 
 ### System Dependencies
 
@@ -115,8 +127,6 @@ Railpack installs system dependencies for common Python packages:
 - **pdf2image**: Installs `poppler-utils`
 - **pydub**: Installs `ffmpeg`
 - **pymovie**: Installs `ffmpeg`, `qt5-qmake`, and related Qt packages
-- **Playwright**: When detected in dependencies, Railpack installs the necessary
-  system packages and the headless shell version of Chromium
 
 ## Framework Support
 
