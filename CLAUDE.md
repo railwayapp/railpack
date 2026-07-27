@@ -74,6 +74,10 @@ There are normal unit tests, snapshot tests, and integration tests. The integrat
 * `httpCheck` assertions assume that `$PORT` is respected.
 * You can use `"envs": { "SECRET": "123"}` to add a required environment variable to a test case.
 
+## Unit tests
+
+* Do not test log output.
+
 # File Conventions
 
 - Markdown files in @docs/src/content/docs/ should be limited to 80 columns
