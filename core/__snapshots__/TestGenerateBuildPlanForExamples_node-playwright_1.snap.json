@@ -13,7 +13,7 @@
    "type": "shared"
   },
   "pnpm-install": {
-   "directory": "/root/.local/share/pnpm/store/v3",
+   "directory": "/opt/pnpm/store",
    "type": "shared"
   }
  },
@@ -54,15 +54,17 @@
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
+   "NPM_CONFIG_FETCH_RETRIES": "5",
    "NPM_CONFIG_FUND": "false",
    "NPM_CONFIG_PRODUCTION": "false",
-   "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+   "NPM_CONFIG_UPDATE_NOTIFIER": "false",
+   "RAILPACK_VERSION": "dev"
   }
  },
  "steps": [
   {
    "assets": {
-    "mise.toml": "[mise.toml]"
+    "generated-mise-toml": "[generated-mise-toml]"
    },
    "commands": [
     {
@@ -74,7 +76,7 @@
     },
     {
      "customName": "create mise config",
-     "name": "mise.toml",
+     "name": "generated-mise-toml",
      "path": "/etc/mise/config.toml"
     },
     {
@@ -84,7 +86,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:latest"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.7.14"
     }
    ],
    "name": "packages:mise",
@@ -92,12 +94,8 @@
     "MISE_CACHE_DIR": "/mise/cache",
     "MISE_CONFIG_DIR": "/mise",
     "MISE_DATA_DIR": "/mise",
-    "MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS": "python,node,ruby,elixir,go,java,yarn",
     "MISE_INSTALLS_DIR": "/mise/installs",
-    "MISE_NODE_VERIFY": "false",
-    "MISE_PARANOID": "1",
-    "MISE_SHIMS_DIR": "/mise/shims",
-    "MISE_TRUSTED_CONFIG_PATHS": "/app"
+    "MISE_SHIMS_DIR": "/mise/shims"
    }
   },
   {
@@ -120,16 +118,13 @@
      "src": "pnpm-lock.yaml"
     },
     {
-     "path": "/pnpm"
+     "path": "/opt/pnpm/bin"
     },
     {
      "cmd": "pnpm add -g node-gyp"
     },
     {
      "cmd": "pnpm install --frozen-lockfile --prefer-offline"
-    },
-    {
-     "cmd": "pnpm exec playwright install --only-shell"
     }
    ],
    "inputs": [
@@ -141,10 +136,12 @@
    "variables": {
     "CI": "true",
     "NODE_ENV": "production",
+    "NPM_CONFIG_FETCH_RETRIES": "5",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",
     "NPM_CONFIG_UPDATE_NOTIFIER": "false",
-    "PNPM_HOME": "/pnpm"
+    "PNPM_HOME": "/opt/pnpm",
+    "PNPM_STORE_DIR": "/opt/pnpm/store"
    }
   },
   {
@@ -174,13 +171,13 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libasound2 libatk-bridge2.0-0 libatk1.0-0 libatomic1 libatspi2.0-0 libcairo2 libcups2 libgbm1 libglib2.0-0 libnspr4 libnss3 libpango-1.0-0 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 libxrandr2'",
-     "customName": "install apt packages: libasound2 libatk-bridge2.0-0 libatk1.0-0 libatomic1 libatspi2.0-0 libcairo2 libcups2 libgbm1 libglib2.0-0 libnspr4 libnss3 libpango-1.0-0 libxcomposite1 libxdamage1 libxfixes3 libxkbcommon0 libxrandr2"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libatomic1'",
+     "customName": "install apt packages: libatomic1"
     }
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.7.14"
     }
    ],
    "name": "packages:apt:runtime"
