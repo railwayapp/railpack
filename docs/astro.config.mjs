@@ -34,6 +34,15 @@ export default defineConfig({
         "@fontsource/inter/400.css",
         "@fontsource/inter/600.css",
       ],
+      expressiveCode: {
+        defaultProps: {
+          overridesByLang: {
+            "bash,sh,shell,zsh": {
+              frame: "code",
+            },
+          },
+        },
+      },
       plugins: [
         starlightPageActions(),
         starlightLlmsTxt({
