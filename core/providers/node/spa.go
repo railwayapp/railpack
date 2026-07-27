@@ -31,9 +31,6 @@ func (p *NodeProvider) isSPA(ctx *generate.GenerateContext) bool {
 
 	// If there is a custom start command, we don't want to deploy with Caddy as an SPA
 	if p.hasCustomStartCommand(ctx) {
-		// it's easy for a user to trip over this wire and not understand that it would impact SPA deployment since using the start script
-		// is somewhat if a railpack-convention, so let's make it clear to them.
-		ctx.Logger.LogInfo("Custom start command detected, skipping Caddy start")
 		return false
 	}
 

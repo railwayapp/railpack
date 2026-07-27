@@ -93,6 +93,11 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	}
 
 	isSPA := p.isSPA(ctx)
+	if !isSPA && !ctx.Env.IsConfigVariableTruthy("NO_SPA") && p.hasCustomStartCommand(ctx) {
+		// it's easy for a user to trip over this wire and not understand that it would impact SPA deployment since using the start script
+		// is somewhat if a railpack-convention, so let's make it clear to them.
+		ctx.Logger.LogInfo("Custom start command detected, skipping Caddy start")
+	}
 
 	miseStep := ctx.GetMiseStepBuilder()
 	p.InstallMisePackages(ctx, miseStep)
@@ -219,6 +224,7 @@ func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 		}
 	} else if _, projectName, ok := p.resolveNxDeployPackage(ctx); ok {
 		// TODO this `resolveNxDeployPackage` logic feels messy, we should refactor this a bit
+		ctx.Logger.LogInfo("Using Nx app %s", projectName)
 
 		// Nx infers targets from plugins; root package.json often has no build script
 		build.AddCommands([]plan.Command{
