@@ -5,10 +5,25 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/resolver"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
+
+func TestInstallDeps_NpmInstallOverride(t *testing.T) {
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte("{}"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "package-lock.json"), []byte("{}"), 0o644))
+
+	ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+	ctx.Env.Variables["RAILPACK_NODE_NPM_INSTALL"] = "npm ci"
+	install := ctx.NewCommandStep("install")
+
+	PackageManagerNpm.installDeps(ctx, install, false)
+
+	require.Contains(t, install.Commands, plan.NewExecCommand("npm ci"))
+}
 
 func TestGetPackageManagerPackages_PnpmLockfileVersion(t *testing.T) {
 	tests := []struct {

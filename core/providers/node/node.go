@@ -33,8 +33,6 @@ var (
 	// PackageManifestFiles is the precedence order Railpack searches for a Node
 	// package manifest. package.json wins if both are present; package.json5 is
 	// supported because pnpm reads it natively (https://pnpm.io/package_json).
-	// Railpack's App.ReadJSON pipes through hujson, which accepts comments and
-	// trailing commas — the common subset of JSON5 used in real manifests.
 	PackageManifestFiles = []string{"package.json", "package.json5"}
 )
 

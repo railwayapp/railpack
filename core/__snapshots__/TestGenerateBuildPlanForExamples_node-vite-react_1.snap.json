@@ -109,7 +109,7 @@
      "src": "package.json"
     },
     {
-     "cmd": "npm ci"
+     "cmd": "npm install"
     }
    ],
    "inputs": [

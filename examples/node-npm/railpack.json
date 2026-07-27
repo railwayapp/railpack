@@ -1,0 +1,20 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "steps": {
+    "install": {
+      // Railpack defaults to `npm install` so out-of-sync lockfiles still succeed.
+      // Opt into `npm ci` when the lockfile is kept in sync for deterministic installs.
+      //
+      // Configuring a step auto-adds it to deploy with include: ["."]. Use an empty
+      // deployOutputs so install is not copied into the final image; node_modules
+      // still reach the image via the build step.
+      "deployOutputs": [],
+      "commands": [
+        { "path": "/app/node_modules/.bin" },
+        { "src": "package-lock.json", "dest": "package-lock.json" },
+        { "src": "package.json", "dest": "package.json" },
+        "npm ci"
+      ]
+    }
+  }
+}

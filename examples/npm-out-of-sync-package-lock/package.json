@@ -1,0 +1,13 @@
+{
+  "name": "npm-out-of-sync-package-lock",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dayjs": "1.11.13",
+    "is-number": "7.0.0"
+  }
+}

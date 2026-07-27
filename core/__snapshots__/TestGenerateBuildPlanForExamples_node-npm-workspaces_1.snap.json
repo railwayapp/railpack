@@ -137,7 +137,7 @@
      "src": "packages/web/package.json"
     },
     {
-     "cmd": "npm ci"
+     "cmd": "npm install"
     }
    ],
    "inputs": [
