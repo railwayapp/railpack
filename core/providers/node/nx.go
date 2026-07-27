@@ -132,7 +132,6 @@ func (p *NodeProvider) resolveNxDeployPackage(ctx *generate.GenerateContext) (*W
 		for _, pkg := range packages {
 			if matchesNxAppSelector(pkg, selector) {
 				name := nxProjectName(pkg)
-				ctx.Logger.LogInfo("Using Nx app %s (RAILPACK_NX_APP=%s)", name, selector)
 				return pkg, name, true
 			}
 		}
@@ -143,9 +142,7 @@ func (p *NodeProvider) resolveNxDeployPackage(ctx *generate.GenerateContext) (*W
 
 	if len(packages) == 1 {
 		pkg := packages[0]
-		name := nxProjectName(pkg)
-		ctx.Logger.LogInfo("Using Nx app %s", name)
-		return pkg, name, true
+		return pkg, nxProjectName(pkg), true
 	}
 
 	names := make([]string, 0, len(packages))
