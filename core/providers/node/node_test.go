@@ -6,6 +6,7 @@ import (
 
 	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
+	"github.com/railwayapp/railpack/core/plan"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -314,4 +315,60 @@ func TestUsesPnpmBinSubdir(t *testing.T) {
 			require.Equal(t, tt.want, usesPnpmBinSubdir(tt.version))
 		})
 	}
+}
+
+func TestPlaywrightInstallationIsOptIn(t *testing.T) {
+	t.Run("does not install by default", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-playwright")
+		provider := NodeProvider{}
+
+		require.NoError(t, provider.Initialize(ctx))
+		require.NoError(t, provider.Plan(ctx))
+		require.False(t, nodeStepHasExecCommand(
+			ctx,
+			"install",
+			"pnpm exec playwright install --only-shell",
+		))
+		require.NotContains(t, ctx.Deploy.AptPackages, "libnss3")
+	})
+
+	t.Run("installs when enabled", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-playwright")
+		ctx.Env.Variables["RAILPACK_NODE_PLAYWRIGHT_INSTALL"] = "1"
+		provider := NodeProvider{}
+
+		require.NoError(t, provider.Initialize(ctx))
+		require.NoError(t, provider.Plan(ctx))
+		require.True(t, nodeStepHasExecCommand(
+			ctx,
+			"install",
+			"pnpm exec playwright install --only-shell",
+		))
+		require.Contains(t, ctx.Deploy.AptPackages, "libnss3")
+	})
+}
+
+func nodeStepHasExecCommand(
+	ctx *generate.GenerateContext,
+	stepName string,
+	command string,
+) bool {
+	step := ctx.GetStepByName(stepName)
+	if step == nil {
+		return false
+	}
+
+	commandStep, ok := (*step).(*generate.CommandStepBuilder)
+	if !ok {
+		return false
+	}
+
+	for _, candidate := range commandStep.Commands {
+		execCommand, ok := candidate.(plan.ExecCommand)
+		if ok && execCommand.Cmd == command {
+			return true
+		}
+	}
+
+	return false
 }

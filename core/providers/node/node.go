@@ -21,18 +21,21 @@ const (
 	DEFAULT_BUN_VERSION  = "latest"
 
 	// not used by npm, but many other tools: next, jest, webpack, etc
-	NODE_MODULES_CACHE   = "/app/node_modules/.cache"
-	COREPACK_HOME        = "/opt/corepack"
-	PLAYWRIGHT_CACHE_DIR = "/root/.cache/ms-playwright"
+	NODE_MODULES_CACHE     = "/app/node_modules/.cache"
+	COREPACK_HOME          = "/opt/corepack"
+	PLAYWRIGHT_CACHE_DIR   = "/root/.cache/ms-playwright"
+	PLAYWRIGHT_INSTALL_VAR = "NODE_PLAYWRIGHT_INSTALL"
 )
 
 var nodeRuntimeDepRequirements = map[string][]string{
 	// To find the latest list: run `npx puppeteer@latest install --help` and inspect docs
 	"puppeteer": {"xvfb", "gconf-service", "libasound2", "libatk1.0-0", "libc6", "libcairo2", "libcups2", "libdbus-1-3", "libexpat1", "libfontconfig1", "libgbm1", "libgcc1", "libgconf-2-4", "libgdk-pixbuf2.0-0", "libglib2.0-0", "libgtk-3-0", "libnspr4", "libpango-1.0-0", "libpangocairo-1.0-0", "libstdc++6", "libx11-6", "libx11-xcb1", "libxcb1", "libxcomposite1", "libxcursor1", "libxdamage1", "libxext6", "libxfixes3", "libxi6", "libxrandr2", "libxrender1", "libxss1", "libxtst6", "ca-certificates", "fonts-liberation", "libappindicator1", "libnss3", "lsb-release", "xdg-utils", "wget"},
-	// To find the latest list: run `playwright install-deps chromium` and inspect the apt-get install output
-	// Or check: https://github.com/microsoft/playwright/blob/main/packages/playwright-core/browsers.json
-	"playwright": {"libglib2.0-0", "libatk1.0-0", "libatk-bridge2.0-0", "libcups2", "libxkbcommon0", "libatspi2.0-0", "libxcomposite1", "libxdamage1", "libxfixes3", "libxrandr2", "libgbm1", "libcairo2", "libpango-1.0-0", "libasound2", "libnspr4", "libnss3"},
 }
+
+// To find the latest list, run `playwright install-deps chromium` and inspect
+// the apt-get install output, or check Playwright's browsers.json:
+// https://github.com/microsoft/playwright/blob/main/packages/playwright-core/browsers.json
+var nodePlaywrightRuntimeDependencies = []string{"libglib2.0-0", "libatk1.0-0", "libatk-bridge2.0-0", "libcups2", "libxkbcommon0", "libatspi2.0-0", "libxcomposite1", "libxdamage1", "libxfixes3", "libxrandr2", "libgbm1", "libcairo2", "libpango-1.0-0", "libasound2", "libnspr4", "libnss3"}
 
 var (
 	// bunCommandRegex matches "bun" or "bunx" as a command (not part of another word)
@@ -160,10 +163,22 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 		runtimeAptPackages = append(runtimeAptPackages, nodeRuntimeDepRequirements["puppeteer"]...)
 	}
 
-	if p.usesPlaywright() {
+	usesPlaywright := p.usesProductionPlaywright()
+	installPlaywright := ctx.Env.IsConfigVariableTruthy(PLAYWRIGHT_INSTALL_VAR)
+
+	// Automatic browser installation caused issues for an existing user, so keep this opt-in.
+	if usesPlaywright && !installPlaywright {
+		ctx.Logger.LogSuggestion(
+			"Set `RAILPACK_NODE_PLAYWRIGHT_INSTALL=1` to install Playwright browsers",
+			"/languages/node#playwright",
+		)
+	}
+
+	if installPlaywright {
 		ctx.Logger.LogInfo("Installing playwright packages and headless browser")
-		runtimeAptPackages = append(runtimeAptPackages, nodeRuntimeDepRequirements["playwright"]...)
-		// --only-shell is smaller and more appropriate for server environments than full chromium
+		runtimeAptPackages = append(runtimeAptPackages, nodePlaywrightRuntimeDependencies...)
+		// --only-shell installs the smaller Chromium headless shell, which is
+		// more appropriate for server environments than full Chromium.
 		install.AddCommand(plan.NewExecCommand(p.packageManager.ExecCommand("playwright install --only-shell")))
 	}
 
@@ -470,8 +485,8 @@ func (p *NodeProvider) usesPuppeteer() bool {
 	return p.workspace.HasDependency("puppeteer")
 }
 
-func (p *NodeProvider) usesPlaywright() bool {
-	return p.workspace.HasDependency("playwright")
+func (p *NodeProvider) usesProductionPlaywright() bool {
+	return p.workspace.HasProductionDependency("playwright")
 }
 
 // determine the major version of yarn from a version string. These major versions are installed and managed quite
