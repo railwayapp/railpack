@@ -204,7 +204,8 @@ func (p *NodeProvider) StartCommandHelp() string {
 		"4. An Nx workspace with a Next.js app (nx.json + next)\n\n" +
 		"If you have a static site, you can set the RAILPACK_SPA_OUTPUT_DIR environment variable\n" +
 		"containing the directory of your built static files.\n\n" +
-		"For multi-app Nx workspaces, set RAILPACK_NX_APP to select which app to deploy."
+		"For multi-app Nx workspaces, set RAILPACK_NX_APP to select which app to deploy.\n\n" +
+		"For more information, see the Node.js production deployment guide: https://railway.app/docs/deploy/node"
 }
 
 func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {

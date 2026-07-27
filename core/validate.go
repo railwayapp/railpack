@@ -56,7 +56,7 @@ func validateStartCommand(plan *plan.BuildPlan, logger *logger.Logger, options *
 		return true
 	}
 
-	msg := "No start command detected. Specify a start command: https://railpack.com/config/file"
+	msg := "No start command detected. Specify a start command: https://railpack.com/config/file#deploy"
 	if options.ProviderToUse != nil {
 		if providerHelp := options.ProviderToUse.StartCommandHelp(); providerHelp != "" {
 			msg += "\n\n" + providerHelp
