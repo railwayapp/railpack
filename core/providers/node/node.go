@@ -20,11 +20,44 @@ const (
 	DEFAULT_NODE_VERSION = "22"
 	DEFAULT_BUN_VERSION  = "latest"
 
-	COREPACK_HOME = "/opt/corepack"
-
 	// not used by npm, but many other tools: next, jest, webpack, etc
-	NODE_MODULES_CACHE = "/app/node_modules/.cache"
+	NODE_MODULES_CACHE     = "/app/node_modules/.cache"
+	COREPACK_HOME          = "/opt/corepack"
+	PLAYWRIGHT_CACHE_DIR   = "/root/.cache/ms-playwright"
+	PLAYWRIGHT_INSTALL_VAR = "NODE_PLAYWRIGHT_INSTALL"
 )
+
+var nodeRuntimeDepRequirements = map[string][]string{
+	// To find the latest list: run `npx puppeteer@latest install --help` and inspect docs
+	"puppeteer": {"xvfb", "gconf-service", "libasound2", "libatk1.0-0", "libc6", "libcairo2", "libcups2", "libdbus-1-3", "libexpat1", "libfontconfig1", "libgbm1", "libgcc1", "libgconf-2-4", "libgdk-pixbuf2.0-0", "libglib2.0-0", "libgtk-3-0", "libnspr4", "libpango-1.0-0", "libpangocairo-1.0-0", "libstdc++6", "libx11-6", "libx11-xcb1", "libxcb1", "libxcomposite1", "libxcursor1", "libxdamage1", "libxext6", "libxfixes3", "libxi6", "libxrandr2", "libxrender1", "libxss1", "libxtst6", "ca-certificates", "fonts-liberation", "libappindicator1", "libnss3", "lsb-release", "xdg-utils", "wget"},
+}
+
+// Keep this aligned with the Debian 12 Chromium list in Playwright's nativeDeps.ts:
+// https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/registry/nativeDeps.ts
+// Keep these explicit because --with-deps installs them in the builder, not the runtime image.
+var nodePlaywrightRuntimeDependencies = []string{
+	"libasound2",
+	"libatk-bridge2.0-0",
+	"libatk1.0-0",
+	"libatspi2.0-0",
+	"libcairo2",
+	"libcups2",
+	"libdbus-1-3",
+	"libdrm2",
+	"libgbm1",
+	"libglib2.0-0",
+	"libnspr4",
+	"libnss3",
+	"libpango-1.0-0",
+	"libx11-6",
+	"libxcb1",
+	"libxcomposite1",
+	"libxdamage1",
+	"libxext6",
+	"libxfixes3",
+	"libxkbcommon0",
+	"libxrandr2",
+}
 
 var (
 	// bunCommandRegex matches "bun" or "bunx" as a command (not part of another word)
@@ -143,9 +176,29 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	}
 
 	runtimeAptPackages := []string{}
+
 	if p.usesPuppeteer() {
-		ctx.Logger.LogInfo("Installing puppeteer dependencies")
-		runtimeAptPackages = append(runtimeAptPackages, "xvfb", "gconf-service", "libasound2", "libatk1.0-0", "libc6", "libcairo2", "libcups2", "libdbus-1-3", "libexpat1", "libfontconfig1", "libgbm1", "libgcc1", "libgconf-2-4", "libgdk-pixbuf2.0-0", "libglib2.0-0", "libgtk-3-0", "libnspr4", "libpango-1.0-0", "libpangocairo-1.0-0", "libstdc++6", "libx11-6", "libx11-xcb1", "libxcb1", "libxcomposite1", "libxcursor1", "libxdamage1", "libxext6", "libxfixes3", "libxi6", "libxrandr2", "libxrender1", "libxss1", "libxtst6", "ca-certificates", "fonts-liberation", "libappindicator1", "libnss3", "lsb-release", "xdg-utils", "wget")
+		ctx.Logger.LogInfo("Installing puppeteer packages")
+		runtimeAptPackages = append(runtimeAptPackages, nodeRuntimeDepRequirements["puppeteer"]...)
+	}
+
+	usesPlaywright := p.usesProductionPlaywright()
+	installPlaywright := ctx.Env.IsConfigVariableTruthy(PLAYWRIGHT_INSTALL_VAR)
+
+	// Automatic browser installation caused issues for an existing user, so keep this opt-in.
+	if usesPlaywright && !installPlaywright {
+		ctx.Logger.LogSuggestion(
+			"Set `RAILPACK_NODE_PLAYWRIGHT_INSTALL=1` to install Playwright browsers",
+			"/languages/node#playwright",
+		)
+	}
+
+	if installPlaywright {
+		ctx.Logger.LogInfo("Installing playwright packages and headless browser")
+		runtimeAptPackages = append(runtimeAptPackages, nodePlaywrightRuntimeDependencies...)
+		// --only-shell installs the smaller Chromium headless shell, which is
+		// more appropriate for server environments than full Chromium.
+		install.AddCommand(plan.NewExecCommand(p.packageManager.ExecCommand("playwright install --only-shell")))
 	}
 
 	nodeModulesLayer := plan.NewStepLayer(build.Name(), plan.Filter{
@@ -185,7 +238,8 @@ func (p *NodeProvider) StartCommandHelp() string {
 		"4. An Nx workspace with a Next.js app (nx.json + next)\n\n" +
 		"If you have a static site, you can set the RAILPACK_SPA_OUTPUT_DIR environment variable\n" +
 		"containing the directory of your built static files.\n\n" +
-		"For multi-app Nx workspaces, set RAILPACK_NX_APP to select which app to deploy."
+		"For multi-app Nx workspaces, set RAILPACK_NX_APP to select which app to deploy.\n\n" +
+		"For more information, see the Node.js production deployment guide: https://railway.app/docs/deploy/node"
 }
 
 func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
@@ -448,6 +502,10 @@ func (p *NodeProvider) usesCorepack() bool {
 
 func (p *NodeProvider) usesPuppeteer() bool {
 	return p.workspace.HasDependency("puppeteer")
+}
+
+func (p *NodeProvider) usesProductionPlaywright() bool {
+	return p.workspace.HasProductionDependency("playwright")
 }
 
 // determine the major version of yarn from a version string. These major versions are installed and managed quite

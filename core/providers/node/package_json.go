@@ -47,10 +47,8 @@ func (p *PackageJson) BuildScriptContains(value string) bool {
 }
 
 func (p *PackageJson) hasDependency(dependency string) bool {
-	if p.Dependencies != nil {
-		if _, ok := p.Dependencies[dependency]; ok {
-			return true
-		}
+	if p.hasProductionDependency(dependency) {
+		return true
 	}
 
 	if p.DevDependencies != nil {
@@ -60,6 +58,15 @@ func (p *PackageJson) hasDependency(dependency string) bool {
 	}
 
 	return false
+}
+
+func (p *PackageJson) hasProductionDependency(dependency string) bool {
+	if p.Dependencies == nil {
+		return false
+	}
+
+	_, ok := p.Dependencies[dependency]
+	return ok
 }
 
 func (p *PackageJson) hasLocalDependency() bool {

@@ -158,3 +158,41 @@ func TestWorkspaceAllPackageJson(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkspaceHasProductionDependency(t *testing.T) {
+	tests := []struct {
+		name       string
+		path       string
+		dependency string
+		want       bool
+	}{
+		{
+			name:       "root production dependency",
+			path:       "../../../examples/node-playwright",
+			dependency: "playwright",
+			want:       true,
+		},
+		{
+			name:       "root development dependency",
+			path:       "../../../examples/node-npm",
+			dependency: "typescript",
+			want:       false,
+		},
+		{
+			name:       "workspace production dependency",
+			path:       "../../../examples/node-npm-workspaces",
+			dependency: "express",
+			want:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := testingUtils.CreateGenerateContext(t, tt.path)
+			workspace, err := NewWorkspace(ctx.App)
+			require.NoError(t, err)
+
+			require.Equal(t, tt.want, workspace.HasProductionDependency(tt.dependency))
+		})
+	}
+}

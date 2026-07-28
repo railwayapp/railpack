@@ -13,7 +13,7 @@
 
 ## Test
 
-<!-- how is this change tested? -->
+<!-- how is this change tested? Do not indicate that snapshots were updated -->
 
 ## Links
 

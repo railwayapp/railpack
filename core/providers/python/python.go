@@ -18,7 +18,35 @@ const (
 	PIP_CACHE_DIR          = "/opt/pip-cache"
 	VENV_PATH              = "/app/.venv"
 	LOCAL_BIN_PATH         = "/root/.local/bin"
+	PLAYWRIGHT_CACHE_DIR   = "/root/.cache/ms-playwright"
+	PLAYWRIGHT_INSTALL_VAR = "PYTHON_PLAYWRIGHT_INSTALL"
 )
+
+// Keep this aligned with the Debian 12 Chromium list in Playwright's nativeDeps.ts:
+// https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/registry/nativeDeps.ts
+var pythonPlaywrightRuntimeDependencies = []string{
+	"libasound2",
+	"libatk-bridge2.0-0",
+	"libatk1.0-0",
+	"libatspi2.0-0",
+	"libcairo2",
+	"libcups2",
+	"libdbus-1-3",
+	"libdrm2",
+	"libgbm1",
+	"libglib2.0-0",
+	"libnspr4",
+	"libnss3",
+	"libpango-1.0-0",
+	"libx11-6",
+	"libxcb1",
+	"libxcomposite1",
+	"libxdamage1",
+	"libxext6",
+	"libxfixes3",
+	"libxkbcommon0",
+	"libxrandr2",
+}
 
 type PythonProvider struct{}
 
@@ -65,6 +93,26 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 		installOutputs = p.InstallPDM(ctx, install)
 	} else if p.hasPipfile(ctx) {
 		installOutputs = p.InstallPipenv(ctx, install)
+	}
+
+	usesPlaywright := p.usesProductionDep(ctx, "playwright")
+	installPlaywright := ctx.Env.IsConfigVariableTruthy(PLAYWRIGHT_INSTALL_VAR)
+
+	// Automatic browser installation caused issues for an existing user, so keep this opt-in.
+	if usesPlaywright && !installPlaywright {
+		ctx.Logger.LogSuggestion(
+			"Set `RAILPACK_PYTHON_PLAYWRIGHT_INSTALL=1` to install Playwright browsers",
+			"/languages/python#playwright",
+		)
+	}
+
+	if installPlaywright {
+		ctx.Logger.LogInfo("Installing Playwright chromium browser")
+		// --only-shell installs the smaller Chromium headless shell, which is
+		// more appropriate for server environments than full Chromium.
+		install.AddCommand(plan.NewExecCommand("playwright install --only-shell"))
+		// Include the browser cache so its binaries are available in the deploy stage.
+		installOutputs = append(installOutputs, PLAYWRIGHT_CACHE_DIR)
 	}
 
 	p.addMetadata(ctx)
@@ -157,14 +205,16 @@ func (p *PythonProvider) InstallUv(ctx *generate.GenerateContext, install *gener
 	install.AddEnvVars(p.GetPythonEnvVars(ctx))
 
 	p.copyInstallFiles(ctx, install)
-	install.AddCommands([]plan.Command{
+	installCommands := []plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
 		// if we exclude workspace packages, uv.lock will fail the frozen test and the user will get an error
 		// to avoid this, we (a) detect if workspace packages are required (b) if they aren't, we don't include project
 		// source in order to optimize layer caching (c) install project in the build phase.
 		plan.NewExecCommand("uv sync --locked --no-dev --no-install-project"),
-	})
+	}
+
+	install.AddCommands(installCommands)
 
 	return []string{VENV_PATH}
 }
@@ -209,11 +259,13 @@ func (p *PythonProvider) InstallPDM(ctx *generate.GenerateContext, install *gene
 	})
 
 	p.copyInstallFiles(ctx, install)
-	install.AddCommands([]plan.Command{
+	installCommands := []plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
 		plan.NewExecCommand("pdm install --check --prod --no-editable"),
-	})
+	}
+
+	install.AddCommands(installCommands)
 
 	return []string{VENV_PATH}
 }
@@ -229,11 +281,13 @@ func (p *PythonProvider) InstallPoetry(ctx *generate.GenerateContext, install *g
 	})
 
 	p.copyInstallFiles(ctx, install)
-	install.AddCommands([]plan.Command{
+	installCommands := []plan.Command{
 		plan.NewPathCommand(LOCAL_BIN_PATH),
 		plan.NewPathCommand(VENV_PATH + "/bin"),
 		plan.NewExecCommand("poetry install --no-interaction --no-ansi --only main --no-root"),
-	})
+	}
+
+	install.AddCommands(installCommands)
 
 	return []string{VENV_PATH}
 }
@@ -266,6 +320,11 @@ func (p *PythonProvider) AddRuntimeDeps(ctx *generate.GenerateContext) {
 			ctx.Logger.LogInfo("Installing runtime apt packages for %s: %v", dep, requiredPkgs)
 			ctx.Deploy.AddAptPackages(requiredPkgs)
 		}
+	}
+
+	if ctx.Env.IsConfigVariableTruthy(PLAYWRIGHT_INSTALL_VAR) {
+		ctx.Logger.LogInfo("Installing runtime apt packages for playwright: %v", pythonPlaywrightRuntimeDependencies)
+		ctx.Deploy.AddAptPackages(pythonPlaywrightRuntimeDependencies)
 	}
 
 	if p.usesPostgres(ctx) {
@@ -468,6 +527,7 @@ func (p *PythonProvider) addMetadata(ctx *generate.GenerateContext) {
 	ctx.Metadata.Set("pythonRuntime", p.getRuntime(ctx))
 }
 
+// TODO this is incredibly naive: we should parse the files we can distinguish between prod and dev
 func (p *PythonProvider) usesDep(ctx *generate.GenerateContext, dep string) bool {
 	files, err := ctx.App.FindFiles("**/{requirements.txt,pyproject.toml,Pipfile}")
 	if err != nil {
