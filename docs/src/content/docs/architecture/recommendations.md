@@ -116,6 +116,28 @@ locked = true
 Commit the generated `mise.lock` file alongside your `mise.toml`. Railpack
 automatically includes `mise.lock` files in the build when present.
 
+## GPG Verification
+
+Mise can verify OpenPGP signatures for tools that publish them. Enable
+verification for all supported tools in your `mise.toml`:
+
+```toml
+[settings]
+gpg_verify = true
+
+[settings.node]
+verify = true
+```
+
+Railpack disables Node.js GPG verification by default because newly released
+versions may not have a public key available yet. A project-local `mise.toml`
+takes precedence over Railpack's generated `/etc/mise/config.toml`, so
+`verify = true` reverses that default.
+
+With verification enabled, the build fails when mise cannot verify a tool's
+downloaded assets. Pin tool versions to avoid unexpectedly selecting a new
+release whose signatures are not yet available.
+
 ## Commit Package Manager Lockfiles
 
 Always generate and commit a lockfile from your package manager

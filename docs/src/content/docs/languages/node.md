@@ -30,6 +30,10 @@ We officially support actively maintained [Node.js LTS
 versions](https://nodejs.org/en/about/previous-releases). Older versions of Node.js will likely still
 work but are not officially supported.
 
+Node.js GPG verification is disabled by default; see the [GPG verification
+recommendation](/architecture/recommendations#gpg-verification)
+to enable it in your project.
+
 ### Bun
 
 The Bun version is determined in the following order:

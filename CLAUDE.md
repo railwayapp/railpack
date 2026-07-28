@@ -78,6 +78,11 @@ There are normal unit tests, snapshot tests, and integration tests. The integrat
 
 * Do not test log output.
 
+# Documentation
+
+- Assume the reader knows the documentation is about Railpack. Avoid
+  redundantly naming Railpack when the subject is clear from context.
+
 # File Conventions
 
 - Markdown files in @docs/src/content/docs/ should be limited to 80 columns
