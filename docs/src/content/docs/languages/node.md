@@ -34,29 +34,6 @@ Node.js GPG verification is disabled by default; see the [GPG verification
 recommendation](/architecture/recommendations#gpg-verification)
 to enable it in your project.
 
-### Bun
-
-The Bun version is determined in the following order:
-
-- Set via the `RAILPACK_BUN_VERSION` environment variable
-- Read from the `.bun-version` file
-- Read from the `engines.bun` field in `package.json`
-- Read from `mise.toml` or `.tool-versions` files
-- Defaults to `latest`
-
-If Bun is used as the package manager, Node.js will still be installed in the
-following cases:
-
-- If you define a `packageManager` field in your `package.json` (for Corepack
-  support)
-- If any script in your `package.json` contains `node`
-- If you're using Astro or Vite
-- During installation for native module compilation (node-gyp)
-
-When Node.js isn't required in the final image but is needed during installation
-(for native modules), Node.js will be installed via Mise and will respect
-[version specifications](#versions).
-
 ## Runtime Variables
 
 These variables are available at runtime:
@@ -92,7 +69,6 @@ Railpack determines the start command in the following order:
 | Variable                         | Description                             | Example                                 |
 | -------------------------------- | --------------------------------------- | --------------------------------------- |
 | `RAILPACK_NODE_VERSION`          | Override the Node.js version            | `22`                                    |
-| `RAILPACK_BUN_VERSION`           | Override the Bun version                | `1.2`                                   |
 | `RAILPACK_NO_SPA`                | Disable SPA mode                        | `true`                                  |
 | `RAILPACK_SPA_OUTPUT_DIR`        | Directory containing built static files | `dist`                                  |
 | `RAILPACK_PRUNE_DEPS`            | Remove development dependencies         | `true`                                  |
