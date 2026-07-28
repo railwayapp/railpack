@@ -135,6 +135,10 @@ export default defineConfig({
           link: "/faq",
         },
         {
+          label: "Resolving Errors",
+          link: "/resolving-errors",
+        },
+        {
           label: "Installation",
           link: "/installation",
         },
