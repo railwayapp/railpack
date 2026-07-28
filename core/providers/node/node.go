@@ -175,10 +175,7 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 		buildIncludeDirs = append(buildIncludeDirs, "/mise/shims")
 	}
 
-	// determine additional Apt packages needed
-
-	// Required for Node.js 25+
-	runtimeAptPackages := []string{"libatomic1"}
+	runtimeAptPackages := []string{}
 
 	if p.usesPuppeteer() {
 		ctx.Logger.LogInfo("Installing puppeteer packages")
