@@ -46,6 +46,19 @@ go build -o railpack ./cmd/...
 ./railpack --help
 ```
 
+## Agent Skill
+
+The repository includes an [Agent Skill](https://agentskills.io) that teaches
+compatible coding agents how to configure `RAILPACK_*` variables, construct
+`railpack.json`, and run builds locally.
+
+Install it for the current project with the
+[Skills CLI](https://skills.sh/docs/cli):
+
+```sh
+npx skills add railwayapp/railpack --skill railpack
+```
+
 ## Supported Platforms
 
 Linux and MacOS are supported.
