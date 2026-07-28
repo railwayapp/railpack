@@ -229,10 +229,36 @@ type MiseConfig struct {
 	Settings map[string]any    `toml:"settings,omitempty"`
 }
 
+type MiseBootstrapConfig struct {
+	Packages map[string]string `toml:"packages,omitempty"`
+}
+
+type MiseBootstrapFile struct {
+	Bootstrap MiseBootstrapConfig `toml:"bootstrap"`
+	Settings  map[string]any      `toml:"settings,omitempty"`
+}
+
 // used by the container mise logic, but uses the package structs defined in this file
 func GenerateMiseToml(packages map[string]string, settings map[string]any) (string, error) {
 	config := MiseConfig{
 		Tools:    packages,
+		Settings: settings,
+	}
+
+	buf := bytes.NewBuffer(nil)
+	if err := toml.NewEncoder(buf).Encode(config); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+// Produces the isolated system configuration used while applying system packages.
+func GenerateMiseBootstrapToml(packages map[string]string, settings map[string]any) (string, error) {
+	config := MiseBootstrapFile{
+		Bootstrap: MiseBootstrapConfig{
+			Packages: packages,
+		},
 		Settings: settings,
 	}
 

@@ -1,6 +1,8 @@
 package generate
 
 import (
+	"fmt"
+
 	"github.com/railwayapp/railpack/core/plan"
 )
 
@@ -51,19 +53,31 @@ func (b *DeployBuilder) AddAptPackages(packages []string) {
 	b.AptPackages = append(b.AptPackages, packages...)
 }
 
-func (b *DeployBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) {
+func (b *DeployBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) error {
 	baseLayer := b.Base
 
-	if len(b.AptPackages) > 0 {
-		runtimeAptStep := plan.NewStep("packages:apt:runtime")
-		runtimeAptStep.Inputs = []plan.Layer{baseLayer}
-		runtimeAptStep.AddCommands([]plan.Command{
-			options.NewAptInstallCommand(b.AptPackages),
-		})
-		runtimeAptStep.Caches = options.Caches.GetAptCaches()
-		runtimeAptStep.Secrets = []string{}
-		p.Steps = append(p.Steps, *runtimeAptStep)
-		baseLayer = plan.NewStepLayer(runtimeAptStep.Name)
+	bootstrapBuilder := NewMiseBootstrapStepBuilder(
+		MiseBootstrapRuntimeStepName,
+		baseLayer,
+		b.AptPackages,
+		options.MiseBootstrapProject.ConfigFiles,
+	)
+	bootstrapBuilder.CopyMise = true
+	bootstrapBuilder.RunHooks = false
+	bootstrapBuilder.ApplyProjectPackages = options.MiseBootstrapProject.HasAptPackages
+	bootstrapBuilder.HasProjectHooks = options.MiseBootstrapProject.HasPackageHooks
+	if bootstrapBuilder.IsRequired() && bootstrapBuilder.HasProjectHooks {
+		// Repository hooks run in the builder where bootstrap utilities are available.
+		bootstrapBuilder.Inputs = []plan.Layer{miseBootstrapRepositoryLayer()}
+	}
+	if bootstrapBuilder.IsRequired() {
+		bootstrapStep, err := bootstrapBuilder.Build(options)
+		if err != nil {
+			return fmt.Errorf("failed to build runtime bootstrap step: %w", err)
+		}
+
+		p.Steps = append(p.Steps, *bootstrapStep)
+		baseLayer = plan.NewStepLayer(bootstrapStep.Name)
 	}
 
 	p.Deploy.Base = baseLayer
@@ -72,4 +86,6 @@ func (b *DeployBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) {
 	p.Deploy.StartCmd = b.StartCmd
 	p.Deploy.Variables = b.Variables
 	p.Deploy.Paths = b.Paths
+
+	return nil
 }

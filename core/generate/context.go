@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -18,8 +17,15 @@ import (
 )
 
 type BuildStepOptions struct {
-	ResolvedPackages map[string]*resolver.ResolvedPackage
-	Caches           *CacheContext
+	ResolvedPackages     map[string]*resolver.ResolvedPackage
+	Caches               *CacheContext
+	MiseBootstrapProject MiseBootstrapProjectConfig
+}
+
+type MiseBootstrapProjectConfig struct {
+	ConfigFiles     []string
+	HasAptPackages  bool
+	HasPackageHooks bool
 }
 
 type StepBuilder interface {
@@ -155,10 +161,12 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 
 	// Create the actual build plan
 	buildPlan := plan.NewBuildPlan()
+	miseBootstrapProject := c.GetMiseStepBuilder().getMiseBootstrapProjectConfig()
 
 	buildStepOptions := &BuildStepOptions{
-		ResolvedPackages: resolvedPackages,
-		Caches:           c.Caches,
+		ResolvedPackages:     resolvedPackages,
+		Caches:               c.Caches,
+		MiseBootstrapProject: miseBootstrapProject,
 	}
 
 	for _, stepBuilder := range c.Steps {
@@ -171,21 +179,13 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 
 	buildPlan.Caches = c.Caches.Caches
 	buildPlan.Secrets = utils.RemoveDuplicates(c.Secrets)
-	c.Deploy.Build(buildPlan, buildStepOptions)
+	if err := c.Deploy.Build(buildPlan, buildStepOptions); err != nil {
+		return nil, nil, fmt.Errorf("failed to build deploy step: %w", err)
+	}
 
 	buildPlan.Normalize()
 
 	return buildPlan, resolvedPackages, nil
-}
-
-func (o *BuildStepOptions) NewAptInstallCommand(pkgs []string) plan.Command {
-	pkgs = utils.RemoveDuplicates(pkgs)
-	sort.Strings(pkgs)
-
-	// sh -c is required because && is a shell operator that needs a shell to interpret it
-	return plan.NewExecCommand("sh -c 'apt-get update && apt-get install -y "+strings.Join(pkgs, " ")+"'", plan.ExecOptions{
-		CustomName: "install apt packages: " + strings.Join(pkgs, " "),
-	})
 }
 
 func (c *GenerateContext) applyPackagesFromConfig() {

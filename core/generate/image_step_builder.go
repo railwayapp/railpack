@@ -52,18 +52,33 @@ func (b *ImageStepBuilder) Name() string {
 func (b *ImageStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) error {
 	image := b.ResolveStepImage(options)
 
+	bootstrapBuilder := NewMiseBootstrapStepBuilder(
+		b.DisplayName,
+		plan.NewImageLayer(image),
+		b.AptPackages,
+		options.MiseBootstrapProject.ConfigFiles,
+	)
+	bootstrapBuilder.CopyMise = true
+	bootstrapBuilder.RunHooks = false
+	bootstrapBuilder.ApplyProjectPackages = options.MiseBootstrapProject.HasAptPackages
+	bootstrapBuilder.HasProjectHooks = options.MiseBootstrapProject.HasPackageHooks
+	if bootstrapBuilder.IsRequired() && bootstrapBuilder.HasProjectHooks {
+		// Run repository hooks once on the full builder image, then reuse their output.
+		bootstrapBuilder.Inputs = []plan.Layer{miseBootstrapRepositoryLayer()}
+	}
+	if bootstrapBuilder.IsRequired() {
+		step, err := bootstrapBuilder.Build(options)
+		if err != nil {
+			return err
+		}
+
+		p.Steps = append(p.Steps, *step)
+		return nil
+	}
+
 	step := plan.NewStep(b.DisplayName)
 	step.Secrets = []string{}
-	step.Inputs = []plan.Layer{
-		plan.NewImageLayer(image),
-	}
-
-	if len(b.AptPackages) > 0 {
-		step.Commands = []plan.Command{
-			options.NewAptInstallCommand(b.AptPackages),
-		}
-	}
-
+	step.Inputs = []plan.Layer{plan.NewImageLayer(image)}
 	p.Steps = append(p.Steps, *step)
 
 	return nil

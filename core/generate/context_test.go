@@ -179,7 +179,7 @@ func TestGenerateContextAppliesConfiguredDeployBase(t *testing.T) {
 		require.Equal(t, plan.NewImageLayer("debian:bookworm-slim"), buildPlan.Deploy.Base)
 	})
 
-	t.Run("runtime apt step uses configured deploy base", func(t *testing.T) {
+	t.Run("runtime bootstrap step uses configured deploy base", func(t *testing.T) {
 		ctx := CreateTestContext(t, "../../examples/node-npm")
 		cfg := config.EmptyConfig()
 		cfg.Deploy.Base = &plan.Layer{Image: "debian:bookworm-slim"}
@@ -188,19 +188,53 @@ func TestGenerateContextAppliesConfiguredDeployBase(t *testing.T) {
 
 		buildPlan, _, err := ctx.Generate()
 		require.NoError(t, err)
-		require.Equal(t, plan.NewStepLayer("packages:apt:runtime"), buildPlan.Deploy.Base)
+		require.Equal(t, plan.NewStepLayer(MiseBootstrapRuntimeStepName), buildPlan.Deploy.Base)
 
-		var runtimeAptStep *plan.Step
+		var runtimeBootstrapStep *plan.Step
 		for i := range buildPlan.Steps {
-			if buildPlan.Steps[i].Name == "packages:apt:runtime" {
-				runtimeAptStep = &buildPlan.Steps[i]
+			if buildPlan.Steps[i].Name == MiseBootstrapRuntimeStepName {
+				runtimeBootstrapStep = &buildPlan.Steps[i]
 				break
 			}
 		}
 
-		require.NotNil(t, runtimeAptStep)
-		require.Equal(t, []plan.Layer{plan.NewImageLayer("debian:bookworm-slim")}, runtimeAptStep.Inputs)
+		require.NotNil(t, runtimeBootstrapStep)
+		require.Equal(
+			t,
+			[]plan.Layer{plan.NewImageLayer("debian:bookworm-slim")},
+			runtimeBootstrapStep.Inputs,
+		)
 	})
+}
+
+func TestGenerateContextAppliesProjectMiseBootstrapConfig(t *testing.T) {
+	ctx := CreateTestContext(t, "../../examples/config-file")
+	provider := &TestProvider{}
+	require.NoError(t, provider.Plan(ctx))
+
+	buildPlan, _, err := ctx.Generate()
+	require.NoError(t, err)
+
+	var buildBootstrapStep *plan.Step
+	var runtimeBootstrapStep *plan.Step
+	for i := range buildPlan.Steps {
+		switch buildPlan.Steps[i].Name {
+		case MiseBootstrapBuildStepName:
+			buildBootstrapStep = &buildPlan.Steps[i]
+		case MiseBootstrapRuntimeStepName:
+			runtimeBootstrapStep = &buildPlan.Steps[i]
+		}
+	}
+
+	require.NotNil(t, buildBootstrapStep)
+	require.NotNil(t, runtimeBootstrapStep)
+	require.Equal(t, []string{"*"}, buildBootstrapStep.Secrets)
+	require.Empty(t, runtimeBootstrapStep.Secrets)
+	require.Contains(
+		t,
+		runtimeBootstrapStep.Inputs,
+		miseBootstrapRepositoryLayer(),
+	)
 }
 
 func TestGenerateContextDockerignore(t *testing.T) {

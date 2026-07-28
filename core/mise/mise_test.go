@@ -132,6 +132,26 @@ func TestMiseVersion(t *testing.T) {
 	require.Regexp(t, `^\d+\.\d+\.\d+$`, Version, "mise version should match format YYYY.M.D")
 }
 
+func TestGenerateMiseBootstrapToml(t *testing.T) {
+	config, err := GenerateMiseBootstrapToml(
+		map[string]string{
+			"apt:curl":    "latest",
+			"apt:libssl3": "3.0.0",
+		},
+		map[string]any{
+			"paranoid":             true,
+			"system_packages":      map[string]any{"managers": []string{"apt"}},
+			"trusted_config_paths": []string{"/app"},
+		},
+	)
+	require.NoError(t, err)
+	require.Contains(t, config, `"apt:curl" = "latest"`)
+	require.Contains(t, config, `"apt:libssl3" = "3.0.0"`)
+	require.Contains(t, config, "paranoid = true")
+	require.Contains(t, config, "managers = [\"apt\"]")
+	require.Contains(t, config, `trusted_config_paths = ["/app"]`)
+}
+
 func TestGetAssetName(t *testing.T) {
 	tests := []struct {
 		goos     string
