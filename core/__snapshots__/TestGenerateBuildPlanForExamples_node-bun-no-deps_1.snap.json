@@ -1,13 +1,5 @@
 {
  "caches": {
-  "apt": {
-   "directory": "/var/cache/apt",
-   "type": "locked"
-  },
-  "apt-lists": {
-   "directory": "/var/lib/apt/lists",
-   "type": "locked"
-  },
   "bun-install": {
    "directory": "/root/.bun/install/cache",
    "type": "shared"
@@ -19,7 +11,7 @@
  },
  "deploy": {
   "base": {
-    "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.7.15"
+   "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.7.15"
   },
   "inputs": [
    {
@@ -147,24 +139,6 @@
    "secrets": [
     "*"
    ]
-  },
-  {
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
-   "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libatomic1'",
-     "customName": "install apt packages: libatomic1"
-    }
-   ],
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.7.14"
-    }
-   ],
-   "name": "packages:apt:runtime"
   }
  ]
 }
