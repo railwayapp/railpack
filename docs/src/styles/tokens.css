@@ -1,0 +1,184 @@
+/*
+  Semantic tokens + Starlight --sl-color-* mapping, adapted from
+  Railway docs design system (MIT, railwayapp/docs).
+*/
+
+@theme {
+  --font-sans: "Inter", "BlinkMacSystemFont", "Segoe UI", "Roboto",
+    "Oxygen-Sans", "Ubuntu", "Cantarell", "Helvetica Neue", sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Consolas", ui-monospace,
+    monospace;
+
+  /* Starlight accent scale (purple / Railway primary) */
+  --color-accent-200: #d9d2ed;
+  --color-accent-600: #59497a;
+  --color-accent-900: #2a203c;
+  --color-accent-950: #191525;
+
+  /*
+    Neutral scale aligned with Railway muted surfaces.
+    Light page bg uses --color-white; dark page bg uses gray-900.
+  */
+  --color-white: #f1f0ef;
+  --color-gray-100: #f9f9fc;
+  --color-gray-200: #e8e7ee;
+  --color-gray-300: #cfcdd9;
+  --color-gray-400: #bcb9c9;
+  --color-gray-500: #8e8c9b;
+  --color-gray-600: #65636e;
+  --color-gray-700: #3b3941;
+  --color-gray-800: #232226;
+  --color-gray-900: #131415;
+
+  /* Semantic colors (resolve via --purple-*/--gray-* which flip by theme) */
+  --color-primary-app: var(--purple-1);
+  --color-primary-app-subtle: var(--purple-2);
+  --color-primary-element: var(--purple-3);
+  --color-primary-element-hover: var(--purple-4);
+  --color-primary-element-active: var(--purple-5);
+  --color-primary: var(--purple-6);
+  --color-primary-hover: var(--purple-7);
+  --color-primary-active: var(--purple-8);
+  --color-primary-solid: var(--purple-9);
+  --color-primary-solid-hover: var(--purple-10);
+  --color-primary-base: var(--purple-11);
+  --color-primary-high-contrast: var(--purple-12);
+
+  --color-muted-app: var(--gray-1);
+  --color-muted-app-subtle: var(--gray-2);
+  --color-muted-element: var(--gray-3);
+  --color-muted-element-hover: var(--gray-4);
+  --color-muted-element-active: var(--gray-5);
+  --color-muted: var(--gray-6);
+  --color-muted-hover: var(--gray-7);
+  --color-muted-active: var(--gray-8);
+  --color-muted-solid: var(--gray-9);
+  --color-muted-solid-hover: var(--gray-10);
+  --color-muted-base: var(--gray-11);
+  --color-muted-high-contrast: var(--gray-12);
+
+  --color-warning-element: var(--amber-3);
+  --color-warning-base: var(--amber-11);
+  --color-warning-high-contrast: var(--amber-12);
+  --color-warning-solid: var(--amber-9);
+
+  --color-success-element: var(--grass-3);
+  --color-success-base: var(--grass-11);
+  --color-success-high-contrast: var(--grass-12);
+  --color-success-solid: var(--grass-9);
+
+  --color-danger-element: var(--red-3);
+  --color-danger-base: var(--red-11);
+  --color-danger-high-contrast: var(--red-12);
+  --color-danger-solid: var(--red-9);
+
+  --color-info-element: var(--blue-3);
+  --color-info-base: var(--blue-11);
+  --color-info-high-contrast: var(--blue-12);
+  --color-info-solid: var(--blue-9);
+}
+
+/*
+  Unlayered so these win over @astrojs/starlight-tailwind's
+  @layer utilities --sl-color-* mappings.
+*/
+:root {
+  --sl-font: var(--font-sans);
+  --sl-font-mono: var(--font-mono);
+
+  --sl-color-bg: var(--gray-1);
+  --sl-color-bg-nav: color-mix(in srgb, var(--gray-1) 95%, transparent);
+  --sl-color-bg-sidebar: var(--gray-1);
+  --sl-color-bg-inline-code: var(--gray-3);
+  --sl-color-hairline: var(--gray-6);
+  --sl-color-hairline-light: var(--gray-6);
+  --sl-color-hairline-shade: var(--gray-6);
+
+  --sl-color-text: var(--gray-11);
+  --sl-color-text-accent: var(--purple-11);
+
+  --sl-color-accent-low: var(--purple-3);
+  --sl-color-accent: var(--purple-9);
+  --sl-color-accent-high: var(--purple-11);
+  --sl-color-bg-accent: var(--purple-9);
+  --sl-color-text-invert: #ffffff;
+
+  --sl-color-white: var(--gray-12);
+  --sl-color-black: var(--gray-1);
+  --sl-color-gray-1: var(--gray-12);
+  --sl-color-gray-2: var(--gray-11);
+  --sl-color-gray-3: var(--gray-10);
+  --sl-color-gray-4: var(--gray-8);
+  --sl-color-gray-5: var(--gray-6);
+  --sl-color-gray-6: var(--gray-3);
+  --sl-color-gray-7: var(--gray-2);
+
+  --sl-color-orange-low: var(--amber-3);
+  --sl-color-orange: var(--amber-9);
+  --sl-color-orange-high: var(--amber-11);
+  --sl-color-green-low: var(--grass-3);
+  --sl-color-green: var(--grass-9);
+  --sl-color-green-high: var(--grass-11);
+  --sl-color-blue-low: var(--blue-3);
+  --sl-color-blue: var(--blue-9);
+  --sl-color-blue-high: var(--blue-11);
+  --sl-color-purple-low: var(--purple-3);
+  --sl-color-purple: var(--purple-9);
+  --sl-color-purple-high: var(--purple-11);
+  --sl-color-red-low: var(--red-3);
+  --sl-color-red: var(--red-9);
+  --sl-color-red-high: var(--red-11);
+
+  --sl-sidebar-width: 18.75rem;
+}
+
+:root[data-theme="light"] {
+  --sl-color-text-accent: var(--purple-9);
+  --sl-color-accent-low: var(--purple-4);
+  --sl-color-accent: var(--purple-9);
+  --sl-color-accent-high: var(--purple-12);
+  --sl-color-bg-accent: var(--purple-9);
+  --sl-color-text-invert: #ffffff;
+
+  --sl-color-white: var(--gray-12);
+  --sl-color-black: var(--gray-1);
+  --sl-color-gray-1: var(--gray-12);
+  --sl-color-gray-2: var(--gray-11);
+  --sl-color-gray-3: var(--gray-9);
+  --sl-color-gray-4: var(--gray-8);
+  --sl-color-gray-5: var(--gray-6);
+  --sl-color-gray-6: var(--gray-4);
+  --sl-color-gray-7: var(--gray-2);
+}
+
+:root[data-theme="dark"] {
+  --sl-color-text-accent: var(--purple-11);
+  --sl-color-accent-low: var(--purple-4);
+  --sl-color-accent: var(--purple-9);
+  --sl-color-accent-high: var(--purple-12);
+  --sl-color-bg-accent: var(--purple-9);
+  --sl-color-text-invert: #ffffff;
+
+  --sl-color-white: var(--gray-12);
+  --sl-color-black: var(--gray-1);
+  --sl-color-gray-1: var(--gray-12);
+  --sl-color-gray-2: var(--gray-11);
+  --sl-color-gray-3: var(--gray-10);
+  --sl-color-gray-4: var(--gray-8);
+  --sl-color-gray-5: var(--gray-6);
+  --sl-color-gray-6: var(--gray-3);
+}
+
+@layer base {
+  body {
+    @apply antialiased font-sans leading-relaxed;
+    background-color: var(--gray-1);
+    color: var(--gray-12);
+  }
+
+  ::selection {
+    background-color: var(--purple-4);
+  }
+}

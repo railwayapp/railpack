@@ -30,16 +30,36 @@ export default defineConfig({
       favicon: "/favicon.svg?v=2",
       customCss: [
         "./src/tailwind.css",
-
         "@fontsource/inter/400.css",
+        "@fontsource/inter/500.css",
         "@fontsource/inter/600.css",
+        "@fontsource/ibm-plex-serif/400.css",
+        "@fontsource/ibm-plex-serif/500.css",
+        "@fontsource/ibm-plex-serif/600.css",
+        "@fontsource/jetbrains-mono/400.css",
+        "@fontsource/jetbrains-mono/500.css",
       ],
       expressiveCode: {
+        // Shell blocks use terminal frames so we can render a Railway-style
+        // top bar (label left, copy right). Other langs keep auto/code frames.
         defaultProps: {
           overridesByLang: {
             "bash,sh,shell,zsh": {
-              frame: "code",
+              frame: "terminal",
             },
+          },
+        },
+        styleOverrides: {
+          borderRadius: "0.5rem",
+          // Match railpack.com code metrics
+          codeFontFamily: "var(--font-mono)",
+          codeFontSize: "0.875rem",
+          codeLineHeight: "1.75",
+          codePaddingBlock: "0.75rem",
+          codePaddingInline: "1rem",
+          frames: {
+            shadowColor: "transparent",
+            frameBoxShadowCssValue: "none",
           },
         },
       },

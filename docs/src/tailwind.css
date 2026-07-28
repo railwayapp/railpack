@@ -4,23 +4,8 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 
-@theme {
-  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-
-  --color-accent-200: #d1bef0;
-  --color-accent-600: #863ccf;
-  --color-accent-900: #3d205e;
-  --color-accent-950: #2b1a40;
-  --color-gray-100: #f7f5f9;
-  --color-gray-200: #efecf3;
-  --color-gray-300: #c4c0c8;
-  --color-gray-400: #8f8897;
-  --color-gray-500: #5b5563;
-  --color-gray-700: #3b3542;
-  --color-gray-800: #2a2430;
-  --color-gray-900: #1a171d;
-}
+@import "./styles/colors.css";
+@import "./styles/tokens.css";
 
 @view-transition {
   navigation: auto;
@@ -31,31 +16,62 @@
   animation: none;
 }
 
-/* NAV BAR STYLES */
-.header {
-  @apply bg-white dark:bg-gray-900;
+/* ========== NAV BAR ==========
+   Scope to the outer <header class="header"> only. Starlight also wraps
+   the bar contents in <div class="header">; styling both painted a double
+   bottom border (outer at nav height, inner mid-header). */
+header.header {
+  background-color: color-mix(in srgb, var(--gray-1) 95%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--gray-6);
+  box-shadow: none;
+}
+
+/* Inner header grid is layout-only — never inherit the outer hairline. */
+header.header > .header {
+  border-bottom: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Ensure nav surface tracks the Railway canvas, not elevated gray-2. */
+:root {
+  --sl-color-bg-nav: color-mix(in srgb, var(--gray-1) 95%, transparent);
+}
+
+/* Railway uses muted high-contrast for the product/docs label, not accent. */
+.site-title {
+  color: var(--gray-12);
+  font-size: var(--sl-text-base);
+  font-weight: 500;
 }
 
 starlight-theme-select label {
-  @apply text-gray-600 dark:text-gray-400;
-}
-
-site-search {
-  @apply bg-red-50 dark:bg-gray-800;
+  color: var(--gray-11);
 }
 
 site-search button[data-open-modal] {
-  @apply border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400;
+  border: 1px solid var(--gray-6);
+  background-color: var(--gray-2);
+  color: var(--gray-11);
+  border-radius: 0.5rem;
 
   kbd {
-    @apply bg-gray-50 dark:bg-gray-700;
+    background-color: var(--gray-3);
+    color: var(--gray-11);
+  }
+
+  &:hover {
+    border-color: var(--gray-7);
+    background-color: var(--gray-3);
   }
 }
 
-/* SIDEBAR STYLES */
+/* ========== SIDEBAR ========== */
 .sidebar-pane {
-  border-inline-end: 0;
-  @apply dark:bg-gray-900 bg-white;
+  border-inline-end: 1px solid var(--gray-6);
+  background-color: var(--gray-1);
 }
 
 @media (min-width: 50rem) {
@@ -67,22 +83,65 @@ site-search button[data-open-modal] {
 .sidebar-content {
   @apply pt-6;
 
+  /*
+    Collapsible section headers: stronger than links (weight + contrast),
+    with a `>` caret that rotates 90° when open.
+  */
   summary {
-    @apply gap-1 px-0 flex flex-row justify-between font-bold;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    margin: 0;
+    color: var(--gray-12);
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 0.375rem;
+    user-select: none;
+    list-style: none;
 
-    .caret {
-      @apply hidden;
+    &:hover {
+      color: var(--gray-12);
+      background-color: var(--gray-3);
     }
 
-    @media (min-width: 50rem) {
-      /* Tweak alignment of group label and caret icon */
-      --caret-adjustment: 0.5px;
-      transform: translateY(var(--caret-adjustment));
-
-      .group-label {
-        transform: translateY(calc(-1 * var(--caret-adjustment)));
-      }
+    &::marker,
+    &::-webkit-details-marker {
+      display: none;
     }
+  }
+
+  /* `>` chevron: right when collapsed, down when expanded. */
+  summary .caret {
+    display: block !important;
+    flex-shrink: 0;
+    width: 1rem !important;
+    height: 1rem !important;
+    margin: 0;
+    padding: 0;
+    color: var(--gray-11);
+    opacity: 0.9;
+    transition: transform 0.2s ease-out, color 0.15s ease;
+    transform: none;
+  }
+
+  summary:hover .caret {
+    color: var(--gray-12);
+    opacity: 1;
+  }
+
+  details[open] > summary .caret {
+    transform: rotateZ(90deg);
+  }
+
+  :global([dir="rtl"]) summary .caret {
+    transform: rotateZ(180deg);
+  }
+
+  :global([dir="rtl"]) details[open] > summary .caret {
+    transform: rotateZ(90deg);
   }
 
   li {
@@ -95,19 +154,38 @@ site-search button[data-open-modal] {
   .top-level {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
   }
 
   .top-level > * {
     margin-block: 0;
   }
 
+  /* Extra air above each collapsible group so headers read as section starts. */
   .top-level > li:has(details) {
-    margin-block: 0.5rem;
+    margin-block-start: 0.65rem;
+  }
+
+  .top-level > li:has(details):first-child {
+    margin-block-start: 0.35rem;
+  }
+
+  /* Section titles: same size as links, bolder + higher contrast. */
+  .group-label .large,
+  summary .large {
+    display: block;
+    padding: 0;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    text-transform: none;
+    color: inherit;
   }
 
   .large {
-    @apply px-3 text-sm text-gray-400 dark:text-gray-400;
+    @apply px-3 text-sm;
+    color: var(--gray-11);
 
     @media (min-width: 50rem) {
       font-size: var(--sl-text-sm);
@@ -115,24 +193,48 @@ site-search button[data-open-modal] {
   }
 
   a.large {
-    @apply text-sm text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800;
+    color: var(--gray-12);
+    border-radius: 0.375rem;
+    font-weight: 400;
+
+    &:hover {
+      background-color: var(--gray-3);
+      color: var(--gray-12);
+    }
   }
 
   a {
-    @apply px-3 py-2 text-sm text-gray-900 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-800;
+    @apply px-3 py-1.5 text-sm;
+    color: var(--gray-11);
+    border-radius: 0.375rem;
+    font-weight: 400;
+    transition: background-color 0.15s ease, color 0.15s ease;
 
-    &[aria-current="page"] {
-      @apply bg-violet-50 text-violet-600 dark:bg-violet-100/10 dark:text-violet-300;
+    &:hover {
+      background-color: var(--gray-3);
+      color: var(--gray-12);
     }
+
+    /* Beat Starlight's accent-fill current page (uses --sl-color-text-accent). */
+    &[aria-current="page"],
+    &[aria-current="page"]:hover,
+    &[aria-current="page"]:focus {
+      background-color: var(--purple-5);
+      color: var(--gray-12);
+      font-weight: 500;
+    }
+  }
+
+  /* Nested group borders — quieter, Railway-like */
+  ul ul li {
+    border-inline-start-color: var(--gray-6);
   }
 }
 
-/* MARKDOWN CONTENT STYLES */
-
+/* ========== MARKDOWN / PROSE ========== */
 .sl-markdown-content {
-  /* Match wrapper sizes to custom headings so anchor icons stay aligned. */
   .sl-heading-wrapper.level-h1 {
-    @apply text-3xl;
+    font-size: var(--sl-text-4xl);
   }
 
   .sl-heading-wrapper.level-h2 {
@@ -156,43 +258,149 @@ site-search button[data-open-modal] {
   }
 
   h1 {
-    @apply text-3xl font-bold dark:text-white;
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: 2.25rem;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: var(--gray-12);
   }
 
   h2 {
-    @apply text-2xl font-bold dark:text-white;
+    @apply text-2xl font-semibold;
+    font-family: var(--font-sans);
+    color: var(--gray-12);
+    margin-top: 2em;
+    margin-bottom: 1em;
   }
 
   h3 {
-    @apply text-xl font-bold dark:text-white;
+    @apply text-xl font-semibold;
+    font-family: var(--font-sans);
+    color: var(--gray-12);
+    margin-top: 1.6em;
+    margin-bottom: 0.6em;
   }
 
   h4 {
-    @apply text-lg font-bold dark:text-white;
+    @apply text-lg font-semibold;
+    font-family: var(--font-sans);
+    color: var(--gray-12);
   }
 
-  h5 {
-    @apply text-base font-bold dark:text-white;
-  }
-
+  h5,
   h6 {
-    @apply text-sm font-bold dark:text-white;
+    @apply text-base font-semibold;
+    font-family: var(--font-sans);
+    color: var(--gray-12);
   }
 
   p {
-    @apply text-base leading-normal text-gray-900 dark:text-gray-100;
+    @apply text-base;
+    line-height: 1.75;
+    color: var(--gray-11);
   }
 
-  a {
-    @apply text-violet-600 dark:text-violet-400 no-underline hover:underline hover:text-violet-700 dark:hover:text-violet-300;
+  li {
+    color: var(--gray-11);
+    line-height: 1.75;
+  }
+
+  a:not(.sl-link-card) {
+    color: var(--gray-12);
+    text-decoration: underline;
+    text-decoration-color: var(--purple-11);
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+
+    &:hover {
+      color: var(--purple-11);
+    }
   }
 
   :not(pre) > code {
-    @apply font-mono bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-1.5 py-0.5 text-sm text-gray-600 dark:text-gray-300 rounded-md;
+    font-family: var(--font-mono);
+    background-color: var(--gray-3);
+    border: none;
+    padding: 0.125rem 0.375rem;
+    font-size: 0.875rem;
+    color: var(--gray-12);
+    border-radius: 0.5rem;
   }
 
-  /* generally, code elements in the first column are environment variable lists */
   td:first-child code {
+    white-space: nowrap;
+  }
+
+  blockquote {
+    border-inline-start: 4px solid var(--purple-6);
+    color: var(--gray-11);
+    font-style: italic;
+    padding-inline-start: 1rem;
+    margin-block: 1.5rem;
+  }
+
+  hr {
+    border-color: var(--gray-6);
+    margin-block: 2rem;
+  }
+
+  /*
+    Starlight sets `display: block` on tables for overflow scrolling. That
+    shrink-wraps rows while our width:100% border box stretches full content
+    width — short tables look empty on the right. Use real table layout so
+    columns fill the width; parent markdown content can still scroll-x.
+  */
+  table {
+    display: table !important;
+    width: 100% !important;
+    max-width: 100%;
+    table-layout: auto;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--gray-6);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    font-size: 0.875rem;
+  }
+
+  thead {
+    background-color: color-mix(in srgb, var(--gray-3) 50%, transparent);
+  }
+
+  th {
+    padding: 0.625rem 1rem;
+    text-align: left;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    color: var(--gray-12);
+    border-bottom: 1px solid var(--gray-6);
+  }
+
+  td {
+    padding: 0.75rem 1rem;
+    color: var(--gray-12);
+    border-top: 1px solid var(--gray-6);
+  }
+
+  /* First column stays content-sized; description/other columns take the rest. */
+  th:first-child,
+  td:first-child {
+    white-space: nowrap;
+    width: 1%;
+  }
+
+  th:last-child,
+  td:last-child {
+    width: auto;
+  }
+
+  tbody tr:hover {
+    background-color: color-mix(in srgb, var(--gray-3) 50%, transparent);
+  }
+
+  /* Inline code chips in tables shouldn't force awkward wrapping. */
+  td code {
     white-space: nowrap;
   }
 
@@ -201,13 +409,348 @@ site-search button[data-open-modal] {
   }
 }
 
-/* Keep code-copy actions discoverable without requiring hover. */
-.expressive-code .copy button {
-  opacity: 0.75;
+/* Page title (outside markdown body, Starlight content panel) */
+.sl-container > h1:first-child,
+.content-panel h1#_top,
+h1#_top {
+  font-family: var(--font-serif) !important;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--gray-12);
+}
 
-  &:hover,
-  &:focus-visible {
-    opacity: 1;
+/* Primary CTA buttons: Railway solid purple */
+.sl-flex .action.primary,
+.action.primary,
+a[class*="action"][data-variant="primary"],
+.hero .action.primary {
+  background-color: var(--purple-9);
+  border-color: var(--purple-9);
+  color: #ffffff;
+  border-radius: 0.5rem;
+
+  &:hover {
+    background-color: var(--purple-10);
+    border-color: var(--purple-10);
+  }
+}
+
+/*
+  Code blocks — Railway-style chrome:
+  top bar with terminal/title on the left, always-visible copy on the right.
+  Works with Expressive Code's DOM:
+  div.expressive-code > figure.frame > figcaption.header + pre + div.copy
+*/
+.expressive-code {
+  /* Match railpack.com / EC defaults (dev sometimes 404s the EC stylesheet). */
+  --ec-codePadBlk: 0.75rem;
+  --ec-codePadInl: 1rem;
+  --ec-codeFontSize: 0.875rem;
+  --ec-codeLineHt: 1.75;
+  --ec-codeFontFml: var(--font-mono);
+  --ec-codeFontWg: 400;
+  --ec-uiPadInl: 1rem;
+  --ec-uiPadBlk: 0.25rem;
+  --ec-brdWd: 1px;
+
+  --ec-frm-edBg: var(--gray-2);
+  --ec-frm-trmBg: var(--gray-2);
+  --ec-brdCol: var(--gray-6);
+  --ec-frm-trmTtbBg: color-mix(in srgb, var(--gray-3) 70%, transparent);
+  --ec-frm-trmTtbCol: var(--gray-11);
+  --ec-frm-edActTabBg: var(--gray-2);
+  --ec-frm-edActTabCol: var(--gray-12);
+  --ec-frm-edTabBarBg: color-mix(in srgb, var(--gray-3) 70%, transparent);
+  --ec-frm-edTabBarBrdCol: var(--gray-6);
+  --ec-brdRad: 0.5rem;
+
+  .frame {
+    box-shadow: none !important;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    /* Both rows size to content — `1fr` on the code row was clamping <pre>
+       shorter than its content and producing a spurious vertical scrollbar. */
+    grid-template-rows: auto auto;
+    border: 1px solid var(--gray-6);
+    border-radius: 0.5rem;
+    background: var(--gray-2);
+  }
+
+  /* Title / terminal bar (left) + copy (right) on one row. */
+  .frame .header {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-start !important;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    margin: 0;
+    padding: 0.5rem 0.75rem !important;
+    border: none !important;
+    border-bottom: 1px solid var(--gray-6) !important;
+    border-radius: 0 !important;
+    background: color-mix(in srgb, var(--gray-3) 55%, transparent) !important;
+    color: var(--gray-11) !important;
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  /*
+    Left icon on every code bar (Railway always shows one):
+    - shell langs → terminal prompt
+    - everything else → file glyph
+  */
+  .frame .header::before {
+    content: "" !important;
+    position: static !important;
+    left: auto !important;
+    display: block !important;
+    flex-shrink: 0;
+    width: 1rem !important;
+    height: 1rem !important;
+    opacity: 0.85 !important;
+    background-color: var(--gray-12) !important;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    /* Default: file icon */
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpolyline points='14 2 14 8 20 8'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpolyline points='14 2 14 8 20 8'/%3E%3C/svg%3E");
+  }
+
+  .frame.is-terminal .header::before,
+  .frame:has(pre[data-language="sh"]) .header::before,
+  .frame:has(pre[data-language="bash"]) .header::before,
+  .frame:has(pre[data-language="shell"]) .header::before,
+  .frame:has(pre[data-language="zsh"]) .header::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='4 17 10 11 4 5'/%3E%3Cline x1='12' y1='19' x2='20' y2='19'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='4 17 10 11 4 5'/%3E%3Cline x1='12' y1='19' x2='20' y2='19'/%3E%3C/svg%3E");
+  }
+
+  /* Hide only the editor-tab active indicator, not our left icon. */
+  .frame.has-title:not(.is-terminal) .title::after {
+    display: none !important;
+  }
+
+  .frame .title {
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: var(--gray-11) !important;
+    font-family: var(--font-sans) !important;
+    font-size: 0.8125rem !important;
+    font-weight: 500 !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Empty terminal titles stay empty (Railway only shows the glyph). */
+  .frame.is-terminal .title:empty::before {
+    content: none;
+  }
+
+  /*
+    Code body sizing — mirror production EC defaults:
+    pre is a flex column; code has block padding; each line indents inline.
+  */
+  .frame pre {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: block !important;
+    /* Horizontal scroll only — never a vertical bar on short snippets. */
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .frame pre > code {
+    display: block !important;
+    /* Avoid EC's flex:1 0 100% which can oversize the code block. */
+    flex: none !important;
+    padding-block: var(--ec-codePadBlk) !important;
+    padding-inline: 0 !important;
+    font-family: var(--ec-codeFontFml) !important;
+    font-size: var(--ec-codeFontSize) !important;
+    font-weight: var(--ec-codeFontWg) !important;
+    line-height: var(--ec-codeLineHt) !important;
+    color: inherit;
+  }
+
+  .frame .ec-line {
+    font-family: var(--ec-codeFontFml) !important;
+    font-size: var(--ec-codeFontSize) !important;
+    line-height: var(--ec-codeLineHt) !important;
+  }
+
+  .frame .ec-line .code {
+    padding-inline-start: var(--ec-codePadInl) !important;
+    /* No extra end pad for floating copy — copy lives in the top bar. */
+    padding-inline-end: var(--ec-codePadInl) !important;
+    font-family: var(--ec-codeFontFml) !important;
+    font-size: var(--ec-codeFontSize) !important;
+    line-height: var(--ec-codeLineHt) !important;
+  }
+
+  /* EC dual-theme token colors (needed when the EC stylesheet 404s in dev). */
+  :root[data-theme="dark"] & .ec-line :where(span[style^="--"]:not([class])),
+  &[data-theme="dark"] .ec-line :where(span[style^="--"]:not([class])) {
+    color: var(--0, inherit);
+    background-color: var(--0bg, transparent);
+    font-style: var(--0fs, inherit);
+    font-weight: var(--0fw, inherit);
+    text-decoration: var(--0td, inherit);
+  }
+
+  :root:not([data-theme="dark"]) & .ec-line :where(span[style^="--"]:not([class])),
+  :root[data-theme="light"] & .ec-line :where(span[style^="--"]:not([class])),
+  &[data-theme="light"] .ec-line :where(span[style^="--"]:not([class])) {
+    color: var(--1, inherit);
+    background-color: var(--1bg, transparent);
+    font-style: var(--1fs, inherit);
+    font-weight: var(--1fw, inherit);
+    text-decoration: var(--1td, inherit);
+  }
+
+  /* Copy control in the top bar — always visible, not a hover overlay. */
+  .frame .copy {
+    grid-column: 2;
+    grid-row: 1;
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    align-self: stretch;
+    justify-self: stretch;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    width: 2.75rem !important;
+    min-width: 2.75rem !important;
+    padding: 0 !important;
+    border-bottom: 1px solid var(--gray-6);
+    background: color-mix(in srgb, var(--gray-3) 55%, transparent);
+    z-index: 2;
+  }
+
+  .frame .copy button {
+    /* Grid centers the glyph inside the hover hit-target perfectly. */
+    position: relative !important;
+    display: grid !important;
+    place-items: center !important;
+    align-self: center !important;
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 1 !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0.375rem !important;
+    box-shadow: none !important;
+    cursor: pointer;
+    transition: background-color 0.15s ease !important;
+  }
+
+  /* Kill EC's absolute hover wash layer — it misaligns with our icon. */
+  .frame .copy button div {
+    display: none !important;
+  }
+
+  .frame .copy button::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  /*
+    Glyph is an in-flow grid item (not absolute), so it always sits in the
+    center of the button background. Zero out EC's inset/margin hacks.
+  */
+  .frame .copy button::after {
+    content: "" !important;
+    position: static !important;
+    inset: unset !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: 1rem !important;
+    height: 1rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    display: block !important;
+    background-color: var(--gray-12) !important;
+    opacity: 0.9 !important;
+    transition:
+      background-color 0.15s ease,
+      opacity 0.15s ease !important;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='13' height='13' rx='2'/%3E%3Cpath d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/%3E%3C/svg%3E") !important;
+    -webkit-mask-repeat: no-repeat !important;
+    -webkit-mask-position: center !important;
+    -webkit-mask-size: contain !important;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='9' y='9' width='13' height='13' rx='2'/%3E%3Cpath d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/%3E%3C/svg%3E") !important;
+    mask-repeat: no-repeat !important;
+    mask-position: center !important;
+    mask-size: contain !important;
+  }
+
+  .frame .copy button:hover,
+  .frame .copy button:focus-visible {
+    background: var(--gray-4) !important;
+  }
+
+  .frame .copy button:hover::after,
+  .frame .copy button:focus-visible::after {
+    background-color: var(--gray-12) !important;
+    opacity: 1 !important;
+  }
+
+  /*
+    Railway-style copy feedback: hide EC's "Copied!" tooltip bubble and swap
+    the button glyph to a checkmark while the feedback node is mounted
+    (~1.5–2.5s after click).
+  */
+  .frame .copy .feedback {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: none !important;
+  }
+
+  .frame .copy:has(.feedback) button::after {
+    background-color: var(--grass-11, #2a7e3b) !important;
+    opacity: 1 !important;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") !important;
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") !important;
   }
 }
 
@@ -215,24 +758,78 @@ site-search button[data-open-modal] {
   border-top: none !important;
 }
 
-/* Next/Previous Page Links */
+/* Right sidebar / TOC */
+.right-sidebar {
+  border-inline-start: 1px solid var(--gray-6);
+}
+
+.right-sidebar-panel {
+  color: var(--gray-11);
+}
+
+/* ========== PAGINATION ========== */
 .content-panel footer {
   .pagination-links > a {
-    @apply text-sm border-gray-300/50 dark:border-gray-700/50 border shadow-none dark:bg-gray-800;
+    @apply text-sm border shadow-none;
+    border-color: var(--gray-6);
+    background-color: var(--gray-1);
+    border-radius: 0.5rem;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
 
     svg {
       @apply hidden;
     }
 
     span {
-      @apply text-gray-400 dark:text-gray-500 text-xs font-bold;
+      color: var(--gray-11);
+      @apply text-xs font-medium;
+
       span {
-        @apply text-base text-gray-900 dark:text-gray-100 font-normal;
+        @apply text-base font-medium;
+        color: var(--gray-12);
       }
     }
 
     &:hover {
-      @apply border-gray-300 dark:border-gray-700;
+      background-color: var(--gray-3);
+      border-color: var(--gray-7);
     }
   }
+}
+
+/* Splash hero (homepage) — align with warm canvas + serif title */
+.hero {
+  .sl-container {
+    color: var(--gray-12);
+  }
+
+  h1,
+  .tagline {
+    color: var(--gray-12);
+  }
+
+  h1 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+
+  .tagline {
+    color: var(--gray-11);
+  }
+}
+
+/* Starlight cards on warm bg */
+.card {
+  background-color: var(--gray-2);
+  border-color: var(--gray-6);
+}
+
+.card .title {
+  color: var(--gray-12);
+}
+
+/* Asides use Starlight status colors already mapped to Railway scales */
+.starlight-aside {
+  border-radius: 0.5rem;
 }
