@@ -184,6 +184,7 @@ export default defineConfig({
           label: "Languages",
           items: [
             { label: "Node", link: "/languages/node" },
+            { label: "Bun", link: "/languages/bun" },
             { label: "Python", link: "/languages/python" },
             { label: "Go", link: "/languages/golang" },
             { label: "PHP", link: "/languages/php" },
