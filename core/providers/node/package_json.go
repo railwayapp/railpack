@@ -19,6 +19,7 @@ type PackageJson struct {
 	DevDependencies map[string]string `json:"devDependencies"`
 	Engines         map[string]string `json:"engines"`
 	Main            string            `json:"main"`
+	Bin             json.RawMessage   `json:"bin"`
 	Workspaces      []string          `json:"-"`
 }
 
@@ -32,6 +33,10 @@ func NewPackageJson() *PackageJson {
 
 func (p *PackageJson) HasScript(name string) bool {
 	return p.Scripts != nil && p.Scripts[name] != ""
+}
+
+func (p *PackageJson) HasBin() bool {
+	return len(p.Bin) > 0 && string(p.Bin) != "null"
 }
 
 func (p *PackageJson) GetScript(name string) string {

@@ -1,0 +1,24 @@
+lockfileVersion: '6.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      package-a:
+        specifier: workspace:*
+        version: link:packages/package-a
+      package-b:
+        specifier: workspace:*
+        version: link:packages/package-b
+
+  packages/package-a: {}
+
+  packages/package-b:
+    dependencies:
+      package-a:
+        specifier: workspace:*
+        version: link:../package-a

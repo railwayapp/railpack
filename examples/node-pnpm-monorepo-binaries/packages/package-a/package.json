@@ -1,0 +1,8 @@
+{
+  "name": "package-a",
+  "version": "1.0.0",
+  "type": "module",
+  "bin": {
+    "hello-cli": "./bin/hello.js"
+  }
+}

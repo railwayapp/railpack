@@ -124,6 +124,34 @@ func TestConvertWorkspacePattern(t *testing.T) {
 	}
 }
 
+func TestWorkspaceHasPackageBins(t *testing.T) {
+	tests := []struct {
+		name    string
+		path    string
+		wantBin bool
+	}{
+		{
+			name:    "pnpm workspace with package bins",
+			path:    "../../../examples/node-pnpm-monorepo-binaries",
+			wantBin: true,
+		},
+		{
+			name:    "pnpm workspace without package bins",
+			path:    "../../../examples/node-pnpm-workspaces",
+			wantBin: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := testingUtils.CreateGenerateContext(t, tt.path)
+			workspace, err := NewWorkspace(ctx.App)
+			require.NoError(t, err)
+			require.Equal(t, tt.wantBin, workspace.HasPackageBins())
+		})
+	}
+}
+
 func TestWorkspaceAllPackageJson(t *testing.T) {
 	tests := []struct {
 		name        string
