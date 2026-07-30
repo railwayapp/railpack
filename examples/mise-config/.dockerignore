@@ -1,0 +1,1 @@
+# This comment-only file verifies that an empty .dockerignore does not result in an error.

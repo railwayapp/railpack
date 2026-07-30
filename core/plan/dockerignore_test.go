@@ -3,6 +3,7 @@ package plan
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/railwayapp/railpack/core/app"
@@ -10,25 +11,12 @@ import (
 )
 
 func TestCheckAndParseDockerignore(t *testing.T) {
-	t.Run("nonexistent dockerignore", func(t *testing.T) {
-		tempDir, err := os.MkdirTemp("", "dockerignore-test")
-		require.NoError(t, err)
-		defer func() { _ = os.RemoveAll(tempDir) }()
-
-		testApp, err := app.NewApp(tempDir)
-		require.NoError(t, err)
-
-		patterns, err := CheckAndParseDockerignore(testApp)
-		require.NoError(t, err)
-		require.Nil(t, patterns)
-	})
-
 	t.Run("valid dockerignore file", func(t *testing.T) {
 		examplePath := filepath.Join("..", "..", "examples", "dockerignore")
 		testApp, err := app.NewApp(examplePath)
 		require.NoError(t, err)
 
-		patterns, err := CheckAndParseDockerignore(testApp)
+		patterns, err := checkAndParseDockerignore(testApp)
 
 		require.NoError(t, err)
 		require.NotNil(t, patterns)
@@ -76,11 +64,53 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 		require.NoError(t, err)
 
 		// This should fail with a permission error
-		patterns, err := CheckAndParseDockerignore(testApp)
+		patterns, err := checkAndParseDockerignore(testApp)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "error reading .dockerignore")
 		require.Nil(t, patterns)
 	})
+}
+
+func TestDockerignoreExamples(t *testing.T) {
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+
+	examplesDir := filepath.Join(filepath.Dir(filepath.Dir(wd)), "examples")
+	entries, err := os.ReadDir(examplesDir)
+	require.NoError(t, err)
+
+	expectedAsEmpty := []string{"mise-config"}
+	testedExamples := 0
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		examplePath := filepath.Join(examplesDir, entry.Name())
+		dockerignorePath := filepath.Join(examplePath, ".dockerignore")
+		_, err := os.Stat(dockerignorePath)
+		if os.IsNotExist(err) {
+			continue
+		}
+		require.NoError(t, err)
+
+		testedExamples++
+		t.Run(entry.Name(), func(t *testing.T) {
+			testApp, err := app.NewApp(examplePath)
+			require.NoError(t, err)
+
+			ctx, err := NewDockerignoreContext(testApp)
+			require.NoError(t, err)
+			require.True(t, ctx.HasFile)
+			if slices.Contains(expectedAsEmpty, entry.Name()) {
+				require.Empty(t, ctx.Excludes)
+				return
+			}
+			require.NotEmpty(t, ctx.Excludes)
+		})
+	}
+
+	require.Positive(t, testedExamples, "expected at least one example with a .dockerignore")
 }
 
 func TestDockerignoreContext(t *testing.T) {
@@ -227,7 +257,7 @@ negation_test/*
 		testApp, err := app.NewApp(tempDir)
 		require.NoError(t, err)
 
-		patterns, err := CheckAndParseDockerignore(testApp)
+		patterns, err := checkAndParseDockerignore(testApp)
 		require.NoError(t, err)
 
 		// All patterns (both exclude and negated) should be preserved
