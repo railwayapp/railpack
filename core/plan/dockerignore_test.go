@@ -80,6 +80,7 @@ func TestDockerignoreExamples(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedAsEmpty := []string{"mise-config"}
+	foundAsEmpty := []string{}
 	testedExamples := 0
 	for _, entry := range entries {
 		if !entry.IsDir() {
@@ -103,6 +104,7 @@ func TestDockerignoreExamples(t *testing.T) {
 			require.NoError(t, err)
 			require.True(t, ctx.HasFile)
 			if slices.Contains(expectedAsEmpty, entry.Name()) {
+				foundAsEmpty = append(foundAsEmpty, entry.Name())
 				require.Empty(t, ctx.Excludes)
 				return
 			}
@@ -111,6 +113,7 @@ func TestDockerignoreExamples(t *testing.T) {
 	}
 
 	require.Positive(t, testedExamples, "expected at least one example with a .dockerignore")
+	require.ElementsMatch(t, expectedAsEmpty, foundAsEmpty)
 }
 
 func TestDockerignoreContext(t *testing.T) {
