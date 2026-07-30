@@ -108,7 +108,7 @@ like `node_modules`, `.venv`, or `vendor` at all nesting levels using the
 You should exclude sensitive files and version control metadata to keep your
 image clean, small, and secure.
 
-It's recommend to add `.env`, any encrypted secrets, `.vscode`, `.github`, and
+It's recommended to add `.env`, any encrypted secrets, `.vscode`, `.github`, and
 anything not required when running in production.
 
 Here's a great [.dockerignore](https://configs.sh/dockerignore/) generator to
