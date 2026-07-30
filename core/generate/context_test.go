@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -204,6 +205,18 @@ func TestGenerateContextAppliesConfiguredDeployBase(t *testing.T) {
 }
 
 func TestGenerateContextDockerignore(t *testing.T) {
+	t.Run("dockerignore patterns precede config patterns", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/dockerignore")
+		configExcludes := []string{"!the.log", "config-only"}
+		ctx.Config.Exclude = configExcludes
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+
+		expected := append(slices.Clone(ctx.dockerignoreCtx.Excludes), configExcludes...)
+		require.Equal(t, expected, buildPlan.Exclude)
+	})
+
 	t.Run("context with dockerignore", func(t *testing.T) {
 		ctx := CreateTestContext(t, "../../examples/dockerignore")
 
