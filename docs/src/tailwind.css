@@ -758,6 +758,15 @@ a[class*="action"][data-variant="primary"],
   border-top: none !important;
 }
 
+/* Starlight splits the title and body into separately padded panels. */
+main > .content-panel:has(h1#_top) {
+  padding-bottom: 0.75rem;
+}
+
+main > .content-panel:has(h1#_top) + .content-panel {
+  padding-top: 0.75rem;
+}
+
 /* Right sidebar / TOC */
 .right-sidebar {
   border-inline-start: 1px solid var(--gray-6);
@@ -765,6 +774,109 @@ a[class*="action"][data-variant="primary"],
 
 .right-sidebar-panel {
   color: var(--gray-11);
+}
+
+railpack-toc-progress {
+  display: block;
+}
+
+.right-sidebar-panel starlight-toc nav > h2 {
+  margin-bottom: 1rem;
+  color: var(--gray-11);
+  font-size: var(--sl-text-sm);
+  font-weight: 500;
+}
+
+.right-sidebar-panel .railpack-toc-list {
+  position: relative;
+}
+
+.right-sidebar-panel .railpack-toc-list,
+.right-sidebar-panel .railpack-toc-list ul {
+  margin: 0;
+}
+
+.right-sidebar-panel .railpack-toc-list a {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  padding-block: 0.375rem;
+  padding-inline-start: calc(1rem * var(--depth) + 1rem);
+  color: var(--gray-11);
+  font-size: var(--sl-text-sm);
+  line-height: 1.25rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.right-sidebar-panel .railpack-toc-list a[aria-current="true"] {
+  color: var(--gray-12);
+}
+
+.railpack-toc-indicator {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.railpack-toc-track,
+.railpack-toc-progress {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.railpack-toc-track {
+  stroke: var(--gray-6);
+}
+
+.railpack-toc-progress {
+  stroke: var(--purple-9);
+  transition: stroke-dashoffset 0.2s ease-out;
+}
+
+.railpack-toc-end-dot {
+  fill: var(--gray-6);
+}
+
+.railpack-toc-active-dot {
+  fill: var(--purple-9);
+  transition:
+    cx 0.2s ease-out,
+    cy 0.2s ease-out;
+}
+
+.right-sidebar-panel .page-actions-toc-desktop .toc-actions {
+  gap: 0.125rem;
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-color: var(--gray-6);
+}
+
+.right-sidebar-panel
+  .page-actions-toc-desktop
+  .railpack-page-actions-heading {
+  margin: 0 0 0.5rem;
+  color: var(--gray-11);
+  font-size: var(--sl-text-sm);
+  font-weight: 500;
+}
+
+.right-sidebar-panel .page-actions-toc-desktop .toc-action {
+  gap: 0.75rem;
+  padding: 0.375rem 0.125rem;
+  color: var(--gray-11);
+  font-size: var(--sl-text-sm);
+  font-weight: 400;
+}
+
+.right-sidebar-panel .page-actions-toc-desktop .toc-action:hover,
+.right-sidebar-panel .page-actions-toc-desktop .toc-action:focus-visible {
+  color: var(--gray-12);
 }
 
 /* ========== PAGINATION ========== */
@@ -829,7 +941,17 @@ a[class*="action"][data-variant="primary"],
   color: var(--gray-12);
 }
 
-/* Asides use Starlight status colors already mapped to Railway scales */
+/* Notes use a restrained brand tint instead of Starlight's bright info blue. */
 .starlight-aside {
   border-radius: 0.5rem;
+}
+
+.starlight-aside--note {
+  --sl-color-asides-text-accent: var(--purple-11);
+  --sl-color-asides-border: var(--purple-9);
+  background-color: color-mix(
+    in srgb,
+    var(--purple-3) 45%,
+    var(--gray-2)
+  );
 }
