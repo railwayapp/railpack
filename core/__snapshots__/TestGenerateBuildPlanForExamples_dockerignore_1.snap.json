@@ -33,7 +33,8 @@
   "!negation_test/should_exist.txt",
   "!negation_test/should_not_exist.txt",
   "!negation_test/folder_does_not_exist",
-  "!negation_test/existing_folder"
+  "!negation_test/existing_folder",
+  "**/node_modules"
  ],
  "steps": [
   {
