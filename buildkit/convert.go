@@ -41,13 +41,14 @@ const (
 func ConvertPlanToLLB(plan *p.BuildPlan, opts ConvertPlanOptions) (*llb.State, *Image, error) {
 	platform := opts.BuildPlatform
 
+	// by default, the whole directory is transferred into context, we don't need to explicitly include it
 	localOpts := []llb.LocalOption{
 		llb.SharedKeyHint("local"),
 		llb.SessionID(opts.SessionID),
 		llb.WithCustomName("loading ."),
-		// llb.FollowPaths([]string{"."}),
 	}
 
+	// note that exclude patterns can contain inverse (inclusions) patterns. The llb.IncludePatterns should *not* be used for this
 	if len(plan.Exclude) > 0 {
 		localOpts = append(localOpts, llb.ExcludePatterns(plan.Exclude))
 	}
