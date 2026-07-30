@@ -247,6 +247,10 @@ export default defineConfig({
           label: "Platforms",
           items: [
             {
+              label: "Build with Railpack",
+              link: "/platforms/build-with-railpack",
+            },
+            {
               label: "Running Railpack in Production",
               link: "/platforms/running-railpack-in-production",
             },
