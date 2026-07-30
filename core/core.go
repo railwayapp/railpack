@@ -158,6 +158,8 @@ func GetConfig(app *app.App, env *app.Environment, options *GenerateBuildPlanOpt
 	}
 
 	mergedConfig := c.Merge(optionsConfig, envConfig, fileConfig)
+	// Environment-provided secrets must remain available when file configuration replaces slice values.
+	mergedConfig.Secrets = utils.RemoveDuplicates(slices.Concat(envConfig.Secrets, mergedConfig.Secrets))
 
 	return mergedConfig, nil
 }

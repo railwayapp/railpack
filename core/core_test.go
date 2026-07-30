@@ -93,6 +93,35 @@ func TestGenerateConfigFromFile_Malformed(t *testing.T) {
 	require.Nil(t, cfg, "config should be nil on error")
 }
 
+func TestGetConfig_MergesEnvironmentAndFileSecrets(t *testing.T) {
+	tempDir := t.TempDir()
+	configPath := filepath.Join(tempDir, defaultConfigFileName)
+	err := os.WriteFile(configPath, []byte(`{"secrets":["VITE_APP_TITLE","FILE_ONLY_SECRET"]}`), 0644)
+	require.NoError(t, err)
+
+	userApp, err := app.NewApp(tempDir)
+	require.NoError(t, err)
+
+	envVars := map[string]string{
+		"DATABASE_URL":      "postgres://localhost/mydb",
+		"SENTRY_AUTH_TOKEN": "sntrx_abc",
+		"VITE_APP_TITLE":    "MyApp",
+		"MY_SECRET":         "s3cret",
+	}
+
+	env := app.NewEnvironment(&envVars)
+	config, err := GetConfig(userApp, env, &GenerateBuildPlanOptions{}, logger.NewLogger())
+	require.NoError(t, err)
+
+	require.ElementsMatch(t, []string{
+		"DATABASE_URL",
+		"SENTRY_AUTH_TOKEN",
+		"VITE_APP_TITLE",
+		"MY_SECRET",
+		"FILE_ONLY_SECRET",
+	}, config.Secrets)
+}
+
 func TestGenerateBuildPlan_DockerignoreMetadata(t *testing.T) {
 	appPath := "../examples/dockerignore"
 	userApp, err := app.NewApp(appPath)
