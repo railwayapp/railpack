@@ -144,7 +144,7 @@ When building a monorepo, Railpack will:
 If your monorepo requires building a specific workspace package, ensure
 your build and start scripts are defined in the root `package.json`, set
 `RAILPACK_NX_APP` for multi-app Nx workspaces, or use a
-[config file](/architecture/user-config) to specify custom commands.
+[configuration file](/config/file) to specify custom commands.
 
 #### Nx
 

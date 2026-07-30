@@ -170,6 +170,7 @@ export default defineConfig({
         {
           label: "Configuration",
           items: [
+            { label: "Configuration Options", link: "/config/options" },
             { label: "Configuration File", link: "/config/file" },
             {
               label: "Environment Variables",
@@ -229,7 +230,6 @@ export default defineConfig({
             },
             { label: "BuildKit Generation", link: "/architecture/buildkit" },
             { label: "Caching", link: "/architecture/caching" },
-            { label: "User Config", link: "/architecture/user-config" },
             {
               label: "Recommendations",
               link: "/architecture/recommendations",
