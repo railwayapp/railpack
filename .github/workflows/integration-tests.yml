@@ -143,8 +143,17 @@ jobs:
         env:
           EXAMPLE: ${{ steps.example.outputs.name }}
         run: |
+          # This smoke test does not load test.json, so provide non-sensitive values
+          # for every plan-declared secret through BuildKit's secret mount interface.
+          secret_args=()
+          while IFS= read -r secret; do
+            export "$secret=frontend-e2e"
+            secret_args+=(--secret "id=$secret,env=$secret")
+          done < <(jq -r '.secrets[]?' tmp/frontend-plan/railpack-plan.json)
+
           docker buildx build \
             --build-arg BUILDKIT_SYNTAX="railpack-frontend:local" \
+            "${secret_args[@]}" \
             -f tmp/frontend-plan/railpack-plan.json \
             "examples/$EXAMPLE"
 
