@@ -19,15 +19,20 @@ when possible. Cache busting events are defined in a granular way as part of the
 
 ### Cache Backends
 
-Railpack supports all [BuildKit cache backends](https://docs.docker.com/build/cache/backends/).
+Railpack supports all [BuildKit cache
+backends](https://docs.docker.com/build/cache/backends/).
 
-* `railpack build` supports the same CLI arguments as `docker buildx` for cache import/export. See the [CLI reference](../reference/cli/#build) for more information.
-* Cache import/export references are supported when using the Railpack frontend directly with `docker buildx` or `buildctl`. See the [frontend reference](../reference/frontend/#configuration) for more information.
+- `railpack build` supports the same CLI arguments as `docker buildx` for cache
+  import/export. See the [CLI reference](/reference/cli/#build) for more
+  information.
+- Cache import/export references are supported when using the frontend directly
+  with `docker buildx` or `buildctl`. See the [frontend
+  reference](/platforms/buildkit-frontend/#configuration) for more information.
 
 ## Mount Cache
 
 The [BuildKit mount
-cache](https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/reference.md#run---mounttypecache)
+cache](https://docs.docker.com/build/cache/optimize/#use-cache-mounts)
 is used to save the contents of a directory from the build context between
 builds. This is useful for speeding up commands that download or compile assets
 (e.g. npm install). The directory **does not** appear in the final image.

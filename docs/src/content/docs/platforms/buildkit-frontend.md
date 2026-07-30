@@ -3,10 +3,12 @@ title: BuildKit Frontend Reference
 description: Complete reference for the Railpack BuildKit frontend
 ---
 
-If you are a platform, you'll want to use the Railpack BuildKit frontend to build projects with Railpack. If you aren't a platform and you want to build a single container, you should use the
-other `railpack` subcommands and ignore this documentation.
+If you are a platform, use the BuildKit frontend to build projects. If you want
+to build a single container, use the other `railpack` subcommands and ignore
+this documentation.
 
-For a full example of how to use the frontend for a production build, see the [running Railpack in production](../guides/running-railpack-in-production) guide.
+For a full example of how to use the frontend for a production build, see the
+[running Railpack in production](./running-railpack-in-production) guide.
 
 ## Using Railpack as a BuildKit Frontend
 
@@ -41,17 +43,19 @@ buildctl build \
   --output type=docker,name=test
 ```
 
-`buildctl` is a lower-level interface to BuildKit. It's arguments and semantics are similar to `docker buildx`, but not identical. 
+`buildctl` is a lower-level interface to BuildKit. Its arguments and semantics
+are similar to `docker buildx`, but not identical.
 
 ## Configuration
 
-You can pass advanced options to the frontend using the `--opt` flag (for BuildKit) or as `--build-arg` (for Docker). The following options are supported:
+Pass advanced options to the frontend using `--opt` with BuildKit or
+`--build-arg` with Docker:
 
-| Flag             | Description                                                                            | Default |
-| ---------------- | -------------------------------------------------------------------------------------- | ------- |
-| `cache-key`    | Unique ID to prefix to cache keys for cache invalidation.                              |         |
-| `secrets-hash` | Hash of all secret values, used to invalidate cache when secrets change.               |         |
-| `github-token` | GitHub token to increase API rate limits for private repositories or package installs. |         |
+| Flag           | Description                                      |
+| -------------- | ------------------------------------------------ |
+| `cache-key`    | Prefix used to isolate mount cache IDs           |
+| `secrets-hash` | Hash used to invalidate layers when secrets change |
+| `github-token` | Token used to increase GitHub API rate limits    |
 
 ### Example
 
@@ -78,7 +82,8 @@ buildctl build \
   --opt build-arg:github-token=ghp_xxx
 ```
 
-Note that the `build-arg:` prefix is required only when using `buildctl` to ensure the arg structure matches `docker buildx`.
+The `build-arg:` prefix is required only with `buildctl` so the argument
+structure matches `docker buildx`.
 
 ## Secrets
 
@@ -123,7 +128,13 @@ To ensure build layers are invalidated when secret values change, compute a hash
 of your secret values and pass it as a build argument:
 
 ```sh
---build-arg secrets-hash=$(echo -n "STRIPE_LIVE_KEY=sk_live_asdf" | sha256sum | awk '{print $1}')
+secrets_hash=$(
+  echo -n "STRIPE_LIVE_KEY=sk_live_asdf" |
+    sha256sum |
+    awk '{print $1}'
+)
+
+--build-arg secrets-hash="$secrets_hash"
 ```
 
 This ensures the build cache is properly invalidated when secrets change.

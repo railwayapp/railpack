@@ -31,7 +31,9 @@ used by the platform to gain insights into the app being built (e.g. the
 provider detected, versions installed, app metadata, etc.).
 
 ```sh
-railpack prepare /dir/to/build --plan-out railpack-plan.json --info-out railpack-info.json
+railpack prepare /dir/to/build \
+  --plan-out railpack-plan.json \
+  --info-out railpack-info.json
 ```
 
 ![railpack prepare command](../images/railpack-prepare.png)
@@ -131,10 +133,16 @@ This is a small script that will build an app using the Railpack frontend.
 APP_DIR=my-app
 
 # Prepare the app and generate the build plan
-railpack prepare $APP_DIR --plan-out ./railpack-plan.json --info-out ./railpack-info.json
+railpack prepare $APP_DIR \
+  --plan-out ./railpack-plan.json \
+  --info-out ./railpack-info.json
 
 # Compute the hash of the secret values
-secrets_hash=$(echo -n "STRIPE_LIVE_KEY=sk_live_asdf" | sha256sum | awk '{print $1}')
+secrets_hash=$(
+  echo -n "STRIPE_LIVE_KEY=sk_live_asdf" |
+    sha256sum |
+    awk '{print $1}'
+)
 
 # Build with BuildKit and the Railpack frontend
 docker buildx build \

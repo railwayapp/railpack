@@ -94,7 +94,7 @@ mise run image-runtime-build
 
 ## Custom frontend
 
-You can build with a [custom BuildKit frontend](/guides/custom-frontend), but
+You can build with the [BuildKit frontend](/platforms/buildkit-frontend), but
 this is a bit tedious for local iteration.
 
 The frontend needs to be built into an image and accessible to the BuildKit instance:

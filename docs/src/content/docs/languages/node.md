@@ -27,12 +27,12 @@ Node is needed, including when Bun is the primary package manager but Node is
 required for native module compilation.
 
 We officially support actively maintained [Node.js LTS
-versions](https://nodejs.org/en/about/previous-releases). Older versions of Node.js will likely still
-work but are not officially supported.
+versions](https://nodejs.org/en/about/previous-releases). Older versions of
+Node.js will likely still work but are not officially supported.
 
 Node.js GPG verification is disabled by default; see the [GPG verification
-recommendation](/architecture/recommendations#gpg-verification)
-to enable it in your project.
+recommendation](/config/recommendations#enable-gpg-verification) to enable it in
+your project.
 
 ## Runtime Variables
 
