@@ -101,11 +101,11 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 	}
 
 	llbState, image, err := ConvertPlanToLLB(plan, ConvertPlanOptions{
-		BuildPlatform: buildPlatform,
-		SecretsHash:   opts.SecretsHash,
-		CacheKey:      opts.CacheKey,
-		GitHubToken:   opts.GitHubToken,
-		NoCache:       opts.NoCache,
+		BuildPlatform:       buildPlatform,
+		SecretsHash:         opts.SecretsHash,
+		CacheKey:            opts.CacheKey,
+		GitHubToken:         opts.GitHubToken,
+		NoCache:             opts.NoCache,
 		DockerignoreContext: opts.DockerignoreContext,
 	})
 	if err != nil {
