@@ -28,7 +28,7 @@ func (p *GleamProvider) StartCommandHelp() string {
 func (p *GleamProvider) Plan(ctx *generate.GenerateContext) error {
 	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewStepLayer(ctx.GetMiseStepBuilder().Name()))
-	build.AddInput(ctx.NewLocalLayer())
+	build.AddInput(plan.NewLocalLayer())
 	build.AddCommand(plan.NewExecCommand("gleam export erlang-shipment"))
 
 	p.installErlang(ctx.GetMiseStepBuilder())

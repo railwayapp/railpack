@@ -223,20 +223,13 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		require.Contains(t, ctx.dockerignoreCtx.Excludes, "!negation_test/should_exist.txt")
 		require.Contains(t, ctx.dockerignoreCtx.Excludes, "!negation_test/existing_folder")
 
-		// NewLocalLayer should return a basic layer without dockerignore patterns
-		layer := ctx.NewLocalLayer()
-		require.True(t, layer.Local)
-		require.NotNil(t, layer.Filter)
-		require.Equal(t, []string{"."}, layer.Filter.Include)
-		require.Empty(t, layer.Filter.Exclude)
-
-		// Verify negation patterns are correctly moved to the plan level
+		// Verify dockerignore patterns are correctly moved to the plan level
 		buildPlan, _, err := ctx.Generate()
 		require.NoError(t, err)
 		require.Contains(t, buildPlan.Exclude, ".vscode")
 		require.Contains(t, buildPlan.Exclude, "*.log")
-		require.Contains(t, buildPlan.Include, "negation_test/should_exist.txt")
-		require.Contains(t, buildPlan.Include, "negation_test/existing_folder")
+		require.Contains(t, buildPlan.Exclude, "!negation_test/should_exist.txt")
+		require.Contains(t, buildPlan.Exclude, "!negation_test/existing_folder")
 	})
 
 	t.Run("context without dockerignore", func(t *testing.T) {
@@ -247,14 +240,6 @@ func TestGenerateContextDockerignore(t *testing.T) {
 
 		// Verify metadata does not indicate dockerignore presence
 		require.Empty(t, ctx.Metadata.Get("dockerIgnore"))
-
-		// NewLocalLayer should return a basic layer
-		layer := ctx.NewLocalLayer()
-		require.True(t, layer.Local)
-
-		require.NotNil(t, layer.Filter)
-		require.Equal(t, []string{"."}, layer.Filter.Include)
-		require.Empty(t, layer.Filter.Exclude)
 	})
 
 	t.Run("context creation with no dockerignore", func(t *testing.T) {

@@ -100,7 +100,7 @@ func (p PackageManager) installDependencies(ctx *generate.GenerateContext, works
 	// If there are any pre/post install scripts, we need the entire app to be copied
 	// This is to handle things like patch-package
 	if hasPreInstall || hasPostInstall || hasPrepare || usesLocalFile {
-		install.AddInput(ctx.NewLocalLayer())
+		install.AddInput(plan.NewLocalLayer())
 
 		// Use all secrets for the install step if there are any pre/post install scripts
 		install.UseSecrets([]string{"*"})

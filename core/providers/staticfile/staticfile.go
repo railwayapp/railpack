@@ -58,7 +58,7 @@ func (p *StaticfileProvider) Plan(ctx *generate.GenerateContext) error {
 
 	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewStepLayer(installCaddyStep.Name()))
-	build.AddInput(ctx.NewLocalLayer())
+	build.AddInput(plan.NewLocalLayer())
 
 	// the Staticfile provider is also used by Node SPA, but in that case we want index fallback to default to true
 	// for the Staticfile provider, want to default to false, which is why we set the default here instead of upstream
