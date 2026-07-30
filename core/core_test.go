@@ -93,10 +93,10 @@ func TestGenerateConfigFromFile_Malformed(t *testing.T) {
 	require.Nil(t, cfg, "config should be nil on error")
 }
 
-func TestGetConfig_SecretsAlwaysIncludeEnvVars(t *testing.T) {
+func TestGetConfig_MergesEnvironmentAndFileSecrets(t *testing.T) {
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, defaultConfigFileName)
-	err := os.WriteFile(configPath, []byte(`{"secrets":["VITE_APP_TITLE"]}`), 0644)
+	err := os.WriteFile(configPath, []byte(`{"secrets":["VITE_APP_TITLE","FILE_ONLY_SECRET"]}`), 0644)
 	require.NoError(t, err)
 
 	userApp, err := app.NewApp(tempDir)
@@ -118,6 +118,7 @@ func TestGetConfig_SecretsAlwaysIncludeEnvVars(t *testing.T) {
 		"SENTRY_AUTH_TOKEN",
 		"VITE_APP_TITLE",
 		"MY_SECRET",
+		"FILE_ONLY_SECRET",
 	}, config.Secrets)
 }
 
