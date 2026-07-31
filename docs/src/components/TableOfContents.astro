@@ -1,8 +1,19 @@
 ---
 import PageActionsTableOfContents from "starlight-page-actions/overrides/TableOfContents.astro";
+
+const { toc } = Astro.locals.starlightRoute;
+
+function countTocItems(items: NonNullable<typeof toc>["items"]): number {
+  return items.reduce(
+    (count, item) => count + 1 + countTocItems(item.children),
+    0,
+  );
+}
+
+const hasMultipleHeadings = toc ? countTocItems(toc.items) > 1 : false;
 ---
 
-<railpack-toc-progress>
+<railpack-toc-progress data-single-heading={hasMultipleHeadings ? undefined : ""}>
   <PageActionsTableOfContents />
 </railpack-toc-progress>
 
@@ -19,6 +30,7 @@ import PageActionsTableOfContents from "starlight-page-actions/overrides/TableOf
 
     connectedCallback() {
       this.addActionsHeading();
+      if (this.hasAttribute("data-single-heading")) return;
       this.buildIndicator();
     }
 
@@ -54,6 +66,7 @@ import PageActionsTableOfContents from "starlight-page-actions/overrides/TableOf
 
       this.mutationObserver = new MutationObserver(() => {
         this.updateProgress();
+        this.enableProgressAnimation();
       });
       this.mutationObserver.observe(nav, {
         attributeFilter: ["aria-current"],
@@ -119,8 +132,12 @@ import PageActionsTableOfContents from "starlight-page-actions/overrides/TableOf
       this.activeDot.classList.add("railpack-toc-active-dot");
       this.activeDot.setAttribute("r", "3");
       svg.append(this.activeDot);
-      list.prepend(svg);
       this.updateProgress();
+      list.prepend(svg);
+
+      if (this.links.some((link) => link.getAttribute("aria-current") === "true")) {
+        this.enableProgressAnimation();
+      }
     }
 
     private createPath(height: number) {
@@ -185,6 +202,14 @@ import PageActionsTableOfContents from "starlight-page-actions/overrides/TableOf
       );
       this.activeDot.setAttribute("cx", String(activePoint.x));
       this.activeDot.setAttribute("cy", String(activePoint.y));
+    }
+
+    private enableProgressAnimation() {
+      if (this.hasAttribute("data-progress-ready")) return;
+
+      requestAnimationFrame(() => {
+        this.setAttribute("data-progress-ready", "");
+      });
     }
   }
 

@@ -271,6 +271,7 @@ export default defineConfig({
         },
       ],
       components: {
+        MobileTableOfContents: "./src/components/MobileTableOfContents.astro",
         TableOfContents: "./src/components/TableOfContents.astro",
       },
     }),
