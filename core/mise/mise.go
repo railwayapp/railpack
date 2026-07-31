@@ -60,38 +60,47 @@ func (m *Mise) GetLatestVersion(pkg, version string) (string, error) {
 	}
 	defer unlock()
 
-	semverVersion := utils.ExtractSemverVersion(version)
-	query := fmt.Sprintf("%s@%s", pkg, semverVersion)
-
 	baseEnv := []string{"MISE_NO_CONFIG=1", "MISE_PARANOID=1"}
+
+	// a user could eliminate the min release age in their config, or pin a version to a release
+	// if they do, we want to make sure they can still install that specific version they want, so we fallback to a env
+	// *without* the min age requirement after we've tried to query mise with this requirement first.
 	minAgeEnv := append([]string{fmt.Sprintf("MISE_MINIMUM_RELEASE_AGE=%s", MinimumReleaseAge)}, baseEnv...)
 
-	// Prefer versions older than MinimumReleaseAge when resolving fuzzy constraints
-	output, err := m.runCmdWithEnv(minAgeEnv, "latest", query)
+	var output string
+	for i, queryVersion := range versionQueryCandidates(version) {
+		// i.e. node@lts
+		query := fmt.Sprintf("%s@%s", pkg, queryVersion)
 
-	// Fall back without the age filter if nothing matched
-	// this occurs when a user locks to a specific version on their host which does not have a minimum version constraint
-	// NOTE as of 2026-06-01 `latest` on macOS vs linux has a different result when MISE_MINIMUM_RELEASE_AGE is specified. macOS seems to ignore
-	// this completely (at least, on the uv backend).
-	if err != nil || strings.TrimSpace(output) == "" {
-		output, err = m.runCmdWithEnv(baseEnv, "latest", query)
-	}
+		if i == 0 {
+			// Prefer versions old enough to avoid newly released regressions.
+			output, err = m.runCmdWithEnv(minAgeEnv, "latest", query)
+			if err == nil && strings.TrimSpace(output) != "" {
+				break
+			}
 
-	// If semver extraction fails, try with original version
-	// https://github.com/railwayapp/railpack/issues/203
-	if (err != nil || strings.TrimSpace(output) == "") && semverVersion != version {
-		query = fmt.Sprintf("%s@%s", pkg, version)
-		output, err = m.runCmdWithEnv(baseEnv, "latest", query)
-	}
-
-	if err != nil {
-		if strings.Contains(err.Error(), "not found in mise tool registry") {
-			return "", fmt.Errorf("package `%s` not available in Mise. Try installing as apt package instead", pkg)
+			// Fall back without the age filter when a pinned version is newer than
+			// MinimumReleaseAge. As of 2026-06-01, mise's uv backend also applies
+			// this setting inconsistently between macOS and Linux.
 		}
 
-		return "", err
+		output, err = m.runCmdWithEnv(baseEnv, "latest", query)
+		if err == nil && strings.TrimSpace(output) != "" {
+			break
+		}
 	}
 
+	// TODO should create an error docs entry for this
+	if err != nil {
+		triedVersions := strings.Join(versionQueryCandidates(version), ", ")
+		if strings.Contains(err.Error(), "not found in mise tool registry") {
+			return "", fmt.Errorf("package `%s` not available in Mise after trying versions: %s. Try installing as apt package instead", pkg, triedVersions)
+		}
+
+		return "", fmt.Errorf("failed to get latest version for package `%s` after trying versions: %s: %w", pkg, triedVersions, err)
+	}
+
+	// TODO seems like an odd case, we should write error docs for it and try to get reports on this error
 	latestVersion := strings.TrimSpace(output)
 	if latestVersion == "" {
 		return "", fmt.Errorf(ErrMiseGetLatestVersion, version, pkg)
@@ -107,16 +116,13 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 	}
 	defer unlock()
 
-	// Try with extracted semver version first
-	semverVersion := utils.ExtractSemverVersion(version)
-	query := fmt.Sprintf("%s@%s", pkg, semverVersion)
-	output, err := m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1", "MISE_PARANOID=1"}, "ls-remote", query)
-
-	// If semver extraction fails, try with original version
-	// https://github.com/railwayapp/railpack/issues/203
-	if (err != nil || strings.TrimSpace(output) == "") && semverVersion != version {
-		query = fmt.Sprintf("%s@%s", pkg, version)
+	var output string
+	for _, queryVersion := range versionQueryCandidates(version) {
+		query := fmt.Sprintf("%s@%s", pkg, queryVersion)
 		output, err = m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1", "MISE_PARANOID=1"}, "ls-remote", query)
+		if err == nil && strings.TrimSpace(output) != "" {
+			break
+		}
 	}
 
 	if err != nil {
@@ -138,6 +144,30 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 	}
 
 	return versions, nil
+}
+
+// versionQueryCandidates returns a slice of possible version strings to query with mise,
+// normalizing semver versions but preserving special aliases (like "lts"). Semver normalization is
+// attempted first for version resolution, then the original input is retried for cases like aliases.
+//
+// Examples:
+//
+//	versionQueryCandidates("20.10.2")    => []string{"20.10.2"}
+//	versionQueryCandidates("^20.10.2")   => []string{"20.10.2", "^20.10.2"}
+//	versionQueryCandidates("lts")        => []string{"lts"}
+func versionQueryCandidates(version string) []string {
+	semverVersion := utils.ExtractSemverVersion(version)
+	if semverVersion == "" {
+		// Preserve mise aliases like `lts` instead of querying an empty version.
+		return []string{version}
+	}
+	if semverVersion == version {
+		return []string{version}
+	}
+
+	// Prefer the normalized semver, then retry idiomatic strings that mise accepts directly.
+	// https://github.com/railwayapp/railpack/issues/203
+	return []string{semverVersion, version}
 }
 
 // returns the JSON output of 'mise list --current --json' for the app

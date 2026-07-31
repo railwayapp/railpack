@@ -66,6 +66,44 @@ func TestMistGetLatestVersion(t *testing.T) {
 	}
 }
 
+func TestMiseGetLatestVersionLTS(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "mise-test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	mise, err := New(tempDir)
+	if err != nil {
+		t.Fatalf("failed to create mise: %v", err)
+	}
+
+	latest, err := mise.GetLatestVersion("node", "lts")
+	require.NoError(t, err)
+	require.Regexp(t, `^\d+\.\d+\.\d+$`, latest)
+}
+
+func TestVersionQueryCandidates(t *testing.T) {
+	tests := []struct {
+		name     string
+		version  string
+		expected []string
+	}{
+		{name: "major", version: "22", expected: []string{"22"}},
+		{name: "major and minor", version: "22.1", expected: []string{"22.1"}},
+		{name: "full version", version: "22.1.3", expected: []string{"22.1.3"}},
+		{name: "prefixed version", version: "v22", expected: []string{"22", "v22"}},
+		{name: "embedded version", version: "node-22.1", expected: []string{"22.1", "node-22.1"}},
+		{name: "alias", version: "lts", expected: []string{"lts"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, versionQueryCandidates(tt.version))
+		})
+	}
+}
+
 func TestMiseGetAllVersions(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "mise-test")
 	if err != nil {

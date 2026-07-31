@@ -17,7 +17,7 @@ import (
 type PackageManager string
 
 const (
-	DEFAULT_NODE_VERSION = "22"
+	DEFAULT_NODE_VERSION = "lts"
 	DEFAULT_BUN_VERSION  = "latest"
 
 	// not used by npm, but many other tools: next, jest, webpack, etc
