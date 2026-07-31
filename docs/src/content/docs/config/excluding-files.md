@@ -14,6 +14,9 @@ patterns (including negations) to BuildKit in a single `exclude` list.
 BuildKit's native pattern matching handles both exclusions and negations
 (lines starting with `!`).
 
+Unlike `.gitignore`, `cache/` and `cache` are equivalent and can exclude either
+a file or a directory.
+
 ### Example
 
 Given a `.dockerignore` file:
