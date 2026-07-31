@@ -42,8 +42,20 @@ Environment variables can be set in two ways:
 }
 ```
 
-Railpack always sets `RAILPACK_VERSION` on the final runtime image to the
-Railpack version that produced the image (for example `0.12.3`).
+## Runtime Railpack Variables
+
+The final image includes runtime metadata that is not available to build
+commands:
+
+| Name                | Description                              |
+| :------------------ | :--------------------------------------- |
+| `RAILPACK_VERSION`  | Version used to produce the image        |
+| `RAILPACK_BUILT_AT` | Build time as Unix epoch seconds (UTC)   |
+
+Runtime metadata is added after generating the build graph, so it does not
+invalidate application layer caches. The `RAILPACK_` namespace in the final
+image is reserved for generated runtime metadata, which takes precedence over
+deploy variables with the same name.
 
 ## Secrets
 
