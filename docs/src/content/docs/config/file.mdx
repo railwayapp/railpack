@@ -3,6 +3,8 @@ title: Configuration File
 description: Learn about the railpack.json configuration file format and options
 ---
 
+import { Aside } from '@astrojs/starlight/components';
+
 Railpack will look for a `railpack.json` file in the root of the directory being
 built. You can override this by setting the `RAILPACK_CONFIG_FILE` environment
 variable to a path relative to the directory being built.
@@ -317,7 +319,15 @@ Commands can also be specified using a string format:
 
 ## Deploy
 
-The deploy section configures how the container runs:
+The deploy section configures how the container runs.
+
+### Entrypoint
+
+Railpack hardcodes the container's entrypoint to `["/bin/bash", "-c"]`. This
+means your `startCommand` is executed as a shell command within a Bash
+environment. The entrypoint is not configurable.
+
+### Deploy Fields
 
 | Field          | Description                                                             |
 | :------------- | :---------------------------------------------------------------------- |
