@@ -448,3 +448,93 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		require.Nil(t, ctx)
 	})
 }
+
+func TestGenerateContextProviderDefaultExcludes(t *testing.T) {
+	defaultExcludes := []string{".git", "node_modules"}
+	expectedWarning := logger.Msg{
+		Level: logger.Warn,
+		Msg: "Applying default exclude patterns: `.git`, `node_modules`. " +
+			"Add a `.dockerignore` file or `exclude` patterns to `railpack.json` to define your own exclusions. " +
+			"https://railpack.com/config/excluding-files",
+	}
+	expectedSuggestion := logger.Msg{
+		Level:    logger.Suggestion,
+		Msg:      "Add a `.dockerignore` file to exclude files from the build context.",
+		DocsPath: "/config/excluding-files",
+	}
+
+	assertNoExcludeLogs := func(t *testing.T, logs []logger.Msg) {
+		t.Helper()
+		for _, msg := range logs {
+			require.NotEqual(t, "/config/excluding-files", msg.DocsPath)
+			require.NotContains(t, msg.Msg, "https://railpack.com/config/excluding-files")
+		}
+	}
+
+	t.Run("applies provider defaults when no user excludes are present", func(t *testing.T) {
+		ctx := CreateTestContext(t, t.TempDir())
+		ctx.SetProviderDefaultExcludes(defaultExcludes)
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+		require.Equal(t, defaultExcludes, buildPlan.Exclude)
+		require.Contains(t, ctx.Logger.Logs, expectedWarning)
+	})
+
+	t.Run("does not apply defaults when provider has none", func(t *testing.T) {
+		ctx := CreateTestContext(t, t.TempDir())
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+		require.Empty(t, buildPlan.Exclude)
+		require.Contains(t, ctx.Logger.Logs, expectedSuggestion)
+	})
+
+	t.Run("dockerignore overrides provider defaults", func(t *testing.T) {
+		appDir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(appDir, ".dockerignore"), []byte("custom\n"), 0644))
+
+		ctx := CreateTestContext(t, appDir)
+		ctx.SetProviderDefaultExcludes(defaultExcludes)
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+		require.Equal(t, []string{"custom"}, buildPlan.Exclude)
+		assertNoExcludeLogs(t, ctx.Logger.Logs)
+	})
+
+	t.Run("empty dockerignore overrides provider defaults", func(t *testing.T) {
+		appDir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(appDir, ".dockerignore"), []byte("# intentionally empty\n"), 0644))
+
+		ctx := CreateTestContext(t, appDir)
+		ctx.SetProviderDefaultExcludes(defaultExcludes)
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+		require.Empty(t, buildPlan.Exclude)
+		assertNoExcludeLogs(t, ctx.Logger.Logs)
+	})
+
+	t.Run("config excludes override provider defaults", func(t *testing.T) {
+		ctx := CreateTestContext(t, t.TempDir())
+		ctx.Config.Exclude = []string{"custom"}
+		ctx.SetProviderDefaultExcludes(defaultExcludes)
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+		require.Equal(t, []string{"custom"}, buildPlan.Exclude)
+		assertNoExcludeLogs(t, ctx.Logger.Logs)
+	})
+
+	t.Run("empty config excludes override provider defaults", func(t *testing.T) {
+		ctx := CreateTestContext(t, t.TempDir())
+		ctx.Config.Exclude = []string{}
+		ctx.SetProviderDefaultExcludes(defaultExcludes)
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+		require.Empty(t, buildPlan.Exclude)
+		assertNoExcludeLogs(t, ctx.Logger.Logs)
+	})
+}
