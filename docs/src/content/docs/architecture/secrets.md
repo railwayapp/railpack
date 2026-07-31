@@ -116,32 +116,31 @@ If building with [the CLI](/reference/cli/#build), Railpack will check that all
 the secrets defined in the build plan have variables.
 
 ```bash
-railpack build --secret SENTRY_AUTH_TOKEN=sk_live_asdf
+railpack build --secret SENTRY_AUTH_TOKEN=sntrys_1234
 ```
 
 You can also provide environment variables with the `--env` flag. These will available to all steps and in the final image (using `railpack.json` if you need to customize when a environment variable is available).
 
 ```bash
-railpack build --env TZ=UTC --secret SENTRY_AUTH_TOKEN=sk_live_asdf
+railpack build --env TZ=UTC --secret SENTRY_AUTH_TOKEN=sntrys_1234
 ```
 
 #### Custom Frontend
 
-If building with the [BuildKit frontend](/platforms/buildkit-frontend),
-you should still provide the secrets when generating the plan with `--env`. This
-adds the secrets to the build plan. You then need to pass the secrets to Docker
-or BuildKit with the `--secret` flag.
+If building with the [BuildKit frontend](/platforms/buildkit-frontend), use
+Railpack's `--secret` flag when generating the build plan. Then pass the
+secrets to Docker or BuildKit with its `--secret` flag.
 
 ```bash
 # Generate a build plan
-railpack plan --secret STRIPE_LIVE_KEY=sk_live_asdf --out railpack-plan.json
+railpack plan --secret SENTRY_AUTH_TOKEN=sntrys_1234 --env TZ=UTC --out railpack-plan.json
 
 # Build with the custom frontend
-SENTRY_AUTH_TOKEN=asdf123456789 docker build \
+SENTRY_AUTH_TOKEN=sntrys_1234 docker build \
   --build-arg BUILDKIT_SYNTAX="ghcr.io/railwayapp/railpack:railpack-frontend" \
   -f railpack-plan.json \
   --secret id=SENTRY_AUTH_TOKEN,env=SENTRY_AUTH_TOKEN \
-  --build-arg secrets-hash=asdfasdf \
+  --build-arg secrets-hash=YOUR_GENERATED_SECRETS_HASH \
   examples/node-bun
 ```
 
