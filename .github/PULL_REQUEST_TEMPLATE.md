@@ -11,6 +11,13 @@
 
 <!-- describe the change that was made and why you took this approach -->
 
+## Breaking Changes
+
+<!--
+- describe any user-facing behavior changes that could require action from existing users
+- explain who is affected and how they can migrate or preserve the previous behavior
+-->
+
 ## Test
 
 <!-- how is this change tested? Do not indicate that snapshots were updated -->
