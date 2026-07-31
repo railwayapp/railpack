@@ -19,6 +19,8 @@
       { "local": true, "include": ["custom-start.sh"] }
     ],
     "aptPackages": ["cowsay"],
+    // Debian installs cowsay in /usr/games, which is not on the runtime PATH.
+    "paths": ["/usr/games"],
     "startCommand": "neofetch && cowsay hello && ./custom-start.sh"
   }
 }
