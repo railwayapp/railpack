@@ -454,12 +454,12 @@ func TestGenerateContextProviderDefaultExcludes(t *testing.T) {
 	expectedWarning := logger.Msg{
 		Level: logger.Warn,
 		Msg: "Applying default exclude patterns: `.git`, `node_modules`. " +
-			"Add a `.dockerignore` file or `exclude` patterns to `railpack.json` to define your own exclusions. " +
+			"Add a .dockerignore to customize. " +
 			"https://railpack.com/config/excluding-files",
 	}
 	expectedSuggestion := logger.Msg{
 		Level:    logger.Suggestion,
-		Msg:      "Add a `.dockerignore` file to exclude files from the build context.",
+		Msg:      "Add a `.dockerignore` file to exclude files from the build",
 		DocsPath: "/config/excluding-files",
 	}
 
