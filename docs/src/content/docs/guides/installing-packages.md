@@ -59,3 +59,43 @@ To intentionally replace Railpack's runtime packages, omit `...`:
   }
 }
 ```
+
+### Packages from a Third-Party Apt Repository
+
+If a package is available from an Apt repository that is not configured by
+default, Mise bootstrap can add the repository before installing the package.
+Use a `pre-packages` hook to configure the repository, then declare the package
+in `bootstrap.packages` in your `mise.toml`:
+
+```toml
+[bootstrap.hooks.pre-packages]
+run = """
+set -eu
+
+install -m 0755 -d /etc/apt/keyrings
+curl --fail --location https://packages.example.com/key.gpg \
+  | gpg --dearmor --yes --output /etc/apt/keyrings/example.gpg
+
+echo "deb [signed-by=/etc/apt/keyrings/example.gpg] \
+https://packages.example.com/debian stable main" \
+  > /etc/apt/sources.list.d/example.list
+"""
+
+[bootstrap.packages]
+"apt:example-package" = "latest"
+```
+
+Railpack automatically runs the package portion of Mise bootstrap before
+installing language tools. Apt packages in `bootstrap.packages` are available
+during the build and in the runtime image.
+
+Package hooks run in the build image only. Railpack carries Apt repository
+definitions from `/etc/apt/sources.list.d` and keys from `/etc/apt/keyrings` or
+`/usr/share/keyrings` into the runtime image before applying the packages there.
+This avoids adding repository setup tools such as `curl` and `gpg` to the
+runtime image.
+
+See Mise's
+[`bootstrap.packages`](https://mise.jdx.dev/bootstrap/packages/apt.html)
+documentation for the supported Apt package syntax. Mise's `bootstrap.repos`
+configuration is for Git repositories, not Apt repositories.
