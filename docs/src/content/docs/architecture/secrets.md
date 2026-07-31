@@ -131,7 +131,7 @@ If building with [the CLI](/reference/cli/#build), Railpack will check that all
 the secrets defined in the build plan have variables.
 
 ```bash
-railpack build --secret SENTRY_AUTH_TOKEN=sk_live_asdf
+railpack build --secret SENTRY_AUTH_TOKEN=sntrys_1234
 ```
 
 You can also provide environment variables with the `--env` flag. These are
@@ -139,7 +139,7 @@ available to all steps and in the final image. Use `railpack.json` to customize
 which steps receive an environment variable.
 
 ```bash
-railpack build --env TZ=UTC --secret SENTRY_AUTH_TOKEN=sk_live_asdf
+railpack build --env TZ=UTC --secret SENTRY_AUTH_TOKEN=sntrys_1234
 ```
 
 #### Custom Frontend
