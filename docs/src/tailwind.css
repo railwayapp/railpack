@@ -221,7 +221,7 @@ site-search button[data-open-modal] {
     font-weight: 400;
 
     &:hover {
-      background-color: var(--gray-3);
+      background-color: var(--purple-5);
       color: var(--gray-12);
     }
   }
@@ -233,8 +233,9 @@ site-search button[data-open-modal] {
     font-weight: 400;
     transition: background-color 0.15s ease, color 0.15s ease;
 
+    /* Match the selected-item fill so hover previews the active state. */
     &:hover {
-      background-color: var(--gray-3);
+      background-color: var(--purple-5);
       color: var(--gray-12);
     }
 

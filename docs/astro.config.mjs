@@ -149,10 +149,6 @@ export default defineConfig({
           link: "/getting-started",
         },
         {
-          label: "FAQ",
-          link: "/faq",
-        },
-        {
           label: "Installation",
           link: "/installation",
         },
@@ -222,7 +218,11 @@ export default defineConfig({
         },
         {
           label: "Reference",
-          items: [{ label: "CLI Commands", link: "/reference/cli" }],
+          items: [
+            { label: "CLI Commands", link: "/reference/cli" },
+            { label: "Changelog", link: "/changelog" },
+            { label: "FAQ", link: "/faq" },
+          ],
         },
         {
           label: "Architecture",

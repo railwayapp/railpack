@@ -1,0 +1,284 @@
+#!/usr/bin/env python3
+#MISE description="Generate docs/src/content/docs/changelog.md from GitHub releases"
+"""Fetch GitHub releases and write a Starlight-ready changelog page.
+
+Requires `gh` (authenticated for higher rate limits, public API works unauthenticated
+with lower limits). Skips draft and prerelease releases.
+
+Usage:
+  mise run docs-generate-changelog
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import subprocess
+import sys
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+REPO = "railwayapp/railpack"
+RELEASES_URL = f"https://github.com/{REPO}/releases"
+OUTPUT = Path("docs/src/content/docs/changelog.md")
+# Only include releases published within this window on the docs page.
+CHANGELOG_YEARS = 1
+
+# Match full GitHub PR/issue URLs so we can shorten them in prose.
+PR_URL_RE = re.compile(
+    r"https://github\.com/railwayapp/railpack/(?:pull|issues)/(\d+)"
+)
+# Bare "Full Changelog" compare/commits links from release templates.
+FULL_CHANGELOG_RE = re.compile(
+    r"\*\*Full Changelog\*\*:\s+(https://github\.com/railwayapp/railpack/"
+    r"(?:compare|commits)/[^\s]+)"
+)
+# Boilerplate footer lines from the release notes template.
+INTERNAL_LINE_RE = re.compile(
+    r"^\*?Internal (improvements|build maintenance|snapshot maintenance)\b",
+    re.IGNORECASE,
+)
+# Demote ATX headings one level so each release can own the ## slot.
+HEADING_RE = re.compile(r"^(#{1,5})\s", re.MULTILINE)
+
+
+def fetch_releases() -> list[dict]:
+    """Return non-draft, non-prerelease releases newest-first.
+
+    Stream one JSON object per release so gh --paginate cannot drop pages
+    the way an outer array expression sometimes does.
+    """
+    result = subprocess.run(
+        [
+            "gh",
+            "api",
+            f"repos/{REPO}/releases",
+            "--paginate",
+            "--jq",
+            (
+                ".[] | select(.draft == false and .prerelease == false) | "
+                "{tag_name, name, published_at, html_url, body}"
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        print(
+            result.stderr.strip() or "failed to fetch releases via gh",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    text = result.stdout.strip()
+    if not text:
+        return []
+
+    releases: list[dict] = []
+    decoder = json.JSONDecoder()
+    idx = 0
+    while idx < len(text):
+        while idx < len(text) and text[idx].isspace():
+            idx += 1
+        if idx >= len(text):
+            break
+        obj, offset = decoder.raw_decode(text, idx)
+        idx = offset
+        if isinstance(obj, dict):
+            releases.append(obj)
+
+    # API returns newest-first per page; re-sort to be safe
+    releases.sort(key=lambda r: r.get("published_at") or "", reverse=True)
+    return releases
+
+
+def parse_published_at(published_at: str | None) -> datetime | None:
+    if not published_at:
+        return None
+    try:
+        return datetime.fromisoformat(published_at.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def filter_recent_releases(
+    releases: list[dict],
+) -> tuple[list[dict], int]:
+    """Keep releases from the last CHANGELOG_YEARS; return (kept, older_count)."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=365 * CHANGELOG_YEARS)
+    recent: list[dict] = []
+    older = 0
+    for release in releases:
+        published = parse_published_at(release.get("published_at"))
+        if published is None or published >= cutoff:
+            recent.append(release)
+        else:
+            older += 1
+    return recent, older
+
+
+def format_date(published_at: str | None) -> str:
+    if not published_at:
+        return ""
+    try:
+        dt = datetime.fromisoformat(published_at.replace("Z", "+00:00"))
+    except ValueError:
+        return published_at[:10]
+    return dt.strftime("%B %-d, %Y")
+
+
+def shorten_pr_urls(text: str) -> str:
+    """Turn full PR/issue URLs into [#N](url) markdown links."""
+
+    def repl(match: re.Match[str]) -> str:
+        num = match.group(1)
+        url = match.group(0)
+        return f"[#{num}]({url})"
+
+    return PR_URL_RE.sub(repl, text)
+
+
+def linkify_full_changelog(text: str) -> str:
+    """Turn bare Full Changelog URLs into markdown links."""
+
+    def repl(match: re.Match[str]) -> str:
+        url = match.group(1)
+        label = url.rsplit("/", 1)[-1]
+        return f"**Full Changelog**: [{label}]({url})"
+
+    return FULL_CHANGELOG_RE.sub(repl, text)
+
+
+def demote_headings(text: str) -> str:
+    """Shift ATX headings down one level (## → ###, etc.)."""
+    return HEADING_RE.sub(lambda m: "#" + m.group(1) + " ", text)
+
+
+def is_noise_line(line: str) -> bool:
+    stripped = line.strip()
+    if not stripped:
+        return False
+    if stripped == "---":
+        return True
+    if INTERNAL_LINE_RE.match(stripped):
+        return True
+    return False
+
+
+def clean_body(body: str | None) -> str:
+    if not body or not body.strip():
+        return ""
+
+    text = body.replace("\r\n", "\n").strip()
+    text = demote_headings(text)
+    text = shorten_pr_urls(text)
+    text = linkify_full_changelog(text)
+
+    cleaned: list[str] = []
+    prev_blank = False
+    for line in text.split("\n"):
+        line = line.rstrip()
+        if is_noise_line(line):
+            continue
+        blank = line == ""
+        # Collapse runs of blank lines left by filtered noise
+        if blank and (prev_blank or not cleaned):
+            continue
+        cleaned.append(line)
+        prev_blank = blank
+
+    return "\n".join(cleaned).strip()
+
+
+def version_label(tag_name: str, name: str | None) -> str:
+    tag = tag_name.strip()
+    if tag.startswith("v"):
+        return tag
+    if name and name.strip():
+        return name.strip()
+    return tag
+
+
+def render_release(release: dict) -> str:
+    tag = release.get("tag_name") or ""
+    label = version_label(tag, release.get("name"))
+    date = format_date(release.get("published_at"))
+    html_url = release.get("html_url") or f"https://github.com/{REPO}/releases/tag/{tag}"
+    body = clean_body(release.get("body"))
+
+    parts = [f"## {label}"]
+    meta = []
+    if date:
+        meta.append(date)
+    meta.append(f"[GitHub release]({html_url})")
+    parts.append(" · ".join(meta))
+    parts.append("")
+    if body:
+        parts.append(body)
+        parts.append("")
+    return "\n".join(parts)
+
+
+def render_page(releases: list[dict], older_count: int) -> str:
+    header = """\
+---
+title: Changelog
+description: Release notes for each published version of Railpack.
+editUrl: false
+tableOfContents:
+  minHeadingLevel: 2
+  maxHeadingLevel: 2
+---
+
+"""
+    sections = [render_release(r) for r in releases]
+    body = "\n".join(sections).rstrip()
+    if older_count > 0:
+        window = "year" if CHANGELOG_YEARS == 1 else f"{CHANGELOG_YEARS} years"
+        body += (
+            f"\n\n## Older releases\n\n"
+            f"This page covers the last {window}. "
+            f"See all releases on "
+            f"[GitHub]({RELEASES_URL}).\n"
+        )
+    # Single trailing newline at EOF
+    return header + body + "\n"
+
+
+def main() -> None:
+    repo_root = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+
+    root = Path(repo_root)
+    output = root / OUTPUT
+
+    print(f"Fetching releases from {REPO}…")
+    releases = fetch_releases()
+    if not releases:
+        print("No published releases found", file=sys.stderr)
+        sys.exit(1)
+
+    recent, older_count = filter_recent_releases(releases)
+    if not recent:
+        print(
+            f"No releases in the last {CHANGELOG_YEARS} years",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    print(
+        f"Writing {len(recent)} release(s) to {OUTPUT}"
+        f" (omitting {older_count} older)"
+    )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(render_page(recent, older_count), encoding="utf-8")
+    print(f"Wrote {output.relative_to(root)}")
+
+
+if __name__ == "__main__":
+    main()
