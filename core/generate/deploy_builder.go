@@ -47,6 +47,7 @@ func (b *DeployBuilder) HasIncludeForStep(stepName string, path string) bool {
 	return false
 }
 
+// checks if any of the deploy inputs contain a given step name
 func (b *DeployBuilder) HasInputForStep(stepName string) bool {
 	for _, layer := range b.DeployInputs {
 		if layer.Step == stepName {
