@@ -1,0 +1,8 @@
+[bootstrap.hooks.pre-packages]
+run = "touch /tmp/railpack-mise-bootstrap-hook"
+
+[bootstrap.hooks.post-packages]
+run = "test -f /tmp/railpack-mise-bootstrap-hook && rm /tmp/railpack-mise-bootstrap-hook"
+
+[bootstrap.packages]
+"apt:neofetch" = "latest"

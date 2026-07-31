@@ -4,7 +4,6 @@
   "packages": {
     "python": "latest"
   },
-  "buildAptPackages": ["neofetch"],
   "steps": {
     "build": {
       "commands": ["neofetch"],
@@ -15,7 +14,6 @@
   },
   "deploy": {
     "inputs": ["..."],
-    "aptPackages": ["neofetch"],
     "startCommand": "python --version && neofetch $HELLO"
   }
 }
