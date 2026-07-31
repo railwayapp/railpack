@@ -204,34 +204,156 @@ func TestGenerateContextAppliesConfiguredDeployBase(t *testing.T) {
 	})
 }
 
-func TestGenerateContextKeepsConfiguredDeployInputFilters(t *testing.T) {
-	ctx := CreateTestContext(t, "../../examples/node-npm")
-	configJSON := `{
-		"steps": {
-			"build": {
-				"commands": ["npm run build"]
-			}
-		},
-		"deploy": {
-			"inputs": [
-				{
-					"step": "build",
-					"include": ["apps/landing/.next/standalone"]
+func TestGenerateContextDeployInputs(t *testing.T) {
+	t.Run("explicit inputs suppress implicit outputs from every configured step", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+		provider := &TestProvider{}
+		require.NoError(t, provider.Plan(ctx))
+
+		configJSON := `{
+			"steps": {
+				"install": {
+					"commands": ["echo installing"]
+				},
+				"build": {
+					"commands": ["echo building"]
 				}
-			]
-		}
-	}`
+			},
+			"deploy": {
+				"inputs": [
+					{
+						"step": "build",
+						"include": ["apps/landing/.next/standalone"]
+					}
+				]
+			}
+		}`
 
-	var config config.Config
-	require.NoError(t, json.Unmarshal([]byte(configJSON), &config))
-	ctx.Config = &config
+		var config config.Config
+		require.NoError(t, json.Unmarshal([]byte(configJSON), &config))
+		ctx.Config = &config
 
-	buildPlan, _, err := ctx.Generate()
-	require.NoError(t, err)
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
 
-	require.Equal(t, []plan.Layer{
-		plan.NewStepLayer("build", plan.NewIncludeFilter([]string{"apps/landing/.next/standalone"})),
-	}, buildPlan.Deploy.Inputs)
+		require.Equal(t, []plan.Layer{
+			plan.NewStepLayer("build", plan.NewIncludeFilter([]string{"apps/landing/.next/standalone"})),
+		}, buildPlan.Deploy.Inputs)
+	})
+
+	t.Run("omitted inputs preserve implicit outputs", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+		configJSON := `{
+			"steps": {
+				"custom": {
+					"commands": ["echo custom"]
+				}
+			},
+			"deploy": {
+				"startCommand": "echo hello"
+			}
+		}`
+
+		var config config.Config
+		require.NoError(t, json.Unmarshal([]byte(configJSON), &config))
+		ctx.Config = &config
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+
+		require.Equal(t, []plan.Layer{
+			plan.NewStepLayer("custom", plan.NewIncludeFilter([]string{"."})),
+		}, buildPlan.Deploy.Inputs)
+	})
+
+	t.Run("explicit deploy outputs remain additive", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+		configJSON := `{
+			"steps": {
+				"build": {
+					"commands": ["echo building"],
+					"deployOutputs": [
+						{"include": ["dist"]}
+					]
+				}
+			},
+			"deploy": {
+				"inputs": [
+					{"step": "build", "include": ["other"]}
+				]
+			}
+		}`
+
+		var config config.Config
+		require.NoError(t, json.Unmarshal([]byte(configJSON), &config))
+		ctx.Config = &config
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+
+		require.Equal(t, []plan.Layer{
+			plan.NewStepLayer("build", plan.NewIncludeFilter([]string{"other"})),
+			plan.NewStepLayer("build", plan.NewIncludeFilter([]string{"dist"})),
+		}, buildPlan.Deploy.Inputs)
+	})
+
+	t.Run("empty inputs suppress implicit outputs", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+		provider := &TestProvider{}
+		require.NoError(t, provider.Plan(ctx))
+
+		configJSON := `{
+			"steps": {
+				"install": {
+					"commands": ["echo installing"]
+				},
+				"build": {
+					"commands": ["echo building"]
+				}
+			},
+			"deploy": {
+				"inputs": []
+			}
+		}`
+
+		var config config.Config
+		require.NoError(t, json.Unmarshal([]byte(configJSON), &config))
+		ctx.Config = &config
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+
+		require.Empty(t, buildPlan.Deploy.Inputs)
+	})
+
+	t.Run("spread inputs preserve generated and implicit outputs", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/node-npm")
+		provider := &TestProvider{}
+		require.NoError(t, provider.Plan(ctx))
+
+		configJSON := `{
+			"steps": {
+				"custom": {
+					"commands": ["echo custom"]
+				}
+			},
+			"deploy": {
+				"inputs": ["..."]
+			}
+		}`
+
+		var config config.Config
+		require.NoError(t, json.Unmarshal([]byte(configJSON), &config))
+		ctx.Config = &config
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+
+		require.Equal(t, []plan.Layer{
+			plan.NewStepLayer("build"),
+			plan.NewStepLayer("custom", plan.NewIncludeFilter([]string{"."})),
+		}, buildPlan.Deploy.Inputs)
+	})
 }
 
 func TestGenerateContextDockerignore(t *testing.T) {
