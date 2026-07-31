@@ -287,7 +287,6 @@ func (p *NodeProvider) shouldPrune(ctx *generate.GenerateContext) bool {
 
 func (p *NodeProvider) PruneNodeDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
 	ctx.Logger.LogInfo("Pruning node dependencies")
-	prune.Variables["NPM_CONFIG_OMIT"] = "dev,optional"
 	prune.Secrets = []string{}
 	p.packageManager.PruneDeps(ctx, prune)
 }
@@ -413,7 +412,6 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 func (p *NodeProvider) GetNodeEnvVars(ctx *generate.GenerateContext) map[string]string {
 	envVars := map[string]string{
 		"NODE_ENV":                   "production",
-		"NPM_CONFIG_PRODUCTION":      "false",
 		"NPM_CONFIG_UPDATE_NOTIFIER": "false",
 		"NPM_CONFIG_FUND":            "false",
 		// https://docs.npmjs.com/cli/using-npm/config#fetch-retries

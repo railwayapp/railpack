@@ -130,9 +130,9 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 	case PackageManagerNpm:
 		hasLockfile := ctx.App.HasFile("package-lock.json")
 		if hasLockfile {
-			install.AddCommand(plan.NewExecCommand("npm ci"))
+			install.AddCommand(plan.NewExecCommand("npm ci --include=dev"))
 		} else {
-			install.AddCommand(plan.NewExecCommand("npm install"))
+			install.AddCommand(plan.NewExecCommand("npm install --include=dev"))
 		}
 	case PackageManagerPnpm:
 		install.AddEnvVars(map[string]string{
@@ -230,7 +230,7 @@ func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate
 
 	switch p {
 	case PackageManagerNpm:
-		prune.AddCommand(plan.NewExecCommand("npm prune --ignore-scripts"))
+		prune.AddCommand(plan.NewExecCommand("npm prune --omit=dev --ignore-scripts"))
 	case PackageManagerPnpm:
 		p.prunePnpm(ctx, prune)
 	case PackageManagerBun:
