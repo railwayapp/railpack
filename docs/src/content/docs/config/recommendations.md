@@ -3,7 +3,7 @@ title: Recommendations
 description: Environment and tooling recommendations for Railpack-built images
 ---
 
-## Timezone
+## Set the Timezone Explicitly
 
 Railpack does not set a timezone. Set `TZ` explicitly for your application.
 `TZ=UTC` is a good default.
@@ -18,7 +18,7 @@ Railpack does not set a timezone. Set `TZ` explicitly for your application.
 }
 ```
 
-## Python with pipx
+## Install Python when using `pipx`
 
 If you install `pipx` without also installing Python via mise, pipx will use
 the system Python and pip from the Debian runtime image. That Python is old and
@@ -37,7 +37,7 @@ Install Python via mise whenever you use pipx:
 
 Or, even better, configure this in a `mise.toml` instead of a `railpack.json`
 
-## Locale
+## Set the Locale Explicitly
 
 Set `LANG=en_US.UTF-8` so applications and shell tools handle Unicode
 correctly. Railpack does not bundle additional locales — only `en_US.UTF-8`
@@ -116,7 +116,7 @@ locked = true
 Commit the generated `mise.lock` file alongside your `mise.toml`. Railpack
 automatically includes `mise.lock` files in the build when present.
 
-## GPG Verification
+## Enable GPG Verification
 
 Mise can verify OpenPGP signatures for tools that publish them. Enable
 verification for all supported tools in your `mise.toml`:
@@ -165,16 +165,17 @@ control over the install step:
   "$schema": "https://schema.railpack.com",
   "steps": {
     "install": {
-      // Configuring a step auto-adds it to deploy with include: ["."]. Use an empty
-      // deployOutputs so install is not copied into the final image; node_modules
-      // still reach the image via the build step.
+      // Configuring a step auto-adds it to deploy with include: ["."].
+      // Use an empty deployOutputs so install is not copied into the final
+      // image; node_modules still reach the image via the build step.
       "deployOutputs": [],
       "commands": [
         // auto-generated commands from railpack
         { "path": "/app/node_modules/.bin" },
         { "src": "package-lock.json", "dest": "package-lock.json" },
         { "src": "package.json", "dest": "package.json" },
-        // by default, `npm install` is used here; use `npm ci` for increased determinism
+        // By default, `npm install` is used here. Use `npm ci` for increased
+        // determinism.
         "npm ci"
       ]
     }
@@ -187,8 +188,8 @@ Railpack defaults to `npm install` because `package.json` and
 intentional local changes. That mismatch rarely shows up in development and only
 fails at image build time with:
 
-> `npm ci` can only install packages when your package.json and package-lock.json
-> or npm-shrinkwrap.json are in sync.
+> `npm ci` can only install packages when your package.json and
+> package-lock.json or npm-shrinkwrap.json are in sync.
 
 Using `npm install` avoids build failures at the cost of weaker
 determinism. You should keep your lockfile in sync and opt into `npm ci` for:

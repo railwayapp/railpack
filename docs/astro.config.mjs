@@ -9,6 +9,16 @@ import starlightPageActions from "starlight-page-actions";
 export default defineConfig({
   site: "https://railpack.com",
 
+  redirects: {
+    "/architecture/buildkit": "/platforms/buildkit",
+    "/architecture/caching": "/platforms/caching",
+    "/architecture/recommendations": "/config/recommendations",
+    "/guides/running-railpack-in-production":
+      "/platforms/running-railpack-in-production",
+    "/reference/frontend": "/platforms/buildkit-frontend",
+    "/resolving-errors": "/config/resolving-errors",
+  },
+
   prefetch: {
     prefetchAll: true,
     defaultStrategy: "hover",
@@ -64,7 +74,9 @@ export default defineConfig({
         },
       },
       plugins: [
-        starlightPageActions(),
+        starlightPageActions({
+          position: "table-of-contents",
+        }),
         starlightLlmsTxt({
           projectName: "Railpack",
           description:
@@ -88,6 +100,12 @@ export default defineConfig({
               label: "Guides",
               description: "Step-by-step guides for common tasks",
               paths: ["guides/**"],
+            },
+            {
+              label: "Platforms",
+              description:
+                "Documentation for integrating Railpack into hosting platforms",
+              paths: ["platforms/**"],
             },
             {
               label: "Configuration",
@@ -135,10 +153,6 @@ export default defineConfig({
           link: "/faq",
         },
         {
-          label: "Resolving Errors",
-          link: "/resolving-errors",
-        },
-        {
           label: "Installation",
           link: "/installation",
         },
@@ -161,10 +175,6 @@ export default defineConfig({
               label: "Developing Locally",
               link: "/guides/developing-locally",
             },
-            {
-              label: "Running Railpack in Production",
-              link: "/guides/running-railpack-in-production",
-            },
           ],
         },
         {
@@ -179,6 +189,8 @@ export default defineConfig({
             { label: "Mise", link: "/config/mise" },
             { label: "Procfile", link: "/config/procfile" },
             { label: "Excluding Files", link: "/config/excluding-files" },
+            { label: "Recommendations", link: "/config/recommendations" },
+            { label: "Resolving Errors", link: "/config/resolving-errors" },
           ],
         },
         {
@@ -210,10 +222,7 @@ export default defineConfig({
         },
         {
           label: "Reference",
-          items: [
-            { label: "CLI Commands", link: "/reference/cli" },
-            { label: "BuildKit Frontend", link: "/reference/frontend" },
-          ],
+          items: [{ label: "CLI Commands", link: "/reference/cli" }],
         },
         {
           label: "Architecture",
@@ -228,19 +237,42 @@ export default defineConfig({
               label: "Secrets and Variables",
               link: "/architecture/secrets",
             },
-            { label: "BuildKit Generation", link: "/architecture/buildkit" },
-            { label: "Caching", link: "/architecture/caching" },
-            {
-              label: "Recommendations",
-              link: "/architecture/recommendations",
-            },
           ],
         },
         {
           label: "Contributing",
           link: "/contributing",
         },
+        {
+          label: "Platforms",
+          items: [
+            {
+              label: "Build with Railpack",
+              link: "/platforms/build-with-railpack",
+            },
+            {
+              label: "Running Railpack in Production",
+              link: "/platforms/running-railpack-in-production",
+            },
+            {
+              label: "BuildKit Frontend",
+              link: "/platforms/buildkit-frontend",
+            },
+            {
+              label: "BuildKit Generation",
+              link: "/platforms/buildkit",
+            },
+            { label: "Caching", link: "/platforms/caching" },
+            {
+              label: "Package Version Resolution",
+              link: "/platforms/package-version-resolution",
+            },
+          ],
+        },
       ],
+      components: {
+        TableOfContents: "./src/components/TableOfContents.astro",
+      },
     }),
   ],
 

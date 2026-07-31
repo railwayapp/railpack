@@ -95,8 +95,8 @@ flag. The names of these variables will be added to the build plan as secrets.
 
 #### CLI Build
 
-If building with [the CLI](/guides/building-with-cli), Railpack will check that
-all the secrets defined in the build plan have variables.
+If building with [the CLI](/reference/cli/#build), Railpack will check that all
+the secrets defined in the build plan have variables.
 
 ```bash
 railpack build --env STRIPE_LIVE_KEY=sk_live_asdf
@@ -104,7 +104,7 @@ railpack build --env STRIPE_LIVE_KEY=sk_live_asdf
 
 #### Custom Frontend
 
-If building with a [custom frontend](/guides/building-with-custom-frontends),
+If building with the [BuildKit frontend](/platforms/buildkit-frontend),
 you should still provide the secrets when generating the plan with `--env`. This
 adds the secrets to the build plan. You then need to pass the secrets to Docker
 or BuildKit with the `--secret` flag.
@@ -123,7 +123,7 @@ STRIPE_LIVE_KEY=asdf123456789 docker build \
 ```
 
 For more information about running Railpack in production, see the [Running
-Railpack in Production](/guides/running-railpack-in-production) guide.
+Railpack in Production](/platforms/running-railpack-in-production) guide.
 
 ### Layer Invalidation
 

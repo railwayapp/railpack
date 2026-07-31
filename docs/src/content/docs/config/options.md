@@ -33,6 +33,6 @@ generate a complete build plan. The `railpack prepare` command can serialize
 this plan to a file commonly named `railpack-plan.json`.
 
 The generated `railpack-plan.json` is a lower-level artifact consumed by the
-[BuildKit frontend](/reference/frontend). It is the compiled output of the
-planning process, not another `railpack.json` input. The two files have
+[BuildKit frontend](/platforms/buildkit-frontend). It is the compiled output of
+the planning process, not another `railpack.json` input. The two files have
 different schemas and are not interchangeable.
