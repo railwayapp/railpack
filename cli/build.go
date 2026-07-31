@@ -113,14 +113,13 @@ var BuildCommand = &cli.Command{
 			ProgressMode: cmd.String("progress"),
 			CacheKey:     cmd.String("cache-key"),
 			// StringSlice to support multiple cache-from / cache-to entries, same shape as docker buildx
-			ImportCache:         cmd.StringSlice("cache-from"),
-			ExportCache:         cmd.StringSlice("cache-to"),
-			SecretsHash:         secretsHash,
-			Secrets:             env.Variables,
-			Platform:            platformStr,
-			GitHubToken:         os.Getenv("GITHUB_TOKEN"),
-			NoCache:             cmd.Bool("no-cache"),
-			DockerignoreContext: buildResult.DockerignoreContext,
+			ImportCache: cmd.StringSlice("cache-from"),
+			ExportCache: cmd.StringSlice("cache-to"),
+			SecretsHash: secretsHash,
+			Secrets:     env.Variables,
+			Platform:    platformStr,
+			GitHubToken: os.Getenv("GITHUB_TOKEN"),
+			NoCache:     cmd.Bool("no-cache"),
 		})
 		if err != nil {
 			return cli.Exit(err, 1)

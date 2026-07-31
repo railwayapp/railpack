@@ -34,14 +34,13 @@ type GenerateBuildPlanOptions struct {
 }
 
 type BuildResult struct {
-	RailpackVersion     string                               `json:"railpackVersion,omitempty"`
-	Plan                *plan.BuildPlan                      `json:"plan,omitempty"`
-	ResolvedPackages    map[string]*resolver.ResolvedPackage `json:"resolvedPackages,omitempty"`
-	Metadata            map[string]string                    `json:"metadata,omitempty"`
-	DetectedProviders   []string                             `json:"detectedProviders,omitempty"`
-	Logs                []logger.Msg                         `json:"logs,omitempty"`
-	Success             bool                                 `json:"success,omitempty"`
-	DockerignoreContext *plan.DockerignoreContext            `json:"-"`
+	RailpackVersion   string                               `json:"railpackVersion,omitempty"`
+	Plan              *plan.BuildPlan                      `json:"plan,omitempty"`
+	ResolvedPackages  map[string]*resolver.ResolvedPackage `json:"resolvedPackages,omitempty"`
+	Metadata          map[string]string                    `json:"metadata,omitempty"`
+	DetectedProviders []string                             `json:"detectedProviders,omitempty"`
+	Logs              []logger.Msg                         `json:"logs,omitempty"`
+	Success           bool                                 `json:"success,omitempty"`
 }
 
 func readConfigJSON(path string, v any) error {
@@ -135,14 +134,13 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 	}
 
 	buildResult := &BuildResult{
-		RailpackVersion:     railpackVersion,
-		Plan:                buildPlan,
-		ResolvedPackages:    resolvedPackages,
-		Metadata:            ctx.Metadata.Properties,
-		DetectedProviders:   []string{detectedProviderName},
-		Logs:                logger.Logs,
-		Success:             true,
-		DockerignoreContext: ctx.GetDockerignoreContext(),
+		RailpackVersion:   railpackVersion,
+		Plan:              buildPlan,
+		ResolvedPackages:  resolvedPackages,
+		Metadata:          ctx.Metadata.Properties,
+		DetectedProviders: []string{detectedProviderName},
+		Logs:              logger.Logs,
+		Success:           true,
 	}
 
 	return buildResult

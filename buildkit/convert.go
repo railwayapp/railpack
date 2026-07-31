@@ -30,8 +30,6 @@ type ConvertPlanOptions struct {
 	GitHubToken string
 	// Do not use cache when building
 	NoCache bool
-	// Dockerignore context for filtering local files
-	DockerignoreContext *p.DockerignoreContext
 }
 
 const (

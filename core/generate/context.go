@@ -315,11 +315,6 @@ func (c *GenerateContext) GetAppSource() string {
 	return c.App.Source
 }
 
-// Returns the .dockerignore context parsed successfully during initialization.
-func (c *GenerateContext) GetDockerignoreContext() *plan.DockerignoreContext {
-	return c.dockerignoreCtx
-}
-
 func (c *GenerateContext) GetLogger() *logger.Logger {
 	return c.Logger
 }
