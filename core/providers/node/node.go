@@ -377,7 +377,6 @@ func (p *NodeProvider) shouldPrune(ctx *generate.GenerateContext) bool {
 
 func (p *NodeProvider) PruneNodeDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
 	ctx.Logger.LogInfo("Pruning node dependencies")
-	prune.Variables["NPM_CONFIG_OMIT"] = "dev,optional"
 	if p.packageManager == PackageManagerBun {
 		// Keep symlinks project-local in node_modules across container build layers
 		prune.Variables["BUN_INSTALL_GLOBAL_STORE"] = "0"
@@ -501,7 +500,6 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 func (p *NodeProvider) GetNodeEnvVars(ctx *generate.GenerateContext) map[string]string {
 	envVars := map[string]string{
 		"NODE_ENV":                   "production",
-		"NPM_CONFIG_PRODUCTION":      "false",
 		"NPM_CONFIG_UPDATE_NOTIFIER": "false",
 		"NPM_CONFIG_FUND":            "false",
 		// https://docs.npmjs.com/cli/using-npm/config#fetch-retries
