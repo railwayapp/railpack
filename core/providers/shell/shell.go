@@ -59,7 +59,7 @@ func (p *ShellProvider) Plan(ctx *generate.GenerateContext) error {
 		install := ctx.NewCommandStep("install")
 		// Install step needs mise base to access any tools installed in the mise step (e.g. via RAILPACK_PACKAGES)
 		install.AddInput(plan.NewStepLayer(miseStepName))
-		install.AddInput(ctx.NewLocalLayer())
+		install.AddInput(plan.NewLocalLayer())
 
 		// If we have an install step, the build step should be based on the result of the install step
 		// so that artifacts from the install step are available during the build.
@@ -71,7 +71,7 @@ func (p *ShellProvider) Plan(ctx *generate.GenerateContext) error {
 
 	build := ctx.NewCommandStep("build")
 	build.AddInput(buildBaseLayer)
-	build.AddInput(ctx.NewLocalLayer())
+	build.AddInput(plan.NewLocalLayer())
 	build.AddCommands(
 		[]plan.Command{
 			plan.NewExecCommand("chmod +x " + p.scriptName),

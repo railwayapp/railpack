@@ -16,6 +16,7 @@ type BuildPlan struct {
 	Caches  map[string]*Cache `json:"caches,omitempty"`
 	Secrets []string          `json:"secrets,omitempty"`
 	Deploy  Deploy            `json:"deploy"`
+	Exclude []string          `json:"exclude,omitempty"`
 }
 
 type Deploy struct {
@@ -41,6 +42,7 @@ func NewBuildPlan() *BuildPlan {
 		Deploy:  Deploy{},
 		Caches:  make(map[string]*Cache),
 		Secrets: []string{},
+		Exclude: []string{},
 	}
 }
 

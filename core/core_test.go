@@ -133,4 +133,5 @@ func TestGenerateBuildPlan_DockerignoreMetadata(t *testing.T) {
 	require.True(t, buildResult.Success)
 	require.NotNil(t, buildResult.Metadata)
 	require.Equal(t, "true", buildResult.Metadata["dockerIgnore"])
+	require.NotEmpty(t, buildResult.Plan.Exclude)
 }

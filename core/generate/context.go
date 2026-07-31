@@ -57,6 +57,7 @@ type CommandWrapper struct {
 	Command plan.Command
 }
 
+// is a user-provided command entry a "spread" command?
 func (c CommandWrapper) IsSpread() bool {
 	if execCmd, ok := c.Command.(plan.ExecCommand); ok {
 		return execCmd.Cmd == plan.ShellCommandString("...") || execCmd.Cmd == "..."
@@ -77,9 +78,7 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 
 	if dockerignoreCtx.HasFile {
 		logger.LogInfo("Found .dockerignore file, applying filters")
-
-		log.Debugf("Dockerignore exclude patterns: %v", dockerignoreCtx.Excludes)
-		log.Debugf("Dockerignore include patterns: %v", dockerignoreCtx.Includes)
+		log.Debugf("Dockerignore patterns: %v", dockerignoreCtx.Excludes)
 	}
 
 	ctx := &GenerateContext{
@@ -153,8 +152,15 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 		return nil, nil, err
 	}
 
-	// Create the actual build plan
 	buildPlan := plan.NewBuildPlan()
+
+	// Merge exclude patterns from .dockerignore and railpack.json
+	excludePatterns := []string{}
+	excludePatterns = append(excludePatterns, c.dockerignoreCtx.Excludes...)
+	excludePatterns = append(excludePatterns, c.Config.Exclude...)
+	if len(excludePatterns) > 0 {
+		buildPlan.Exclude = excludePatterns
+	}
 
 	buildStepOptions := &BuildStepOptions{
 		ResolvedPackages: resolvedPackages,
@@ -300,20 +306,6 @@ func (c *GenerateContext) applyDeployAptPackages() {
 	}
 
 	c.Deploy.AptPackages = plan.SpreadStrings(configuredPackages, c.Deploy.AptPackages)
-}
-
-// creates a local layer with dockerignore patterns applied
-func (c *GenerateContext) NewLocalLayer() plan.Layer {
-	layer := plan.NewLocalLayer()
-
-	if len(c.dockerignoreCtx.Includes) > 0 {
-		layer.Include = append(layer.Include, c.dockerignoreCtx.Includes...)
-	}
-	if len(c.dockerignoreCtx.Excludes) > 0 {
-		layer.Exclude = append(layer.Exclude, c.dockerignoreCtx.Excludes...)
-	}
-
-	return layer
 }
 
 // in order to get around a circular dependency issue, we need to define discrete getters to interface with

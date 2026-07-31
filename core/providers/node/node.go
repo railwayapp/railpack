@@ -265,7 +265,7 @@ func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 }
 
 func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
-	build.AddInput(ctx.NewLocalLayer())
+	build.AddInput(plan.NewLocalLayer())
 
 	if p.packageJson.HasScript("build") {
 		build.AddCommands([]plan.Command{

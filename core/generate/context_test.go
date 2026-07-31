@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -204,6 +205,18 @@ func TestGenerateContextAppliesConfiguredDeployBase(t *testing.T) {
 }
 
 func TestGenerateContextDockerignore(t *testing.T) {
+	t.Run("dockerignore patterns precede config patterns", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/dockerignore")
+		configExcludes := []string{"!the.log", "config-only"}
+		ctx.Config.Exclude = configExcludes
+
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+
+		expected := append(slices.Clone(ctx.dockerignoreCtx.Excludes), configExcludes...)
+		require.Equal(t, expected, buildPlan.Exclude)
+	})
+
 	t.Run("context with dockerignore", func(t *testing.T) {
 		ctx := CreateTestContext(t, "../../examples/dockerignore")
 
@@ -213,19 +226,23 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		// Verify metadata indicates dockerignore presence
 		require.Equal(t, "true", ctx.Metadata.Get("dockerIgnore"))
 
-		// Test NewLocalLayer with dockerignore patterns
-		layer := ctx.NewLocalLayer()
-		require.True(t, layer.Local)
-		require.NotNil(t, layer.Filter)
+		// Verify dockerignore patterns are in the context
+		require.NotEmpty(t, ctx.dockerignoreCtx.Excludes)
+		require.Contains(t, ctx.dockerignoreCtx.Excludes, ".vscode")
+		require.Contains(t, ctx.dockerignoreCtx.Excludes, "*.log")
+		require.Contains(t, ctx.dockerignoreCtx.Excludes, "__pycache__")
 
-		// Should have exclude patterns from .dockerignore
-		require.NotEmpty(t, layer.Exclude)
-		require.Contains(t, layer.Exclude, ".vscode")
-		require.Contains(t, layer.Exclude, "*.log")
-		require.Contains(t, layer.Exclude, "__pycache__") // Trailing slash is stripped by parser
+		// Negation patterns are also in Excludes (with ! prefix)
+		require.Contains(t, ctx.dockerignoreCtx.Excludes, "!negation_test/should_exist.txt")
+		require.Contains(t, ctx.dockerignoreCtx.Excludes, "!negation_test/existing_folder")
 
-		// Should have default include pattern
-		require.Equal(t, []string{".", "negation_test/should_exist.txt", "negation_test/existing_folder"}, layer.Include)
+		// Verify dockerignore patterns are correctly moved to the plan level
+		buildPlan, _, err := ctx.Generate()
+		require.NoError(t, err)
+		require.Contains(t, buildPlan.Exclude, ".vscode")
+		require.Contains(t, buildPlan.Exclude, "*.log")
+		require.Contains(t, buildPlan.Exclude, "!negation_test/should_exist.txt")
+		require.Contains(t, buildPlan.Exclude, "!negation_test/existing_folder")
 	})
 
 	t.Run("context without dockerignore", func(t *testing.T) {
@@ -236,15 +253,6 @@ func TestGenerateContextDockerignore(t *testing.T) {
 
 		// Verify metadata does not indicate dockerignore presence
 		require.Empty(t, ctx.Metadata.Get("dockerIgnore"))
-
-		// Test NewLocalLayer without dockerignore patterns
-		layer := ctx.NewLocalLayer()
-		require.True(t, layer.Local)
-
-		// Should use default behavior when no dockerignore patterns exist
-		require.NotNil(t, layer.Filter)
-		require.Equal(t, []string{"."}, layer.Include)
-		require.Empty(t, layer.Exclude)
 	})
 
 	t.Run("context creation with no dockerignore", func(t *testing.T) {
@@ -257,7 +265,6 @@ func TestGenerateContextDockerignore(t *testing.T) {
 
 		// Verify parsing works with no file present
 		require.Nil(t, ctx.dockerignoreCtx.Excludes)
-		require.Nil(t, ctx.dockerignoreCtx.Includes)
 	})
 
 	t.Run("context creation fails with invalid dockerignore", func(t *testing.T) {

@@ -99,7 +99,7 @@ func (p *GoProvider) Build(ctx *generate.GenerateContext, build *generate.Comman
 		buildCmd = fmt.Sprintf("%s main.go", baseBuildCmd)
 	}
 
-	build.AddInput(ctx.NewLocalLayer())
+	build.AddInput(plan.NewLocalLayer())
 
 	if buildCmd == "" {
 		return

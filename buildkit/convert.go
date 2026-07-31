@@ -28,7 +28,6 @@ type ConvertPlanOptions struct {
 
 	// Token used to make authenticated API requests to GitHub to increase rate limits
 	GitHubToken string
-
 	// Do not use cache when building
 	NoCache bool
 }
@@ -40,12 +39,19 @@ const (
 func ConvertPlanToLLB(plan *p.BuildPlan, opts ConvertPlanOptions) (*llb.State, *Image, error) {
 	platform := opts.BuildPlatform
 
-	localState := llb.Local("context",
+	// by default, the whole directory is transferred into context, we don't need to explicitly include it
+	localOpts := []llb.LocalOption{
 		llb.SharedKeyHint("local"),
 		llb.SessionID(opts.SessionID),
 		llb.WithCustomName("loading ."),
-		llb.FollowPaths([]string{"."}),
-	)
+	}
+
+	// note that exclude patterns can contain inverse (inclusions) patterns. The llb.IncludePatterns should *not* be used for this
+	if len(plan.Exclude) > 0 {
+		localOpts = append(localOpts, llb.ExcludePatterns(plan.Exclude))
+	}
+
+	localState := llb.Local("context", localOpts...)
 
 	cacheStore := build_llb.NewBuildKitCacheStore(opts.CacheKey)
 	graph, err := build_llb.NewBuildGraph(plan, &localState, cacheStore, opts.SecretsHash, &platform, opts.GitHubToken, opts.NoCache)

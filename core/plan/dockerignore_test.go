@@ -3,6 +3,7 @@ package plan
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/railwayapp/railpack/core/app"
@@ -10,32 +11,17 @@ import (
 )
 
 func TestCheckAndParseDockerignore(t *testing.T) {
-	t.Run("nonexistent dockerignore", func(t *testing.T) {
-		tempDir, err := os.MkdirTemp("", "dockerignore-test")
-		require.NoError(t, err)
-		defer func() { _ = os.RemoveAll(tempDir) }()
-
-		testApp, err := app.NewApp(tempDir)
-		require.NoError(t, err)
-
-		excludes, includes, err := CheckAndParseDockerignore(testApp)
-		require.NoError(t, err)
-		require.Nil(t, excludes)
-		require.Nil(t, includes)
-	})
-
 	t.Run("valid dockerignore file", func(t *testing.T) {
 		examplePath := filepath.Join("..", "..", "examples", "dockerignore")
 		testApp, err := app.NewApp(examplePath)
 		require.NoError(t, err)
 
-		excludes, includes, err := CheckAndParseDockerignore(testApp)
+		patterns, err := checkAndParseDockerignore(testApp)
 
 		require.NoError(t, err)
-		require.NotNil(t, excludes)
-		require.NotNil(t, includes)
-		require.Contains(t, includes, "negation_test/should_exist.txt")
-		require.Contains(t, includes, "negation_test/existing_folder")
+		require.NotNil(t, patterns)
+		require.Contains(t, patterns, "!negation_test/should_exist.txt")
+		require.Contains(t, patterns, "!negation_test/existing_folder")
 
 		// Verify some expected patterns from examples/dockerignore/.dockerignore
 		// Note: patterns are parsed by the moby/patternmatcher library
@@ -55,7 +41,7 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 		}
 
 		for _, expected := range expectedPatterns {
-			require.Contains(t, excludes, expected, "Expected pattern %s not found in excludes", expected)
+			require.Contains(t, patterns, expected, "Expected pattern %s not found in patterns", expected)
 		}
 	})
 
@@ -78,54 +64,56 @@ func TestCheckAndParseDockerignore(t *testing.T) {
 		require.NoError(t, err)
 
 		// This should fail with a permission error
-		excludes, includes, err := CheckAndParseDockerignore(testApp)
+		patterns, err := checkAndParseDockerignore(testApp)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "error reading .dockerignore")
-		require.Nil(t, excludes)
-		require.Nil(t, includes)
+		require.Nil(t, patterns)
 	})
 }
 
-func TestSeparatePatterns(t *testing.T) {
-	t.Run("only exclude patterns", func(t *testing.T) {
-		patterns := []string{"*.log", "node_modules", "/tmp"}
-		excludes, includes := separatePatterns(patterns)
+func TestDockerignoreExamples(t *testing.T) {
+	wd, err := os.Getwd()
+	require.NoError(t, err)
 
-		require.Equal(t, patterns, excludes)
-		require.Empty(t, includes)
-	})
+	examplesDir := filepath.Join(filepath.Dir(filepath.Dir(wd)), "examples")
+	entries, err := os.ReadDir(examplesDir)
+	require.NoError(t, err)
 
-	t.Run("only include patterns", func(t *testing.T) {
-		patterns := []string{"!important.log", "!keep/this"}
-		excludes, includes := separatePatterns(patterns)
+	expectedAsEmpty := []string{"mise-config"}
+	foundAsEmpty := []string{}
+	testedExamples := 0
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
 
-		require.Empty(t, excludes)
-		require.Equal(t, []string{"important.log", "keep/this"}, includes)
-	})
+		examplePath := filepath.Join(examplesDir, entry.Name())
+		dockerignorePath := filepath.Join(examplePath, ".dockerignore")
+		_, err := os.Stat(dockerignorePath)
+		if os.IsNotExist(err) {
+			continue
+		}
+		require.NoError(t, err)
 
-	t.Run("mixed patterns", func(t *testing.T) {
-		patterns := []string{"*.log", "!important.log", "node_modules", "!node_modules/keep"}
-		excludes, includes := separatePatterns(patterns)
+		testedExamples++
+		t.Run(entry.Name(), func(t *testing.T) {
+			testApp, err := app.NewApp(examplePath)
+			require.NoError(t, err)
 
-		require.Equal(t, []string{"*.log", "node_modules"}, excludes)
-		require.Equal(t, []string{"important.log", "node_modules/keep"}, includes)
-	})
+			ctx, err := NewDockerignoreContext(testApp)
+			require.NoError(t, err)
+			require.True(t, ctx.HasFile)
+			if slices.Contains(expectedAsEmpty, entry.Name()) {
+				foundAsEmpty = append(foundAsEmpty, entry.Name())
+				require.Empty(t, ctx.Excludes)
+				return
+			}
+			require.NotEmpty(t, ctx.Excludes)
+		})
+	}
 
-	t.Run("empty patterns", func(t *testing.T) {
-		patterns := []string{}
-		excludes, includes := separatePatterns(patterns)
-
-		require.Empty(t, excludes)
-		require.Empty(t, includes)
-	})
-
-	t.Run("empty string patterns", func(t *testing.T) {
-		patterns := []string{"", "*.log", "", "!keep.log"}
-		excludes, includes := separatePatterns(patterns)
-
-		require.Equal(t, []string{"", "*.log", ""}, excludes)
-		require.Equal(t, []string{"keep.log"}, includes)
-	})
+	require.Positive(t, testedExamples, "expected at least one example with a .dockerignore")
+	require.ElementsMatch(t, expectedAsEmpty, foundAsEmpty)
 }
 
 func TestDockerignoreContext(t *testing.T) {
@@ -142,7 +130,6 @@ func TestDockerignoreContext(t *testing.T) {
 		require.NotNil(t, ctx)
 		require.False(t, ctx.HasFile)
 		require.Nil(t, ctx.Excludes)
-		require.Nil(t, ctx.Includes)
 	})
 
 	t.Run("context with dockerignore file", func(t *testing.T) {
@@ -154,9 +141,8 @@ func TestDockerignoreContext(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, ctx.HasFile)
 		require.NotNil(t, ctx.Excludes)
-		require.NotNil(t, ctx.Includes)
-		require.Contains(t, ctx.Includes, "negation_test/should_exist.txt")
-		require.Contains(t, ctx.Includes, "negation_test/existing_folder")
+		require.Contains(t, ctx.Excludes, "!negation_test/should_exist.txt")
+		require.Contains(t, ctx.Excludes, "!negation_test/existing_folder")
 	})
 
 	t.Run("parse nonexistent file", func(t *testing.T) {
@@ -171,7 +157,6 @@ func TestDockerignoreContext(t *testing.T) {
 		require.NoError(t, err)
 		require.False(t, ctx.HasFile)
 		require.Nil(t, ctx.Excludes)
-		require.Nil(t, ctx.Includes)
 	})
 
 	t.Run("parse error handling", func(t *testing.T) {
@@ -199,7 +184,7 @@ func TestDockerignoreContext(t *testing.T) {
 }
 
 func TestDockerignoreDuplicatePatterns(t *testing.T) {
-	t.Run("duplicate patterns removed", func(t *testing.T) {
+	t.Run("duplicate patterns not removed from raw output", func(t *testing.T) {
 		tempDir, err := os.MkdirTemp("", "dockerignore-test")
 		require.NoError(t, err)
 		defer func() { _ = os.RemoveAll(tempDir) }()
@@ -227,6 +212,7 @@ node_modules
 		// Count occurrences of each pattern
 		logCount := 0
 		nodeModulesCount := 0
+		keepCount := 0
 		for _, pattern := range ctx.Excludes {
 			if pattern == "*.log" {
 				logCount++
@@ -234,24 +220,20 @@ node_modules
 			if pattern == "node_modules" {
 				nodeModulesCount++
 			}
-		}
-
-		keepCount := 0
-		for _, pattern := range ctx.Includes {
-			if pattern == "keep.txt" {
+			if pattern == "!keep.txt" {
 				keepCount++
 			}
 		}
 
-		// Verify no duplicates exist
-		require.LessOrEqual(t, logCount, 1, "*.log pattern should appear at most once")
-		require.LessOrEqual(t, nodeModulesCount, 1, "node_modules pattern should appear at most once")
-		require.LessOrEqual(t, keepCount, 1, "keep.txt pattern should appear at most once")
+		// Duplicates are preserved in raw output (will be handled downstream)
+		require.Equal(t, 2, logCount, "*.log pattern should appear twice")
+		require.Equal(t, 1, nodeModulesCount, "node_modules pattern should appear once")
+		require.Equal(t, 2, keepCount, "!keep.txt pattern should appear twice")
 	})
 }
 
 func TestCheckAndParseDockerignoreWithNegation(t *testing.T) {
-	t.Run("negated patterns with existing and non-existing files and folders", func(t *testing.T) {
+	t.Run("negated patterns preserved in output", func(t *testing.T) {
 		tempDir, err := os.MkdirTemp("", "dockerignore-test")
 		require.NoError(t, err)
 		defer func() { _ = os.RemoveAll(tempDir) }()
@@ -278,18 +260,14 @@ negation_test/*
 		testApp, err := app.NewApp(tempDir)
 		require.NoError(t, err)
 
-		excludes, includes, err := CheckAndParseDockerignore(testApp)
+		patterns, err := checkAndParseDockerignore(testApp)
 		require.NoError(t, err)
 
-		// Check excludes
-		require.Contains(t, excludes, "negation_test/*")
-
-		// Check includes - should only contain the file/folder that actually exists
-		require.Contains(t, includes, "negation_test/should_exist.txt")
-		require.Contains(t, includes, "negation_test/existing_folder")
-		require.Contains(t, includes, "negation_test/existing_folder")
-		require.NotContains(t, includes, "negation_test/should_not_exist.txt")
-		require.NotContains(t, includes, "negation_test/folder_does_not_exist/")
-		require.Len(t, includes, 2)
+		// All patterns (both exclude and negated) should be preserved
+		require.Contains(t, patterns, "negation_test/*")
+		require.Contains(t, patterns, "!negation_test/should_exist.txt")
+		require.Contains(t, patterns, "!negation_test/should_not_exist.txt")
+		require.Contains(t, patterns, "!negation_test/folder_does_not_exist")
+		require.Contains(t, patterns, "!negation_test/existing_folder")
 	})
 }

@@ -60,6 +60,13 @@
    "RAILPACK_VERSION": "dev"
   }
  },
+ "exclude": [
+  ".react-router",
+  "build",
+  "node_modules",
+  "README.md",
+  "!app"
+ ],
  "steps": [
   {
    "assets": {
@@ -155,12 +162,6 @@
      "step": "install"
     },
     {
-     "exclude": [
-      ".react-router",
-      "build",
-      "node_modules",
-      "README.md"
-     ],
      "include": [
       "."
      ],
