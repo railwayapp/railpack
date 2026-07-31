@@ -13,6 +13,8 @@ const (
 	ROOT_CACHE           = "/root/.cache"
 )
 
+var denoDefaultExcludePatterns = []string{".git", "node_modules"}
+
 type DenoProvider struct {
 	mainFile string
 }
@@ -32,6 +34,8 @@ func (p *DenoProvider) Initialize(ctx *generate.GenerateContext) error {
 }
 
 func (p *DenoProvider) Plan(ctx *generate.GenerateContext) error {
+	ctx.SetProviderDefaultExcludes(denoDefaultExcludePatterns)
+
 	miseStep := ctx.GetMiseStepBuilder()
 	p.InstallMisePackages(ctx, miseStep)
 
