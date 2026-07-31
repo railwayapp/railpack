@@ -88,3 +88,25 @@ func TestGetPackageVersionsWithNoToolVersions(t *testing.T) {
 	// Should return empty map for directory with no .tool-versions
 	require.Empty(t, packages)
 }
+
+func TestGetMiseBootstrapProjectConfig(t *testing.T) {
+	t.Run("detects Apt packages and package hooks", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/config-file")
+
+		projectConfig := ctx.GetMiseStepBuilder().getMiseBootstrapProjectConfig()
+
+		require.Contains(t, projectConfig.ConfigFiles, "mise.toml")
+		require.True(t, projectConfig.HasAptPackages)
+		require.True(t, projectConfig.HasPackageHooks)
+	})
+
+	t.Run("ignores ordinary tool configuration", func(t *testing.T) {
+		ctx := CreateTestContext(t, "../../examples/mise-config")
+
+		projectConfig := ctx.GetMiseStepBuilder().getMiseBootstrapProjectConfig()
+
+		require.Contains(t, projectConfig.ConfigFiles, "mise.toml")
+		require.False(t, projectConfig.HasAptPackages)
+		require.False(t, projectConfig.HasPackageHooks)
+	})
+}

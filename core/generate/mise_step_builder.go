@@ -252,17 +252,22 @@ func (b *MiseStepBuilder) GetLayer() plan.Layer {
 func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) error {
 	baseLayer := plan.NewImageLayer(RailpackBuilderImage)
 
-	if len(b.SupportingAptPackages) > 0 {
-		aptStep := plan.NewStep("packages:apt:build")
-		aptStep.Inputs = []plan.Layer{baseLayer}
-		aptStep.AddCommands([]plan.Command{
-			options.NewAptInstallCommand(b.SupportingAptPackages),
-		})
-		aptStep.Caches = options.Caches.GetAptCaches()
-		aptStep.Secrets = []string{}
+	bootstrapBuilder := NewMiseBootstrapStepBuilder(
+		MiseBootstrapBuildStepName,
+		baseLayer,
+		b.SupportingAptPackages,
+		options.MiseBootstrapProject.ConfigFiles,
+	)
+	bootstrapBuilder.ApplyProjectPackages = options.MiseBootstrapProject.HasAptPackages
+	bootstrapBuilder.HasProjectHooks = options.MiseBootstrapProject.HasPackageHooks
+	if bootstrapBuilder.IsRequired() {
+		bootstrapStep, err := bootstrapBuilder.Build(options)
+		if err != nil {
+			return err
+		}
 
-		p.Steps = append(p.Steps, *aptStep)
-		baseLayer = plan.NewStepLayer(aptStep.Name)
+		p.Steps = append(p.Steps, *bootstrapStep)
+		baseLayer = plan.NewStepLayer(bootstrapStep.Name)
 	}
 
 	step := plan.NewStep(b.DisplayName)
@@ -437,4 +442,50 @@ func (b *MiseStepBuilder) getSupportingMiseConfigFiles() []string {
 
 	b.supportingMiseConfigFiles = &files
 	return files
+}
+
+// Returns TOML files because other supported Mise files cannot affect bootstrap configuration.
+func (b *MiseStepBuilder) getMiseTomlConfigFiles() []string {
+	files := []string{}
+	for _, file := range b.getSupportingMiseConfigFiles() {
+		if strings.HasSuffix(file, ".toml") {
+			files = append(files, file)
+		}
+	}
+
+	return files
+}
+
+// Finds Apt packages and their surrounding hooks in project bootstrap configuration.
+func (b *MiseStepBuilder) getMiseBootstrapProjectConfig() MiseBootstrapProjectConfig {
+	type bootstrapConfig struct {
+		Bootstrap struct {
+			Hooks    map[string]any `toml:"hooks"`
+			Packages map[string]any `toml:"packages"`
+		} `toml:"bootstrap"`
+	}
+
+	projectConfig := MiseBootstrapProjectConfig{
+		ConfigFiles: b.getMiseTomlConfigFiles(),
+	}
+	for _, file := range projectConfig.ConfigFiles {
+		var config bootstrapConfig
+		if err := b.app.ReadTOML(file, &config); err != nil {
+			continue
+		}
+		for name := range config.Bootstrap.Packages {
+			if strings.HasPrefix(name, "apt:") {
+				projectConfig.HasAptPackages = true
+				break
+			}
+		}
+		if _, ok := config.Bootstrap.Hooks["pre-packages"]; ok {
+			projectConfig.HasPackageHooks = true
+		}
+		if _, ok := config.Bootstrap.Hooks["post-packages"]; ok {
+			projectConfig.HasPackageHooks = true
+		}
+	}
+
+	return projectConfig
 }
