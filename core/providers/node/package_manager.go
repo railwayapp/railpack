@@ -24,6 +24,24 @@ const (
 	PNPM_STORE_DIR       = PNPM_HOME + "/store"
 )
 
+func (p *PackageJson) hasProductionDependency(dependency string) bool {
+	if p.Dependencies == nil {
+		return false
+	}
+
+	_, ok := p.Dependencies[dependency]
+	return ok
+}
+
+func (p *PackageJson) hasDevDependency(dependency string) bool {
+	if p.DevDependencies == nil {
+		return false
+	}
+
+	_, ok := p.DevDependencies[dependency]
+	return ok
+}
+
 func (p PackageManager) Name() string {
 	switch p {
 	case PackageManagerNpm:

@@ -47,28 +47,10 @@ func (p *PackageJson) BuildScriptContains(value string) bool {
 }
 
 func (p *PackageJson) hasDependency(dependency string) bool {
-	if p.hasProductionDependency(dependency) {
-		return true
-	}
-
-	if p.DevDependencies != nil {
-		if _, ok := p.DevDependencies[dependency]; ok {
-			return true
-		}
-	}
-
-	return false
+	return p.hasProductionDependency(dependency) || p.hasDevDependency(dependency)
 }
 
-func (p *PackageJson) hasProductionDependency(dependency string) bool {
-	if p.Dependencies == nil {
-		return false
-	}
-
-	_, ok := p.Dependencies[dependency]
-	return ok
-}
-
+// is there a dependency that requires the entire app to be loaded into the context
 func (p *PackageJson) hasLocalDependency() bool {
 	allDeps := make(map[string]string)
 	maps.Copy(allDeps, p.Dependencies)
