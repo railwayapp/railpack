@@ -42,6 +42,18 @@ func TestVite(t *testing.T) {
 			isVite: false,
 		},
 		{
+			name:   "tanstack-latest",
+			path:   "../../../examples/tanstack-latest",
+			isSPA:  false,
+			isVite: false,
+		},
+		{
+			name:   "tanstack-start-with-start-script",
+			path:   "../../../examples/node-tanstack-start",
+			isSPA:  false,
+			isVite: false,
+		},
+		{
 			name:      "cra",
 			path:      "../../../examples/node-cra",
 			isSPA:     true,
