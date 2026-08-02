@@ -44,6 +44,10 @@
      "path": "/mise/shims"
     },
     {
+     "dest": "rust-toolchain.toml",
+     "src": "rust-toolchain.toml"
+    },
+    {
      "customName": "create mise config",
      "name": "generated-mise-toml",
      "path": "/etc/mise/config.toml"
