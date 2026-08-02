@@ -46,6 +46,10 @@
      "path": "/mise/shims"
     },
     {
+     "dest": "global.json",
+     "src": "global.json"
+    },
+    {
      "customName": "create mise config",
      "name": "generated-mise-toml",
      "path": "/etc/mise/config.toml"
