@@ -364,6 +364,7 @@ var miseIdiomaticFiles = []string{
 	".sdkmanrc",
 	".exenv-version",
 	".deno-version",
+	"rust-toolchain.toml",
 	// .bun-version is a community convention, not officially supported by Bun
 	".bun-version",
 	".yvmrc",
