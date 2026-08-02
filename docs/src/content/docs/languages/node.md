@@ -114,6 +114,12 @@ install the specified package manager version. When a package manager is
 detected via the `engines` field, the specified version constraint will be
 used.
 
+For a pnpm project, `devEngines.packageManager` can also specify the pnpm
+version through Mise's idiomatic `package.json` support. Mise gives this field
+precedence over `packageManager`, but it does not use `devEngines` to select the
+package manager. A `pnpm-lock.yaml` file or `engines.pnpm` value is still needed
+when `packageManager` does not select pnpm.
+
 Railpack supports building native modules and automatically configures `node-gyp`.
 
 ### Monorepo Support
