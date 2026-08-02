@@ -14,7 +14,7 @@ Your project will be detected as a Dotnet application if a `*.csproj` file exist
 The Dotnet version is determined in the following order:
 
 - Read `TargetFramework` from the first `*.csproj` file found in the project
-- Read `version` from the `global.json` file in the project root
+- Read `sdk.version` from the `global.json` file in the project root
 - Set via the `RAILPACK_DOTNET_VERSION` environment variable
 - Defaults to `6.0.428`
 

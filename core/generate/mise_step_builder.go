@@ -367,6 +367,7 @@ var miseIdiomaticFiles = []string{
 	// .bun-version is a community convention, not officially supported by Bun
 	".bun-version",
 	".yvmrc",
+	"global.json",
 }
 
 // https://mise.jdx.dev/configuration.html#configuration-hierarchy

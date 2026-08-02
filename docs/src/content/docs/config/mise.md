@@ -48,7 +48,7 @@ into the build. This includes:
   `.config/mise/conf.d/*.toml`
 - **Idiomatic version files**: `.ruby-version`, `.python-version`,
   `.python-versions`, `.node-version`, `.nvmrc`, `.go-version`,
-  `.java-version`, `.sdkmanrc`, `.bun-version`, `.yvmrc`
+  `.java-version`, `.sdkmanrc`, `.bun-version`, `.yvmrc`, `global.json`
 - **Lock files**: `mise.lock` files co-located with any detected
   `*.toml` config
 
