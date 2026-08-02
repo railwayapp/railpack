@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/log v1.0.0
 	github.com/containerd/platforms v1.0.0-rc.4
-	github.com/docker/cli v29.7.0+incompatible
+	github.com/docker/cli v29.7.1+incompatible
 	github.com/gkampitakis/go-snaps v0.5.9
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
