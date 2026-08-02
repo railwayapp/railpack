@@ -884,14 +884,6 @@ August 4, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releas
 
 **Full Changelog**: [v0.2.2...v0.2.3](https://github.com/railwayapp/railpack/compare/v0.2.2...v0.2.3)
 
-## v0.2.2
-August 1, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.2.2)
-
-### What's Changed
-* Disable mise Node.js asset verification by @coffee-cup in [#208](https://github.com/railwayapp/railpack/pull/208)
-
-**Full Changelog**: [v0.2.1...v0.2.2](https://github.com/railwayapp/railpack/compare/v0.2.1...v0.2.2)
-
 ## Older releases
 
 This page covers the last year. See all releases on [GitHub](https://github.com/railwayapp/railpack/releases).
