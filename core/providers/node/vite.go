@@ -25,8 +25,8 @@ func (p *NodeProvider) isVitePackage(pkg *WorkspacePackage, ctx *generate.Genera
 
 	hasViteConfig := ctx.App.HasFile(viteConfigJS) || ctx.App.HasFile(viteConfigTS)
 
-	// SvelteKit does not build as a static site by default
-	if p.isSvelteKitPackage(pkg) {
+	// SvelteKit and TanStack Start do not build as static sites by default
+	if p.isSvelteKitPackage(pkg) || p.isTanstackStartPackage(pkg) {
 		return false
 	}
 

@@ -65,6 +65,12 @@ func TestPackageJson(t *testing.T) {
 		assert.True(t, packageJson.hasDependency("typescript"))
 		assert.True(t, packageJson.hasDependency("@types/react"))
 		assert.False(t, packageJson.hasDependency("nonexistent"))
+		assert.True(t, packageJson.hasProductionDependency("next"))
+		assert.False(t, packageJson.hasProductionDependency("typescript"))
+		assert.False(t, packageJson.hasProductionDependency("nonexistent"))
+		assert.True(t, packageJson.hasDevDependency("typescript"))
+		assert.False(t, packageJson.hasDevDependency("next"))
+		assert.False(t, packageJson.hasDevDependency("nonexistent"))
 
 		// Test engines
 		assert.Equal(t, ">=20 <21", packageJson.Engines["node"])

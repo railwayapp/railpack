@@ -161,6 +161,15 @@ With a single Next.js app, selection is automatic. With multiple apps, set
 `RAILPACK_NX_APP` to the project name, package name, or package path (e.g.
 `web`, `@org/web`, or `apps/web`).
 
+#### TanStack Start
+
+TanStack Start is detected via `@tanstack/react-start` and is not treated as a
+Vite SPA. If there is no `start` script, Railpack installs `srvx` globally and
+starts with `srvx --prod -s ../client dist/server/server.js`. For production
+Node deploys, set up Nitro per the
+[TanStack hosting docs](https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro).
+Railpack caches `node_modules/.vite`.
+
 ### Install
 
 Railpack will only include the necessary files to install dependencies in order
@@ -233,7 +242,6 @@ Including:
 - Next.js: Caches `.next/cache` for each Next.js app in the workspace
 - Remix: Caches `.cache`
 - Vite: Caches `node_modules/.vite`
-- Tanstack Start: Caches `node_modules/.vite`
 - Astro: Caches `node_modules/.astro`
 - React Router: Caches `.react-router`
 - Nuxt:

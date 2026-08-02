@@ -8,12 +8,12 @@
    "directory": "/var/lib/apt/lists",
    "type": "locked"
   },
-  "bun-install": {
-   "directory": "/root/.bun/install/cache",
-   "type": "shared"
-  },
   "node-modules": {
    "directory": "/app/node_modules/.cache",
+   "type": "shared"
+  },
+  "npm-install": {
+   "directory": "/root/.npm",
    "type": "shared"
   },
   "tanstack-start": {
@@ -54,7 +54,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "bun run start",
+  "startCommand": "npx srvx --prod -s ../client dist/server/server.js",
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
@@ -81,7 +81,7 @@
     },
     {
      "cmd": "mise install",
-     "customName": "install mise packages: bun, node"
+     "customName": "install mise packages: node"
     }
    ],
    "inputs": [
@@ -100,7 +100,7 @@
   },
   {
    "caches": [
-    "bun-install"
+    "npm-install"
    ],
    "commands": [
     {
@@ -110,15 +110,15 @@
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
-     "dest": "bun.lock",
-     "src": "bun.lock"
+     "dest": "package-lock.json",
+     "src": "package-lock.json"
     },
     {
      "dest": "package.json",
      "src": "package.json"
     },
     {
-     "cmd": "bun install --frozen-lockfile"
+     "cmd": "npm install"
     }
    ],
    "inputs": [
@@ -143,7 +143,7 @@
    ],
    "commands": [
     {
-     "cmd": "bun run build"
+     "cmd": "npm run build"
     }
    ],
    "inputs": [

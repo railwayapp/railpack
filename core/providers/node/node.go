@@ -150,6 +150,15 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	build.AddInput(plan.NewStepLayer(install.Name()))
 	p.Build(ctx, build)
 
+	// note the best place for it, but it avoids having to worry about side effects in the framework helper functions
+	if p.usesTanstackSrvxFallback() {
+		ctx.Logger.LogInfo("No start script found; using srvx as production server")
+		ctx.Logger.LogSuggestion(
+			"Set up Nitro for production Node deploys",
+			"https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro",
+		)
+	}
+	
 	// Deploy
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 	maps.Copy(ctx.Deploy.Variables, p.GetNodeEnvVars(ctx))
@@ -252,6 +261,8 @@ func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	} else if p.isNuxt() {
 		// Default Nuxt start command
 		return "node .output/server/index.mjs"
+	} else if start := p.getTanstackStartCommand(); start != "" {
+		return start
 	} else if start := p.getSvelteKitStartCommand(); start != "" {
 		return start
 	} else if pkg, _, ok := p.resolveNxDeployPackage(ctx); ok {
@@ -328,6 +339,10 @@ func (p *NodeProvider) addCachesToBuildStep(ctx *generate.GenerateContext, build
 
 	p.addFrameworkCaches(ctx, build, "vite", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
 		return p.isVitePackage(pkg, ctx)
+	}, "node_modules/.vite")
+
+	p.addFrameworkCaches(ctx, build, "tanstack-start", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+		return p.isTanstackStartPackage(pkg)
 	}, "node_modules/.vite")
 
 	p.addFrameworkCaches(ctx, build, "astro", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
@@ -712,8 +727,4 @@ func (p *NodeProvider) isNuxt() bool {
 
 func (p *NodeProvider) isRemix() bool {
 	return p.hasDependency("@remix-run/node")
-}
-
-func (p *NodeProvider) isTanstackStart() bool {
-	return p.hasDependency("@tanstack/react-start")
 }

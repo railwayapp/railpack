@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 )
 
@@ -20,7 +21,7 @@ const (
 type Msg struct {
 	Level    Level
 	Msg      string
-	DocsPath string // optional railpack.com-relative path, e.g. "/guides/installing-packages"
+	DocsPath string // optional Railpack-relative path or absolute URL
 }
 
 type Logger struct {
@@ -45,8 +46,8 @@ func (l *Logger) LogDeprecation(format string, args ...any) {
 	l.log(Deprecation, format, args...)
 }
 
-// LogSuggestion records a helpful config suggestion. docsPath is an optional
-// railpack.com-relative path shown as a styled docs link when pretty-printed.
+// LogSuggestion records a helpful config suggestion with an optional docs link.
+// Relative paths resolve against railpack.com; absolute URLs are used unchanged.
 func (l *Logger) LogSuggestion(msg string, docsPath ...string) {
 	path := ""
 	if len(docsPath) > 0 {
@@ -74,11 +75,17 @@ func (l *Logger) log(level Level, format string, args ...any) {
 	})
 }
 
-// DocsURL builds an absolute docs URL from a domain-relative path.
+// DocsURL resolves Railpack-relative docs paths while preserving absolute URLs.
 func DocsURL(docsPath string) string {
 	if docsPath == "" {
 		return DocsBaseURL
 	}
+
+	parsedURL, err := url.Parse(docsPath)
+	if err == nil && parsedURL.IsAbs() {
+		return docsPath
+	}
+
 	if !strings.HasPrefix(docsPath, "/") {
 		docsPath = "/" + docsPath
 	}

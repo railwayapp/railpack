@@ -32,4 +32,9 @@ func TestDocsURL(t *testing.T) {
 	require.Equal(t, "https://railpack.com", DocsURL(""))
 	require.Equal(t, "https://railpack.com/guides/installing-packages", DocsURL("/guides/installing-packages"))
 	require.Equal(t, "https://railpack.com/guides/installing-packages", DocsURL("guides/installing-packages"))
+	require.Equal(
+		t,
+		"https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro",
+		DocsURL("https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro"),
+	)
 }
