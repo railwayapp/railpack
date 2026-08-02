@@ -1,5 +1,7 @@
 [
   {
+    // this project does not define the npm package manager explicitly, so we are assuming that
+    // that railpack infers it via package-lock.json
     "expectedOutput": "hello from Node v23.5.0",
     // TEMPORARY: Remove this once NPM_CONFIG_PRODUCTION is removed from node.go:241
     // Currently causes: npm warn config production Use `--omit=dev` instead.

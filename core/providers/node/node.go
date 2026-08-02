@@ -581,7 +581,15 @@ func (p *NodeProvider) getPackageManager(ctx *generate.GenerateContext) PackageM
 		}
 	}
 
-	ctx.Logger.LogWarn("No node package manager detected, using npm")
+	if app.HasFile("package-lock.json") {
+		ctx.Logger.LogWarn("package-lock.json detected, assuming npm")
+	} else {
+		ctx.Logger.LogWarn("No node package manager detected, using npm")
+	}
+	ctx.Logger.LogSuggestion(
+		"Specify the package manager and version explicitly",
+		"/config/recommendations#specify-the-node-package-manager-version",
+	)
 
 	return PackageManagerNpm
 }

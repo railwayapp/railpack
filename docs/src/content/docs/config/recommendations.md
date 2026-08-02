@@ -79,6 +79,43 @@ jq = "1.7.1"
 See [Mise Configuration](/config/mise) for how Railpack detects and applies
 mise config during builds.
 
+## Specify the Node and Package Manager Version Explicitly
+
+By default, Railpack will infer the node and package manager version for you.
+However, it's much better to explicitly define this in your project, both for your
+team and Railpack. This keeps local development, CI, and production builds perfectly aligned.
+
+Package managers supported by mise can be pinned in `mise.toml`:
+
+```toml
+[tools]
+node = "22.14.0"
+pnpm = "10.15.1"
+```
+
+Mise is the recommended path, but you can use `package.json` configuration as well.
+
+```json
+{
+  "packageManager": "npm@11.4.2"
+}
+```
+
+The `devEngines` field can also document the required package manager and
+instruct supporting tooling to reject a different version:
+
+```json
+{
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "version": "11.4.2",
+      "onFail": "error"
+    }
+  }
+}
+```
+
 ## Prefer Mise Over Apt, pipx, and Other Installers
 
 When you need a CLI tool or utility, prefer installing it with mise over Apt,
