@@ -16,12 +16,15 @@ Your project will be detected as a Rust application if any of these conditions a
 The Rust version is determined in the following order:
 
 - Any mise-supported version file (`mise.toml`, `.tool-versions`, etc).
-- Read from the `toolchain.channel` field in the `rust-toolchain.toml` file
 - Read from the `package.rust-version` field in the `Cargo.toml` file
 - Read from the `.rust-version` or `rust-version.txt` file
 - Set via the `RAILPACK_RUST_VERSION` environment variable
 - Set via the `package.edition` field in the `Cargo.toml` file
 - Defaults to `1.89`
+
+Mise treats `rust-toolchain.toml` as an idiomatic version file. Its
+`toolchain.channel` field selects the Rust version, while `profile`,
+`components`, and `targets` are passed to rustup as installation options.
 
 ## Runtime Variables
 
