@@ -1,0 +1,60 @@
+# global options
+{
+	admin off
+	persist_config off
+	auto_https off
+
+	log {
+		format json
+	}
+
+	servers {
+		trusted_proxies static private_ranges 100.0.0.0/8 # trust railway's proxy
+	}
+}
+
+# site block, listens on the $PORT environment variable, automatically assigned by railway
+:{$PORT:80} {
+	log {
+		format json
+	}
+
+	respond /health 200
+
+	# Security headers
+	header {
+		# Prevent some browsers from MIME-sniffing a response away from the declared Content-Type
+		X-Content-Type-Options "nosniff"
+		# Remove Server header
+		-Server
+	}
+
+	# `flutter build web` always writes to build/web
+	root * {{.DistDir}}
+
+	# Compression with more formats
+	encode {
+		gzip
+		zstd
+	}
+
+	# directives inside a route run in written order, unlike the rest of the Caddyfile.
+	# The cache header has to be matched *after* try_files rewrites, otherwise a request
+	# for "/" is still "/" when the matcher runs and never matches /index.html.
+	route {
+		# match against direct HTML file matches, folder-level index.html, and optionally fall back to
+		# the root index.html so client-side routes (usePathUrlStrategy) resolve
+		try_files {path} {path}.html {path}/index.html{{if .IndexFallback}} /index.html{{end}}
+
+		# Flutter's bootstrap files have stable names and are versioned by the service worker's
+		# resource map rather than by a content hash. Caching them strands users on a stale build.
+		@bootstrap path /index.html /flutter_bootstrap.js /flutter_service_worker.js /main.dart.js /version.json
+		header @bootstrap Cache-Control "no-cache"
+
+		# Handle static files
+		file_server {
+			hide .git
+			hide .env*
+		}
+	}
+}
