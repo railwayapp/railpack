@@ -199,6 +199,11 @@ func (p *FlutterProvider) deploy(ctx *generate.GenerateContext, build *generate.
 		}),
 		plan.NewStepLayer(build.Name(), plan.Filter{
 			Include: []string{WebOutputDir},
+			// CanvasKit ships ~7.6MB of symbol maps used only to symbolicate engine stack traces
+			// in a debugger. No renderer requests them at runtime, so they are dead weight in the
+			// deployed image. The renderer payloads themselves are kept: a --wasm build via
+			// RAILPACK_BUILD_CMD needs skwasm, so only the .symbols files are dropped.
+			Exclude: []string{"**/*.symbols"},
 		}),
 	})
 
