@@ -17,6 +17,9 @@
     "step": "caddy"
    },
    {
+    "exclude": [
+     "**/*.symbols"
+    ],
     "include": [
      "build/web"
     ],
