@@ -1,0 +1,14 @@
+name: fvm_channel
+description: "Flutter web app pinned to an FVM channel rather than a version."
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

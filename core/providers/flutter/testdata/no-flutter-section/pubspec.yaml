@@ -1,0 +1,12 @@
+name: no_flutter_section
+description: "Flutter web app that declares no assets, so it has no top-level flutter: section."
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0

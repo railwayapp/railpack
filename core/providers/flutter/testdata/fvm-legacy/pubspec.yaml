@@ -1,0 +1,14 @@
+name: fvm_legacy
+description: "Flutter web app pinned by the legacy FVM config format."
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
