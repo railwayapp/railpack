@@ -131,5 +131,10 @@ Pub packages are installed to `/app/.pub-cache` and travel with the build
 layer rather than a build cache mount, because `dart2js` resolves imports from
 absolute paths inside the pub cache.
 
+CanvasKit's `*.symbols` files are excluded from the deployed image. They only
+symbolicate engine stack traces in a debugger and are never requested at
+runtime, so dropping them removes about 8 MB from `build/web`. The renderer
+payloads themselves are kept, so a `--wasm` build still has `skwasm` available.
+
 The Flutter SDK is not included in the final image, which contains only Caddy
 and the contents of `build/web`.
