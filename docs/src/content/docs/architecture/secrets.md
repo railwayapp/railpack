@@ -9,20 +9,28 @@ differences being:
 - Environment variables are saved in the final image and should not contain
   sensitive information. Since they are in the final image, providers can add
   variables that will be available to the app at runtime.
-- Secrets are never logged or saved in the build logs. They are also only
-  available at build time and not saved to the final image.
+- Secrets are environment variables which never logged or saved in the build logs. They are also *only*
+  available at build time and not saved to the final image (and therefore not available at runtime).
+
+Some examples of when you might use each:
+
+- **Environment Variables**: `NODE_ENV`, `PYTHON_ENV`, `TZ`, etc.
+- **Secrets**: `SENTRY_AUTH_TOKEN` (used to report a new build to Sentry, but not required at runtime). Or an API key used to collect static assets during the build.
+
+`DATABASE_URL`, `STRIPE_API_KEY` or other secrets required at runtime should
+not be configured in Railpack (unless you need them at build time).
 
 ## Environment Variables
 
-Environment variables can be set in two ways:
+Environment variables can be set in a couple ways:
 
-1. Through step variables:
+1. Within a step. In this case, the variable is available only in the context of that single step:
 
 ```json
 {
   "steps": {
     "install": {
-      "variables": {
+      "env": {
         "NODE_ENV": "production"
       }
     }
@@ -30,22 +38,34 @@ Environment variables can be set in two ways:
 }
 ```
 
-2. Through the deploy section for runtime variables:
+1. In the deploy configuration. These variables are only available at runtime and are not set during the build:
 
 ```json
 {
   "deploy": {
-    "variables": {
+    "env": {
       "NODE_ENV": "production"
     }
   }
 }
 ```
 
-Railpack always sets `RAILPACK_VERSION` on the final runtime image to the
-Railpack version that produced the image (for example `0.12.3`).
+Note that you could also use `mise.toml` to configure env variables available
+only at runtime.
+
+1. The top-level `env` field. These variables are available during all steps of the build *and* at runtime:
+
+```json
+{
+  "env": {
+    "TZ": "America/Los_Angeles"
+  }
+}
+```
 
 ## Secrets
+
+Secrets are environment variables with sensitive information that you never want included in a container.
 
 The names of all secrets that should be used during the build are added to the
 top of the build plan, and each step's `secrets` array specifies which secrets
@@ -68,7 +88,8 @@ that step.
   "secrets": ["DATABASE_URL", "API_KEY", "STRIPE_LIVE_KEY"],
   "steps": {
     "build": {
-      "secrets": ["DATABASE_URL", "API_KEY"] // Only these secrets are available to this step
+      // Only these secrets are available to this step
+      "secrets": ["DATABASE_URL", "API_KEY"]
     }
   }
 }
@@ -82,7 +103,8 @@ access to all secrets defined in the build plan:
   "secrets": ["DATABASE_URL", "API_KEY", "STRIPE_LIVE_KEY"],
   "steps": {
     "build": {
-      "secrets": ["*"] // This step has access to all secrets
+      // This step has access to all secrets
+      "secrets": ["*"]
     }
   }
 }
@@ -90,7 +112,7 @@ access to all secrets defined in the build plan:
 
 ### Providing Secrets
 
-You can add secrets when building or generating a build plan with the `--env`
+You can add secrets when building or generating a build plan with the `--secret`
 flag. The names of these variables will be added to the build plan as secrets.
 
 #### CLI Build
@@ -99,26 +121,31 @@ If building with [the CLI](/reference/cli/#build), Railpack will check that all
 the secrets defined in the build plan have variables.
 
 ```bash
-railpack build --env STRIPE_LIVE_KEY=sk_live_asdf
+railpack build --secret SENTRY_AUTH_TOKEN=sntrys_1234
+```
+
+You can also provide environment variables with the `--env` flag. These will available to all steps and in the final image (using `railpack.json` if you need to customize when a environment variable is available).
+
+```bash
+railpack build --env TZ=UTC --secret SENTRY_AUTH_TOKEN=sntrys_1234
 ```
 
 #### Custom Frontend
 
-If building with the [BuildKit frontend](/platforms/buildkit-frontend),
-you should still provide the secrets when generating the plan with `--env`. This
-adds the secrets to the build plan. You then need to pass the secrets to Docker
-or BuildKit with the `--secret` flag.
+If building with the [BuildKit frontend](/platforms/buildkit-frontend), use
+Railpack's `--secret` flag when generating the build plan. Then pass the
+secrets to Docker or BuildKit with its `--secret` flag.
 
 ```bash
 # Generate a build plan
-railpack plan --env STRIPE_LIVE_KEY=sk_live_asdf --out test/railpack-plan.json
+railpack plan --secret SENTRY_AUTH_TOKEN=sntrys_1234 --env TZ=UTC --out railpack-plan.json
 
 # Build with the custom frontend
-STRIPE_LIVE_KEY=asdf123456789 docker build \
+SENTRY_AUTH_TOKEN=sntrys_1234 docker build \
   --build-arg BUILDKIT_SYNTAX="ghcr.io/railwayapp/railpack:railpack-frontend" \
-  -f test/railpack-plan.json \
-  --secret id=STRIPE_LIVE_KEY,env=STRIPE_LIVE_KEY \
-  --build-arg secrets-hash=asdfasdf \
+  -f railpack-plan.json \
+  --secret id=SENTRY_AUTH_TOKEN,env=SENTRY_AUTH_TOKEN \
+  --build-arg secrets-hash=YOUR_GENERATED_SECRETS_HASH \
   examples/node-bun
 ```
 

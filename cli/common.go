@@ -20,7 +20,11 @@ func commonPlanFlags() []cli.Flag {
 		&cli.StringSliceFlag{
 			Name:    "env",
 			Aliases: []string{"e"},
-			Usage:   "environment variables to set",
+			Usage:   "environment variable available during build and runtime",
+		},
+		&cli.StringSliceFlag{
+			Name:  "secret",
+			Usage: "sensitive environment variable available at build time",
 		},
 		&cli.StringSliceFlag{
 			Name:  "previous",
@@ -60,10 +64,16 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 	log.Debugf("Building %s", app.Source)
 
 	envsArgs := cmd.StringSlice("env")
+	secretsArgs := cmd.StringSlice("secret")
 
-	env, err := a.FromEnvs(envsArgs)
+	env, err := a.FromEnvs(secretsArgs)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("error creating env: %w", err)
+	}
+
+	vars, err := a.ParseKeyValueStrings(envsArgs, false)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("error parsing env vars: %w", err)
 	}
 
 	// if --verbose is passed as a CLI global argument, enable verbose mise logging so the user don't have to understand
@@ -81,6 +91,7 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 		PreviousVersions:         previousVersions,
 		ConfigFilePath:           cmd.String("config-file"),
 		ErrorMissingStartCommand: cmd.Bool("error-missing-start"),
+		Vars:                     vars,
 	}
 
 	buildResult := core.GenerateBuildPlan(app, env, generateOptions)
