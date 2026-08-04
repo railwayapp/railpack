@@ -128,7 +128,7 @@ func TestGetPackageManagerPackages_PnpmVersionPrecedence(t *testing.T) {
 		require.Equal(t, "package.json > engines > pnpm", pnpm.Source)
 	})
 
-	t.Run("packageManager overrides lockfile", func(t *testing.T) {
+	t.Run("packageManager version is delegated to mise", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
 		miseStep := ctx.NewMiseStepBuilder("test")
 		pm := "pnpm@10.4.1"
@@ -138,8 +138,8 @@ func TestGetPackageManagerPackages_PnpmVersionPrecedence(t *testing.T) {
 
 		pnpm := ctx.Resolver.Get("pnpm")
 		require.NotNil(t, pnpm)
-		require.Equal(t, "10.4.1", pnpm.Version)
-		require.Equal(t, "package.json > packageManager", pnpm.Source)
-		require.True(t, pnpm.SkipMiseInstall)
+		require.Equal(t, "8", pnpm.Version)
+		require.Equal(t, "pnpm-lock.yaml", pnpm.Source)
+		require.False(t, pnpm.SkipMiseInstall)
 	})
 }

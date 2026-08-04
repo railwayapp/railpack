@@ -19,6 +19,7 @@ func TestNode(t *testing.T) {
 		packageManager PackageManager
 		nodeVersion    string
 		pnpmVersion    string
+		pnpmSource     string
 		envVars        map[string]string
 	}{
 		{
@@ -41,6 +42,7 @@ func TestNode(t *testing.T) {
 			packageManager: PackageManagerPnpm,
 			nodeVersion:    "20",
 			pnpmVersion:    "10.4.1",
+			pnpmSource:     "idiomatic-version-file",
 		},
 		{
 			name:           "pnpm",
@@ -48,6 +50,8 @@ func TestNode(t *testing.T) {
 			detected:       true,
 			packageManager: PackageManagerPnpm,
 			nodeVersion:    "22.2.0",
+			pnpmVersion:    "10.4.1",
+			pnpmSource:     "idiomatic-version-file",
 		},
 		{
 			name:           "pnpm from mise.toml",
@@ -117,6 +121,9 @@ func TestNode(t *testing.T) {
 					} else {
 						require.Equal(t, tt.pnpmVersion, pnpmVersion.Version)
 					}
+					if tt.pnpmSource != "" {
+						require.Equal(t, tt.pnpmSource, pnpmVersion.Source)
+					}
 				}
 			}
 		})
@@ -130,8 +137,13 @@ func TestNodeCorepack(t *testing.T) {
 		wantCorepack bool
 	}{
 		{
-			name:         "corepack project",
+			name:         "pnpm project",
 			path:         "../../../examples/node-corepack",
+			wantCorepack: false,
+		},
+		{
+			name:         "yarn project",
+			path:         "../../../examples/node-yarn-3",
 			wantCorepack: true,
 		},
 		{

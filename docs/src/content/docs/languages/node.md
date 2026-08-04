@@ -96,7 +96,7 @@ available during the build.
 Railpack detects your package manager in the following order:
 
 1. **packageManager field**: Reads the `packageManager` field from
-   `package.json` (uses Corepack to install the specified version)
+   `package.json`
 2. **Lock files**: Falls back to detecting based on lock files:
    - `pnpm-lock.yaml` for pnpm
    - `bun.lockb` or `bun.lock` for Bun
@@ -109,16 +109,21 @@ Railpack detects your package manager in the following order:
    - `engines.yarn` for Yarn version
    - Defaults to npm if no package manager is detected
 
-When the `packageManager` field is present, Railpack will use Corepack to
-install the specified package manager version. When a package manager is
-detected via the `engines` field, the specified version constraint will be
-used.
+When the `packageManager` field selects npm or Yarn, Corepack installs its
+specified version. pnpm is installed through Mise instead.
 
-For a pnpm project, `devEngines.packageManager` can also specify the pnpm
-version through Mise's idiomatic `package.json` support. Mise gives this field
-precedence over `packageManager`, but it does not use `devEngines` to select the
-package manager. A `pnpm-lock.yaml` file or `engines.pnpm` value is still needed
-when `packageManager` does not select pnpm.
+For pnpm, Mise only parses `package.json` and checks these fields in order:
+
+1. `devEngines.packageManager`: Uses `version` when `name` is `pnpm`. The value
+   may be an object or an array, in which case Mise reads the first entry.
+2. `packageManager`: Parses `pnpm@<version>` and removes an optional `+hash`
+   suffix.
+
+Mise does not parse `engines.pnpm`, `.pnpm-version`, or `pnpm-workspace.yaml` as
+pnpm idiomatic version sources. `devEngines.packageManager` only selects a
+version, not the package manager itself. When neither idiomatic field provides
+a pnpm version, the Node provider retains its `engines.pnpm` and lockfile
+version fallbacks.
 
 Railpack supports building native modules and automatically configures `node-gyp`.
 

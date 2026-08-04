@@ -45,10 +45,7 @@
     ],
     "include": [
      "/root/.cache",
-     ".",
-     "/opt/corepack",
-     "/mise/installs",
-     "/mise/shims"
+     "."
     ],
     "step": "build"
    }
@@ -80,7 +77,7 @@
     },
     {
      "cmd": "mise install",
-     "customName": "install mise packages: node"
+     "customName": "install mise packages: node, pnpm"
     }
    ],
    "inputs": [
@@ -106,14 +103,6 @@
      "path": "/app/node_modules/.bin"
     },
     {
-     "dest": "package.json",
-     "src": "package.json"
-    },
-    {
-     "cmd": "sh -c 'npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate'",
-     "customName": "npm i -g corepack@latest \u0026\u0026 corepack enable \u0026\u0026 corepack prepare --activate"
-    },
-    {
      "cmd": "mkdir -p /app/node_modules/.cache"
     },
     {
@@ -123,6 +112,12 @@
     {
      "dest": "pnpm-workspace.yaml",
      "src": "pnpm-workspace.yaml"
+    },
+    {
+     "path": "/opt/pnpm/bin"
+    },
+    {
+     "cmd": "pnpm add -g node-gyp"
     },
     {
      "cmd": "pnpm install"
@@ -136,7 +131,6 @@
    "name": "install",
    "variables": {
     "CI": "true",
-    "COREPACK_HOME": "/opt/corepack",
     "NODE_ENV": "production",
     "NPM_CONFIG_FETCH_RETRIES": "5",
     "NPM_CONFIG_FUND": "false",

@@ -510,9 +510,12 @@ func (p *NodeProvider) hasDependency(dependency string) bool {
 	return p.packageJson.hasDependency(dependency)
 }
 
-// if 'packageManager' field exists in package.json, then assume corepack unless using bun
+// Use Corepack for package managers that are not installed directly through mise.
 func (p *NodeProvider) usesCorepack() bool {
-	return p.packageJson != nil && p.packageJson.PackageManager != nil && p.packageManager != PackageManagerBun
+	return p.packageJson != nil &&
+		p.packageJson.PackageManager != nil &&
+		p.packageManager != PackageManagerBun &&
+		p.packageManager != PackageManagerPnpm
 }
 
 func (p *NodeProvider) usesPuppeteer() bool {
