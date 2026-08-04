@@ -456,3 +456,6 @@ There are some manual maintenance tasks that need to be done periodically:
 * PNPM lockfile versions are manually mapped to minimum pnpm versions
 * Pnpm default version needs to be updated as LTS versions are released.
 * Node default version needs to be updated as LTS versions are released.
+* The minimum supported Node.js version check and deprecation log in
+  `core/providers/node/node.go` need to be updated when the oldest supported
+  LTS release changes.

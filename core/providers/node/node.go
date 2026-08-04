@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	semver "github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
@@ -86,8 +87,6 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 		return fmt.Errorf("package.json not found")
 	}
 
-	p.SetNodeMetadata(ctx)
-
 	ctx.Logger.LogInfo("Using %s package manager", p.packageManager)
 
 	if p.workspace != nil && len(p.workspace.Packages) > 0 {
@@ -98,6 +97,7 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 
 	miseStep := ctx.GetMiseStepBuilder()
 	p.InstallMisePackages(ctx, miseStep)
+	p.SetNodeMetadata(ctx)
 
 	install := ctx.NewCommandStep("install")
 	install.AddInput(plan.NewStepLayer(miseStep.Name()))
@@ -168,6 +168,25 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	})
 
 	return nil
+}
+
+func warnIfNodeVersionUnsupported(ctx *generate.GenerateContext, packages map[string]*resolver.ResolvedPackage) {
+	nodePackage, ok := packages["node"]
+	if !ok || nodePackage.ResolvedVersion == nil {
+		return
+	}
+
+	nodeVersion, err := semver.NewVersion(*nodePackage.ResolvedVersion)
+	// NOTE: Update this check and log message when the oldest supported Node.js
+	// LTS release changes.
+	if err != nil || nodeVersion.Major() >= 22 {
+		return
+	}
+
+	ctx.Logger.LogDeprecation(
+		"Node.js %s is no longer officially supported. Node.js 22 is the oldest supported LTS release.",
+		nodeVersion.Original(),
+	)
 }
 
 func (p *NodeProvider) StartCommandHelp() string {
@@ -533,10 +552,30 @@ func (p *NodeProvider) getScripts(packageJson *PackageJson, name string) string 
 }
 
 func (p *NodeProvider) SetNodeMetadata(ctx *generate.GenerateContext) {
-	ctx.Metadata.Set("nodeRuntime", p.getRuntime(ctx))
+	runtime := p.getRuntime(ctx)
+	ctx.Metadata.Set("nodeRuntime", runtime)
 	ctx.Metadata.Set("nodePackageManager", string(p.packageManager))
 	ctx.Metadata.SetBool("nodeIsSPA", p.isSPA(ctx))
 	ctx.Metadata.SetBool("nodeUsesCorepack", p.usesCorepack())
+
+	packages, err := ctx.Resolver.ResolvePackages()
+	if err != nil {
+		return
+	}
+	warnIfNodeVersionUnsupported(ctx, packages)
+
+	runtimePackage := "node"
+	if runtime == "bun" {
+		runtimePackage = "bun"
+	}
+	if pkg, ok := packages[runtimePackage]; ok && pkg.ResolvedVersion != nil {
+		ctx.Metadata.Set("nodeRuntimeVersion", *pkg.ResolvedVersion)
+	}
+
+	packageManagerPackage := p.packageManager.misePackageName()
+	if pkg, ok := packages[packageManagerPackage]; ok && pkg.ResolvedVersion != nil {
+		ctx.Metadata.Set("nodePackageManagerVersion", *pkg.ResolvedVersion)
+	}
 }
 
 func (p *NodeProvider) getPackagesWithFramework(ctx *generate.GenerateContext, frameworkCheck func(*WorkspacePackage, *generate.GenerateContext) bool) ([]*WorkspacePackage, error) {

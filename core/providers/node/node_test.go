@@ -6,6 +6,7 @@ import (
 
 	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
+	"github.com/railwayapp/railpack/core/logger"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -19,6 +20,7 @@ func TestNode(t *testing.T) {
 		nodeVersion    string
 		pnpmVersion    string
 		envVars        map[string]string
+		deprecated     bool
 	}{
 		{
 			name:           "npm",
@@ -40,6 +42,7 @@ func TestNode(t *testing.T) {
 			packageManager: PackageManagerPnpm,
 			nodeVersion:    "20",
 			pnpmVersion:    "10.4.1",
+			deprecated:     true,
 		},
 		{
 			name:           "pnpm",
@@ -117,6 +120,25 @@ func TestNode(t *testing.T) {
 						require.Equal(t, tt.pnpmVersion, pnpmVersion.Version)
 					}
 				}
+
+				if ctx.Resolver.Get("node") != nil {
+					require.NotEmpty(t, ctx.Metadata.Get("nodeRuntimeVersion"))
+				}
+
+				if packageManagerPackage := tt.packageManager.misePackageName(); packageManagerPackage != "" {
+					require.NotEmpty(t, ctx.Metadata.Get("nodePackageManagerVersion"))
+				} else {
+					require.Empty(t, ctx.Metadata.Get("nodePackageManagerVersion"))
+				}
+
+				hasDeprecation := false
+				for _, log := range ctx.Logger.Logs {
+					if log.Level == logger.Deprecation {
+						hasDeprecation = true
+						break
+					}
+				}
+				require.Equal(t, tt.deprecated, hasDeprecation)
 			}
 		})
 	}
