@@ -20,11 +20,11 @@ func commonPlanFlags() []cli.Flag {
 		&cli.StringSliceFlag{
 			Name:    "env",
 			Aliases: []string{"e"},
-			Usage:   "environment variables to set",
+			Usage:   "environment variable available during build and runtime",
 		},
 		&cli.StringSliceFlag{
 			Name:  "secret",
-			Usage: "secrets to expose (can lookup from environment)",
+			Usage: "sensitive environment variable available at build time",
 		},
 		&cli.StringSliceFlag{
 			Name:  "previous",

@@ -12,17 +12,19 @@ differences being:
 - Secrets are environment variables which never logged or saved in the build logs. They are also *only*
   available at build time and not saved to the final image (and therefore not available at runtime).
 
-Some examples of where you might use each:
+Some examples of when you might use each:
 
 - **Environment Variables**: `NODE_ENV`, `PYTHON_ENV`, `TZ`, etc.
-- **Secrets**: `SENTRY_AUTH_TOKEN` (used to report a new build to Sentry, but not required at runtime). Or an API key used to collect static assets during the build. *Do not* include `DATABASE_URL`, `STRIPE_API_KEY`, or other secrets required at runtime here (unless you need them at build time).
+- **Secrets**: `SENTRY_AUTH_TOKEN` (used to report a new build to Sentry, but not required at runtime). Or an API key used to collect static assets during the build.
+
+`DATABASE_URL`, `STRIPE_API_KEY` or other secrets required at runtime should
+not be configured in Railpack (unless you need them at build time).
 
 ## Environment Variables
 
 Environment variables can be set in a couple ways:
 
-1. Through step variables. In this case, the variable is available only during that
-   step:
+1. Within a step. In this case, the variable is available only in the context of that single step:
 
 ```json
 {
@@ -36,7 +38,7 @@ Environment variables can be set in a couple ways:
 }
 ```
 
-2. Through the deploy section for runtime variables. These variables are only available at runtime and will not be set during the build:
+1. In the deploy configuration. These variables are only available at runtime and are not set during the build:
 
 ```json
 {
@@ -48,8 +50,10 @@ Environment variables can be set in a couple ways:
 }
 ```
 
-3. Through the top-level `variables` field. These variables are available during all steps of
-   the build *and* at runtime:
+Note that you could also use `mise.toml` to configure env variables available
+only at runtime.
+
+1. The top-level `env` field. These variables are available during all steps of the build *and* at runtime:
 
 ```json
 {
@@ -59,10 +63,9 @@ Environment variables can be set in a couple ways:
 }
 ```
 
-Railpack always sets `RAILPACK_VERSION` on the final runtime image to the
-Railpack version that produced the image (for example `0.12.3`).
-
 ## Secrets
+
+Secrets are environment variables with sensitive information that you never want included in a container.
 
 The names of all secrets that should be used during the build are added to the
 top of the build plan, and each step's `secrets` array specifies which secrets
@@ -85,7 +88,8 @@ that step.
   "secrets": ["DATABASE_URL", "API_KEY", "STRIPE_LIVE_KEY"],
   "steps": {
     "build": {
-      "secrets": ["DATABASE_URL", "API_KEY"] // Only these secrets are available to this step
+      // Only these secrets are available to this step
+      "secrets": ["DATABASE_URL", "API_KEY"]
     }
   }
 }
@@ -99,7 +103,8 @@ access to all secrets defined in the build plan:
   "secrets": ["DATABASE_URL", "API_KEY", "STRIPE_LIVE_KEY"],
   "steps": {
     "build": {
-      "secrets": ["*"] // This step has access to all secrets
+      // This step has access to all secrets
+      "secrets": ["*"]
     }
   }
 }
