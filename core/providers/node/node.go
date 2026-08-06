@@ -158,7 +158,7 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 			"https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro",
 		)
 	}
-	
+
 	// Deploy
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 	maps.Copy(ctx.Deploy.Variables, p.GetNodeEnvVars(ctx))
