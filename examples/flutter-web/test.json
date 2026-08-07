@@ -1,7 +1,10 @@
 [
   {
-    // Flutter publishes Linux SDK archives for x64 only, so the build cannot run on arm64
+    // Flutter publishes Linux SDK archives for x64 only, so the build cannot run on arm64.
+    // Skip on ARM: GHA arm runners emulate amd64 via QEMU, and the Flutter web build does not
+    // finish within the 20m test timeout. Covered on native amd64 CI.
     "platform": "linux/amd64",
+    "skipArch": ["arm64"],
     "httpCheck": {
       "path": "/",
       "expected": 200,
@@ -12,6 +15,7 @@
   },
   {
     "platform": "linux/amd64",
+    "skipArch": ["arm64"],
     // index fallback is on by default so client-side routes resolve
     "httpCheck": {
       "path": "/some/client/route",
