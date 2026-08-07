@@ -875,15 +875,6 @@ August 18, 2025 · [GitHub release](https://github.com/railwayapp/railpack/relea
 
 **Full Changelog**: [v0.2.3...v0.3.0](https://github.com/railwayapp/railpack/compare/v0.2.3...v0.3.0)
 
-## v0.2.3
-August 4, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.2.3)
-
-### What's Changed
-* java: Add production build flag by @aleksrutins in [#205](https://github.com/railwayapp/railpack/pull/205)
-* Move MISE_NODE_VERIFY variable to mise_step_builder.go by @coffee-cup in [#209](https://github.com/railwayapp/railpack/pull/209)
-
-**Full Changelog**: [v0.2.2...v0.2.3](https://github.com/railwayapp/railpack/compare/v0.2.2...v0.2.3)
-
 ## Older releases
 
 This page covers the last year. See all releases on [GitHub](https://github.com/railwayapp/railpack/releases).
