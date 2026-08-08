@@ -28,10 +28,11 @@ type StepBuilder interface {
 }
 
 type GenerateContext struct {
-	App             *a.App
-	Env             *a.Environment
-	Config          *config.Config
-	dockerignoreCtx *plan.DockerignoreContext
+	App                     *a.App
+	Env                     *a.Environment
+	Config                  *config.Config
+	dockerignoreCtx         *plan.DockerignoreContext
+	providerDefaultExcludes []string
 
 	BaseImage string
 	Steps     []StepBuilder
@@ -111,6 +112,10 @@ func (c *GenerateContext) GetMiseStepBuilder() *MiseStepBuilder {
 	return c.MiseStepBuilder
 }
 
+func (c *GenerateContext) SetProviderDefaultExcludes(excludes []string) {
+	c.providerDefaultExcludes = slices.Clone(excludes)
+}
+
 func (c *GenerateContext) EnterSubContext(subContext string) *GenerateContext {
 	c.SubContexts = append(c.SubContexts, subContext)
 	return c
@@ -154,10 +159,7 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 
 	buildPlan := plan.NewBuildPlan()
 
-	// Merge exclude patterns from .dockerignore and railpack.json
-	excludePatterns := []string{}
-	excludePatterns = append(excludePatterns, c.dockerignoreCtx.Excludes...)
-	excludePatterns = append(excludePatterns, c.Config.Exclude...)
+	excludePatterns := c.getExcludePatterns()
 	if len(excludePatterns) > 0 {
 		buildPlan.Exclude = excludePatterns
 	}
@@ -182,6 +184,34 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 	buildPlan.Normalize()
 
 	return buildPlan, resolvedPackages, nil
+}
+
+func (c *GenerateContext) getExcludePatterns() []string {
+	if c.dockerignoreCtx.HasFile || c.Config.Exclude != nil {
+		excludes := slices.Clone(c.dockerignoreCtx.Excludes)
+		return append(excludes, c.Config.Exclude...)
+	}
+
+	if len(c.providerDefaultExcludes) == 0 {
+		c.Logger.LogSuggestion(
+			"Add a `.dockerignore` file to exclude files from the build",
+			"/config/excluding-files",
+		)
+		return nil
+	}
+
+	formattedExcludes := make([]string, len(c.providerDefaultExcludes))
+	for i, exclude := range c.providerDefaultExcludes {
+		formattedExcludes[i] = fmt.Sprintf("`%s`", exclude)
+	}
+
+	c.Logger.LogWarn(
+		// TODO allow url as second param
+		"Applying default exclude patterns: %s. Add a .dockerignore to customize. https://railpack.com/config/excluding-files",
+		strings.Join(formattedExcludes, ", "),
+	)
+
+	return slices.Clone(c.providerDefaultExcludes)
 }
 
 func (o *BuildStepOptions) NewAptInstallCommand(pkgs []string) plan.Command {

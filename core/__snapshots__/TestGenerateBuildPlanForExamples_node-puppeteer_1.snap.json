@@ -61,6 +61,10 @@
    "RAILPACK_VERSION": "dev"
   }
  },
+ "exclude": [
+  ".git",
+  "node_modules"
+ ],
  "steps": [
   {
    "assets": {

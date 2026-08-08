@@ -55,6 +55,11 @@
    "RAILPACK_VERSION": "dev"
   }
  },
+ "exclude": [
+  ".git",
+  ".venv",
+  "venv"
+ ],
  "steps": [
   {
    "caches": [
