@@ -95,7 +95,9 @@ var BuildCommand = &cli.Command{
 			if err != nil {
 				return cli.Exit(err, 1)
 			}
-			fmt.Println(string(serializedPlan))
+
+			core.PrettyPrintSectionHeader(os.Stdout, "Generated railpack-plan.json")
+			core.PrettyPrintJSON(os.Stdout, serializedPlan)
 		}
 
 		err = validateSecrets(buildResult.Plan, env)

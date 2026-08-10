@@ -1,8 +1,10 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -27,6 +29,10 @@ var InfoCommand = &cli.Command{
 			Name:  "out",
 			Usage: "output file name",
 		},
+		&cli.BoolFlag{
+			Name:  "show-plan",
+			Usage: "show the generated build plan",
+		},
 	}, commonPlanFlags()...),
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		buildResult, _, _, err := GenerateBuildResultForCommand(cmd)
@@ -36,32 +42,51 @@ var InfoCommand = &cli.Command{
 
 		format := cmd.String("format")
 
-		var buildResultString string
+		var rendered bytes.Buffer
 		if format == "pretty" {
-			buildResultString = core.FormatBuildResult(buildResult, core.PrintOptions{
+			rendered.WriteString(core.FormatBuildResult(buildResult, core.PrintOptions{
 				Metadata: true,
 				Version:  Version,
-			})
+			}))
+
+			if cmd.Bool("show-plan") {
+				planMap, err := addSchemaToPlanMap(buildResult.Plan)
+				if err != nil {
+					return cli.Exit(err, 1)
+				}
+				serializedPlan, err := json.MarshalIndent(planMap, "", "  ")
+				if err != nil {
+					return cli.Exit(err, 1)
+				}
+
+				core.PrettyPrintSectionHeader(&rendered, "Generated railpack-plan.json")
+				core.PrettyPrintJSON(&rendered, serializedPlan)
+			} else {
+				fmt.Fprintf(
+					&rendered,
+					"Use %s to view generated railpack-plan.json\n",
+					core.FormatHighlight("--show-plan"),
+				)
+			}
 		} else {
 			serializedResult, err := json.MarshalIndent(buildResult, "", "  ")
 			if err != nil {
 				return cli.Exit(err, 1)
 			}
-			buildResultString = string(serializedResult)
+			fmt.Fprintln(&rendered, string(serializedResult))
 		}
 
 		output := cmd.String("out")
 		if output == "" {
 			// Write to stdout if no output file specified
-			_, _ = os.Stdout.Write([]byte(buildResultString))
-			_, _ = os.Stdout.Write([]byte("\n"))
+			_, _ = os.Stdout.Write(rendered.Bytes())
 			return nil
 		} else {
 			if err := os.MkdirAll(filepath.Dir(output), 0755); err != nil {
 				return cli.Exit(err, 1)
 			}
 
-			err = os.WriteFile(output, []byte(buildResultString), 0644)
+			err = os.WriteFile(output, rendered.Bytes(), 0644)
 			if err != nil {
 				return cli.Exit(err, 1)
 			}
