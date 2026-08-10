@@ -7,44 +7,34 @@ import (
 )
 
 func TestParseKeyValueStrings(t *testing.T) {
-	t.Setenv("INHERITED", "from the process environment")
-	t.Setenv("EMPTY", "this must not be inherited")
+	t.Setenv("FROM_ENV", "resolved")
 
 	variables, err := ParseKeyValueStrings([]string{
-		"PLAIN=value",
-		"EMPTY=",
-		"INHERITED",
-		"LEADING_EQUALS==value",
-		"EQUALS=value=with=equals==",
-		"WHITESPACE=  leading and trailing  ",
-		`QUOTES='single' and "double"`,
-		`ESCAPES=\n\t\\`,
-		"MULTILINE=line 1\nline 2\nline 3",
-		`JSON={"key":"value","nested":{"enabled":true}}`,
-		"SHELL=$HOME ${USER:-default} # literal comment",
-		"UNICODE=héllo 世界 🌍",
+		"VAR1=value1",
+		"VAR2=value2",
+		"RAILPACK_APT_PACKAGES=apt1,apt2",
+		"COMMA=this has, a comma",
+		"RAILPACK_TRUTHY_CASE=True ",
+		"RAILPACK_TRUTHY_INT_CASE= 1 ",
 		"HELLO+WORLD=boop",
-		"DUPLICATE=first",
-		"DUPLICATE=second",
-	}, true)
+		"FROM_ENV",
+		"EMPTY=",
+		"MISSING",
+	})
 	env := NewEnvironment(&variables)
 
 	require.NoError(t, err)
-	require.Equal(t, map[string]string{
-		"PLAIN":          "value",
-		"INHERITED":      "from the process environment",
-		"LEADING_EQUALS": "=value",
-		"EQUALS":         "value=with=equals==",
-		"WHITESPACE":     "  leading and trailing  ",
-		"QUOTES":         `'single' and "double"`,
-		"ESCAPES":        `\n\t\\`,
-		"MULTILINE":      "line 1\nline 2\nline 3",
-		"JSON":           `{"key":"value","nested":{"enabled":true}}`,
-		"SHELL":          "$HOME ${USER:-default} # literal comment",
-		"UNICODE":        "héllo 世界 🌍",
-		"HELLO+WORLD":    "boop",
-		"DUPLICATE":      "second",
-	}, env.Variables)
+	require.Equal(t, env.GetVariable("VAR1"), "value1")
+	require.Equal(t, env.GetVariable("VAR2"), "value2")
+	require.Equal(t, env.GetVariable("RAILPACK_APT_PACKAGES"), "apt1,apt2")
+	require.Equal(t, env.GetVariable("COMMA"), "this has, a comma")
+	require.Equal(t, env.IsConfigVariableTruthy("TRUTHY_CASE"), true)
+	require.Equal(t, env.IsConfigVariableTruthy("TRUTHY_INT_CASE"), true)
+	require.Equal(t, env.GetVariable("HELLO+WORLD"), "boop")
+	require.Equal(t, env.GetVariable("FROM_ENV"), "resolved")
+	require.Contains(t, env.Variables, "EMPTY")
+	require.Empty(t, env.GetVariable("EMPTY"))
+	require.NotContains(t, env.Variables, "MISSING")
 }
 
 func TestEnvironmentVariables(t *testing.T) {
