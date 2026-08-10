@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/buildkit/util/system"
@@ -32,9 +34,7 @@ type ConvertPlanOptions struct {
 	NoCache bool
 }
 
-const (
-	WorkingDir = "/app"
-)
+const WorkingDir = "/app"
 
 func ConvertPlanToLLB(plan *p.BuildPlan, opts ConvertPlanOptions) (*llb.State, *Image, error) {
 	platform := opts.BuildPlatform
@@ -107,11 +107,12 @@ func getImageEnv(graphOutput *build_llb.BuildGraphOutput, plan *p.BuildPlan) []s
 	slices.Sort(paths)
 	pathString := strings.Join(paths, ":")
 
-	envMap := make(map[string]string, len(graphOutput.GraphEnv.EnvVars)+len(plan.Deploy.Variables)+1)
+	envMap := make(map[string]string, len(graphOutput.GraphEnv.EnvVars)+len(plan.Deploy.Variables)+2)
 	maps.Copy(envMap, graphOutput.GraphEnv.EnvVars)
 	maps.Copy(envMap, plan.Deploy.Variables)
 
 	envMap["PATH"] = pathString
+	envMap["RAILPACK_BUILT_AT"] = strconv.FormatInt(time.Now().Unix(), 10)
 
 	envVars := make([]string, 0, len(envMap))
 	for _, k := range slices.Sorted(maps.Keys(envMap)) {
