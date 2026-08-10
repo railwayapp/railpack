@@ -62,10 +62,13 @@ You can also use
 to configure environment variables in the generated container.
 
 3. With the CLI's `--env` flag. These variables are available during every
-   build step and at runtime:
+   build step and at runtime. Pass `NAME=value` to set a value directly, or
+   pass `NAME` to copy its value from the current process environment:
 
 ```bash
-railpack build --env TZ=America/Los_Angeles
+TZ=America/Los_Angeles railpack build \
+  --env TZ \
+  --env LANG=en_US.UTF-8
 ```
 
 ## Runtime Railpack Variables
@@ -132,15 +135,25 @@ does not prevent the command from accessing top-level secrets.
 
 ### Providing Secrets when Building with the CLI
 
-Use the `--secret` flag when building or generating a build plan. The flag
-supplies the secret value during the build and adds its name to the top-level
-`secrets` array. Generated command steps use `"secrets": ["*"]` by default.
+Use the `--secret` flag when building or generating a build plan. Pass
+`NAME=value` to set a value directly, or pass `NAME` to copy its value from the
+current process environment.
+
+In terms of `railpack.json` configuration, you can think of this flag supplying
+the secret during the build, adding its name to the top-level `secrets` key, and using
+`"secrets": ["*"]` by default for all steps.
 
 The CLI checks that values were supplied for all secrets required by the build
-plan. This example provides an environment variable and a build secret:
+plan. This example copyies `TZ` and `SENTRY_AUTH_TOKEN` from
+the current process environment while setting `LANG` and
+`POSTHOG_PERSONAL_API_KEY` directly:
 
 ```bash
-railpack build --env TZ=UTC --secret SENTRY_AUTH_TOKEN=sntrys_1234
+TZ=America/Los_Angeles SENTRY_AUTH_TOKEN=sntrys_1234 railpack build \
+  --env TZ \
+  --env LANG=en_US.UTF-8 \
+  --secret SENTRY_AUTH_TOKEN \
+  --secret POSTHOG_PERSONAL_API_KEY=phx_1234
 ```
 
 #### Custom Frontend
