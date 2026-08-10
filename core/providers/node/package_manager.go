@@ -182,7 +182,12 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 
 			// pnpm 11+ installs global bins under PNPM_HOME/bin.
 			//
-			// Use the mise-resolved version so every supported source has a concrete semver here.
+			// Compare against the mise-resolved version rather than the requested one. The Node ecosystem
+			// permits x-ranges such as `engines.pnpm: "11.5.x"`, which are not valid semver and cannot be
+			// compared directly. Mise resolves them to a concrete version (e.g. "11.5.1"). Mise's idiomatic
+			// package.json parsing may also override Railpack's requested engines or lockfile fallback via
+			// `devEngines.packageManager` or `packageManager` (including values with a hash suffix), so the
+			// resolved version is the authoritative version that will actually be installed.
 			if usesPnpmBinSubdir(resolvePnpmVersion(ctx)) {
 				pnpmBinPath = PNPM_HOME + "/bin"
 			}
