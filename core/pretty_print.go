@@ -2,14 +2,17 @@ package core
 
 import (
 	"fmt"
+	"io"
 	"slices"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 	"github.com/railwayapp/railpack/core/logger"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/resolver"
 	"github.com/railwayapp/railpack/internal/utils"
+	"github.com/tidwall/pretty"
 )
 
 const (
@@ -126,11 +129,11 @@ func PrettyPrintBuildResult(buildResult *BuildResult, options ...PrintOptions) {
 	fmt.Print(output)
 }
 
-func PrettyPrintSectionHeader(title string) {
+func PrettyPrintSectionHeader(output io.Writer, title string) {
 	style := sectionHeaderStyle.
 		MarginTop(0).
 		Width(max(10, lipgloss.Width(title)))
-	fmt.Printf("%s\n\n", style.Render(title))
+	_, _ = fmt.Fprintf(output, "%s\n\n", style.Render(title))
 }
 
 func PrettyPrintBox(content string) {
@@ -139,6 +142,14 @@ func PrettyPrintBox(content string) {
 
 func FormatHighlight(content string) string {
 	return highlightedTextStyle.Render(content)
+}
+
+func PrettyPrintJSON(output io.Writer, content []byte) {
+	if lipgloss.ColorProfile() != termenv.Ascii {
+		content = pretty.Color(content, nil)
+	}
+
+	_, _ = fmt.Fprintln(output, string(content))
 }
 
 func FormatBuildResult(br *BuildResult, options ...PrintOptions) string {

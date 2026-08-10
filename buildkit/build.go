@@ -128,7 +128,7 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		return nil
 	}
 
-	core.PrettyPrintSectionHeader("Starting Docker Build...")
+	core.PrettyPrintSectionHeader(os.Stdout, "Starting Docker Build...")
 
 	ch := make(chan *client.SolveStatus)
 
