@@ -159,6 +159,23 @@ func TestGenerateBuildPlan_DisableCachesRequiresEnvironmentArgument(t *testing.T
 	}
 }
 
+func TestGenerateBuildPlanUserVariablesOverrideProviderVariables(t *testing.T) {
+	userApp, err := app.NewApp("../examples/python-pip")
+	require.NoError(t, err)
+
+	buildResult, err := GenerateBuildPlan(userApp, app.NewEnvironment(nil), &GenerateBuildPlanOptions{
+		Vars: map[string]string{"PYTHONUNBUFFERED": "0"},
+	})
+	require.NoError(t, err)
+
+	require.True(t, buildResult.Success)
+	require.Equal(t, "0", buildResult.Plan.Deploy.Variables["PYTHONUNBUFFERED"])
+	require.NotEmpty(t, buildResult.Plan.Steps)
+	for _, step := range buildResult.Plan.Steps {
+		require.Equal(t, "0", step.Variables["PYTHONUNBUFFERED"], "step %q should use the user-provided value", step.Name)
+	}
+}
+
 func TestGenerateConfigFromFile_NotFound(t *testing.T) {
 	// Use an existing example app directory so relative paths resolve
 	appPath := "../examples/config-file"
