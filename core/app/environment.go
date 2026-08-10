@@ -19,15 +19,6 @@ func NewEnvironment(variables *map[string]string) *Environment {
 	return &Environment{Variables: *variables}
 }
 
-// FromEnvs collects variables from the given environment variable names
-func FromEnvs(envs []string) (*Environment, error) {
-	vars, err := ParseKeyValueStrings(envs, true)
-	if err != nil {
-		return nil, err
-	}
-	return NewEnvironment(&vars), nil
-}
-
 func ParseKeyValueStrings(pairs []string, lookupEnv bool) (map[string]string, error) {
 	vars := make(map[string]string)
 	re := regexp.MustCompile(`(?s)([A-Za-z0-9_+\-]*)(?:=?)(.*)`)

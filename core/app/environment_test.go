@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFromEnvs(t *testing.T) {
+func TestParseKeyValueStrings(t *testing.T) {
 	t.Setenv("INHERITED", "from the process environment")
 	t.Setenv("EMPTY", "this must not be inherited")
 
-	env, err := FromEnvs([]string{
+	variables, err := ParseKeyValueStrings([]string{
 		"PLAIN=value",
 		"EMPTY=",
 		"INHERITED",
@@ -26,7 +26,8 @@ func TestFromEnvs(t *testing.T) {
 		"HELLO+WORLD=boop",
 		"DUPLICATE=first",
 		"DUPLICATE=second",
-	})
+	}, true)
+	env := NewEnvironment(&variables)
 
 	require.NoError(t, err)
 	require.Equal(t, map[string]string{
