@@ -93,3 +93,7 @@ There are normal unit tests, snapshot tests, and integration tests. The integrat
 If work requires deep knowledge of mise internals, clone the project into `tmp/mise` and investigate the source code.
 
 https://github.com/jdx/mise
+
+## Pull Requests
+
+When writing a pull request add a "---\nPlease remove this to indicate you've reviewed and deslopped your PR description"
