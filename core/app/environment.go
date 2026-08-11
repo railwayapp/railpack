@@ -34,19 +34,15 @@ func FromEnvs(envs []string) (*Environment, error) {
 		value := matches[2]
 
 		if value == "" {
-			// A name-only entry inherits from the process environment.
-			// NAME= is dropped entirely: hosted builders pass every variable
-			// this way, and BuildKit cannot mount an empty env secret, so
-			// keeping it produces plans that reference unresolvable secrets.
-			// It must never inherit — user-controlled names would read from
-			// the build daemon's environment.
+			// A bare NAME inherits from the process env; NAME= is dropped.
+			// Never inherit for NAME= — names are user-controlled and would
+			// leak the build daemon's environment.
 			if !strings.Contains(e, "=") {
 				if v, ok := os.LookupEnv(name); ok {
 					env.SetVariable(name, v)
 				}
 			}
 		} else {
-			// Use provided name, value pair
 			env.SetVariable(name, value)
 		}
 	}
