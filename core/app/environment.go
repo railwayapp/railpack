@@ -22,7 +22,7 @@ func NewEnvironment(variables *map[string]string) *Environment {
 // FromEnvs collects variables from the given environment variable names
 func FromEnvs(envs []string) (*Environment, error) {
 	env := NewEnvironment(nil)
-	re := regexp.MustCompile(`([A-Za-z0-9_+\-]*)(?:=?)(.*)`)
+	re := regexp.MustCompile(`(?s)([A-Za-z0-9_+\-]*)(?:=?)(.*)`)
 
 	for _, e := range envs {
 		matches := re.FindStringSubmatch(e)
@@ -34,12 +34,13 @@ func FromEnvs(envs []string) (*Environment, error) {
 		value := matches[2]
 
 		if value == "" {
-			// No value, pull from current environment
-			if v, ok := os.LookupEnv(name); ok {
-				env.SetVariable(name, v)
+			// A bare NAME inherits from the process env; NAME= is skipped.
+			if !strings.Contains(e, "=") {
+				if v, ok := os.LookupEnv(name); ok {
+					env.SetVariable(name, v)
+				}
 			}
 		} else {
-			// Use provided name, value pair
 			env.SetVariable(name, value)
 		}
 	}
