@@ -192,6 +192,8 @@ func (m *Mise) GetCurrentList(appDir string) (string, error) {
 		enabledIdiomaticEnv,
 		// MISE_PARANOID enables stricter security validation
 		"MISE_PARANOID=1",
+		// Safe mode keeps the app's own mise config inert (no code execution or host env mutation) while still reporting versions
+		"MISE_SAFE=1",
 	}, "--cd", appDir, "list", "--current", "--json")
 }
 
