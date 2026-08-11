@@ -34,9 +34,7 @@ func FromEnvs(envs []string) (*Environment, error) {
 		value := matches[2]
 
 		if value == "" {
-			// A bare NAME (no "=") inherits its value from the current
-			// process environment. An explicit NAME= is treated as unset
-			// and skipped.
+			// A bare NAME inherits from the process env; NAME= is skipped.
 			if !strings.Contains(e, "=") {
 				if v, ok := os.LookupEnv(name); ok {
 					env.SetVariable(name, v)
