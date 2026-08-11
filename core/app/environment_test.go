@@ -8,6 +8,8 @@ import (
 
 func TestFromEnvs(t *testing.T) {
 	t.Setenv("INHERITED", "from the process environment")
+	// EMPTY= entries are dropped, never inherited: user-controlled names must
+	// not read values out of the build daemon's environment.
 	t.Setenv("EMPTY", "this must not be inherited")
 
 	env, err := FromEnvs([]string{
@@ -31,7 +33,6 @@ func TestFromEnvs(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, map[string]string{
 		"PLAIN":          "value",
-		"EMPTY":          "",
 		"INHERITED":      "from the process environment",
 		"LEADING_EQUALS": "=value",
 		"EQUALS":         "value=with=equals==",
