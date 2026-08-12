@@ -37,7 +37,7 @@ var InfoCommand = &cli.Command{
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		buildResult, _, _, err := GenerateBuildResultForCommand(cmd)
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(err, exitCodeForError(err))
 		}
 
 		format := cmd.String("format")
@@ -52,11 +52,11 @@ var InfoCommand = &cli.Command{
 			if cmd.Bool("show-plan") {
 				planMap, err := addSchemaToPlanMap(buildResult.Plan)
 				if err != nil {
-					return cli.Exit(err, 1)
+					return cli.Exit(err, ExitCodeFailure)
 				}
 				serializedPlan, err := json.MarshalIndent(planMap, "", "  ")
 				if err != nil {
-					return cli.Exit(err, 1)
+					return cli.Exit(err, ExitCodeFailure)
 				}
 
 				core.PrettyPrintSectionHeader(&rendered, "Generated railpack-plan.json")
@@ -71,7 +71,7 @@ var InfoCommand = &cli.Command{
 		} else {
 			serializedResult, err := json.MarshalIndent(buildResult, "", "  ")
 			if err != nil {
-				return cli.Exit(err, 1)
+				return cli.Exit(err, ExitCodeFailure)
 			}
 			fmt.Fprintln(&rendered, string(serializedResult))
 		}
@@ -83,19 +83,19 @@ var InfoCommand = &cli.Command{
 			return nil
 		} else {
 			if err := os.MkdirAll(filepath.Dir(output), 0755); err != nil {
-				return cli.Exit(err, 1)
+				return cli.Exit(err, ExitCodeFailure)
 			}
 
 			err = os.WriteFile(output, rendered.Bytes(), 0644)
 			if err != nil {
-				return cli.Exit(err, 1)
+				return cli.Exit(err, ExitCodeFailure)
 			}
 
 			log.Infof("Plan written to %s", output)
 		}
 
 		if !buildResult.Success {
-			os.Exit(1)
+			os.Exit(ExitCodeFailure)
 			return nil
 		}
 

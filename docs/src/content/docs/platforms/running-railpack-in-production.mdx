@@ -38,6 +38,22 @@ railpack prepare /dir/to/build \
 
 ![railpack prepare command](../images/railpack-prepare.png)
 
+### Retrying a failed prepare
+
+`prepare` distinguishes failures that are worth retrying from failures that are
+not, so a platform does not have to retry (and re-log) an error the app will
+hit again on every attempt.
+
+- **Exit `75`** — a transient failure, such as a network error while
+  downloading Mise. Retry the command.
+- **Exit `1`** — the app could not be planned (no provider detected, a missing
+  start command, an invalid config file). Fail the build on the first attempt.
+- **No exit code** — the process never ran. Retry the command.
+
+The build info file is written even when the build result is unsuccessful, so
+`{"success": false, "logs": [...]}` can be read from `--info-out` rather than
+scraped from stdout.
+
 ## Building with BuildKit
 
 Each version of Railpack includes a BuildKit frontend available as an [image on

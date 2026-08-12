@@ -38,7 +38,7 @@ var PrepareCommand = &cli.Command{
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		buildResult, _, _, err := GenerateBuildResultForCommand(cmd)
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(err, exitCodeForError(err))
 		}
 
 		// Pretty print the result to stdout unless hidden
@@ -47,7 +47,12 @@ var PrepareCommand = &cli.Command{
 		}
 
 		if !buildResult.Success {
-			os.Exit(1)
+			// still write the info file so callers can read the failure from it rather than stdout
+			if err := writeInfoFile(cmd, buildResult); err != nil {
+				return cli.Exit(err, ExitCodeFailure)
+			}
+
+			os.Exit(ExitCodeFailure)
 			return nil
 		}
 
@@ -55,11 +60,11 @@ var PrepareCommand = &cli.Command{
 		if cmd.Bool("show-plan") {
 			planMap, err := addSchemaToPlanMap(buildResult.Plan)
 			if err != nil {
-				return cli.Exit(err, 1)
+				return cli.Exit(err, ExitCodeFailure)
 			}
 			serialized, err := json.MarshalIndent(planMap, "", "  ")
 			if err != nil {
-				return cli.Exit(err, 1)
+				return cli.Exit(err, ExitCodeFailure)
 			}
 			_, _ = os.Stdout.Write(serialized)
 		}
@@ -69,23 +74,33 @@ var PrepareCommand = &cli.Command{
 			// Include $schema in the plan JSON for editor support
 			planMap, err := addSchemaToPlanMap(buildResult.Plan)
 			if err != nil {
-				return cli.Exit(err, 1)
+				return cli.Exit(err, ExitCodeFailure)
 			}
 			if err := writeJSONFile(planOut, planMap, "Build plan written to %s"); err != nil {
-				return cli.Exit(err, 1)
+				return cli.Exit(err, ExitCodeFailure)
 			}
 		}
 
-		// Save info if requested
-		if infoOut := cmd.String("info-out"); infoOut != "" {
-			buildResult.Plan = nil
-			if err := writeJSONFile(infoOut, buildResult, "Build result info written to %s"); err != nil {
-				return cli.Exit(err, 1)
-			}
+		if err := writeInfoFile(cmd, buildResult); err != nil {
+			return cli.Exit(err, ExitCodeFailure)
 		}
 
 		return nil
 	},
+}
+
+// writes the build result to the --info-out file, if one was requested. The plan is
+// dropped from the copy since it is written separately with --plan-out.
+func writeInfoFile(cmd *cli.Command, buildResult *core.BuildResult) error {
+	infoOut := cmd.String("info-out")
+	if infoOut == "" {
+		return nil
+	}
+
+	info := *buildResult
+	info.Plan = nil
+
+	return writeJSONFile(infoOut, &info, "Build result info written to %s")
 }
 
 func writeJSONFile(path string, data any, logMessage string) error {
