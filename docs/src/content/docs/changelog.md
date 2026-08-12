@@ -7,6 +7,66 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
+## v0.36.3
+August 11, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.36.3)
+
+### What's Changed
+* Revert "fix: support multiline environment values and inheritance" by @coffee-cup in [#687](https://github.com/railwayapp/railpack/pull/687)
+* fix: drop empty env entries instead of keeping explicit empty values by @coffee-cup in [#688](https://github.com/railwayapp/railpack/pull/688)
+
+**Full Changelog**: [v0.36.1...v0.36.3](https://github.com/railwayapp/railpack/compare/v0.36.1...v0.36.3)
+
+## v0.36.2
+August 11, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.36.2)
+
+**Full Changelog**: [v0.36.1...v0.36.2](https://github.com/railwayapp/railpack/compare/v0.36.1...v0.36.2)
+
+## v0.36.1
+August 11, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.36.1)
+
+### What's Changed
+* feat(build): add RAILPACK_BUILT_AT runtime variable by @iloveitaly in [#669](https://github.com/railwayapp/railpack/pull/669)
+* feat(cli): add show-plan flag to info command by @iloveitaly in [#684](https://github.com/railwayapp/railpack/pull/684)
+* fix: support multiline environment values and inheritance by @iloveitaly in [#685](https://github.com/railwayapp/railpack/pull/685)
+* fix(mise): enable safe mode when reading app config by @coffee-cup in [#686](https://github.com/railwayapp/railpack/pull/686)
+
+**Full Changelog**: [v0.36.0...v0.36.1](https://github.com/railwayapp/railpack/compare/v0.36.0...v0.36.1)
+
+## v0.36.0
+August 10, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.36.0)
+
+### Providers
+
+#### New
+
+* **Node:** [TanStack Start](https://railpack.com/languages/node/#framework-support) apps are detected via `@tanstack/react-start` and are no longer treated as static Vite SPAs. If no `start` script is defined, Railpack installs `srvx` and starts with `srvx --prod -s ../client dist/server/server.js`; for production Node deploys, configure Nitro per TanStack's hosting guidance. by @iloveitaly in [#672](https://github.com/railwayapp/railpack/pull/672)
+* **Node:** the default Node version is now `lts` instead of a fixed major, and non-semver aliases such as `lts` resolve correctly through mise. Pin a version with `RAILPACK_NODE_VERSION`, `engines.node`, or a version file as described in the [Node versions](https://railpack.com/languages/node/#versions) docs. by @iloveitaly in [#650](https://github.com/railwayapp/railpack/pull/650)
+* **Node:** projects with a `package-lock.json` are detected as npm when no other package manager is configured. Prefer pinning Node and package manager versions for reproducible builds; see the [dependency recommendations](https://railpack.com/architecture/recommendations). by @iloveitaly in [#677](https://github.com/railwayapp/railpack/pull/677)
+* **Rust:** [rust-toolchain.toml](https://railpack.com/languages/rust/#versions) is honored as an idiomatic version file (including channel, profile, components, and targets). Add a root `rust-toolchain.toml` such as `channel = "1.85.0"` and Railpack will install that toolchain via mise. by @iloveitaly in [#676](https://github.com/railwayapp/railpack/pull/676)
+* **.NET:** [global.json](https://railpack.com/languages/dotnet/#versions) is honored as an idiomatic version file so `sdk.version` selects the .NET SDK. Add a root `global.json` such as `{ "sdk": { "version": "8.0.100" } }` to pin the SDK. by @iloveitaly in [#675](https://github.com/railwayapp/railpack/pull/675)
+
+### CLI
+
+#### New
+
+* **Build context:** `.dockerignore` patterns (and top-level `exclude` in `railpack.json`) are applied when the local source is first loaded into BuildKit, so large ignored directories like `node_modules` are no longer transferred during local builds. Configure exclusions in `.dockerignore` or via top-level `exclude` in [railpack.json](https://railpack.com/config/excluding-files). by @iloveitaly in [#373](https://github.com/railwayapp/railpack/pull/373)
+
+#### Fixed
+
+* **Config:** explicit `deploy.inputs` with include filters are no longer overridden by an implicit full-step deploy output, preserving selections such as Next.js standalone output. by @radiantjade in [#562](https://github.com/railwayapp/railpack/pull/562)
+* **Secrets:** CLI `--env` secrets are preserved when a config file also defines secrets, instead of being dropped. by @cadeljones in [#460](https://github.com/railwayapp/railpack/pull/460)
+
+### Mise Upgrades
+
+Updated mise from v2026.7.15 to [v2026.8.3](https://github.com/jdx/mise/releases/tag/v2026.8.3).
+
+* **Precompiled Ruby:** when `ruby.compile` is unset, mise installs precompiled Ruby binaries by default and falls back to source builds only when no binary is available. ([v2026.8.0](https://github.com/jdx/mise/releases/tag/v2026.8.0))
+* **Release-age filters:** `minimum_release_age` and related filters use GitHub's `published_at` timestamp so newly published releases of older commits no longer bypass age gates across Aqua, GitHub, Ubi, and related backends. ([v2026.8.3](https://github.com/jdx/mise/releases/tag/v2026.8.3))
+* **npm lockfile installs:** packages pinned in `mise.lock` are trusted through the low-download popularity gate, so locked npm tool installs no longer require `allow_low_downloads`. ([v2026.7.16](https://github.com/jdx/mise/releases/tag/v2026.7.16))
+* **Idiomatic version files:** disable individual idiomatic files per tool with `idiomatic_version_file_disable_files` (for example `node:package.json`) while keeping others active. ([v2026.7.17](https://github.com/jdx/mise/releases/tag/v2026.7.17))
+
+**Full Changelog**: [v0.35.0...v0.36.0](https://github.com/railwayapp/railpack/compare/v0.35.0...v0.36.0)
+
 ## v0.35.0
 July 28, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.35.0)
 
