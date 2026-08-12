@@ -26,17 +26,17 @@ var PlanCommand = &cli.Command{
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		buildResult, _, _, err := GenerateBuildResultForCommand(cmd)
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(err, exitCodeForError(err))
 		}
 
 		// Include $schema in the generated plan JSON for editor support
 		planMap, err := addSchemaToPlanMap(buildResult.Plan)
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(err, ExitCodeFailure)
 		}
 		serializedPlan, err := json.MarshalIndent(planMap, "", "  ")
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(err, ExitCodeFailure)
 		}
 		buildResultString := serializedPlan
 
@@ -48,12 +48,12 @@ var PlanCommand = &cli.Command{
 			return nil
 		} else {
 			if err := os.MkdirAll(filepath.Dir(output), 0755); err != nil {
-				return cli.Exit(err, 1)
+				return cli.Exit(err, ExitCodeFailure)
 			}
 
 			err = os.WriteFile(output, []byte(buildResultString), 0644)
 			if err != nil {
-				return cli.Exit(err, 1)
+				return cli.Exit(err, ExitCodeFailure)
 			}
 
 			log.Infof("Plan written to %s", output)

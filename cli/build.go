@@ -73,7 +73,7 @@ var BuildCommand = &cli.Command{
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		buildResult, app, env, err := GenerateBuildResultForCommand(cmd)
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(err, exitCodeForError(err))
 		}
 
 		if !cmd.Bool("dump-llb") {
@@ -81,19 +81,19 @@ var BuildCommand = &cli.Command{
 		}
 
 		if !buildResult.Success {
-			os.Exit(1)
+			os.Exit(ExitCodeFailure)
 			return nil
 		}
 
 		if cmd.Bool("show-plan") && !cmd.Bool("dump-llb") {
 			planMap, err := addSchemaToPlanMap(buildResult.Plan)
 			if err != nil {
-				return cli.Exit(err, 1)
+				return cli.Exit(err, ExitCodeFailure)
 			}
 
 			serializedPlan, err := json.MarshalIndent(planMap, "", "  ")
 			if err != nil {
-				return cli.Exit(err, 1)
+				return cli.Exit(err, ExitCodeFailure)
 			}
 
 			core.PrettyPrintSectionHeader(os.Stdout, "Generated railpack-plan.json")
@@ -102,7 +102,7 @@ var BuildCommand = &cli.Command{
 
 		err = validateSecrets(buildResult.Plan, env)
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(err, ExitCodeFailure)
 		}
 
 		secretsHash := getSecretsHash(env)
@@ -124,7 +124,7 @@ var BuildCommand = &cli.Command{
 			NoCache:     cmd.Bool("no-cache"),
 		})
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(err, ExitCodeFailure)
 		}
 
 		return nil

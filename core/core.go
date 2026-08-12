@@ -13,6 +13,7 @@ import (
 	c "github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/logger"
+	"github.com/railwayapp/railpack/core/mise"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/providers"
 	"github.com/railwayapp/railpack/core/providers/procfile"
@@ -40,7 +41,8 @@ type BuildResult struct {
 	Metadata          map[string]string                    `json:"metadata,omitempty"`
 	DetectedProviders []string                             `json:"detectedProviders,omitempty"`
 	Logs              []logger.Msg                         `json:"logs,omitempty"`
-	Success           bool                                 `json:"success,omitempty"`
+	// always serialized so consumers of the info file can read the outcome of a failed build
+	Success bool `json:"success"`
 }
 
 func readConfigJSON(path string, v any) error {
@@ -63,19 +65,21 @@ func readConfigJSON(path string, v any) error {
 	return nil
 }
 
-func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuildPlanOptions) *BuildResult {
+// generates a build plan for the app. The result is never nil: a failure to plan the
+// app is reported with `Success: false` and the reason in `Logs`. A non-nil error is
+// returned only for transient failures (see mise.IsTemporary), which say nothing about
+// the app itself and are worth retrying.
+func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuildPlanOptions) (*BuildResult, error) {
 	logger := logger.NewLogger()
 
 	config, err := GetConfig(app, env, options, logger)
 	if err != nil {
-		logger.LogError("%s", err.Error())
-		return &BuildResult{Success: false, Logs: logger.Logs}
+		return failedBuildResult(logger, err)
 	}
 
 	ctx, err := generate.NewGenerateContext(app, env, config, logger)
 	if err != nil {
-		logger.LogError("%s", err.Error())
-		return &BuildResult{Success: false, Logs: logger.Logs}
+		return failedBuildResult(logger, err)
 	}
 
 	// Set the previous versions
@@ -95,24 +99,21 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 	if providerToUse != nil {
 		err = providerToUse.Plan(ctx)
 		if err != nil {
-			logger.LogError("%s", err.Error())
-			return &BuildResult{Success: false, Logs: logger.Logs}
+			return failedBuildResult(logger, err)
 		}
 	}
 
 	// Run the procfile provider to support apps that have a Procfile with a start command
 	procfileProvider := &procfile.ProcfileProvider{}
 	if _, err := procfileProvider.Plan(ctx); err != nil {
-		logger.LogError("%s", err.Error())
-		return &BuildResult{Success: false, Logs: logger.Logs}
+		return failedBuildResult(logger, err)
 	}
 
 	// before `Generate()` any commands provided by railpack.json are *not* merged into the provider-generated
 	// buildPlan. This means providers can't view any of the custom structure provided by the user via a railpack.json
 	buildPlan, resolvedPackages, err := ctx.Generate()
 	if err != nil {
-		logger.LogError("%s", err.Error())
-		return &BuildResult{Success: false, Logs: logger.Logs}
+		return failedBuildResult(logger, err)
 	}
 
 	railpackVersion := options.RailpackVersion
@@ -130,7 +131,7 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		ErrorMissingStartCommand: options.ErrorMissingStartCommand,
 		ProviderToUse:            providerToUse,
 	}) {
-		return &BuildResult{Success: false, Logs: logger.Logs}
+		return &BuildResult{Success: false, Logs: logger.Logs}, nil
 	}
 
 	buildResult := &BuildResult{
@@ -143,7 +144,20 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		Success:           true,
 	}
 
-	return buildResult
+	return buildResult, nil
+}
+
+// records a planning failure in the build result. Transient failures are also returned
+// as an error so callers can tell them apart from a deterministic failure of the app.
+func failedBuildResult(logger *logger.Logger, err error) (*BuildResult, error) {
+	logger.LogError("%s", err.Error())
+
+	result := &BuildResult{Success: false, Logs: logger.Logs}
+	if mise.IsTemporary(err) {
+		return result, err
+	}
+
+	return result, nil
 }
 
 // GetConfig merges the options, environment, and file config into a single config

@@ -179,3 +179,20 @@ These options can be used with any command:
 | `--help`, `-h`    | Show help information    |
 | `--version`, `-v` | Show version information |
 | `--verbose`       | Enable verbose logging   |
+
+## Exit Codes
+
+| Code | Meaning                                                                       |
+| ---- | ----------------------------------------------------------------------------- |
+| `0`  | Success                                                                       |
+| `1`  | The command failed for a reason that will not change on a retry               |
+| `75` | The command failed for a transient reason and is worth retrying (EX_TEMPFAIL) |
+
+Exit code `75` is only used for failures that say nothing about the app being
+built, such as a network error while downloading Mise. Everything else — no
+provider detected, a missing start command, an invalid config file — exits
+with `1` and will fail the same way on every attempt.
+
+Platforms that run Railpack in a build pipeline should retry on `75` and fail
+the build on `1`. If the process exits without a code at all (the driver never
+ran), that is also worth retrying.

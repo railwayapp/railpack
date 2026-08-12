@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/log"
 )
@@ -20,7 +21,12 @@ import (
 //go:embed version.txt
 var Version string
 
-const githubReleaseBase = "https://github.com/jdx/mise/releases/download"
+// a var so tests can point the download at a local server
+var githubReleaseBase = "https://github.com/jdx/mise/releases/download"
+
+// http.DefaultClient has no timeout of any kind, so a stalled connection would
+// hang the build indefinitely. The ceiling is generous to tolerate slow builders.
+var downloadClient = &http.Client{Timeout: 5 * time.Minute}
 
 // returns name of the mise binary based on the operating system
 func getBinaryName() string {
@@ -105,11 +111,6 @@ func downloadAndInstall(cacheDir string) error {
 
 	log.Debugf("Downloading mise from %s", url)
 
-	resp, err := http.Get(url)
-	if err != nil {
-		return fmt.Errorf("failed to download mise: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
 	// Create temporary directory
 	tempDir, err := os.MkdirTemp("", "mise-install")
 	if err != nil {
@@ -118,16 +119,9 @@ func downloadAndInstall(cacheDir string) error {
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	archivePath := filepath.Join(tempDir, assetName)
-	f, err := os.Create(archivePath)
-	if err != nil {
-		return fmt.Errorf("failed to create archive file: %w", err)
+	if err := downloadArchive(url, archivePath); err != nil {
+		return err
 	}
-
-	if _, err := io.Copy(f, resp.Body); err != nil {
-		_ = f.Close()
-		return fmt.Errorf("failed to save archive: %w", err)
-	}
-	_ = f.Close()
 
 	if runtime.GOOS == "windows" {
 		err = extractZip(archivePath, binaryPath)
@@ -145,6 +139,50 @@ func downloadAndInstall(cacheDir string) error {
 	}
 
 	return nil
+}
+
+// downloads url to archivePath. Transient failures are typed so the caller can
+// decide whether to retry; this deliberately does not retry on its own.
+func downloadArchive(url, archivePath string) error {
+	resp, err := downloadClient.Get(url)
+	if err != nil {
+		// transport failures (dial timeouts, resets) are never the app's fault
+		return &TemporaryError{URL: url, Err: err}
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if err := checkDownloadStatus(url, resp); err != nil {
+		return err
+	}
+
+	f, err := os.Create(archivePath)
+	if err != nil {
+		return fmt.Errorf("failed to create archive file: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+
+	if _, err := io.Copy(f, resp.Body); err != nil {
+		// the connection dropped mid-body, leaving a truncated archive
+		return &TemporaryError{URL: url, Err: fmt.Errorf("failed to save archive: %w", err)}
+	}
+
+	return nil
+}
+
+// classifies the response status. Rate limits and server errors are transient;
+// anything else (notably a 404 for a mise version that does not exist) is not.
+func checkDownloadStatus(url string, resp *http.Response) error {
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		return nil
+	}
+
+	statusErr := fmt.Errorf("unexpected status %s", resp.Status)
+
+	if resp.StatusCode == http.StatusRequestTimeout || resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
+		return &TemporaryError{URL: url, Err: statusErr}
+	}
+
+	return fmt.Errorf("failed to download mise from %s: %w", url, statusErr)
 }
 
 func extractTarGz(archivePath, binaryPath string) error {

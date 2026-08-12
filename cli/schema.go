@@ -19,7 +19,7 @@ var SchemaCommand = &cli.Command{
 
 		schemaJson, err := json.MarshalIndent(schema, "", "  ")
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(err, ExitCodeFailure)
 		}
 
 		_, _ = os.Stdout.Write(schemaJson)

@@ -1,6 +1,8 @@
 package core
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -8,6 +10,7 @@ import (
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/logger"
+	"github.com/railwayapp/railpack/core/mise"
 	"github.com/stretchr/testify/require"
 )
 
@@ -40,7 +43,8 @@ func TestGenerateBuildPlanForExamples(t *testing.T) {
 			require.NoError(t, err)
 
 			env := app.NewEnvironment(nil)
-			buildResult := GenerateBuildPlan(userApp, env, &GenerateBuildPlanOptions{})
+			buildResult, err := GenerateBuildPlan(userApp, env, &GenerateBuildPlanOptions{})
+			require.NoError(t, err)
 
 			if !buildResult.Success {
 				t.Fatalf("failed to generate build plan for %s: %s", entry.Name(), buildResult.Logs)
@@ -60,6 +64,21 @@ func TestGenerateBuildPlanForExamples(t *testing.T) {
 			snaps.MatchStandaloneJSON(t, plan)
 		})
 	}
+}
+
+func TestFailedBuildResult(t *testing.T) {
+	temporary := fmt.Errorf("failed to ensure mise is installed: %w",
+		&mise.TemporaryError{URL: "https://github.com/jdx/mise", Err: errors.New("i/o timeout")})
+
+	result, err := failedBuildResult(logger.NewLogger(), temporary)
+	require.ErrorIs(t, err, temporary, "transient failures must reach the caller so they can be retried")
+	require.False(t, result.Success)
+	require.NotEmpty(t, result.Logs)
+
+	result, err = failedBuildResult(logger.NewLogger(), errors.New("no start command was found"))
+	require.NoError(t, err, "deterministic failures are reported in the build result only")
+	require.False(t, result.Success)
+	require.NotEmpty(t, result.Logs)
 }
 
 func TestGenerateConfigFromFile_NotFound(t *testing.T) {
@@ -128,7 +147,8 @@ func TestGenerateBuildPlan_DockerignoreMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	env := app.NewEnvironment(nil)
-	buildResult := GenerateBuildPlan(userApp, env, &GenerateBuildPlanOptions{})
+	buildResult, err := GenerateBuildPlan(userApp, env, &GenerateBuildPlanOptions{})
+	require.NoError(t, err)
 
 	require.True(t, buildResult.Success)
 	require.NotNil(t, buildResult.Metadata)
