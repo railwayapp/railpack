@@ -33,12 +33,10 @@ func FromEnvs(envs []string) (*Environment, error) {
 		name := matches[1]
 		value := matches[2]
 
-		if value == "" {
-			// A bare NAME inherits from the process env; NAME= is skipped.
-			if !strings.Contains(e, "=") {
-				if v, ok := os.LookupEnv(name); ok {
-					env.SetVariable(name, v)
-				}
+		// A name-only entry inherits, while NAME= explicitly assigns an empty value.
+		if value == "" && !strings.Contains(e, "=") {
+			if v, ok := os.LookupEnv(name); ok {
+				env.SetVariable(name, v)
 			}
 		} else {
 			env.SetVariable(name, value)
