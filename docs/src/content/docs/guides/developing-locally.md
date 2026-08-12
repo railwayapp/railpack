@@ -30,6 +30,10 @@ directory for more information).
 
 ### Remote Docker host
 
+Integration tests and local builds store images and BuildKit cache on
+the Docker host. Point Docker at another machine to keep tens of
+gigabytes of that data off your laptop.
+
 `BUILDKIT_HOST=docker-container://buildkit` uses the Docker CLI, so a
 remote Docker daemon is also the remote BuildKit. Set this in an
 untracked `mise.local.toml`:
