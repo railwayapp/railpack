@@ -7,6 +7,18 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
+## v0.36.4
+August 12, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.36.4)
+
+### What's Changed
+* chore: mise update 2026.8.4 by @github-actions[bot] in [#689](https://github.com/railwayapp/railpack/pull/689)
+* fix: exit 75 for transient failures by @edganiukov in [#690](https://github.com/railwayapp/railpack/pull/690)
+
+### New Contributors
+* @edganiukov made their first contribution in [#690](https://github.com/railwayapp/railpack/pull/690)
+
+**Full Changelog**: [v0.36.3...v0.36.4](https://github.com/railwayapp/railpack/compare/v0.36.3...v0.36.4)
+
 ## v0.36.3
 August 11, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.36.3)
 
