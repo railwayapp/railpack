@@ -32,11 +32,9 @@ directory for more information).
 
 Integration tests and local builds store images and BuildKit cache on
 the Docker host. Point Docker at another machine to keep tens of
-gigabytes of that data off your laptop.
+gigabytes of that data off your laptop if you are actively working on Railpack.
 
-`BUILDKIT_HOST=docker-container://buildkit` uses the Docker CLI, so a
-remote Docker daemon is also the remote BuildKit. Set this in an
-untracked `mise.local.toml`:
+Set this in a `mise.local.toml`:
 
 ```toml
 [env]
@@ -45,8 +43,7 @@ DOCKER_HOST = "ssh://user@host"
 
 Leave `BUILDKIT_HOST` unset unless the remote container is not named
 `buildkit`. Use key/agent SSH auth. The remote host needs a running
-privileged `buildkit` container; `mise run setup` bind-mounts a local
-path that Docker-over-SSH looks up on the remote filesystem.
+privileged `buildkit` container.
 
 Confirm the engine with `docker info` (`Name` is the hostname):
 
@@ -54,10 +51,6 @@ Confirm the engine with `docker info` (`Name` is the hostname):
 docker info -f '{{.Name}} {{.OperatingSystem}}'
 docker context inspect -f '{{.Endpoints.docker.Host}}'
 ```
-
-`docker context inspect` reports the context URL, which is ignored when
-`DOCKER_HOST` is set. Use `DOCKER_CONTEXT` if you want that inspect
-command to match the live connection.
 
 Use the `cli` task to run the Railpack CLI (this is like `railpack --help`)
 
