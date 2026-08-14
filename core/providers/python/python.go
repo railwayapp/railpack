@@ -48,6 +48,8 @@ var pythonPlaywrightRuntimeDependencies = []string{
 	"libxrandr2",
 }
 
+var pythonDefaultExcludePatterns = []string{".venv", "venv"}
+
 type PythonProvider struct{}
 
 func (p *PythonProvider) Name() string {
@@ -68,6 +70,8 @@ func (p *PythonProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 }
 
 func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
+	ctx.SetProviderDefaultExcludes(pythonDefaultExcludePatterns)
+
 	p.InstallMisePackages(ctx, ctx.GetMiseStepBuilder())
 
 	install := ctx.NewCommandStep("install")

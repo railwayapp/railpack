@@ -32,6 +32,8 @@ var nodeRuntimeDepRequirements = map[string][]string{
 	"puppeteer": {"xvfb", "gconf-service", "libasound2", "libatk1.0-0", "libc6", "libcairo2", "libcups2", "libdbus-1-3", "libexpat1", "libfontconfig1", "libgbm1", "libgcc1", "libgconf-2-4", "libgdk-pixbuf2.0-0", "libglib2.0-0", "libgtk-3-0", "libnspr4", "libpango-1.0-0", "libpangocairo-1.0-0", "libstdc++6", "libx11-6", "libx11-xcb1", "libxcb1", "libxcomposite1", "libxcursor1", "libxdamage1", "libxext6", "libxfixes3", "libxi6", "libxrandr2", "libxrender1", "libxss1", "libxtst6", "ca-certificates", "fonts-liberation", "libappindicator1", "libnss3", "lsb-release", "xdg-utils", "wget"},
 }
 
+var nodeDefaultExcludePatterns = []string{"node_modules"}
+
 // Keep this aligned with the Debian 12 Chromium list in Playwright's nativeDeps.ts:
 // https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/registry/nativeDeps.ts
 // Keep these explicit because --with-deps installs them in the builder, not the runtime image.
@@ -116,6 +118,8 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	if p.packageJson == nil {
 		return fmt.Errorf("package.json not found")
 	}
+
+	ctx.SetProviderDefaultExcludes(nodeDefaultExcludePatterns)
 
 	p.SetNodeMetadata(ctx)
 
@@ -221,7 +225,8 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 
 	buildLayer := plan.NewStepLayer(build.Name(), plan.Filter{
 		Include: buildIncludeDirs,
-		// TODO we should just have a default dockerignore/exclusion list instead of hardcoding here
+		// Dependencies are copied from the install or prune layer separately. Exclude
+		// generated dependencies from build output so they do not replace that layer.
 		Exclude: []string{"node_modules", ".yarn"},
 	})
 
@@ -371,12 +376,6 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 	install.Secrets = []string{}
 	install.UseSecretsWithPrefixes([]string{"NODE", "NPM", "BUN", "PNPM", "YARN", "CI"})
 	install.AddPaths([]string{"/app/node_modules/.bin"})
-
-	// TODO once dockerignore is in place, we should remove this
-	if ctx.App.HasMatch("node_modules") {
-		ctx.Logger.LogWarn("node_modules directory found in project root, this is likely a mistake")
-		ctx.Logger.LogWarn("It is recommended to add node_modules to the .gitignore file")
-	}
 
 	if p.usesCorepack() {
 		pmName, pmVersion := p.packageJson.GetPackageManagerInfo()

@@ -41,6 +41,10 @@
    "RAILPACK_VERSION": "dev"
   }
  },
+ "exclude": [
+  ".venv",
+  "venv"
+ ],
  "steps": [
   {
    "assets": {
