@@ -86,6 +86,7 @@ var BuildCommand = &cli.Command{
 		}
 
 		if cmd.Bool("show-plan") && !cmd.Bool("dump-llb") {
+			// Include $schema in the generated plan JSON for editor support
 			planMap, err := addSchemaToPlanMap(buildResult.Plan)
 			if err != nil {
 				return cli.Exit(err, ExitCodeFailure)
