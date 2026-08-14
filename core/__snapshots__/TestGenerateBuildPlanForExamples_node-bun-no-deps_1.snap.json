@@ -54,7 +54,6 @@
   }
  },
  "exclude": [
-  ".git",
   "node_modules"
  ],
  "steps": [

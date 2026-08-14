@@ -42,7 +42,6 @@
   }
  },
  "exclude": [
-  ".git",
   ".venv",
   "venv"
  ],
