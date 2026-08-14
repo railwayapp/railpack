@@ -450,10 +450,10 @@ func TestGenerateContextDockerignore(t *testing.T) {
 }
 
 func TestGenerateContextProviderDefaultExcludes(t *testing.T) {
-	defaultExcludes := []string{".git", "node_modules"}
+	defaultExcludes := []string{"node_modules"}
 	expectedWarning := logger.Msg{
 		Level: logger.Warn,
-		Msg: "Applying default exclude patterns: `.git`, `node_modules`. " +
+		Msg: "Applying default exclude patterns: `node_modules`. " +
 			"Add a .dockerignore to customize. " +
 			"https://railpack.com/config/excluding-files",
 	}

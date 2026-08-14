@@ -162,10 +162,10 @@ func TestProviderDefaultExcludes(t *testing.T) {
 		appPath  string
 		excludes []string
 	}{
-		{name: "node", appPath: "../examples/node-npm", excludes: []string{".git", "node_modules"}},
-		{name: "bun", appPath: "../examples/node-bun", excludes: []string{".git", "node_modules"}},
-		{name: "deno", appPath: "../examples/deno-2", excludes: []string{".git", "node_modules"}},
-		{name: "python", appPath: "../examples/python-pip", excludes: []string{".git", ".venv", "venv"}},
+		{name: "node", appPath: "../examples/node-npm", excludes: []string{"node_modules"}},
+		{name: "bun", appPath: "../examples/node-bun", excludes: []string{"node_modules"}},
+		{name: "deno", appPath: "../examples/deno-2", excludes: []string{"node_modules"}},
+		{name: "python", appPath: "../examples/python-pip", excludes: []string{".venv", "venv"}},
 		{name: "other provider", appPath: "../examples/go-mod", excludes: []string{}},
 	}
 
@@ -174,7 +174,8 @@ func TestProviderDefaultExcludes(t *testing.T) {
 			userApp, err := app.NewApp(tt.appPath)
 			require.NoError(t, err)
 
-			buildResult := GenerateBuildPlan(userApp, app.NewEnvironment(nil), &GenerateBuildPlanOptions{})
+			buildResult, err := GenerateBuildPlan(userApp, app.NewEnvironment(nil), &GenerateBuildPlanOptions{})
+			require.NoError(t, err)
 			require.True(t, buildResult.Success)
 			require.Equal(t, tt.excludes, buildResult.Plan.Exclude)
 		})
