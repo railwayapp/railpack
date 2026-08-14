@@ -70,6 +70,7 @@ func Build(ctx context.Context, c client.Client) (*client.Result, error) {
 		return nil, err
 	}
 
+	// TODO why are we marshalling the plan here if we don't do anything with it?
 	_, err = json.MarshalIndent(plan, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("error marshalling plan: %w", err)
