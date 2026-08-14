@@ -113,6 +113,7 @@ func TestGenerateConfigFromFile_Malformed(t *testing.T) {
 }
 
 func TestGetConfig_MergesEnvironmentAndFileSecrets(t *testing.T) {
+	// write a railpack.json file with some secrets
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, defaultConfigFileName)
 	err := os.WriteFile(configPath, []byte(`{"secrets":["VITE_APP_TITLE","FILE_ONLY_SECRET"]}`), 0644)
@@ -124,8 +125,9 @@ func TestGetConfig_MergesEnvironmentAndFileSecrets(t *testing.T) {
 	envVars := map[string]string{
 		"DATABASE_URL":      "postgres://localhost/mydb",
 		"SENTRY_AUTH_TOKEN": "sntrx_abc",
-		"VITE_APP_TITLE":    "MyApp",
-		"MY_SECRET":         "s3cret",
+		// this should win against the file config
+		"VITE_APP_TITLE": "MyApp",
+		"MY_SECRET":      "s3cret",
 	}
 
 	env := app.NewEnvironment(&envVars)

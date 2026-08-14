@@ -164,7 +164,7 @@ func failedBuildResult(logger *logger.Logger, err error) (*BuildResult, error) {
 // note that this is not run in the frontend process, since the buildkit frontend consumed the "compiled" railpack-plan.json which this logic helps generate
 func GetConfig(app *app.App, env *app.Environment, options *GenerateBuildPlanOptions, logger *logger.Logger) (*c.Config, error) {
 	// cli options first, takes precedence over environment and file config
-	optionsConfig := GenerateConfigFromOptions(options)
+	cliOptionsConfig := GenerateConfigFromOptions(options)
 
 	// environment variables next, takes precedence over file config
 	envConfig := GenerateConfigFromEnvironment(env)
@@ -175,10 +175,18 @@ func GetConfig(app *app.App, env *app.Environment, options *GenerateBuildPlanOpt
 		return nil, err
 	}
 
-	mergedConfig := c.Merge(optionsConfig, envConfig, fileConfig)
+	// NOTE incredibly important line! This defined the precedence order for most of the configuration (right to left)
+	mergedConfig := c.Merge(fileConfig, envConfig, cliOptionsConfig)
 
-	// Environment-provided secrets must remain available when file configuration replaces slice values.
-	mergedConfig.Secrets = utils.RemoveDuplicates(slices.Concat(envConfig.Secrets, mergedConfig.Secrets))
+	// Secrets are unique: the values are *not* part of the configuration/railpack plan, only the names are
+	// the values are only provided to the build system (either directly to the buildctl / docker build cmd, or to `railpack build`)
+	// Additionally, it would unintuitive for a CLI option to replace a file-provided secret instead of concatenating them.
+	// For this reason, we merge the list of secret names together and deduplicate them.
+	mergedConfig.Secrets = utils.RemoveDuplicates(slices.Concat(
+		fileConfig.Secrets,
+		envConfig.Secrets,
+		// cli options don't define secrets
+	))
 
 	return mergedConfig, nil
 }
@@ -187,12 +195,11 @@ func GenerateConfigFromFile(app *app.App, env *app.Environment, options *Generat
 	config := c.EmptyConfig()
 
 	configFileName := defaultConfigFileName
-	if options.ConfigFilePath != "" {
-		configFileName = options.ConfigFilePath
-	}
-
 	if envConfigFileName, _ := env.GetConfigVariable("CONFIG_FILE"); envConfigFileName != "" {
 		configFileName = envConfigFileName
+	}
+	if options.ConfigFilePath != "" {
+		configFileName = options.ConfigFilePath
 	}
 
 	// always assume config file path is relative to the app source directory
