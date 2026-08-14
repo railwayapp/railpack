@@ -24,8 +24,8 @@ relatively low level build plan schema.
 
 There are many configuration options which can be defined in multiple places. Here is the order of precedence (highest wins):
 
-1. CLI flags (`--build-cmd`, `--start-cmd`, etc)
-2. Environment variables passed with `--env` (`RAILPACK)
+1. CLI flags (`--start-cmd`, etc)
+2. Environment variables passed with `--env` (`RAILPACK_START_CMD`, etc)
 3. [`railpack.json`](/config/file)
 4. [Procfile](/config/procfile) (only for the start command)
 5. Provider and detected defaults

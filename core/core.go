@@ -160,18 +160,23 @@ func failedBuildResult(logger *logger.Logger, err error) (*BuildResult, error) {
 	return result, nil
 }
 
-// GetConfig merges the options, environment, and file config into a single config
+// merges the options, environment, and file config into a single config
+// note that this is not run in the frontend process, since the buildkit frontend consumed the "compiled" railpack-plan.json which this logic helps generate
 func GetConfig(app *app.App, env *app.Environment, options *GenerateBuildPlanOptions, logger *logger.Logger) (*c.Config, error) {
+	// cli options first, takes precedence over environment and file config
 	optionsConfig := GenerateConfigFromOptions(options)
 
+	// environment variables next, takes precedence over file config
 	envConfig := GenerateConfigFromEnvironment(env)
 
+	// file config last
 	fileConfig, err := GenerateConfigFromFile(app, env, options, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	mergedConfig := c.Merge(optionsConfig, envConfig, fileConfig)
+
 	// Environment-provided secrets must remain available when file configuration replaces slice values.
 	mergedConfig.Secrets = utils.RemoveDuplicates(slices.Concat(envConfig.Secrets, mergedConfig.Secrets))
 
@@ -254,12 +259,13 @@ func GenerateConfigFromEnvironment(env *app.Environment) *c.Config {
 		config.Deploy.AptPackages = aptPackages
 	}
 
+	// TODO why do we add all the environment variables to the secrets?
 	config.Secrets = append(config.Secrets, slices.Sorted(maps.Keys(env.Variables))...)
 
 	return config
 }
 
-// generates a config from the CLI options
+// generates a config from the CLI options, this takes precedence over the environment and file config
 func GenerateConfigFromOptions(options *GenerateBuildPlanOptions) *c.Config {
 	config := c.EmptyConfig()
 
