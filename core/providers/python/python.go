@@ -48,7 +48,7 @@ var pythonPlaywrightRuntimeDependencies = []string{
 	"libxrandr2",
 }
 
-var pythonDefaultExcludePatterns = []string{".git", ".venv", "venv"}
+var pythonDefaultExcludePatterns = []string{".venv", "venv"}
 
 type PythonProvider struct{}
 

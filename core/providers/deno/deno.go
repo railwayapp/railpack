@@ -13,7 +13,7 @@ const (
 	ROOT_CACHE           = "/root/.cache"
 )
 
-var denoDefaultExcludePatterns = []string{".git", "node_modules"}
+var denoDefaultExcludePatterns = []string{"node_modules"}
 
 type DenoProvider struct {
 	mainFile string
