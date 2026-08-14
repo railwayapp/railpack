@@ -16,7 +16,6 @@ often prefixed with `RAILPACK_`.
 | `RAILPACK_PACKAGES`            | Install additional Mise packages. In the format `pkg[@version]`. The version is optional; if not provided, the latest version is used. Allows list.                             |
 | `RAILPACK_BUILD_APT_PACKAGES`  | Install additional Apt packages during build. Allows list.                                                                                                                      |
 | `RAILPACK_DEPLOY_APT_PACKAGES` | Install additional Apt packages in the final image. Allows list.                                                                                                                |
-| `RAILPACK_DISABLE_CACHES`      | Specify specific BuildKit cache keys to disable, or `*` to disable all caches. Allows list.                                                                                     |
 
 Variables which allow a list use space-separated values. For example:
 
@@ -30,7 +29,11 @@ To configure more parts of the build, it is recommended to use a [config file](/
 
 These environment variables affect the behavior of Railpack:
 
-| Name              | Description                                 |
-| :---------------- | :------------------------------------------ |
-| `FORCE_COLOR`     | Force colored output even when not in a TTY |
-| `RAILPACK_VERBOSE` | Enable verbose logging (equivalent to `--verbose` flag) |
+They are read directly from Railpack's process environment; do not pass them
+with `--env`.
+
+| Name                      | Description                                                                 |
+| :------------------------ | :-------------------------------------------------------------------------- |
+| `FORCE_COLOR`             | Force colored output even when not in a TTY                                 |
+| `RAILPACK_VERBOSE`        | Enable verbose logging (equivalent to the `--verbose` flag)                 |
+| `RAILPACK_DISABLE_CACHES` | Disable specific BuildKit cache keys, or `*` to disable all caches. Allows list. |

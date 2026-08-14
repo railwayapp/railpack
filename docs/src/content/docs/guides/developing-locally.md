@@ -28,6 +28,30 @@ mise run setup
 This command starts a BuildKit container (check out `mise.toml` in the root
 directory for more information).
 
+### Remote Docker host
+
+Integration tests and local builds store images and BuildKit cache on
+the Docker host. Point Docker at another machine to keep tens of
+gigabytes of that data off your laptop if you are actively working on Railpack.
+
+Set this in a `mise.local.toml`:
+
+```toml
+[env]
+DOCKER_HOST = "ssh://user@host"
+```
+
+Leave `BUILDKIT_HOST` unset unless the remote container is not named
+`buildkit`. Use key/agent SSH auth. The remote host needs a running
+privileged `buildkit` container.
+
+Confirm the engine with `docker info` (`Name` is the hostname):
+
+```bash
+docker info -f '{{.Name}} {{.OperatingSystem}}'
+docker context inspect -f '{{.Endpoints.docker.Host}}'
+```
+
 Use the `cli` task to run the Railpack CLI (this is like `railpack --help`)
 
 ```bash
@@ -60,8 +84,9 @@ Pro-tip: point your agent at this guide.
 
 ## Building directly with BuildKit
 
-**👋 Requirement**: an instance of BuildKit must be running locally.
-Run `mise run setup` to start a BuildKit container.
+**👋 Requirement**: an instance of BuildKit must be reachable from the
+Docker CLI. Run `mise run setup` to start a local BuildKit container, or
+point Docker at a remote host (see [Remote Docker host](#remote-docker-host)).
 
 Railpack will instantiate a BuildKit client and communicate over GRPC in
 order to build the generated LLB.
