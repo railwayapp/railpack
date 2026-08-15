@@ -4,10 +4,10 @@
   "packages": {
     "python": "latest"
   },
-  "buildAptPackages": ["neofetch"],
+  "buildAptPackages": ["lsb-release"],
   "steps": {
     "build": {
-      "commands": ["neofetch"],
+      "commands": ["lsb_release -a"],
       "variables": {
         "HELLO": "world"
       }
@@ -15,7 +15,7 @@
   },
   "deploy": {
     "inputs": ["..."],
-    "aptPackages": ["neofetch"],
-    "startCommand": "python --version && neofetch $HELLO"
+    "aptPackages": ["lsb-release"],
+    "startCommand": "python --version && lsb_release -d"
   }
 }
