@@ -17,9 +17,13 @@ it into a container image. It's built on BuildKit with support for Node, Python,
 
 Follow these instructions carefully when writing code:
 
-- When writing a comment describing a function, do not start the comment with the name of the function
+- Add a concise one-line comment above functions whose purpose is not
+  immediately obvious. Describe their role or why they exist without starting
+  the comment with the function name.
 - Assume the person reading this code is an expert software engineer, but is not familiar with the internals of every system. Include concise one-line comments explaining key hooks, API usage, blocks of logic, etc., to help the reader quickly understand the code you've written.
 - Follow Go conventions and existing patterns in the codebase
+- Prefer modern Go standard-library APIs and idioms supported by the Go version
+  pinned in `mise.toml` when they make the code clearer or simpler.
 - Prefer early `return`s or `continue`s to `if` nesting
 - Use appropriate error handling with proper error wrapping
 - Do not write comments that are obvious from the code itself; focus on
