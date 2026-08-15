@@ -3,14 +3,17 @@ package core
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/logger"
 	"github.com/railwayapp/railpack/core/mise"
+	"github.com/railwayapp/railpack/core/plan"
 	"github.com/stretchr/testify/require"
 )
 
@@ -79,6 +82,80 @@ func TestFailedBuildResult(t *testing.T) {
 	require.NoError(t, err, "deterministic failures are reported in the build result only")
 	require.False(t, result.Success)
 	require.NotEmpty(t, result.Logs)
+}
+
+func TestDisablePlanCaches(t *testing.T) {
+	newPlan := func() *plan.BuildPlan {
+		return &plan.BuildPlan{
+			Caches: map[string]*plan.Cache{
+				"gradle":      {Directory: "/root/.gradle"},
+				"maven":       {Directory: "/root/.m2/repository"},
+				"npm-install": {Directory: "/root/.npm"},
+			},
+			Steps: []plan.Step{
+				{Caches: []string{"gradle", "maven"}},
+				{Caches: []string{"npm-install"}},
+			},
+		}
+	}
+
+	tests := []struct {
+		name           string
+		disabledCaches []string
+		expectedCaches []string
+		expectedSteps  [][]string
+	}{
+		{
+			name:           "named caches",
+			disabledCaches: []string{"gradle", "npm-install"},
+			expectedCaches: []string{"maven"},
+			expectedSteps:  [][]string{{"maven"}, nil},
+		},
+		{
+			name:           "all caches with redundant named cache",
+			disabledCaches: []string{"*", "gradle"},
+			expectedCaches: nil,
+			expectedSteps:  [][]string{nil, nil},
+		},
+		{
+			name:           "unknown cache",
+			disabledCaches: []string{"unknown"},
+			expectedCaches: []string{"gradle", "maven", "npm-install"},
+			expectedSteps:  [][]string{{"gradle", "maven"}, {"npm-install"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buildPlan := newPlan()
+			disablePlanCaches(buildPlan, tt.disabledCaches)
+
+			require.Equal(t, tt.expectedCaches, slices.Sorted(maps.Keys(buildPlan.Caches)))
+			for i, expected := range tt.expectedSteps {
+				require.Equal(t, expected, buildPlan.Steps[i].Caches)
+			}
+		})
+	}
+}
+
+func TestGenerateBuildPlan_DisableCachesRequiresEnvironmentArgument(t *testing.T) {
+	userApp, err := app.NewApp("../examples/java-gradle")
+	require.NoError(t, err)
+
+	t.Setenv("RAILPACK_DISABLE_CACHES", "gradle")
+	buildResult, err := GenerateBuildPlan(userApp, app.NewEnvironment(nil), &GenerateBuildPlanOptions{})
+	require.NoError(t, err)
+	require.True(t, buildResult.Success)
+	require.Contains(t, buildResult.Plan.Caches, "gradle")
+
+	envVars := map[string]string{"RAILPACK_DISABLE_CACHES": "gradle"}
+	buildResult, err = GenerateBuildPlan(userApp, app.NewEnvironment(&envVars), &GenerateBuildPlanOptions{})
+	require.NoError(t, err)
+	require.True(t, buildResult.Success)
+	require.NotContains(t, buildResult.Plan.Caches, "gradle")
+	for _, step := range buildResult.Plan.Steps {
+		require.NotContains(t, step.Caches, "gradle")
+	}
 }
 
 func TestGenerateConfigFromFile_NotFound(t *testing.T) {
