@@ -23,7 +23,7 @@ building. It will
 
 - Output the build result to stdout (this shows users what will happen in the
   build)
-- Save the build plan to a file (e.g. `railpack.json`)
+- Save the build plan to a file (e.g. `railpack-plan.json`)
 - Save the build info to a `railpack-info.json` file
 
 The build plan is used by the frontend to build the app. The build info can be
@@ -90,11 +90,13 @@ the Railpack CLI.
 
 ## Secrets
 
-The secrets that are available to commands in the build must be specified in the
-build plan. You can pass secrets to the `prepare` command with the `--env` flag.
+The names of secrets available to build commands must be present in the build
+plan's top-level catalog. Names can be declared in the root or step-level
+`secrets` field of `railpack.json`, or passed to `prepare` with `--env`.
 
 ```sh
-railpack prepare /dir/to/build --env STRIPE_LIVE_KEY=sk_live_asdf
+export STRIPE_LIVE_KEY=sk_live_123
+railpack prepare /dir/to/build --env STRIPE_LIVE_KEY
 ```
 
 These secrets can be used to configure the plan, but the names will also be
@@ -106,7 +108,7 @@ To include the values of the secrets for the build, you can pass them as [Docker
 build secrets](https://docs.docker.com/build/building/secrets/).
 
 ```sh
-STRIPE_LIVE_KEY=asdfasdf docker build \
+STRIPE_LIVE_KEY=sk_live_123 docker build \
   --build-arg BUILDKIT_SYNTAX="ghcr.io/railwayapp/railpack-frontend" \
   -f /path/to/railpack-plan.json \
   --secret id=STRIPE_LIVE_KEY,env=STRIPE_LIVE_KEY \
@@ -116,17 +118,25 @@ STRIPE_LIVE_KEY=asdfasdf docker build \
 _Note how the secret is available to docker build at the start and also passed
 through the `--secret` flag._
 
+The frontend mounts every cataloged secret into every exec command. A step's
+`secrets` list controls cache invalidation, not access. Extra secret IDs passed
+to BuildKit are ignored when they are absent from the catalog, while a missing
+cataloged secret causes required secret mounts to fail.
+
 ### Layer invalidation
 
-By default, layers will not be invalidated when a secret value changes. To get
-around this, Railpack uses a hash of the secret values and mounts this as a file
-in the layer. When using the Railpack CLI to build, this happens automatically,
-but if you are using the frontend directly, calculate the hash yourself and pass
-it as a build arg.
+BuildKit does not include secret contents in an exec operation's cache key.
+Railpack uses a separate hash to add the cache dependencies selected by each
+compiled step's `secrets` list. The CLI calculates the hash automatically. When
+using the frontend directly, calculate it yourself and pass it as a build arg.
 
 ```sh
 --build-arg secrets-hash=<hash-of-secret-values>
 ```
+
+An empty list adds no secret cache dependency, concrete names select only those
+values, and `"*"` selects the complete supplied hash. See [Secrets & Layer
+Invalidation](/architecture/secrets#secrets--layer-invalidation) for details.
 
 ## Mount cache ID
 

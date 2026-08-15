@@ -54,7 +54,7 @@ Pass advanced options to the frontend using `--opt` with BuildKit or
 | Flag           | Description                                      |
 | -------------- | ------------------------------------------------ |
 | `cache-key`    | Prefix used to isolate mount cache IDs           |
-| `secrets-hash` | Hash used to invalidate layers when secrets change |
+| `secrets-hash` | Hash source for step secret cache dependencies     |
 | `github-token` | Token used to increase GitHub API rate limits    |
 
 ### Example
@@ -89,11 +89,13 @@ structure matches `docker buildx`.
 
 To use secrets in your build, you must:
 
-1. Pass secret names to `railpack prepare` (so they are included in the build
-   plan):
+1. Declare each secret name so it appears in the generated build plan. Define
+   names in the root or step-level `secrets` field of `railpack.json`, or pass
+   them while preparing the plan:
 
 ```sh
-railpack prepare /dir/to/build --env STRIPE_LIVE_KEY=sk_live_123
+export STRIPE_LIVE_KEY=sk_live_123
+railpack prepare /dir/to/build --env STRIPE_LIVE_KEY
 ```
 
 2. Pass secret values to the build using Docker or BuildKit:
@@ -122,10 +124,20 @@ buildctl build \
   --output type=docker,name=test
 ```
 
+The frontend requests every name in the build plan's top-level secret catalog
+and mounts it into every exec command. Step-level `secrets` lists control cache
+invalidation; they do not filter secret access.
+
+A supplied secret absent from the plan catalog is ignored because the frontend
+never requests it. A cataloged secret that was not supplied causes the build to
+fail because the secret mounts are required. BuildKit does not expose an API
+that lets the frontend enumerate all supplied secret IDs.
+
 ## Layer Invalidation
 
-To ensure build layers are invalidated when secret values change, compute a hash
-of your secret values and pass it as a build argument:
+BuildKit does not include secret contents in an exec operation's cache key.
+Compute a deterministic hash that changes with the supplied secret values and
+pass it as a build argument:
 
 ```sh
 secrets_hash=$(
@@ -137,7 +149,11 @@ secrets_hash=$(
 --build-arg secrets-hash="$secrets_hash"
 ```
 
-This ensures the build cache is properly invalidated when secrets change.
+An empty compiled step `secrets` list adds no secret cache dependency. Concrete
+names invalidate the step only for those values, while `"*"` depends on the
+complete supplied hash. See [Secrets & Layer
+Invalidation](/architecture/secrets#secrets--layer-invalidation) for the full
+behavior.
 
 ## GitHub Token
 
@@ -145,5 +161,6 @@ If provided, the GitHub token is passed to Mise as the `GITHUB_TOKEN`
 ([Docs](https://mise.jdx.dev/getting-started.html#github-api-rate-limiting)).
 This increases the rate limits when fetching info from the GitHub API.
 
-Once passed, this token will be accessible to the build context, so you should
-not pass a token that the owner of the build code should not have access to.
+The frontend injects this build argument as `GITHUB_TOKEN` only into Mise
+install commands. It is not a BuildKit secret mount, so protect the build
+invocation and do not pass a token to builds that should not receive it.
