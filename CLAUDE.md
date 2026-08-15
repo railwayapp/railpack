@@ -24,6 +24,8 @@ Follow these instructions carefully when writing code:
 - Follow Go conventions and existing patterns in the codebase
 - Prefer modern Go standard-library APIs and idioms supported by the Go version
   pinned in `mise.toml` when they make the code clearer or simpler.
+- Assume no external Go applications consume this project as a library; exported
+  APIs only need compatibility with in-repository consumers unless stated otherwise.
 - Prefer early `return`s or `continue`s to `if` nesting
 - Use appropriate error handling with proper error wrapping
 - Do not write comments that are obvious from the code itself; focus on
