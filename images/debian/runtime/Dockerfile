@@ -1,5 +1,5 @@
 # Base image for the final runtime image created by railpack
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
