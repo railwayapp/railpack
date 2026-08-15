@@ -28,6 +28,9 @@ Follow these instructions carefully when writing code:
 - Use appropriate error handling with proper error wrapping
 - Do not write comments that are obvious from the code itself; focus on
   explaining why something is done, not what it does
+- Do not end one-line comments with a period
+- Do not preserve behavior or add complexity solely to avoid snapshot changes;
+  update and review snapshots when intended behavior changes
 - Seriously, do not write comments that are obvious from the code itself.
 - Do not write one-line functions
 - Always use the App abstraction for file system operations.
