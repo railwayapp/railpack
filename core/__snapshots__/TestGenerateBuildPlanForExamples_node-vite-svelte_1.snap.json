@@ -77,7 +77,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.8.5"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.8.6"
     }
    ],
    "name": "packages:mise",
@@ -175,7 +175,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.8.5"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.8.6"
     }
    ],
    "name": "packages:caddy",
@@ -219,7 +219,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.8.5"
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.8.6"
     }
    ],
    "name": "packages:apt:runtime"
