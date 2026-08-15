@@ -9,8 +9,11 @@ differences being:
 - Environment variables are saved in the final image and should not contain
   sensitive information. Since they are in the final image, providers can add
   variables that will be available to the app at runtime.
-- Secrets are never logged or saved in the build logs. They are also only
-  available at build time and not saved to the final image.
+- Secrets are available at build time and are not automatically saved to the
+  final image. Build commands can still print secrets or persist them in build
+  artifacts, and secret values are not automatically filtered from logs, so you
+  are responsible for preventing build commands and artifacts from exposing
+  them.
 
 ## Environment Variables
 
@@ -126,14 +129,21 @@ or BuildKit with the `--secret` flag.
 
 ```bash
 # Generate a build plan
-railpack plan --env STRIPE_LIVE_KEY=sk_live_asdf --out test/railpack-plan.json
+railpack plan --env STRIPE_LIVE_KEY=sk_live_123 --out test/railpack-plan.json
+
+# Hash the same value that will be supplied to BuildKit
+secrets_hash=$(
+  echo -n "STRIPE_LIVE_KEY=sk_live_123" |
+    sha256sum |
+    awk '{print $1}'
+)
 
 # Build with the custom frontend
-STRIPE_LIVE_KEY=asdf123456789 docker build \
-  --build-arg BUILDKIT_SYNTAX="ghcr.io/railwayapp/railpack:railpack-frontend" \
+STRIPE_LIVE_KEY=sk_live_123 docker build \
+  --build-arg BUILDKIT_SYNTAX="ghcr.io/railwayapp/railpack-frontend" \
   -f test/railpack-plan.json \
   --secret id=STRIPE_LIVE_KEY,env=STRIPE_LIVE_KEY \
-  --build-arg secrets-hash=asdfasdf \
+  --build-arg secrets-hash="$secrets_hash" \
   examples/node-bun
 ```
 
