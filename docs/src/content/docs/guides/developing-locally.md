@@ -294,8 +294,9 @@ Or with multiple strings:
 
 You can pass environment variables to the container at runtime using the
 `envs` key. These variables are also available while generating the build plan,
-so they can be used to test different configurations or Railpack configuration
-variables:
+and every name is added to the plan's secret catalog and supplied to BuildKit.
+Use `envs` to test runtime values, plan-generation inputs, or Railpack
+configuration variables:
 
 ```json
 {
@@ -339,8 +340,11 @@ also making them available during plan generation or at runtime:
 }
 ```
 
-The secret name must still be declared by the corresponding step or in the
-top-level `secrets` field of `railpack.json`.
+The name must still enter the generated plan catalog through the root
+`secrets` field or an explicit declaration on a retained step. Declare it on
+the step whose cache should be invalidated when the value changes. The frontend
+mounts every cataloged secret into every exec command regardless of the
+step-level cache selection.
 
 ### Services
 

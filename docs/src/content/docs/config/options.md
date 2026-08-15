@@ -10,9 +10,10 @@ Users can configure Railpack in a few different ways:
 - [`railpack.json` config file](/config/file)
 - [Mise configuration](/config/mise)
 
-CLI flags, environment variables, and `railpack.json` are merged in
-precedence order and then applied to the generate context. Mise configuration
-files are used to configure tool versions, install additional tools, set environment variables, and customize Mise behavior in the generated image.
+CLI flags, environment variables, and `railpack.json` are merged in precedence
+order and then applied to the generate context. Mise configuration files are
+used to configure tool versions, install additional tools, set environment
+variables, and customize Mise behavior in the generated image.
 
 Everything that affects a part of the build plan _should_ be configurable.
 Config affects the generate context rather than the plan itself as it allows
@@ -22,7 +23,8 @@ relatively low level build plan schema.
 
 ## Configuration Precedence
 
-There are many configuration options which can be defined in multiple places. Here is the order of precedence (highest wins):
+There are many configuration options which can be defined in multiple places.
+Here is the order of precedence (highest wins):
 
 1. CLI flags (`--start-cmd`, etc)
 2. Environment variables passed with `--env` (`RAILPACK_START_CMD`, etc)
@@ -33,16 +35,20 @@ There are many configuration options which can be defined in multiple places. He
 A couple things to note:
 
 - An unset or empty value does not override a lower source.
-- Build configuration from the environment must be passed with `--env`. Exported shell variables are not imported automatically.
+- Build configuration from the environment must be passed with `--env`.
+  Exported shell variables are not imported automatically.
 - Array values from a higher source replace lower ones unless the value
 includes `"..."` to extend the generated list. See [Array
 Extending](/config/file#array-extending).
+- Root secret names are an exception: names from `railpack.json` and `--env`
+  are combined and deduplicated rather than replaced.
 - Language versions (for example `RAILPACK_NODE_VERSION` versus `.nvmrc`) use a
 per-language order documented on each language page.
 
 ### Mise Configuration Precedence
 
-The Railpack build process ends up generated system-level (`/etc/mise/config.toml`). You can override these settings with a project-level `mise.toml` file.
+The build process generates a system-level `/etc/mise/config.toml`. You can
+override these settings with a project-level `mise.toml` file.
 
 ## Configuration and Build Plans
 
