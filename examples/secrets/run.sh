@@ -20,7 +20,7 @@ for secret in "${REQUIRED_SECRETS[@]}"; do
       error_value_secrets+=("$secret")
       echo "❌ Secret $secret contains invalid value 'error'"
     else
-      echo "✅ Found secret: $secret = ${!secret}"
+      echo "✅ Found secret: $secret"
     fi
   fi
 done
