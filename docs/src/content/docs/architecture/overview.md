@@ -30,7 +30,7 @@ generate an image. Things that it includes are:
 - Caches
   - Map of cache definitions that can be referenced by steps
 - Secrets
-  - Catalog of secret names mounted into build commands
+  - Array of secret names mounted into build commands
 - Deploy
   - Configuration for how the container runs, including:
     - Inputs: List of inputs for the deploy step

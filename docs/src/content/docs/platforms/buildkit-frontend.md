@@ -98,6 +98,9 @@ export STRIPE_LIVE_KEY=sk_live_123
 railpack prepare /dir/to/build --env STRIPE_LIVE_KEY
 ```
 
+These are inputs to plan generation. The frontend itself reads only the
+generated `railpack-plan.json`, not `railpack.json`.
+
 2. Pass secret values to the build using Docker or BuildKit:
 
 **Docker:**
@@ -124,14 +127,15 @@ buildctl build \
   --output type=docker,name=test
 ```
 
-The frontend requests every name in the build plan's top-level secret catalog
-and mounts it into every exec command. Step-level `secrets` lists control cache
-invalidation; they do not filter secret access.
+The frontend requests every name in the build plan's top-level `secrets` array
+and mounts it into every exec command. Step-level `secrets` arrays control
+cache invalidation; they do not filter secret access.
 
-A supplied secret absent from the plan catalog is ignored because the frontend
-never requests it. A cataloged secret that was not supplied causes the build to
-fail because the secret mounts are required. BuildKit does not expose an API
-that lets the frontend enumerate all supplied secret IDs.
+A supplied secret absent from the plan's top-level `secrets` array is ignored
+because the frontend never requests it. A name in the array that was not
+supplied causes the build to fail because the secret mounts are required.
+BuildKit does not expose an API that lets the frontend enumerate all supplied
+secret IDs.
 
 ## Layer Invalidation
 
@@ -149,7 +153,7 @@ secrets_hash=$(
 --build-arg secrets-hash="$secrets_hash"
 ```
 
-An empty compiled step `secrets` list adds no secret cache dependency. Concrete
+An empty compiled step `secrets` array adds no secret cache dependency. Concrete
 names invalidate the step only for those values, while `"*"` depends on the
 complete supplied hash. See [Secrets & Layer
 Invalidation](/architecture/secrets#secrets--layer-invalidation) for the full
@@ -160,6 +164,18 @@ behavior.
 If provided, the GitHub token is passed to Mise as the `GITHUB_TOKEN`
 ([Docs](https://mise.jdx.dev/getting-started.html#github-api-rate-limiting)).
 This increases the rate limits when fetching info from the GitHub API.
+
+Pass it as a frontend build argument:
+
+```sh
+export GITHUB_TOKEN=ghp_xxx
+
+# Docker or Docker Buildx
+docker buildx build --build-arg github-token="$GITHUB_TOKEN" ...
+
+# BuildKit directly
+buildctl build --opt build-arg:github-token="$GITHUB_TOKEN" ...
+```
 
 The frontend injects this build argument as `GITHUB_TOKEN` only into Mise
 install commands. It is not a BuildKit secret mount, so protect the build

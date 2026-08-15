@@ -146,14 +146,14 @@ The root configuration can have these fields:
 | `buildAptPackages` | List of apt packages to install during the build step                           |
 | `packages`         | Map of package name to package version                                          |
 | `caches`           | Map of cache name to cache definitions. The cache names are referenced in steps |
-| `secrets`          | Secret names added to the build plan catalog                                    |
+| `secrets`          | Secret names added to the build plan's top-level `secrets` array                 |
 | `steps`            | Map of step names to step definitions                                          |
 
 Secrets explicitly named by a step are automatically added to the generated
-build plan's top-level secret list. They do not need to be repeated in the
+build plan's top-level `secrets` array. They do not need to be repeated in the
 root `secrets` field. A step using `"*"` selects root secret names for cache
 invalidation, not secrets inferred from other steps. The frontend still mounts
-the complete plan catalog into every exec command.
+every name in the plan's top-level `secrets` array into every exec command.
 
 For example:
 
