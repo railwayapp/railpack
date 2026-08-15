@@ -93,7 +93,7 @@ To use secrets in your build, you must:
    plan):
 
 ```sh
-railpack prepare /dir/to/build --env STRIPE_LIVE_KEY=sk_live_asdf
+railpack prepare /dir/to/build --env STRIPE_LIVE_KEY=sk_live_123
 ```
 
 2. Pass secret values to the build using Docker or BuildKit:
@@ -129,7 +129,7 @@ of your secret values and pass it as a build argument:
 
 ```sh
 secrets_hash=$(
-  echo -n "STRIPE_LIVE_KEY=sk_live_asdf" |
+  echo -n "STRIPE_LIVE_KEY=sk_live_123" |
     sha256sum |
     awk '{print $1}'
 )
