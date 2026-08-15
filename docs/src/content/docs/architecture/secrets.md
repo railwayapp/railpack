@@ -60,11 +60,14 @@ deploy variables with the same name.
 ## Secrets
 
 The names of all secrets that should be used during the build are added to the
-top of the build plan, and each step's `secrets` array specifies which secrets
-should invalidate that step's layer cache when their values change. While all
-secrets are available to every command as environment variables, only the ones
-listed in a step's `secrets` array will trigger a cache invalidation if
-modified.
+top of the build plan. You can define names in the top-level `secrets` array or
+directly in a step's `secrets` array. Explicit step secrets are automatically
+included in the generated build plan's top-level secret list.
+
+Each step's `secrets` array specifies which secrets should invalidate that
+step's layer cache when their values change. While all secrets are available to
+every command as environment variables, only the ones listed in a step's
+`secrets` array will trigger a cache invalidation if modified.
 
 Under the hood, Railpack uses [BuildKit secrets
 mounts](https://docs.docker.com/build/building/secrets/) to supply an exec
@@ -77,24 +80,24 @@ that step.
 
 ```json
 {
-  "secrets": ["DATABASE_URL", "API_KEY", "STRIPE_LIVE_KEY"],
   "steps": {
     "build": {
-      "secrets": ["DATABASE_URL", "API_KEY"] // Only these secrets are available to this step
+      "secrets": ["DATABASE_URL", "API_KEY"]
     }
   }
 }
 ```
 
 You can also use `"*"` in a step's secrets array to indicate that it should have
-access to all secrets defined in the build plan:
+access to all secrets explicitly defined in the top-level `secrets` array.
+Secrets inferred from other steps are not included:
 
 ```json
 {
   "secrets": ["DATABASE_URL", "API_KEY", "STRIPE_LIVE_KEY"],
   "steps": {
     "build": {
-      "secrets": ["*"] // This step has access to all secrets
+      "secrets": ["*"]
     }
   }
 }

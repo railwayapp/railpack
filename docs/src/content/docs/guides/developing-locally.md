@@ -293,8 +293,9 @@ Or with multiple strings:
 ### Environment Variables
 
 You can pass environment variables to the container at runtime using the
-`envs` key. This is useful for testing with different configurations, secrets,
-or Railpack configuration variables:
+`envs` key. These variables are also available while generating the build plan,
+so they can be used to test different configurations or Railpack configuration
+variables:
 
 ```json
 {
@@ -322,6 +323,24 @@ different build configurations:
 See the [environment variables
 documentation](/config/environment-variables) for a complete list of available
 `RAILPACK_*` configuration options.
+
+### Build Secrets
+
+Use the `secrets` key to test secrets declared in `railpack.json` without
+passing them through `--env`. This supplies their values to BuildKit without
+also making them available during plan generation or at runtime:
+
+```json
+{
+  "expectedOutput": "Build succeeded",
+  "secrets": {
+    "SENTRY_AUTH_TOKEN": "test-token"
+  }
+}
+```
+
+The secret name must still be declared by the corresponding step or in the
+top-level `secrets` field of `railpack.json`.
 
 ### Services
 
