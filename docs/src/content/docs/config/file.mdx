@@ -149,6 +149,10 @@ The root configuration can have these fields:
 | `secrets`          | List of secrets that should be made available to commands                       |
 | `steps`            | Map of step names to step definitions                                          |
 
+Secrets explicitly named by a step are automatically added to the generated
+build plan's top-level secret list. They do not need to be repeated in the
+root `secrets` field. A step using `"*"` inherits only the secrets explicitly
+listed in the root field, not secrets inferred from other steps.
 
 For example:
 
