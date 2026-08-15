@@ -91,8 +91,9 @@ the Railpack CLI.
 ## Secrets
 
 The names of secrets available to build commands must be present in the build
-plan's top-level catalog. Names can be declared in the root or step-level
-`secrets` field of `railpack.json`, or passed to `prepare` with `--env`.
+plan's top-level `secrets` array. Names can be declared in the root or
+step-level `secrets` field of `railpack.json`, or passed to `prepare` with
+`--env`.
 
 ```sh
 export STRIPE_LIVE_KEY=sk_live_123
@@ -118,23 +119,25 @@ STRIPE_LIVE_KEY=sk_live_123 docker build \
 _Note how the secret is available to docker build at the start and also passed
 through the `--secret` flag._
 
-The frontend mounts every cataloged secret into every exec command. A step's
-`secrets` list controls cache invalidation, not access. Extra secret IDs passed
-to BuildKit are ignored when they are absent from the catalog, while a missing
-cataloged secret causes required secret mounts to fail.
+The frontend mounts every secret in the plan's top-level `secrets` array into
+every exec command. A step's `secrets` array controls cache invalidation, not
+access. Extra secret IDs passed to BuildKit are ignored when they are absent
+from the array, while a secret named in the array but not supplied causes the
+required secret mounts to fail.
 
 ### Layer invalidation
 
 BuildKit does not include secret contents in an exec operation's cache key.
 Railpack uses a separate hash to add the cache dependencies selected by each
-compiled step's `secrets` list. The CLI calculates the hash automatically. When
-using the frontend directly, calculate it yourself and pass it as a build arg.
+compiled step's `secrets` array. The CLI calculates the hash automatically.
+When using the frontend directly, calculate it yourself and pass it as a build
+arg.
 
 ```sh
 --build-arg secrets-hash=<hash-of-secret-values>
 ```
 
-An empty list adds no secret cache dependency, concrete names select only those
+An empty array adds no secret cache dependency, concrete names select only those
 values, and `"*"` selects the complete supplied hash. See [Secrets & Layer
 Invalidation](/architecture/secrets#secrets--layer-invalidation) for details.
 
