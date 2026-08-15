@@ -79,10 +79,10 @@ func TestResolveSecrets(t *testing.T) {
 			expectedByStep: [][]string{{}, {}},
 		},
 		{
-			name:           "resolves wildcard to empty when no secrets exist",
+			name:           "preserves wildcard when no secrets exist",
 			steps:          []plan.Step{{Secrets: []string{"*"}}},
 			expected:       []string{},
-			expectedByStep: [][]string{{}},
+			expectedByStep: [][]string{{"*"}},
 		},
 	}
 
@@ -90,18 +90,28 @@ func TestResolveSecrets(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buildConfig := config.EmptyConfig()
 			buildConfig.Secrets = tt.configuredSecrets
-			buildPlan := &plan.BuildPlan{Steps: tt.steps}
-			resolveSecrets(buildConfig, buildPlan)
+			secrets, steps := resolveSecrets(buildConfig, tt.steps)
 
-			require.ElementsMatch(t, tt.expected, buildPlan.Secrets)
-			require.Len(t, buildPlan.Secrets, len(tt.expected))
+			require.ElementsMatch(t, tt.expected, secrets)
+			require.Len(t, secrets, len(tt.expected))
 
 			for i, expected := range tt.expectedByStep {
-				require.ElementsMatch(t, expected, buildPlan.Steps[i].Secrets)
-				require.Len(t, buildPlan.Steps[i].Secrets, len(expected))
+				require.ElementsMatch(t, expected, steps[i].Secrets)
+				require.Len(t, steps[i].Secrets, len(expected))
 			}
 		})
 	}
+}
+
+func TestResolveSecretsDoesNotMutateSteps(t *testing.T) {
+	buildConfig := config.EmptyConfig()
+	buildConfig.Secrets = []string{"GLOBAL"}
+	steps := []plan.Step{{Secrets: []string{"*"}}}
+
+	_, resolvedSteps := resolveSecrets(buildConfig, steps)
+
+	require.Equal(t, []string{"*"}, steps[0].Secrets)
+	require.Equal(t, []string{"GLOBAL"}, resolvedSteps[0].Secrets)
 }
 
 func TestGenerateContextPromotesSecretsFromReferencedSteps(t *testing.T) {
