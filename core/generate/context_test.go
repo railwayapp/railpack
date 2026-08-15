@@ -172,18 +172,18 @@ func TestGenerateContextAppliesConfiguredDeployBase(t *testing.T) {
 	t.Run("direct deploy base", func(t *testing.T) {
 		ctx := CreateTestContext(t, "../../examples/node-npm")
 		cfg := config.EmptyConfig()
-		cfg.Deploy.Base = &plan.Layer{Image: "debian:bookworm-slim"}
+		cfg.Deploy.Base = &plan.Layer{Image: "debian:trixie-slim"}
 		ctx.Config = cfg
 
 		buildPlan, _, err := ctx.Generate()
 		require.NoError(t, err)
-		require.Equal(t, plan.NewImageLayer("debian:bookworm-slim"), buildPlan.Deploy.Base)
+		require.Equal(t, plan.NewImageLayer("debian:trixie-slim"), buildPlan.Deploy.Base)
 	})
 
 	t.Run("runtime apt step uses configured deploy base", func(t *testing.T) {
 		ctx := CreateTestContext(t, "../../examples/node-npm")
 		cfg := config.EmptyConfig()
-		cfg.Deploy.Base = &plan.Layer{Image: "debian:bookworm-slim"}
+		cfg.Deploy.Base = &plan.Layer{Image: "debian:trixie-slim"}
 		cfg.Deploy.AptPackages = []string{"curl"}
 		ctx.Config = cfg
 
@@ -200,7 +200,7 @@ func TestGenerateContextAppliesConfiguredDeployBase(t *testing.T) {
 		}
 
 		require.NotNil(t, runtimeAptStep)
-		require.Equal(t, []plan.Layer{plan.NewImageLayer("debian:bookworm-slim")}, runtimeAptStep.Inputs)
+		require.Equal(t, []plan.Layer{plan.NewImageLayer("debian:trixie-slim")}, runtimeAptStep.Inputs)
 	})
 }
 
