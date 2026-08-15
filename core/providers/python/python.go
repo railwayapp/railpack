@@ -22,7 +22,7 @@ const (
 	PLAYWRIGHT_INSTALL_VAR = "PYTHON_PLAYWRIGHT_INSTALL"
 )
 
-// Keep this aligned with the Debian 12 Chromium list in Playwright's nativeDeps.ts:
+// Keep this aligned with Playwright's Chromium deps in nativeDeps.ts:
 // https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/registry/nativeDeps.ts
 var pythonPlaywrightRuntimeDependencies = []string{
 	"libasound2",
