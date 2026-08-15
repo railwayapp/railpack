@@ -91,6 +91,8 @@ There are normal unit tests, snapshot tests, and integration tests. The integrat
 
 - Assume the reader knows the documentation is about Railpack. Avoid
   redundantly naming Railpack when the subject is clear from context.
+- Always call a JSON array an "array". Do not use "list", "catalog", or other
+  terms for that concept.
 
 # File Conventions
 
