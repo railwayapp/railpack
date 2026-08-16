@@ -139,11 +139,7 @@ jobs:
           mkdir -p tmp/frontend-plan
           plan_args=()
           if [ -f "examples/$EXAMPLE/test.json" ]; then
-            while IFS='=' read -r k v; do
-              if [ -n "$k" ]; then
-                plan_args+=(--env "$k=$v")
-              fi
-            done < <(python3 -c '
+            for env_var in $(python3 -c '
 import json, re, sys
 lines = [re.sub(r"^\s*//.*$", "", l) for l in open(sys.argv[1])]
 content = re.sub(r",(\s*[}\]])", r"\1", "\n".join(lines))
@@ -154,7 +150,9 @@ try:
         print(f"{k}={v}")
 except Exception:
     pass
-' "examples/$EXAMPLE/test.json")
+' "examples/$EXAMPLE/test.json"); do
+              plan_args+=(--env "$env_var")
+            done
           fi
           mise run cli plan "examples/$EXAMPLE" "${plan_args[@]}" --out tmp/frontend-plan/railpack-plan.json
 
