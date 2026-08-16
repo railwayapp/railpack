@@ -137,7 +137,26 @@ jobs:
           EXAMPLE: ${{ steps.example.outputs.name }}
         run: |
           mkdir -p tmp/frontend-plan
-          mise run cli plan "examples/$EXAMPLE" --out tmp/frontend-plan/railpack-plan.json
+          plan_args=()
+          if [ -f "examples/$EXAMPLE/test.json" ]; then
+            while IFS='=' read -r k v; do
+              if [ -n "$k" ]; then
+                plan_args+=(--env "$k=$v")
+              fi
+            done < <(python3 -c '
+import json, re, sys
+lines = [re.sub(r"^\s*//.*$", "", l) for l in open(sys.argv[1])]
+content = re.sub(r",(\s*[}\]])", r"\1", "\n".join(lines))
+try:
+    data = json.loads(content, strict=False)
+    envs = data[0].get("envs", {}) if isinstance(data, list) and data else {}
+    for k, v in envs.items():
+        print(f"{k}={v}")
+except Exception:
+    pass
+' "examples/$EXAMPLE/test.json")
+          fi
+          mise run cli plan "examples/$EXAMPLE" "${plan_args[@]}" --out tmp/frontend-plan/railpack-plan.json
 
       - name: Build Example With Frontend Image
         env:
