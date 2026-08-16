@@ -85,5 +85,15 @@ RUN apt-get update && apt-get install -y \
 
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
 
+# Wrap gcc/cc/g++/c++ to avoid GCC 14 breaking older C/C++ extensions
+RUN for bin in gcc cc; do \
+      printf '#!/bin/sh\nexec /usr/bin/%s -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=implicit-int "$@"\n' "$bin" > "/usr/local/bin/$bin" && \
+      chmod +x "/usr/local/bin/$bin"; \
+    done && \
+    for bin in g++ c++; do \
+      printf '#!/bin/sh\nexec /usr/bin/%s -Wno-error=incompatible-pointer-types -Wno-error=int-conversion "$@"\n' "$bin" > "/usr/local/bin/$bin" && \
+      chmod +x "/usr/local/bin/$bin"; \
+    done
+
 # Make sure the cache directory exists
 RUN mkdir -p /root/.cache
