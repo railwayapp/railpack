@@ -39,7 +39,7 @@ jobs:
           images: ${{ env.PRODUCTION_BUILDER_IMAGE_NAME }}
           # latest tag is automatically generated
           tags: |
-            type=raw,value=debian-bookworm
+            type=raw,value=debian-trixie
             type=semver,pattern={{version}}
             type=raw,value=${{ env.PRODUCTION_MISE_TAG }}
             type=sha,format=long
@@ -86,7 +86,7 @@ jobs:
           images: ${{ env.PRODUCTION_RUNTIME_IMAGE_NAME }}
           # latest tag is automatically generated
           tags: |
-            type=raw,value=debian-bookworm
+            type=raw,value=debian-trixie
             type=semver,pattern={{version}}
             type=raw,value=${{ env.PRODUCTION_MISE_TAG }}
             type=sha,format=long

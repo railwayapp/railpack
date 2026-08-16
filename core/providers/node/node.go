@@ -28,11 +28,11 @@ const (
 )
 
 var nodeRuntimeDepRequirements = map[string][]string{
-	// To find the latest list: run `npx puppeteer@latest install --help` and inspect docs
-	"puppeteer": {"xvfb", "gconf-service", "libasound2", "libatk1.0-0", "libc6", "libcairo2", "libcups2", "libdbus-1-3", "libexpat1", "libfontconfig1", "libgbm1", "libgcc1", "libgconf-2-4", "libgdk-pixbuf2.0-0", "libglib2.0-0", "libgtk-3-0", "libnspr4", "libpango-1.0-0", "libpangocairo-1.0-0", "libstdc++6", "libx11-6", "libx11-xcb1", "libxcb1", "libxcomposite1", "libxcursor1", "libxdamage1", "libxext6", "libxfixes3", "libxi6", "libxrandr2", "libxrender1", "libxss1", "libxtst6", "ca-certificates", "fonts-liberation", "libappindicator1", "libnss3", "lsb-release", "xdg-utils", "wget"},
+	// To find the latest list: run `npx puppeteer@latest install --help` and inspect docs.
+	"puppeteer": {"xvfb", "libasound2", "libatk1.0-0", "libc6", "libcairo2", "libcups2", "libdbus-1-3", "libexpat1", "libfontconfig1", "libgbm1", "libgcc1", "libgdk-pixbuf-2.0-0", "libglib2.0-0", "libgtk-3-0", "libnspr4", "libpango-1.0-0", "libpangocairo-1.0-0", "libstdc++6", "libx11-6", "libx11-xcb1", "libxcb1", "libxcomposite1", "libxcursor1", "libxdamage1", "libxext6", "libxfixes3", "libxi6", "libxrandr2", "libxrender1", "libxss1", "libxtst6", "ca-certificates", "fonts-liberation", "libnss3", "lsb-release", "xdg-utils", "wget"},
 }
 
-// Keep this aligned with the Debian 12 Chromium list in Playwright's nativeDeps.ts:
+// Keep this aligned with Playwright's Chromium deps in nativeDeps.ts:
 // https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/registry/nativeDeps.ts
 // Keep these explicit because --with-deps installs them in the builder, not the runtime image.
 var nodePlaywrightRuntimeDependencies = []string{

@@ -1,6 +1,6 @@
 # Image used by railpack during the build process, but not as the base image of the final runtime image
 # scm = fat image containing a lot of build tools
-FROM buildpack-deps:bookworm-scm
+FROM buildpack-deps:trixie-scm
 
 ENV DEBIAN_FRONTEND=noninteractive
 

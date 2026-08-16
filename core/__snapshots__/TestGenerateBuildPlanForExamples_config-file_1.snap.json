@@ -50,7 +50,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "python --version \u0026\u0026 neofetch $HELLO",
+  "startCommand": "python --version \u0026\u0026 lsb_release -d",
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
@@ -69,8 +69,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y neofetch'",
-     "customName": "install apt packages: neofetch"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y lsb-release'",
+     "customName": "install apt packages: lsb-release"
     }
    ],
    "inputs": [
@@ -156,8 +156,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'neofetch'",
-     "customName": "neofetch"
+     "cmd": "sh -c 'lsb_release -a'",
+     "customName": "lsb_release -a"
     }
    ],
    "inputs": [
@@ -186,8 +186,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y neofetch'",
-     "customName": "install apt packages: neofetch"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y lsb-release'",
+     "customName": "install apt packages: lsb-release"
     }
    ],
    "inputs": [
