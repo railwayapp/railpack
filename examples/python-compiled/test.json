@@ -1,8 +1,5 @@
 [
   {
-    "expectedOutput": "Python version: 3.7",
-    "envs": {
-    	"MISE_PYTHON_COMPILE": "1"
-    }
+    "expectedOutput": "Python version: 3.7"
   }
 ]

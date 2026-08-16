@@ -20,7 +20,9 @@ ENV MISE_INSTALL_PATH=/usr/local/bin/mise \
     MISE_DATA_DIR=/mise \
     MISE_CONFIG_DIR=/mise \
     MISE_CACHE_DIR=/mise/cache \
-    PATH=/mise/shims:$PATH
+    PATH=/mise/shims:$PATH \
+    CFLAGS="-Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=implicit-int" \
+    CXXFLAGS="-Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration -Wno-error=int-conversion -Wno-error=implicit-int"
 
 # https://mise.jdx.dev/installing-mise.html
 RUN gpg --keyserver hkps://keys.openpgp.org --recv-keys 24853EC9F655CE80B48E6C3A8B81C9D17413A06D && \
@@ -60,6 +62,8 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libxmlsec1-dev \
     libffi-dev \
+    # Internationalization
+    libicu-dev \
     # Image processing
     libjpeg-dev \
     libpng-dev \

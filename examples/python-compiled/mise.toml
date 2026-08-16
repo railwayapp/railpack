@@ -1,2 +1,5 @@
 [tools]
 python = "3.7"
+
+[settings]
+python.compile = true
