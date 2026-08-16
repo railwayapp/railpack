@@ -140,17 +140,17 @@ jobs:
           plan_args=()
           if [ -f "examples/$EXAMPLE/test.json" ]; then
             for env_var in $(python3 -c '
-import json, re, sys
-lines = [re.sub(r"^\s*//.*$", "", l) for l in open(sys.argv[1])]
-content = re.sub(r",(\s*[}\]])", r"\1", "\n".join(lines))
-try:
-    data = json.loads(content, strict=False)
-    envs = data[0].get("envs", {}) if isinstance(data, list) and data else {}
-    for k, v in envs.items():
-        print(f"{k}={v}")
-except Exception:
-    pass
-' "examples/$EXAMPLE/test.json"); do
+            import json, re, sys
+            lines = [re.sub(r"^\s*//.*$", "", l) for l in open(sys.argv[1])]
+            content = re.sub(r",(\s*[}\]])", r"\1", "\n".join(lines))
+            try:
+                data = json.loads(content, strict=False)
+                envs = data[0].get("envs", {}) if isinstance(data, list) and data else {}
+                for k, v in envs.items():
+                    print(f"{k}={v}")
+            except Exception:
+                pass
+            ' "examples/$EXAMPLE/test.json"); do
               plan_args+=(--env "$env_var")
             done
           fi
