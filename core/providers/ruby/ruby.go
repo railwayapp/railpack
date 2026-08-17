@@ -161,8 +161,7 @@ func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.
 	install.Secrets = []string{}
 	install.UseSecretsWithPrefixes([]string{"RUBY", "GEM", "BUNDLE"})
 	envVars := p.GetRubyEnvVars(ctx)
-	envVars["CFLAGS"] = nativeExtCflags
-	envVars["CXXFLAGS"] = nativeExtCflags
+	p.applyNativeExtCflags(envVars)
 	install.AddEnvVars(envVars)
 
 	bundlerVersion := parseBundlerVersionFromGemfile(ctx)
@@ -191,8 +190,7 @@ func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 	build.Secrets = []string{}
 	build.UseSecretsWithPrefixes([]string{"RAILS", "BUNDLE", "BOOTSNAP", "SPROCKETS", "WEBPACKER", "ASSET", "DISABLE_SPRING"})
 	buildEnv := p.GetRubyEnvVars(ctx)
-	buildEnv["CFLAGS"] = nativeExtCflags
-	buildEnv["CXXFLAGS"] = nativeExtCflags
+	p.applyNativeExtCflags(buildEnv)
 	build.AddEnvVars(buildEnv)
 	build.AddInput(plan.NewLocalLayer())
 	outputs := []string{"/app"}
@@ -304,6 +302,16 @@ func (p *RubyProvider) GetRubyEnvVars(ctx *generate.GenerateContext) map[string]
 		"MALLOC_ARENA_MAX": "2",
 		"LD_PRELOAD":       "libjemalloc.so.2",
 	}
+}
+
+// extconf Makefiles assign CFLAGS with "=", so a bare CFLAGS env var is ignored.
+// Putting the flag on CC/CXX and forcing make to honor the environment makes it stick.
+func (p *RubyProvider) applyNativeExtCflags(env map[string]string) {
+	env["CFLAGS"] = nativeExtCflags
+	env["CXXFLAGS"] = nativeExtCflags
+	env["CC"] = "gcc " + nativeExtCflags
+	env["CXX"] = "g++ " + nativeExtCflags
+	env["MAKE"] = "make --environment-overrides"
 }
 
 func (p *RubyProvider) usesPostgres(ctx *generate.GenerateContext) bool {

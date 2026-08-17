@@ -139,11 +139,14 @@
    "name": "install",
    "variables": {
     "BUNDLE_GEMFILE": "/app/Gemfile",
+    "CC": "gcc -Wno-error=incompatible-pointer-types",
     "CFLAGS": "-Wno-error=incompatible-pointer-types",
+    "CXX": "g++ -Wno-error=incompatible-pointer-types",
     "CXXFLAGS": "-Wno-error=incompatible-pointer-types",
     "GEM_HOME": "/usr/local/bundle",
     "GEM_PATH": "/usr/local/bundle",
     "LD_PRELOAD": "libjemalloc.so.2",
+    "MAKE": "make --environment-overrides",
     "MALLOC_ARENA_MAX": "2"
    }
   },
@@ -170,11 +173,14 @@
    "name": "build",
    "variables": {
     "BUNDLE_GEMFILE": "/app/Gemfile",
+    "CC": "gcc -Wno-error=incompatible-pointer-types",
     "CFLAGS": "-Wno-error=incompatible-pointer-types",
+    "CXX": "g++ -Wno-error=incompatible-pointer-types",
     "CXXFLAGS": "-Wno-error=incompatible-pointer-types",
     "GEM_HOME": "/usr/local/bundle",
     "GEM_PATH": "/usr/local/bundle",
     "LD_PRELOAD": "libjemalloc.so.2",
+    "MAKE": "make --environment-overrides",
     "MALLOC_ARENA_MAX": "2"
    }
   },
