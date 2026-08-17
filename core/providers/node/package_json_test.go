@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPackageJson(t *testing.T) {
@@ -221,6 +222,64 @@ func TestGetPackageManagerInfo(t *testing.T) {
 				t.Errorf("GetPackageManagerInfo() = (%v, %v), want (%v, %v)",
 					gotName, gotVersion, tt.wantName, tt.wantVersion)
 			}
+		})
+	}
+}
+
+func TestDevEngines(t *testing.T) {
+	tests := []struct {
+		name               string
+		json               string
+		wantPmName         string
+		wantPmVersion      string
+		wantRuntimeVersion string
+	}{
+		{
+			name:               "no devEngines",
+			json:               `{"name": "app"}`,
+			wantPmName:         "",
+			wantPmVersion:      "",
+			wantRuntimeVersion: "",
+		},
+		{
+			name:               "single objects",
+			json:               `{"devEngines": {"runtime": {"name": "node", "version": "22.11.0", "onFail": "download"}, "packageManager": {"name": "pnpm", "version": "10.4.1"}}}`,
+			wantPmName:         "pnpm",
+			wantPmVersion:      "10.4.1",
+			wantRuntimeVersion: "22.11.0",
+		},
+		{
+			name:               "arrays of objects",
+			json:               `{"devEngines": {"runtime": [{"name": "node", "version": "22"}], "packageManager": [{"name": "yarn", "version": "4.5.0"}]}}`,
+			wantPmName:         "yarn",
+			wantPmVersion:      "4.5.0",
+			wantRuntimeVersion: "22",
+		},
+		{
+			name:               "runtime that is not node",
+			json:               `{"devEngines": {"runtime": {"name": "deno", "version": "2.0.0"}}}`,
+			wantPmName:         "",
+			wantPmVersion:      "",
+			wantRuntimeVersion: "",
+		},
+		{
+			name:               "extra whitespace",
+			json:               `{"devEngines": {"packageManager": {"name": "  bun  ", "version": "  1.2.0  "}}}`,
+			wantPmName:         "bun",
+			wantPmVersion:      "1.2.0",
+			wantRuntimeVersion: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			packageJson := NewPackageJson()
+			require.NoError(t, json.Unmarshal([]byte(tt.json), packageJson))
+
+			gotPmName, gotPmVersion := packageJson.GetDevEnginePackageManager()
+			assert.Equal(t, tt.wantPmName, gotPmName)
+			assert.Equal(t, tt.wantPmVersion, gotPmVersion)
+			assert.Equal(t, tt.wantRuntimeVersion, packageJson.GetDevEngineRuntimeVersion("node"))
 		})
 	}
 }

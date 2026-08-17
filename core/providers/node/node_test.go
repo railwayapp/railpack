@@ -72,6 +72,14 @@ func TestNode(t *testing.T) {
 			envVars:        map[string]string{"RAILPACK_NODE_VERSION": "22"},
 		},
 		{
+			name:           "devEngines declares the runtime and the package manager",
+			path:           "../../../examples/node-dev-engines",
+			detected:       true,
+			packageManager: PackageManagerPnpm,
+			nodeVersion:    "22.11.0",
+			pnpmVersion:    "10.4.1",
+		},
+		{
 			name:     "golang",
 			path:     "../../../examples/go-mod",
 			detected: false,

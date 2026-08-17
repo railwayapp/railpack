@@ -375,6 +375,7 @@ func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []
 // GetPackageManagerPackages installs specific versions of package managers by analyzing the users code
 func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext, packageJson *PackageJson, packages *generate.MiseStepBuilder) {
 	pmName, pmVersion := packageJson.GetPackageManagerInfo()
+	devEngineName, devEngineVersion := packageJson.GetDevEnginePackageManager()
 
 	// Pnpm
 	if p == PackageManagerPnpm {
@@ -405,6 +406,10 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 			packages.Version(pnpm, packageJson.Engines["pnpm"], "package.json > engines > pnpm")
 		}
 
+		if devEngineName == "pnpm" && devEngineVersion != "" {
+			packages.Version(pnpm, devEngineVersion, "package.json > devEngines > packageManager")
+		}
+
 		if pmName == "pnpm" && pmVersion != "" {
 			packages.Version(pnpm, pmVersion, "package.json > packageManager")
 
@@ -431,6 +436,10 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 			packages.Version(yarn, packageJson.Engines["yarn"], "package.json > engines > yarn")
 		}
 
+		if devEngineName == "yarn" && devEngineVersion != "" {
+			packages.Version(yarn, devEngineVersion, "package.json > devEngines > packageManager")
+		}
+
 		// TODO we should use SemVer at this point
 		if pmName == "yarn" && pmVersion != "" {
 			majorVersion := strings.Split(pmVersion, ".")[0]
@@ -450,6 +459,10 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 		// Prefer explicit version from package.json engines over defaults
 		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["bun"] != "" {
 			packages.Version(bun, packageJson.Engines["bun"], "package.json > engines > bun")
+		}
+
+		if devEngineName == "bun" && devEngineVersion != "" {
+			packages.Version(bun, devEngineVersion, "package.json > devEngines > packageManager")
 		}
 
 		if pmName == "bun" && pmVersion != "" {

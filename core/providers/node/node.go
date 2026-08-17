@@ -412,6 +412,11 @@ func (p *NodeProvider) applyNodeVersionResolution(ctx *generate.GenerateContext,
 		miseStep.Version(nodeToolRef, p.packageJson.Engines["node"], "package.json > engines > node")
 	}
 
+	// `devEngines.runtime` is the newer, stricter declaration, so it wins over `engines.node`
+	if nodeVersion := p.packageJson.GetDevEngineRuntimeVersion("node"); nodeVersion != "" {
+		miseStep.Version(nodeToolRef, nodeVersion, "package.json > devEngines > runtime")
+	}
+
 	if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
 		miseStep.Version(nodeToolRef, envVersion, varName)
 	}
@@ -553,6 +558,25 @@ func (p *NodeProvider) getPackageManager(ctx *generate.GenerateContext) PackageM
 			log.Info("Package manager name is empty in package.json")
 		} else {
 			log.Warnf("Unknown package manager `%s` specified in package.json, defaulting to npm", pmName)
+		}
+	}
+
+	// `devEngines.packageManager` is an explicit declaration, so it is preferred over lockfile inference
+	if packageJson, err := p.GetPackageJson(app); err == nil {
+		if pmName, _ := packageJson.GetDevEnginePackageManager(); pmName != "" {
+			switch pmName {
+			case "pnpm":
+				return PackageManagerPnpm
+			case "npm":
+				return PackageManagerNpm
+			case "bun":
+				return PackageManagerBun
+			case "yarn":
+				_, pmVersion := packageJson.GetDevEnginePackageManager()
+				return parseYarnPackageManager(pmVersion)
+			default:
+				log.Warnf("Unknown package manager `%s` specified in package.json devEngines, ignoring", pmName)
+			}
 		}
 	}
 
