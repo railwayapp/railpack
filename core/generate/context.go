@@ -288,22 +288,24 @@ func (c *GenerateContext) applyConfig() {
 	c.notifyCustomAptDebianUpgrade()
 }
 
-func hasUserAptPackages(pkgs []string) bool {
-	for _, pkg := range pkgs {
-		if pkg != "" && pkg != "..." {
-			return true
-		}
-	}
-	return false
-}
-
 // TODO(2026-10-17): remove this Debian upgrade notice for custom apt packages.
 func (c *GenerateContext) notifyCustomAptDebianUpgrade() {
-	var deployPkgs []string
-	if c.Config.Deploy != nil {
-		deployPkgs = c.Config.Deploy.AptPackages
+	hasCustom := false
+	for _, pkg := range c.Config.BuildAptPackages {
+		if pkg != "" && pkg != "..." {
+			hasCustom = true
+			break
+		}
 	}
-	if !hasUserAptPackages(c.Config.BuildAptPackages) && !hasUserAptPackages(deployPkgs) {
+	if !hasCustom && c.Config.Deploy != nil {
+		for _, pkg := range c.Config.Deploy.AptPackages {
+			if pkg != "" && pkg != "..." {
+				hasCustom = true
+				break
+			}
+		}
+	}
+	if !hasCustom {
 		return
 	}
 
