@@ -1,2 +1,4 @@
 numpy==2.2.1
 pandas==2.2.3
+# Git URL so this example exercises git-based dependency installs
+fastapi-ipware @ git+https://github.com/iloveitaly/fastapi-ipware.git
