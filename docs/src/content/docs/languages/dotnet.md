@@ -33,9 +33,11 @@ Railpack builds your Dotnet application based on your project structure. The bui
 | ------------------------- | --------------------------- | --------- |
 | `RAILPACK_DOTNET_VERSION` | Override the Dotnet version | `6.0.428` |
 
-### Runtime Packages
+### ICU
 
-The `libicu-dev` package is installed to support internationalization in your Dotnet applications.
+The `libicu-dev` package is installed during the build and at runtime.
+The Dotnet SDK will not start without ICU, and the runtime uses it for
+internationalization.
 
 ## Port Binding
 

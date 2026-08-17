@@ -138,6 +138,13 @@ Railpack includes several performance optimizations:
 - **YJIT**: For Ruby 3.2+, installs `rustc` and `cargo` required for YJIT
   compilation support
 
+### Native extensions
+
+During `bundle install` and the build step, `CFLAGS` and `CXXFLAGS`
+include `-Wno-error=incompatible-pointer-types` so older native gems
+(for example nio4r 2.5, pulled in by Puma and Action Cable) still
+compile on GCC 14.
+
 ### Local Path Dependencies
 
 If your Gemfile includes gems with local `path:` specifications, Railpack

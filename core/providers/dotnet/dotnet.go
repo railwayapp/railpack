@@ -51,7 +51,7 @@ func (p *DotnetProvider) Plan(ctx *generate.GenerateContext) error {
 	p.Build(ctx, build)
 
 	envVars := p.GetEnvVars(ctx)
-	// Required for internationalization
+	// ICU is required both to run the SDK (restore/publish) and the runtime.
 	ctx.Deploy.AddAptPackages([]string{"libicu-dev"})
 	ctx.Deploy.AddInputs([]plan.Layer{
 		plan.NewStepLayer(miseStep.Name(), plan.Filter{
@@ -167,6 +167,9 @@ func (p *DotnetProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	if envVersion, varName := ctx.Env.GetConfigVariable("DOTNET_VERSION"); envVersion != "" {
 		miseStep.Version(dotnet, envVersion, varName)
 	}
+
+	// The SDK refuses to start without libicu; Debian 13's builder image no longer pulls it in transitively.
+	miseStep.AddSupportingAptPackage("libicu-dev")
 
 	miseStep.UseMiseVersions(ctx, []string{"dotnet"})
 }

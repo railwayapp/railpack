@@ -15,6 +15,9 @@ import (
 
 const (
 	DEFAULT_RUBY_VERSION = "3.4"
+	// GCC 14 (Debian 13) treats incompatible pointer types as errors, which
+	// breaks older native gems such as nio4r 2.5 used by Puma/Action Cable.
+	nativeExtCflags = "-Wno-error=incompatible-pointer-types"
 )
 
 type RubyProvider struct{}
@@ -158,6 +161,8 @@ func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.
 	install.Secrets = []string{}
 	install.UseSecretsWithPrefixes([]string{"RUBY", "GEM", "BUNDLE"})
 	envVars := p.GetRubyEnvVars(ctx)
+	envVars["CFLAGS"] = nativeExtCflags
+	envVars["CXXFLAGS"] = nativeExtCflags
 	install.AddEnvVars(envVars)
 
 	bundlerVersion := parseBundlerVersionFromGemfile(ctx)
@@ -185,7 +190,10 @@ func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.
 func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) []string {
 	build.Secrets = []string{}
 	build.UseSecretsWithPrefixes([]string{"RAILS", "BUNDLE", "BOOTSNAP", "SPROCKETS", "WEBPACKER", "ASSET", "DISABLE_SPRING"})
-	build.AddEnvVars(p.GetRubyEnvVars(ctx))
+	buildEnv := p.GetRubyEnvVars(ctx)
+	buildEnv["CFLAGS"] = nativeExtCflags
+	buildEnv["CXXFLAGS"] = nativeExtCflags
+	build.AddEnvVars(buildEnv)
 	build.AddInput(plan.NewLocalLayer())
 	outputs := []string{"/app"}
 	// Only compile assets if a Rails app have an asset pipeline gem
