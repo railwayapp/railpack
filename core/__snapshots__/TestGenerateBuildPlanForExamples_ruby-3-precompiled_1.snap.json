@@ -148,6 +148,7 @@
     "GEM_HOME": "/usr/local/bundle",
     "GEM_PATH": "/usr/local/bundle",
     "LD_PRELOAD": "libjemalloc.so.2",
+    "MAKE": "make --environment-overrides",
     "MALLOC_ARENA_MAX": "2"
    }
   },
@@ -171,6 +172,7 @@
     "GEM_HOME": "/usr/local/bundle",
     "GEM_PATH": "/usr/local/bundle",
     "LD_PRELOAD": "libjemalloc.so.2",
+    "MAKE": "make --environment-overrides",
     "MALLOC_ARENA_MAX": "2"
    }
   },
