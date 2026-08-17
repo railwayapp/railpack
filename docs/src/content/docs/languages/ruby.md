@@ -140,11 +140,11 @@ Railpack includes several performance optimizations:
 
 ### Native extensions
 
-During `bundle install` and the build step, the C compiler is invoked
-with `-Wno-error=incompatible-pointer-types` so older native gems
+During `bundle install` and the build step, `CC`/`CXX` include
+`-Wno-error=incompatible-pointer-types` so older native gems
 (for example nio4r 2.5, pulled in by Puma and Action Cable) still
-compile on GCC 14. The flag is applied via `CC`/`CXX` because gem
-Makefiles overwrite `CFLAGS` and ignore the environment variable.
+compile on GCC 14. The flag cannot be set via `CFLAGS` because gem
+Makefiles overwrite that variable.
 
 ### Local Path Dependencies
 

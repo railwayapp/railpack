@@ -304,14 +304,11 @@ func (p *RubyProvider) GetRubyEnvVars(ctx *generate.GenerateContext) map[string]
 	}
 }
 
-// extconf Makefiles assign CFLAGS with "=", so a bare CFLAGS env var is ignored.
-// Putting the flag on CC/CXX and forcing make to honor the environment makes it stick.
+// extconf Makefiles assign CFLAGS with "=", so a CFLAGS env var is ignored
+// (and --environment-overrides would also drop -fPIC, which breaks aarch64).
 func (p *RubyProvider) applyNativeExtCflags(env map[string]string) {
-	env["CFLAGS"] = nativeExtCflags
-	env["CXXFLAGS"] = nativeExtCflags
 	env["CC"] = "gcc " + nativeExtCflags
 	env["CXX"] = "g++ " + nativeExtCflags
-	env["MAKE"] = "make --environment-overrides"
 }
 
 func (p *RubyProvider) usesPostgres(ctx *generate.GenerateContext) bool {
