@@ -56,8 +56,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y cargo libjemalloc-dev libyaml-dev rustc'",
-     "customName": "install apt packages: cargo libjemalloc-dev libyaml-dev rustc"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y cargo libicu-dev libjemalloc-dev libyaml-dev rustc'",
+     "customName": "install apt packages: cargo libicu-dev libjemalloc-dev libyaml-dev rustc"
     }
    ],
    "inputs": [

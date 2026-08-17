@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	// https://endoflife.date/ruby
 	DEFAULT_RUBY_VERSION = "3.4"
 	// GCC 14 (Debian 13) treats incompatible pointer types as errors, which
 	// breaks older native gems such as nio4r 2.5 used by Puma/Action Cable.
@@ -270,6 +271,12 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 
 	miseStep.AddSupportingAptPackage("libyaml-dev")
 	miseStep.AddSupportingAptPackage("libjemalloc-dev")
+
+	// charlock_holmes links ICU at compile time. Bookworm's libxml2 pulled ICU
+	// in; Trixie's does not, so we have to ask for the headers here.
+	if p.usesDep(ctx, "charlock_holmes") {
+		miseStep.AddSupportingAptPackage("libicu-dev")
+	}
 
 	// TODO this does not take into account the mise-specified version of ruby, we should pull the resolved version via Mise
 	version := p.getRubyVersion(ctx)
