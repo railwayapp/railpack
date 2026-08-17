@@ -51,7 +51,7 @@ func (p *DotnetProvider) Plan(ctx *generate.GenerateContext) error {
 	p.Build(ctx, build)
 
 	envVars := p.GetEnvVars(ctx)
-	// ICU is required both to run the SDK (restore/publish) and the runtime.
+	// Required for internationalization
 	ctx.Deploy.AddAptPackages([]string{"libicu-dev"})
 	ctx.Deploy.AddInputs([]plan.Layer{
 		plan.NewStepLayer(miseStep.Name(), plan.Filter{
@@ -168,7 +168,7 @@ func (p *DotnetProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(dotnet, envVersion, varName)
 	}
 
-	// The SDK needs libicu at process start, not only in the runtime image.
+	// The SDK needs libicu at process start.
 	miseStep.AddSupportingAptPackage("libicu-dev")
 
 	miseStep.UseMiseVersions(ctx, []string{"dotnet"})

@@ -16,8 +16,7 @@ import (
 const (
 	// https://endoflife.date/ruby
 	DEFAULT_RUBY_VERSION = "3.4"
-	// GCC 14 (Debian 13) treats incompatible pointer types as errors, which
-	// breaks older native gems such as nio4r 2.5 used by Puma/Action Cable.
+	// Older native gems fail when incompatible pointer types are errors.
 	nativeExtCflags = "-Wno-error=incompatible-pointer-types"
 )
 
@@ -309,12 +308,14 @@ func (p *RubyProvider) GetRubyEnvVars(ctx *generate.GenerateContext) map[string]
 	}
 }
 
-// extconf Makefiles assign CC/CFLAGS with "=". Honor env CC/CXX so extra
-// flags are used, but do not set CFLAGS — that would drop -fPIC and break
-// aarch64. -std=c++17 is required for current ICU headers.
+// extconf Makefiles assign CC/CFLAGS with "=". Honor env CC so extra flags
+// are used, but do not set CFLAGS — that would drop -fPIC and break aarch64.
+// CXXFLAGS is set because extconf's -std= (if any) comes after CXX and would
+// otherwise win; include -fPIC here for the same reason.
 func (p *RubyProvider) applyNativeExtCflags(env map[string]string) {
 	env["CC"] = "gcc " + nativeExtCflags
-	env["CXX"] = "g++ -std=c++17 " + nativeExtCflags
+	env["CXX"] = "g++ " + nativeExtCflags
+	env["CXXFLAGS"] = "-fPIC -std=c++17"
 	env["MAKE"] = "make --environment-overrides"
 }
 
