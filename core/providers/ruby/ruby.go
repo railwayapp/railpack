@@ -272,8 +272,6 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	miseStep.AddSupportingAptPackage("libyaml-dev")
 	miseStep.AddSupportingAptPackage("libjemalloc-dev")
 
-	// charlock_holmes links ICU at compile time. Bookworm's libxml2 pulled ICU
-	// in; Trixie's does not, so we have to ask for the headers here.
 	if p.usesDep(ctx, "charlock_holmes") {
 		miseStep.AddSupportingAptPackage("libicu-dev")
 	}

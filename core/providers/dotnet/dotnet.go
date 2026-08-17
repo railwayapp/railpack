@@ -168,8 +168,7 @@ func (p *DotnetProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(dotnet, envVersion, varName)
 	}
 
-	// The SDK needs libicu at process start. Bookworm's libxml2 depended on
-	// libicu, so libxml2-dev on the builder pulled it in; Trixie's libxml2 does not.
+	// The SDK needs libicu at process start, not only in the runtime image.
 	miseStep.AddSupportingAptPackage("libicu-dev")
 
 	miseStep.UseMiseVersions(ctx, []string{"dotnet"})
