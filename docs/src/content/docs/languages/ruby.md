@@ -142,12 +142,13 @@ Railpack includes several performance optimizations:
 
 During `bundle install` and the build step, `CC`/`CXX` include
 `-Wno-error=incompatible-pointer-types` so older native gems
-(for example nio4r 2.5, pulled in by Puma and Action Cable) still
-compile on GCC 14. `CXXFLAGS` is `-fPIC -std=c++17` so gems that
-include ICU headers (charlock_holmes) compile and aarch64 keeps
-position-independent code. Make is invoked with
-`--environment-overrides` so those compiler variables win;
-`CFLAGS` is left unset so C extensions keep extconf's flags.
+still compile on GCC 14. Prefer upgrading those gems when you
+can (`nio4r` 2.7+ compiles without the flag). `CXXFLAGS` is
+`-fPIC -std=c++17` so gems that include ICU headers
+(charlock_holmes) compile and aarch64 keeps position-independent
+code. Make is invoked with `--environment-overrides` so those
+compiler variables win; `CFLAGS` is left unset so C extensions
+keep extconf's flags.
 
 ### Local Path Dependencies
 
