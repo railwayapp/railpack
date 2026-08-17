@@ -271,10 +271,6 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	miseStep.AddSupportingAptPackage("libyaml-dev")
 	miseStep.AddSupportingAptPackage("libjemalloc-dev")
 
-	if p.usesDep(ctx, "charlock_holmes") {
-		miseStep.AddSupportingAptPackage("libicu-dev")
-	}
-
 	// TODO this does not take into account the mise-specified version of ruby, we should pull the resolved version via Mise
 	version := p.getRubyVersion(ctx)
 	version = utils.ExtractSemverVersion(version)

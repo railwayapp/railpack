@@ -168,9 +168,6 @@ func (p *DotnetProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		miseStep.Version(dotnet, envVersion, varName)
 	}
 
-	// The SDK needs libicu at process start.
-	miseStep.AddSupportingAptPackage("libicu-dev")
-
 	miseStep.UseMiseVersions(ctx, []string{"dotnet"})
 }
 

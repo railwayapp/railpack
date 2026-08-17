@@ -38,24 +38,6 @@
  },
  "steps": [
   {
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
-   "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libicu-dev'",
-     "customName": "install apt packages: libicu-dev"
-    }
-   ],
-   "inputs": [
-    {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.8.6"
-    }
-   ],
-   "name": "packages:apt:build"
-  },
-  {
    "assets": {
     "generated-mise-toml": "[generated-mise-toml]"
    },
@@ -75,7 +57,7 @@
    ],
    "inputs": [
     {
-     "step": "packages:apt:build"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.8.6"
     }
    ],
    "name": "packages:mise",
