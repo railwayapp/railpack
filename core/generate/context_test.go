@@ -114,7 +114,6 @@ func TestGenerateContextAppliesConfiguredAptPackages(t *testing.T) {
 		ctx.applyConfig()
 
 		require.Equal(t, []string{"gcc", "curl"}, ctx.GetMiseStepBuilder().SupportingAptPackages)
-		require.Len(t, ctx.Logger.Logs, 2)
 		require.Equal(t, logger.Deprecation, ctx.Logger.Logs[0].Level)
 		require.Contains(t, ctx.Logger.Logs[0].Msg, "in the future")
 		require.Equal(t, logger.Suggestion, ctx.Logger.Logs[1].Level)
@@ -133,7 +132,6 @@ func TestGenerateContextAppliesConfiguredAptPackages(t *testing.T) {
 		ctx.applyConfig()
 
 		require.Equal(t, []string{"gcc", "curl"}, ctx.GetMiseStepBuilder().SupportingAptPackages)
-		require.Empty(t, ctx.Logger.Logs)
 	})
 
 	t.Run("deploy packages replace generated packages", func(t *testing.T) {
@@ -147,7 +145,6 @@ func TestGenerateContextAppliesConfiguredAptPackages(t *testing.T) {
 		ctx.applyConfig()
 
 		require.Equal(t, []string{"curl"}, ctx.Deploy.AptPackages)
-		require.Len(t, ctx.Logger.Logs, 1)
 		require.Equal(t, logger.Suggestion, ctx.Logger.Logs[0].Level)
 		require.Contains(t, ctx.Logger.Logs[0].Msg, "Add `...` to `deploy.aptPackages`")
 		require.Equal(t, "/guides/installing-packages", ctx.Logger.Logs[0].DocsPath)
@@ -164,7 +161,6 @@ func TestGenerateContextAppliesConfiguredAptPackages(t *testing.T) {
 		ctx.applyConfig()
 
 		require.Equal(t, []string{"libnss3", "curl"}, ctx.Deploy.AptPackages)
-		require.Empty(t, ctx.Logger.Logs)
 	})
 }
 

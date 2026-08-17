@@ -284,6 +284,30 @@ func (c *GenerateContext) applyConfig() {
 			c.Deploy.AddInputs([]plan.Layer{plan.NewStepLayer(name, filter)})
 		}
 	}
+
+	c.notifyCustomAptDebianUpgrade()
+}
+
+func hasUserAptPackages(pkgs []string) bool {
+	for _, pkg := range pkgs {
+		if pkg != "" && pkg != "..." {
+			return true
+		}
+	}
+	return false
+}
+
+// TODO(2026-10-17): remove this Debian upgrade notice for custom apt packages.
+func (c *GenerateContext) notifyCustomAptDebianUpgrade() {
+	var deployPkgs []string
+	if c.Config.Deploy != nil {
+		deployPkgs = c.Config.Deploy.AptPackages
+	}
+	if !hasUserAptPackages(c.Config.BuildAptPackages) && !hasUserAptPackages(deployPkgs) {
+		return
+	}
+
+	c.Logger.LogInfo("The debian base image has been upgraded and you may experience issues with custom apt packages. Report any issues here: https://github.com/railwayapp/railpack/issues")
 }
 
 func (c *GenerateContext) applyBuildAptPackages() {
