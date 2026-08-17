@@ -16,8 +16,6 @@ import (
 const (
 	// https://endoflife.date/ruby
 	DEFAULT_RUBY_VERSION = "3.4"
-	// Older native gems fail when incompatible pointer types are errors.
-	nativeExtCflags = "-Wno-error=incompatible-pointer-types"
 )
 
 type RubyProvider struct{}
@@ -161,7 +159,6 @@ func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.
 	install.Secrets = []string{}
 	install.UseSecretsWithPrefixes([]string{"RUBY", "GEM", "BUNDLE"})
 	envVars := p.GetRubyEnvVars(ctx)
-	p.applyNativeExtCflags(envVars)
 	install.AddEnvVars(envVars)
 
 	bundlerVersion := parseBundlerVersionFromGemfile(ctx)
@@ -189,9 +186,7 @@ func (p *RubyProvider) Install(ctx *generate.GenerateContext, install *generate.
 func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) []string {
 	build.Secrets = []string{}
 	build.UseSecretsWithPrefixes([]string{"RAILS", "BUNDLE", "BOOTSNAP", "SPROCKETS", "WEBPACKER", "ASSET", "DISABLE_SPRING"})
-	buildEnv := p.GetRubyEnvVars(ctx)
-	p.applyNativeExtCflags(buildEnv)
-	build.AddEnvVars(buildEnv)
+	build.AddEnvVars(p.GetRubyEnvVars(ctx))
 	build.AddInput(plan.NewLocalLayer())
 	outputs := []string{"/app"}
 	// Only compile assets if a Rails app have an asset pipeline gem
@@ -302,17 +297,6 @@ func (p *RubyProvider) GetRubyEnvVars(ctx *generate.GenerateContext) map[string]
 		"MALLOC_ARENA_MAX": "2",
 		"LD_PRELOAD":       "libjemalloc.so.2",
 	}
-}
-
-// extconf Makefiles assign CC/CFLAGS with "=". Honor env CC so extra flags
-// are used, but do not set CFLAGS — that would drop -fPIC and break aarch64.
-// CXXFLAGS is set because extconf's -std= (if any) comes after CXX and would
-// otherwise win; include -fPIC here for the same reason.
-func (p *RubyProvider) applyNativeExtCflags(env map[string]string) {
-	env["CC"] = "gcc " + nativeExtCflags
-	env["CXX"] = "g++ " + nativeExtCflags
-	env["CXXFLAGS"] = "-fPIC -std=c++17"
-	env["MAKE"] = "make --environment-overrides"
 }
 
 func (p *RubyProvider) usesPostgres(ctx *generate.GenerateContext) bool {
