@@ -309,11 +309,12 @@ func (p *RubyProvider) GetRubyEnvVars(ctx *generate.GenerateContext) map[string]
 	}
 }
 
-// extconf Makefiles assign CC/CFLAGS with "=". Honor env CC/CXX so the GCC 14
-// flag is used, but do not set CFLAGS — that would drop -fPIC and break aarch64.
+// extconf Makefiles assign CC/CFLAGS with "=". Honor env CC/CXX so extra
+// flags are used, but do not set CFLAGS — that would drop -fPIC and break
+// aarch64. -std=c++17 is required for current ICU headers.
 func (p *RubyProvider) applyNativeExtCflags(env map[string]string) {
 	env["CC"] = "gcc " + nativeExtCflags
-	env["CXX"] = "g++ " + nativeExtCflags
+	env["CXX"] = "g++ -std=c++17 " + nativeExtCflags
 	env["MAKE"] = "make --environment-overrides"
 }
 

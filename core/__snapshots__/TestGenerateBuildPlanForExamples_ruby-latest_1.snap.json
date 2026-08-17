@@ -136,7 +136,7 @@
    "variables": {
     "BUNDLE_GEMFILE": "/app/Gemfile",
     "CC": "gcc -Wno-error=incompatible-pointer-types",
-    "CXX": "g++ -Wno-error=incompatible-pointer-types",
+    "CXX": "g++ -std=c++17 -Wno-error=incompatible-pointer-types",
     "GEM_HOME": "/usr/local/bundle",
     "GEM_PATH": "/usr/local/bundle",
     "LD_PRELOAD": "libjemalloc.so.2",
@@ -160,7 +160,7 @@
    "variables": {
     "BUNDLE_GEMFILE": "/app/Gemfile",
     "CC": "gcc -Wno-error=incompatible-pointer-types",
-    "CXX": "g++ -Wno-error=incompatible-pointer-types",
+    "CXX": "g++ -std=c++17 -Wno-error=incompatible-pointer-types",
     "GEM_HOME": "/usr/local/bundle",
     "GEM_PATH": "/usr/local/bundle",
     "LD_PRELOAD": "libjemalloc.so.2",
