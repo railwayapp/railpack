@@ -19,6 +19,7 @@ import (
 	"github.com/railwayapp/railpack/core/providers/rust"
 	"github.com/railwayapp/railpack/core/providers/shell"
 	"github.com/railwayapp/railpack/core/providers/staticfile"
+	"github.com/railwayapp/railpack/core/providers/zig"
 )
 
 type Provider interface {
@@ -45,6 +46,7 @@ func GetLanguageProviders() []Provider {
 		&node.NodeProvider{},
 		&gleam.GleamProvider{},
 		&cpp.CppProvider{},
+		&zig.ZigProvider{},
 		&staticfile.StaticfileProvider{},
 		&shell.ShellProvider{},
 	}
