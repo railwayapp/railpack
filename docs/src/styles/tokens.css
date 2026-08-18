@@ -132,6 +132,10 @@
   --sl-color-red-high: var(--red-11);
 
   --sl-sidebar-width: 18.75rem;
+
+  --table-bg: #ffffff;
+  --table-header-bg: color-mix(in srgb, var(--gray-3) 45%, #ffffff);
+  --table-hover-bg: color-mix(in srgb, var(--gray-3) 55%, #ffffff);
 }
 
 :root[data-theme="light"] {
@@ -151,6 +155,10 @@
   --sl-color-gray-5: var(--gray-6);
   --sl-color-gray-6: var(--gray-4);
   --sl-color-gray-7: var(--gray-2);
+
+  --table-bg: #ffffff;
+  --table-header-bg: color-mix(in srgb, var(--gray-3) 45%, #ffffff);
+  --table-hover-bg: color-mix(in srgb, var(--gray-3) 55%, #ffffff);
 }
 
 :root[data-theme="dark"] {
@@ -169,6 +177,10 @@
   --sl-color-gray-4: var(--gray-8);
   --sl-color-gray-5: var(--gray-6);
   --sl-color-gray-6: var(--gray-3);
+
+  --table-bg: var(--gray-2);
+  --table-header-bg: color-mix(in srgb, var(--gray-3) 60%, var(--gray-2));
+  --table-hover-bg: color-mix(in srgb, var(--gray-3) 80%, var(--gray-2));
 }
 
 @layer base {
