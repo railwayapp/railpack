@@ -110,17 +110,13 @@
      "src": "package.json"
     },
     {
-     "dest": "pnpm-lock.yaml",
-     "src": "pnpm-lock.yaml"
-    },
-    {
      "path": "/opt/pnpm"
     },
     {
      "cmd": "pnpm add -g node-gyp"
     },
     {
-     "cmd": "pnpm install --frozen-lockfile --prefer-offline"
+     "cmd": "pnpm install"
     }
    ],
    "inputs": [
@@ -143,11 +139,6 @@
   {
    "caches": [
     "node-modules"
-   ],
-   "commands": [
-    {
-     "cmd": "pnpm run build"
-    }
    ],
    "inputs": [
     {

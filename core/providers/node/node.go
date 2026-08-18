@@ -510,9 +510,12 @@ func (p *NodeProvider) hasDependency(dependency string) bool {
 	return p.packageJson.hasDependency(dependency)
 }
 
-// if 'packageManager' field exists in package.json, then assume corepack unless using bun
+// Use Corepack for package managers that are not installed directly through mise.
 func (p *NodeProvider) usesCorepack() bool {
-	return p.packageJson != nil && p.packageJson.PackageManager != nil && p.packageManager != PackageManagerBun
+	return p.packageJson != nil &&
+		p.packageJson.PackageManager != nil &&
+		p.packageManager != PackageManagerBun &&
+		p.packageManager != PackageManagerPnpm
 }
 
 func (p *NodeProvider) usesPuppeteer() bool {
@@ -521,6 +524,38 @@ func (p *NodeProvider) usesPuppeteer() bool {
 
 func (p *NodeProvider) usesProductionPlaywright() bool {
 	return p.workspace.HasProductionDependency("playwright")
+}
+
+// Mise already parsed package.json (devEngines / packageManager). Use that when it names exactly one manager.
+func packageManagerFromIdiomaticMise(ctx *generate.GenerateContext) (PackageManager, bool) {
+	versions, err := ctx.GetMiseStepBuilder().GetMisePackageVersions(ctx)
+	if err != nil {
+		ctx.Logger.LogWarn("Failed to get package versions from mise: %s", err.Error())
+		return "", false
+	}
+
+	var found []string
+	for _, name := range []string{"pnpm", "yarn", "bun", "npm"} {
+		if pkg := versions[name]; pkg != nil && pkg.Source == "idiomatic-version-file" {
+			found = append(found, name)
+		}
+	}
+	if len(found) != 1 {
+		return "", false
+	}
+
+	switch found[0] {
+	case "pnpm":
+		return PackageManagerPnpm, true
+	case "npm":
+		return PackageManagerNpm, true
+	case "bun":
+		return PackageManagerBun, true
+	case "yarn":
+		return parseYarnPackageManager(versions["yarn"].Version), true
+	default:
+		return "", false
+	}
 }
 
 // determine the major version of yarn from a version string. These major versions are installed and managed quite
@@ -554,6 +589,10 @@ func (p *NodeProvider) getPackageManager(ctx *generate.GenerateContext) PackageM
 		} else {
 			log.Warnf("Unknown package manager `%s` specified in package.json, defaulting to npm", pmName)
 		}
+	}
+
+	if pm, ok := packageManagerFromIdiomaticMise(ctx); ok {
+		return pm
 	}
 
 	// Fall back to file-based detection
