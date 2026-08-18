@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/resolver"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
@@ -141,5 +142,54 @@ func TestGetPackageManagerPackages_PnpmVersionPrecedence(t *testing.T) {
 		require.Equal(t, "10.4.1", pnpm.Version)
 		require.Equal(t, "package.json > packageManager", pnpm.Source)
 		require.True(t, pnpm.SkipMiseInstall)
+	})
+}
+
+func TestSupportingInstallFiles_ExcludedFromContext(t *testing.T) {
+	// A manifest that .dockerignore keeps out of the build context must not be
+	// copied, otherwise the build fails with "failed to compute cache key".
+	// https://github.com/railwayapp/railpack/issues/707
+	setup := func(t *testing.T, ignore string) *generate.GenerateContext {
+		t.Helper()
+
+		tmpDir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte("{}"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "package-lock.json"), []byte("{}"), 0o644))
+
+		docsDir := filepath.Join(tmpDir, "docs", "marketing")
+		require.NoError(t, os.MkdirAll(docsDir, 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(docsDir, "package.json"), []byte("{}"), 0o644))
+
+		if ignore != "" {
+			require.NoError(t, os.WriteFile(filepath.Join(tmpDir, ".dockerignore"), []byte(ignore), 0o644))
+		}
+
+		return testingUtils.CreateGenerateContext(t, tmpDir)
+	}
+
+	t.Run("excluded manifest is not copied", func(t *testing.T) {
+		ctx := setup(t, "docs/\n")
+
+		files := PackageManagerNpm.SupportingInstallFiles(ctx)
+
+		require.Contains(t, files, "package.json")
+		require.NotContains(t, files, "docs/marketing/package.json")
+	})
+
+	t.Run("negated manifest is still copied", func(t *testing.T) {
+		ctx := setup(t, "docs/\n!docs/marketing/\n")
+
+		files := PackageManagerNpm.SupportingInstallFiles(ctx)
+
+		require.Contains(t, files, "docs/marketing/package.json")
+	})
+
+	t.Run("without dockerignore every manifest is copied", func(t *testing.T) {
+		ctx := setup(t, "")
+
+		files := PackageManagerNpm.SupportingInstallFiles(ctx)
+
+		require.Contains(t, files, "package.json")
+		require.Contains(t, files, "docs/marketing/package.json")
 	})
 }
