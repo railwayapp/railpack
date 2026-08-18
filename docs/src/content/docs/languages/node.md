@@ -128,12 +128,16 @@ Railpack detects your package manager in the following order:
 
 1. **packageManager field**: Reads the `packageManager` field from
    `package.json`
-2. **Lock files**: Falls back to detecting based on lock files:
+2. **Mise idiomatic version files**: If Mise resolves exactly one of
+   pnpm, Yarn, Bun, or npm from `package.json` (`devEngines.packageManager`
+   or `packageManager`), that manager is used. A tool listed only in
+   `mise.toml` or `.tool-versions` does not select the package manager.
+3. **Lock files**: Falls back to detecting based on lock files:
    - `pnpm-lock.yaml` for pnpm
    - `bun.lockb` or `bun.lock` for Bun
    - `.yarnrc.yml` or `.yarnrc.yaml` for Yarn Berry (2+)
    - `yarn.lock` for Yarn 1
-3. **engines field**: As a fallback, checks the `engines` field in
+4. **engines field**: As a fallback, checks the `engines` field in
    `package.json` for package manager versions:
    - `engines.pnpm` for pnpm version
    - `engines.bun` for Bun version
