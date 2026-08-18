@@ -127,6 +127,14 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		providerToUse.CleansePlan(buildPlan)
 	}
 
+	if env != nil {
+		disabledCaches, _ := env.GetConfigVariableList("DISABLE_CACHES")
+		if len(disabledCaches) > 1 && slices.Contains(disabledCaches, "*") {
+			logger.LogWarn("RAILPACK_DISABLE_CACHES contains `*`; all other cache keys will be ignored.")
+		}
+		disablePlanCaches(buildPlan, disabledCaches)
+	}
+
 	if !ValidatePlan(buildPlan, app, logger, &ValidatePlanOptions{
 		ErrorMissingStartCommand: options.ErrorMissingStartCommand,
 		ProviderToUse:            providerToUse,
@@ -145,6 +153,40 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 	}
 
 	return buildResult, nil
+}
+
+// Removes disabled cache mounts from the generated plan.
+func disablePlanCaches(buildPlan *plan.BuildPlan, disabledCaches []string) {
+	if len(disabledCaches) == 0 {
+		return
+	}
+
+	// A wildcard removes every cache definition and all step references.
+	if slices.Contains(disabledCaches, "*") {
+		clear(buildPlan.Caches)
+		for i := range buildPlan.Steps {
+			buildPlan.Steps[i].Caches = nil
+		}
+		return
+	}
+
+	// Remove named caches from their definitions and from every step that uses them.
+	disabled := make(map[string]struct{}, len(disabledCaches))
+	for _, cache := range disabledCaches {
+		disabled[cache] = struct{}{}
+		delete(buildPlan.Caches, cache)
+	}
+
+	for i := range buildPlan.Steps {
+		caches := slices.DeleteFunc(buildPlan.Steps[i].Caches, func(cache string) bool {
+			_, ok := disabled[cache]
+			return ok
+		})
+		if len(caches) == 0 {
+			caches = nil
+		}
+		buildPlan.Steps[i].Caches = caches
+	}
 }
 
 // records a planning failure in the build result. Transient failures are also returned

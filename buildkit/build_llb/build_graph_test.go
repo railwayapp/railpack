@@ -32,7 +32,6 @@ func TestBuildGraphNoCache(t *testing.T) {
 		g, err := NewBuildGraph(p, &localState, cacheStore, "", &platform, "", false)
 		require.NoError(t, err)
 		require.False(t, g.NoCache)
-		require.False(t, isCacheDisabled("test-cache"))
 	})
 
 	t.Run("with NoCache=true", func(t *testing.T) {
@@ -40,8 +39,6 @@ func TestBuildGraphNoCache(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, g.NoCache)
 		// NoCache should NOT affect if caches are enabled or not, it just affects the layer cache
-		require.False(t, isCacheDisabled("test-cache"))
-
 		opts, err := g.getCacheMountOptions([]string{"test-cache"})
 		require.NoError(t, err)
 		require.Len(t, opts, 1)
