@@ -51,7 +51,7 @@ MISE_PYTHON_COMPILE=1
 
 Or add the following to your `mise.toml`:
 
-```toml
+```toml title="mise.toml"
 [settings.python]
 compile = true
 ```

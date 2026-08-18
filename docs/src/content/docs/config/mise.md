@@ -58,7 +58,7 @@ into the build. This includes:
 To opt-in to non-default features like precompiled Ruby, add a
 `mise.toml` to your repository:
 
-```toml
+```toml title="mise.toml"
 [tools]
 ruby = "3"
 

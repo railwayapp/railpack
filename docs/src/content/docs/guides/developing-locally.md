@@ -36,7 +36,7 @@ gigabytes of that data off your laptop if you are actively working on Railpack.
 
 Set this in a `mise.local.toml`:
 
-```toml
+```toml title="mise.local.toml"
 [env]
 DOCKER_HOST = "ssh://user@host"
 ```
@@ -258,7 +258,7 @@ for the schema.
 In addition to an output assertion, you can run an HTTP check that starts the
 container and asserts that a specific route returns an expected HTTP code:
 
-```json
+```json title="test.json"
 {
   "httpCheck": {
     "path": "/",
@@ -273,7 +273,7 @@ container and asserts that a specific route returns an expected HTTP code:
 You can verify that the application outputs specific strings. `expectedOutput` can
 be a single string or an array of strings that all must be present in the output:
 
-```json
+```json title="test.json"
 {
   "expectedOutput": "Server running on port 3000"
 }
@@ -281,7 +281,7 @@ be a single string or an array of strings that all must be present in the output
 
 Or with multiple strings:
 
-```json
+```json title="test.json"
 {
   "expectedOutput": [
     "Elixir version: 1.18",
@@ -296,7 +296,7 @@ You can pass environment variables to the container at runtime using the
 `envs` key. This is useful for testing with different configurations, secrets,
 or Railpack configuration variables:
 
-```json
+```json title="test.json"
 {
   "expectedOutput": "Server running on port 3000",
   "envs": {
@@ -309,7 +309,7 @@ or Railpack configuration variables:
 You can also use `RAILPACK_*` configuration variables in `envs` to test
 different build configurations:
 
-```json
+```json title="test.json"
 {
   "expectedOutput": "hello from Node",
   "envs": {

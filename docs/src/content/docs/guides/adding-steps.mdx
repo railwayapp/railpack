@@ -12,7 +12,7 @@ hits or don't want to affect the automatically generated provider commands.
 
 To add a step, you can use the `steps` field in your configuration file.
 
-```json
+```json title="railpack.json"
 {
   "$schema": "https://schema.railpack.com",
   "steps": {
@@ -25,7 +25,7 @@ To add a step, you can use the `steps` field in your configuration file.
 
 The default `inputs` for a new step is:
 
-```json
+```json title="railpack.json"
 "inputs": [
   { "step": "packages:mise" }
 ]
@@ -37,7 +37,7 @@ build apt packages.
 If you want to run after a specific provider-generated step, you can specify the
 inputs. For example, this will run the `new-step` after the `build` step.
 
-```json
+```json title="railpack.json"
 {
   "$schema": "https://schema.railpack.com",
   "steps": {
@@ -57,7 +57,7 @@ By default, the entire `/app` directory is included in the final image. You can
 customize this by specifying a `deployOutputs` field. For example, this will
 include the `dist` directory in the final image.
 
-```json
+```json title="railpack.json"
 {
   "$schema": "https://schema.railpack.com",
   "steps": {
@@ -74,7 +74,7 @@ include the `dist` directory in the final image.
 _Note: `deployOutputs` is syntactic sugar for adding this layer to the
 `deploy.inputs` field. The above example is equivalent to._
 
-```json
+```json title="railpack.json"
 {
   "$schema": "https://schema.railpack.com",
   "steps": {

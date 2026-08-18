@@ -133,21 +133,21 @@ The most reliable way to enable completion is to source it directly in your shel
 **Zsh**
 Add this to your `~/.zshrc`:
 
-```bash
+```bash title="~/.zshrc"
 source <(railpack completion zsh)
 ```
 
 **Bash**
 Add this to your `~/.bashrc`:
 
-```bash
+```bash title="~/.bashrc"
 source <(railpack completion bash)
 ```
 
 **Fish**
 Add this to your `~/.config/fish/config.fish`:
 
-```fish
+```fish title="~/.config/fish/config.fish"
 railpack completion fish | source
 ```
 

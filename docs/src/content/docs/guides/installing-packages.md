@@ -39,7 +39,7 @@ RAILPACK_DEPLOY_APT_PACKAGES="... ffmpeg"
 The `...` entry extends Railpack's generated package list. Without it, the
 configured list replaces the packages Railpack specifies:
 
-```json
+```json title="railpack.json"
 {
   "$schema": "https://schema.railpack.com",
   "buildAptPackages": ["...", "build-essential"],
@@ -51,7 +51,7 @@ configured list replaces the packages Railpack specifies:
 
 To intentionally replace Railpack's runtime packages, omit `...`:
 
-```json
+```json title="railpack.json"
 {
   "$schema": "https://schema.railpack.com",
   "deploy": {

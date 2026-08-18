@@ -11,7 +11,7 @@ If found, that configuration will be used to change how the plan is built.
 
 A config file looks something like this:
 
-```json
+```json title="railpack.json"
 {
   "$schema": "https://schema.railpack.com",
   "steps": {
@@ -44,7 +44,7 @@ Layers are used both for steps and for the deploy section. The deploy section
 explicitly has a `base` layer defined that is used as the base file system for
 the final image. For example, the layers of a Node build might look like this:
 
-```json
+```json title="railpack.json"
 "deploy": {
   "base": {
     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.2.22"
@@ -70,7 +70,7 @@ the final image. For example, the layers of a Node build might look like this:
 
 Use another step's output as a layer:
 
-```json
+```json title="railpack.json"
 {
   "step": "install",
   "include": ["."], // "." represents the working directory (/app)
@@ -82,7 +82,7 @@ Use another step's output as a layer:
 
 Use a Docker image as a layer:
 
-```json
+```json title="railpack.json"
 {
   "image": "macabees/neofetch",
   "include": ["/usr/bin/neofetch"]
@@ -93,7 +93,7 @@ Use a Docker image as a layer:
 
 Use local files as a layer:
 
-```json
+```json title="railpack.json"
 {
   "local": true,
   "include": ["."]
@@ -117,7 +117,7 @@ it completely.
 
 For example:
 
-```json
+```json title="railpack.json"
 {
   "steps": {
     "build": {
@@ -152,7 +152,7 @@ The root configuration can have these fields:
 
 For example:
 
-```json
+```json title="railpack.json"
 {
   "provider": "node",
   "buildAptPackages": ["git", "curl"],
@@ -206,7 +206,7 @@ following properties:
 
 For example:
 
-```json
+```json title="railpack.json"
 {
   "caches": {
     "npm-install": {
@@ -246,7 +246,7 @@ Each step in the build process can have:
 
 A list of commands to run in a step. For example:
 
-```json
+```json title="railpack.json"
 {
   "commands": [
     // Copy the package.json file from the local context into the build
@@ -334,7 +334,7 @@ Both the builder and runtime images include `en_US.UTF-8`, but do not set
 `LANG` or `LC_ALL` by default. To enable it at runtime, set them in
 `deploy.variables`:
 
-```json
+```json title="railpack.json"
 "deploy": {
   "variables": {
     "LANG": "en_US.UTF-8",
@@ -352,7 +352,7 @@ Railpack allows comments in `railpack.json`, but VS Code treats files with a
 `.json` extension as standard JSON by default. Add this file association to
 your user or workspace `settings.json` so comments are recognized:
 
-```json
+```json title=".vscode/settings.json"
 {
   "files.associations": {
     "railpack.json": "json5"
@@ -364,7 +364,7 @@ The [`railpack.json` schema](https://schema.railpack.com) should be recognized
 automatically. If your editor does not detect it, add the `$schema` property
 to the root of `railpack.json`:
 
-```json5
+```json5 title="railpack.json"
 {
   "$schema": "https://schema.railpack.com",
   // Additional configuration

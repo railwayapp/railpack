@@ -18,7 +18,7 @@ Environment variables can be set in two ways:
 
 1. Through step variables:
 
-```json
+```json title="railpack.json"
 {
   "steps": {
     "install": {
@@ -32,7 +32,7 @@ Environment variables can be set in two ways:
 
 2. Through the deploy section for runtime variables:
 
-```json
+```json title="railpack.json"
 {
   "deploy": {
     "variables": {
@@ -75,7 +75,7 @@ You can explicitly specify which secrets a step should have access to using the
 `secrets` array. An empty array indicates that no secrets should be available to
 that step.
 
-```json
+```json title="railpack.json"
 {
   "secrets": ["DATABASE_URL", "API_KEY", "STRIPE_LIVE_KEY"],
   "steps": {
@@ -89,7 +89,7 @@ that step.
 You can also use `"*"` in a step's secrets array to indicate that it should have
 access to all secrets defined in the build plan:
 
-```json
+```json title="railpack.json"
 {
   "secrets": ["DATABASE_URL", "API_KEY", "STRIPE_LIVE_KEY"],
   "steps": {
