@@ -167,6 +167,15 @@ site-search button[data-open-modal] {
     transform: rotateZ(90deg);
   }
 
+  ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
   li {
     border: 0;
     --sl-sidebar-item-padding-inline: 0.45rem;
@@ -177,7 +186,7 @@ site-search button[data-open-modal] {
   .top-level {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 0.25rem;
   }
 
   .top-level > * {
@@ -186,11 +195,19 @@ site-search button[data-open-modal] {
 
   /* Extra air above each collapsible group so headers read as section starts. */
   .top-level > li:has(details) {
-    margin-block-start: 0.65rem;
+    margin-block-start: 0.75rem;
   }
 
   .top-level > li:has(details):first-child {
     margin-block-start: 0.35rem;
+  }
+
+  /* When details is open, give breathing room between summary and first item */
+  details > ul {
+    margin-top: 0.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
   }
 
   /* Section titles: same size as links, bolder + higher contrast. */
@@ -344,12 +361,23 @@ site-search button[data-open-modal] {
 
   :not(pre) > code {
     font-family: var(--font-mono);
-    background-color: var(--gray-3);
-    border: none;
-    padding: 0.125rem 0.375rem;
-    font-size: 0.875rem;
+    font-size: 0.85em;
+    font-weight: 450;
     color: var(--gray-12);
-    border-radius: 0.5rem;
+    background-color: var(--gray-2);
+    border: none;
+    border-radius: 0.3125rem;
+    padding: 0.125em 0.375em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  :root[data-theme="dark"] :not(pre) > code {
+    background-color: var(--gray-3);
+  }
+
+  a:not(.sl-link-card) > code {
+    color: inherit;
   }
 
   td:first-child code {
@@ -386,10 +414,11 @@ site-search button[data-open-modal] {
     border-radius: 0.5rem;
     overflow: hidden;
     font-size: 0.875rem;
+    background-color: var(--table-bg, #ffffff);
   }
 
   thead {
-    background-color: color-mix(in srgb, var(--gray-3) 50%, transparent);
+    background-color: var(--table-header-bg, var(--gray-2));
   }
 
   th {
@@ -404,6 +433,10 @@ site-search button[data-open-modal] {
   td {
     padding: 0.75rem 1rem;
     color: var(--gray-12);
+    border: none;
+  }
+
+  tbody tr + tr td {
     border-top: 1px solid var(--gray-6);
   }
 
@@ -414,13 +447,13 @@ site-search button[data-open-modal] {
     width: 1%;
   }
 
-  th:last-child,
-  td:last-child {
-    width: auto;
+  tbody tr:hover {
+    background-color: var(--table-hover-bg, color-mix(in srgb, var(--gray-3) 50%, transparent));
   }
 
-  tbody tr:hover {
-    background-color: color-mix(in srgb, var(--gray-3) 50%, transparent);
+  /* Inline code chips in tables should have a 1px border */
+  table code {
+    border: 1px solid var(--gray-6) !important;
   }
 
   /* Inline code chips in tables shouldn't force awkward wrapping. */
@@ -953,10 +986,38 @@ railpack-toc-progress[data-progress-ready] .railpack-toc-active-dot {
   }
 }
 
-/* Splash hero (homepage) — align with warm canvas + serif title */
+/* Splash hero (homepage) — scale padding and spacing dynamically with viewport height */
+[data-has-hero] {
+  .content-panel {
+    padding-block: clamp(0.5rem, 3.5vh, 4rem) !important;
+  }
+
+  .sl-container > * + * {
+    margin-top: clamp(0.75rem, 3vh, 3.5rem);
+  }
+
+  footer {
+    margin-top: clamp(0.75rem, 3vh, 3rem) !important;
+  }
+}
+
 .hero {
+  padding-bottom: 0 !important;
+
+  @media (min-width: 50rem) {
+    padding-block: clamp(0.5rem, 4vh, 5rem) !important;
+  }
+
   .sl-container {
     color: var(--gray-12);
+  }
+
+  .stack {
+    gap: clamp(0.75rem, 3vh, 2.5rem) !important;
+  }
+
+  .copy {
+    gap: clamp(0.375rem, 1.5vh, 1.25rem) !important;
   }
 
   h1,
@@ -965,13 +1026,23 @@ railpack-toc-progress[data-progress-ready] .railpack-toc-active-dot {
   }
 
   h1 {
-    font-family: var(--font-serif);
+    font-family: var(--font-serif) !important;
     font-weight: 600;
+    font-size: clamp(2.25rem, calc(1.5rem + 2vw + 1.5vh), 4.25rem) !important;
+    line-height: 1.1;
     letter-spacing: -0.03em;
+    margin: 0;
   }
 
   .tagline {
     color: var(--gray-11);
+    font-size: clamp(1rem, calc(0.85rem + 0.35vw + 0.35vh), 1.35rem) !important;
+    line-height: 1.45;
+    max-width: 50ch;
+  }
+
+  .actions {
+    gap: 0.75rem 1.5rem;
   }
 }
 

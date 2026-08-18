@@ -118,7 +118,7 @@ By default, Railpack follows the Mise default of building Ruby from
 source. You can opt into precompiled Ruby binaries for faster build times
 by adding a `mise.toml` to your repository:
 
-```toml
+```toml title="mise.toml"
 [tools]
 ruby = "3"
 

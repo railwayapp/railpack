@@ -26,7 +26,7 @@ use it to set the container start command.
 The `Procfile` uses a YAML-style format where each line defines a process type
 and its associated command:
 
-```yaml
+```yaml title="Procfile"
 web: gunicorn --bind 0.0.0.0:3333 main:app
 worker: celery worker -A myapp.celery
 scheduler: celery beat -A myapp.celery
@@ -49,19 +49,19 @@ processes or custom process types like `scheduler`, `urgentWorker`, or `api`.
 
 ### Web Application
 
-```yaml
+```yaml title="Procfile"
 web: node server.js
 ```
 
 ### Background Worker
 
-```yaml
+```yaml title="Procfile"
 worker: python worker.py
 ```
 
 ### Multiple Process Types
 
-```yaml
+```yaml title="Procfile"
 web: gunicorn app:application
 worker: celery worker -A app.celery
 scheduler: celery beat -A app.celery
@@ -72,7 +72,7 @@ command.
 
 ### Custom Process Types
 
-```yaml
+```yaml title="Procfile"
 api: ./bin/api-server
 urgentWorker: python urgent_tasks.py
 ```

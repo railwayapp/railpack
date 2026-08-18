@@ -21,7 +21,7 @@ a file or a directory.
 
 Given a `.dockerignore` file:
 
-```
+```txt title=".dockerignore"
 **/node_modules
 .env
 *.log
@@ -30,7 +30,7 @@ Given a `.dockerignore` file:
 
 When you run `railpack build --show-plan`, you'll see this gets converted to:
 
-```json
+```json title="railpack.json"
 {
   "exclude": [
     "**/node_modules",
@@ -49,7 +49,7 @@ You can also specify `exclude` patterns directly in your `railpack.json`
 configuration file instead of (or in addition to) using `.dockerignore`.
 Negation patterns (starting with `!`) can be included in the `exclude` array:
 
-```json
+```json title="railpack.json"
 {
   "exclude": [
     "**/node_modules",

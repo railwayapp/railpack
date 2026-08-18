@@ -1,7 +1,7 @@
 # What is Railpack
 
-Zero-config application builder that automatically analyzes your code and turns
-it into a container image. It's built on BuildKit with support for Node, Python, Go, PHP, and more.
+Zero-config application builder that analyzes code and builds an image. It's
+built on BuildKit with support for Node, Python, Go, PHP, and more.
 
 # Architecture
 

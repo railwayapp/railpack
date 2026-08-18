@@ -73,7 +73,7 @@ PHP extensions are automatically installed based on:
 
 Example `composer.json` with required extensions:
 
-```json
+```json title="composer.json"
 {
   "require": {
     "php": ">=8.2",
