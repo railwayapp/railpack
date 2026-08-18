@@ -8,7 +8,7 @@ description: Environment and tooling recommendations for Railpack-built images
 Railpack does not set a timezone. Set `TZ` explicitly for your application.
 `TZ=UTC` is a good default.
 
-```json
+```json title="railpack.json"
 {
   "deploy": {
     "variables": {
@@ -26,7 +26,7 @@ can cause compatibility issues with mise and other tooling.
 
 Install Python via mise whenever you use pipx:
 
-```json
+```json title="railpack.json"
 {
   "packages": {
     "python": "latest",
@@ -45,7 +45,7 @@ is available in the runtime image. If your application requires a different
 locale, install the corresponding locale packages via
 [`deploy.aptPackages`](/config/file).
 
-```json
+```json title="railpack.json"
 {
   "deploy": {
     "variables": {
@@ -68,7 +68,7 @@ versions keeps local development, CI, and production aligned.
 
 A `mise.toml` in your project keeps tool versions in one place:
 
-```toml
+```toml title="mise.toml"
 [tools]
 node = "22.14.0"
 python = "3.13.2"
@@ -87,7 +87,7 @@ team and Railpack. This keeps local development, CI, and production builds perfe
 
 Package managers supported by mise can be pinned in `mise.toml`:
 
-```toml
+```toml title="mise.toml"
 [tools]
 node = "22.14.0"
 pnpm = "10.15.1"
@@ -95,7 +95,7 @@ pnpm = "10.15.1"
 
 Mise is the recommended path, but you can use `package.json` configuration as well.
 
-```json
+```json title="package.json"
 {
   "packageManager": "npm@11.4.2"
 }
@@ -104,7 +104,7 @@ Mise is the recommended path, but you can use `package.json` configuration as we
 The `devEngines` field can also document the required package manager and
 instruct supporting tooling to reject a different version:
 
-```json
+```json title="package.json"
 {
   "devEngines": {
     "packageManager": {
@@ -125,7 +125,7 @@ supports most external tools you are likely to need.
 Using mise keeps tool versions consistent with the rest of your config and
 avoids coupling your build to distro packages or a separate install path.
 
-```toml
+```toml title="mise.toml"
 [tools]
 jq = "1.7.1"
 ripgrep = "14.1.1"
@@ -141,7 +141,7 @@ a build.
 Add `locked = true` to your mise config. This ensures that the exact same
 version is used for dev, CI, and production.
 
-```toml
+```toml title="mise.toml"
 [tools]
 node = "22.14.0"
 python = "3.13.2"
@@ -158,7 +158,7 @@ automatically includes `mise.lock` files in the build when present.
 Mise can verify OpenPGP signatures for tools that publish them. Enable
 verification for all supported tools in your `mise.toml`:
 
-```toml
+```toml title="mise.toml"
 [settings]
 gpg_verify = true
 
@@ -197,7 +197,7 @@ RAILPACK_NODE_NPM_INSTALL="npm ci"
 You can also customize the install command in `railpack.json` if you need more
 control over the install step:
 
-```json
+```json title="railpack.json"
 {
   "$schema": "https://schema.railpack.com",
   "steps": {
@@ -235,3 +235,15 @@ determinism. You should keep your lockfile in sync and opt into `npm ci` for:
   and CI environments, with no silent drift in production
 - **Faster installs** — `npm ci` installs from the lockfile instead of resolving
   `package.json` again
+
+## Create a `.dockerignore` File
+
+Create a `.dockerignore` file in your repository root to exclude files and
+directories that are not required in production.
+
+Excluding unnecessary files makes your final images smaller, speeds up build
+upload times, and eliminates production security risks by minimizing the code
+and assets available inside the running container environment:
+
+See [Excluding Files](/config/excluding-files) for full details on pattern
+matching and using `railpack.json` exclusions.
