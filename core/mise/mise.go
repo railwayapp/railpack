@@ -60,7 +60,7 @@ func (m *Mise) GetLatestVersion(pkg, version string) (string, error) {
 	}
 	defer unlock()
 
-	baseEnv := []string{"MISE_NO_CONFIG=1", "MISE_PARANOID=1"}
+	baseEnv := []string{"MISE_NO_CONFIG=1"}
 
 	// a user could eliminate the min release age in their config, or pin a version to a release
 	// if they do, we want to make sure they can still install that specific version they want, so we fallback to a env
@@ -121,7 +121,7 @@ func (m *Mise) GetAllVersions(pkg, version string) ([]string, error) {
 	var output string
 	for _, queryVersion := range versionQueryCandidates(version) {
 		query := fmt.Sprintf("%s@%s", pkg, queryVersion)
-		output, err = m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1", "MISE_PARANOID=1"}, "ls-remote", query)
+		output, err = m.runCmdWithEnv([]string{"MISE_NO_CONFIG=1"}, "ls-remote", query)
 		if err == nil && strings.TrimSpace(output) != "" {
 			break
 		}
@@ -192,10 +192,6 @@ func (m *Mise) GetCurrentList(appDir string) (string, error) {
 		trustedConfigEnv,
 		ceilingPathsEnv,
 		enabledIdiomaticEnv,
-		// MISE_PARANOID enables stricter security validation
-		"MISE_PARANOID=1",
-		// Safe mode keeps the app's own mise config inert (no code execution or host env mutation) while still reporting versions
-		"MISE_SAFE=1",
 	}, "--cd", appDir, "list", "--current", "--json")
 }
 
@@ -229,6 +225,10 @@ func (m *Mise) runCmdWithEnv(extraEnv []string, args ...string) (string, error) 
 		"MISE_FETCH_REMOTE_VERSIONS_TIMEOUT=60s",
 		// allows for a 2m outage on mise (10ms base backoff retry)
 		"MISE_HTTP_RETRIES=5",
+		// blocks hooks, env mutation, and code execution from configs we do not control
+		"MISE_SAFE=1",
+		// asdf plugin scripts cannot run in safe mode; prefer aqua/core/pipx backends
+		"MISE_DISABLE_BACKENDS=asdf",
 		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
 	)
 
