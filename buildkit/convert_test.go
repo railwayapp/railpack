@@ -2,6 +2,7 @@ package buildkit
 
 import (
 	"context"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -10,6 +11,8 @@ import (
 
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/railwayapp/railpack/buildkit/build_llb"
+	"github.com/railwayapp/railpack/core"
+	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/stretchr/testify/require"
 )
@@ -38,6 +41,47 @@ func TestGetImageEnvIncludesBuiltAt(t *testing.T) {
 	require.GreaterOrEqual(t, timestamp, before)
 	require.LessOrEqual(t, timestamp, after)
 	require.True(t, slices.IsSorted(env))
+}
+
+func TestImagePathHasNoDuplicateEntries(t *testing.T) {
+	userApp, err := app.NewApp(filepath.Join("..", "examples", "ruby-with-node"))
+	require.NoError(t, err)
+
+	buildResult, err := core.GenerateBuildPlan(userApp, app.NewEnvironment(nil), &core.GenerateBuildPlanOptions{})
+	require.NoError(t, err)
+	require.True(t, buildResult.Success)
+
+	_, image, err := ConvertPlanToLLB(buildResult.Plan, ConvertPlanOptions{
+		BuildPlatform: specs.Platform{OS: "linux", Architecture: "amd64"},
+	})
+	require.NoError(t, err)
+
+	path := pathFromEnv(t, image.Config.Env)
+	require.Empty(t, duplicatePathEntries(path))
+}
+
+func pathFromEnv(t *testing.T, env []string) string {
+	t.Helper()
+
+	for _, envVar := range env {
+		if value, ok := strings.CutPrefix(envVar, "PATH="); ok {
+			return value
+		}
+	}
+	t.Fatal("PATH not found in image environment")
+	return ""
+}
+
+func duplicatePathEntries(path string) []string {
+	seen := map[string]bool{}
+	duplicates := []string{}
+	for _, entry := range strings.Split(path, ":") {
+		if seen[entry] {
+			duplicates = append(duplicates, entry)
+		}
+		seen[entry] = true
+	}
+	return duplicates
 }
 
 func TestDeployVariablesDoNotAffectLLB(t *testing.T) {
