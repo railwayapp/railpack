@@ -76,6 +76,15 @@ func TestNode(t *testing.T) {
 			envVars:        map[string]string{"RAILPACK_NODE_VERSION": "22"},
 		},
 		{
+			name:           "pnpm from devEngines via mise idiomatic files",
+			path:           "../../../examples/node-pnpm-dev-engines",
+			detected:       true,
+			packageManager: PackageManagerPnpm,
+			nodeVersion:    "22.11.0",
+			pnpmVersion:    "10.4.1",
+			pnpmSource:     "idiomatic-version-file",
+		},
+		{
 			name:     "golang",
 			path:     "../../../examples/go-mod",
 			detected: false,
