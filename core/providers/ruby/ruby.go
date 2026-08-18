@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	// https://endoflife.date/ruby
 	DEFAULT_RUBY_VERSION = "3.4"
 )
 

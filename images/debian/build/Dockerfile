@@ -58,6 +58,7 @@ RUN apt-get update && apt-get install -y \
     xz-utils \
     tk-dev \
     libxml2-dev \
+    libicu-dev \
     libxmlsec1-dev \
     libffi-dev \
     # Image processing

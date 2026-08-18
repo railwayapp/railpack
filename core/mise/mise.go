@@ -67,6 +67,8 @@ func (m *Mise) GetLatestVersion(pkg, version string) (string, error) {
 	// *without* the min age requirement after we've tried to query mise with this requirement first.
 	minAgeEnv := append([]string{fmt.Sprintf("MISE_MINIMUM_RELEASE_AGE=%s", MinimumReleaseAge)}, baseEnv...)
 
+	noAgeEnv := append([]string{"MISE_MINIMUM_RELEASE_AGE=0s"}, baseEnv...)
+
 	var output string
 	for i, queryVersion := range versionQueryCandidates(version) {
 		// i.e. node@lts
@@ -84,7 +86,7 @@ func (m *Mise) GetLatestVersion(pkg, version string) (string, error) {
 			// this setting inconsistently between macOS and Linux.
 		}
 
-		output, err = m.runCmdWithEnv(baseEnv, "latest", query)
+		output, err = m.runCmdWithEnv(noAgeEnv, "latest", query)
 		if err == nil && strings.TrimSpace(output) != "" {
 			break
 		}
