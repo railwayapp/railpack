@@ -80,7 +80,7 @@ export default defineConfig({
         starlightLlmsTxt({
           projectName: "Railpack",
           description:
-            "Zero-config application builder that automatically analyzes your code and turns it into a container image. Built on BuildKit with support for Node, Python, Go, PHP, and more.",
+            "Zero-config application builder that analyzes code and builds an image. Built on BuildKit with support for Node, Python, Go, PHP, and more.",
           details:
             "Railpack provides a seamless way to build container images from your source code without complex configuration. It automatically detects your project type and generates appropriate build steps.",
           customSets: [
