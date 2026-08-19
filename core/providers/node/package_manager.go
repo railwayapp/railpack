@@ -369,10 +369,7 @@ func (p PackageManager) SupportingInstallFiles(ctx *generate.GenerateContext) []
 		}
 	}
 
-	// The globs above read the app directory directly, so they can pick up
-	// manifests that .dockerignore or `exclude` keep out of the build context.
-	// COPYing one of those fails the build, so drop them here.
-	return ctx.FilterExcludedFiles(allFiles)
+	return allFiles
 }
 
 // GetPackageManagerPackages installs specific versions of package managers by analyzing the users code
