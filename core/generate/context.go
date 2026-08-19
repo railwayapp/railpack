@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/moby/patternmatcher"
 	a "github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/logger"
@@ -33,8 +32,6 @@ type GenerateContext struct {
 	Env             *a.Environment
 	Config          *config.Config
 	dockerignoreCtx *plan.DockerignoreContext
-	excludeMatcher  *patternmatcher.PatternMatcher
-	excludeCompiled bool
 
 	BaseImage string
 	Steps     []StepBuilder
@@ -96,6 +93,11 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 		Resolver:        resolver,
 		Logger:          logger,
 		dockerignoreCtx: dockerignoreCtx,
+	}
+
+	// Path discovery must not return files that BuildKit will never load.
+	if err := app.SetExcludePatterns(ctx.ExcludePatterns()); err != nil {
+		return nil, err
 	}
 
 	ctx.applyPackagesFromConfig()
@@ -359,66 +361,4 @@ func (c *GenerateContext) ExcludePatterns() []string {
 	patterns = append(patterns, c.dockerignoreCtx.Excludes...)
 	patterns = append(patterns, c.Config.Exclude...)
 	return patterns
-}
-
-// FilterExcludedFiles drops paths that will not exist in the build context
-// because .dockerignore or railpack.json's `exclude` filters them out.
-//
-// Steps that discover files by globbing the app directory must run their
-// results through this. The planner reads the app directory directly, while
-// BuildKit only ever sees the filtered context, so an unfiltered glob can emit
-// a COPY for a path that was never loaded. The build then fails late with
-// "failed to compute cache key: ... not found".
-//
-// Negation patterns are honoured, since the same matcher BuildKit uses to
-// build the context is used here.
-func (c *GenerateContext) FilterExcludedFiles(paths []string) []string {
-	matcher := c.getExcludeMatcher()
-	if matcher == nil {
-		return paths
-	}
-
-	filtered := make([]string, 0, len(paths))
-	for _, path := range paths {
-		excluded, err := matcher.MatchesOrParentMatches(path)
-		if err != nil {
-			// keep the file rather than silently dropping it from the install
-			log.Warnf("Failed to match %q against exclude patterns: %s", path, err)
-			filtered = append(filtered, path)
-			continue
-		}
-
-		if excluded {
-			log.Debugf("Skipping %q, excluded from the build context", path)
-			continue
-		}
-
-		filtered = append(filtered, path)
-	}
-
-	return filtered
-}
-
-// getExcludeMatcher lazily compiles the exclude patterns. Compilation is
-// deferred because railpack.json's `exclude` is not final when the context is
-// constructed. Returns nil when there is nothing to filter.
-func (c *GenerateContext) getExcludeMatcher() *patternmatcher.PatternMatcher {
-	if c.excludeCompiled {
-		return c.excludeMatcher
-	}
-	c.excludeCompiled = true
-
-	patterns := c.ExcludePatterns()
-	if len(patterns) == 0 {
-		return nil
-	}
-
-	matcher, err := patternmatcher.New(patterns)
-	if err != nil {
-		log.Warnf("Failed to compile exclude patterns, discovered files will not be filtered: %s", err)
-		return nil
-	}
-
-	c.excludeMatcher = matcher
-	return c.excludeMatcher
 }
