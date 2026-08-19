@@ -1,0 +1,1 @@
+web: echo from-procfile
