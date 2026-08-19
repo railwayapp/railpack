@@ -1,0 +1,3 @@
+# The manifest under docs/ is never loaded into the build context, so nothing
+# in the plan may reference it. See docs/marketing/package.json.
+docs/
