@@ -102,6 +102,10 @@ jobs:
           cache-from: type=registry,ref=${{ env.PRODUCTION_BUILDER_IMAGE_REF }}
           cache-to: type=inline
 
+  # Smoke-tests the production frontend path: generate a plan via CLI, then
+  # docker buildx with BUILDKIT_SYNTAX pointing at a locally built frontend.
+  # Both `plan` (local/debug) and `prepare` (platform) are exercised; the
+  # frontend build uses the prepare output.
   frontend-e2e:
     name: Frontend E2E
     needs: [build-images, find-examples]
@@ -137,7 +141,16 @@ jobs:
           EXAMPLE: ${{ steps.example.outputs.name }}
         run: |
           mkdir -p tmp/frontend-plan
-          mise run cli plan "examples/$EXAMPLE" --out tmp/frontend-plan/railpack-plan.json
+          mise run cli plan "examples/$EXAMPLE" --out tmp/frontend-plan/from-plan.json
+
+      - name: Prepare Build
+        env:
+          EXAMPLE: ${{ steps.example.outputs.name }}
+        run: |
+          mise run cli prepare "examples/$EXAMPLE" \
+            --plan-out tmp/frontend-plan/railpack-plan.json \
+            --info-out tmp/frontend-plan/railpack-info.json
+          jq -e '.success == true' tmp/frontend-plan/railpack-info.json
 
       - name: Build Example With Frontend Image
         env:
