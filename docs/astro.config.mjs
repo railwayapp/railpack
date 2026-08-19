@@ -205,6 +205,7 @@ export default defineConfig({
             { label: "Elixir", link: "/languages/elixir" },
             { label: "Gleam", link: "/languages/gleam" },
             { label: "C/C++", link: "/languages/cpp" },
+            { label: "Flutter", link: "/languages/flutter" },
             { label: "Staticfile", link: "/languages/staticfile" },
             { label: "Shell Scripts", link: "/languages/shell" },
           ],
