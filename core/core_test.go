@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -231,4 +232,22 @@ func TestGenerateBuildPlan_DockerignoreMetadata(t *testing.T) {
 	require.NotNil(t, buildResult.Metadata)
 	require.Equal(t, "true", buildResult.Metadata["dockerIgnore"])
 	require.NotEmpty(t, buildResult.Plan.Exclude)
+}
+
+func TestGenerateBuildPlan_DockerignoreExcludesDiscoveredFiles(t *testing.T) {
+	appPath := "../examples/node-npm-dockerignore"
+	userApp, err := app.NewApp(appPath)
+	require.NoError(t, err)
+
+	env := app.NewEnvironment(nil)
+	buildResult, err := GenerateBuildPlan(userApp, env, &GenerateBuildPlanOptions{})
+	require.NoError(t, err)
+	require.True(t, buildResult.Success)
+
+	// docs/ is excluded, so the manifest beneath it is not in the build context
+	// and nothing in the plan may reference it.
+	serialized, err := json.Marshal(buildResult.Plan)
+	require.NoError(t, err)
+	require.NotContains(t, string(serialized), "docs/marketing/package.json")
+	require.Contains(t, string(serialized), "package.json")
 }
