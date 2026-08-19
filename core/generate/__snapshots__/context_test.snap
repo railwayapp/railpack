@@ -86,7 +86,8 @@
    ],
    "name": "build",
    "secrets": [
-    "*"
+    "RAILWAY_SECRET_1",
+    "RAILWAY_SECRET_2"
    ]
   }
  ]
