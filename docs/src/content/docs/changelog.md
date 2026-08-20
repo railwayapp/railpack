@@ -7,6 +7,35 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
+## v0.37.0
+August 18, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.37.0)
+
+### Breaking Changes
+
+* **Debian 13 base images:** New builds now use Debian 13 (Trixie), requiring custom Apt package lists and pinned base images to be compatible with Debian 13. ([#698]([#698](https://github.com/railwayapp/railpack/pull/698)#user-content-breaking-changes))
+* **GCC 14 native builds:** Native gem and extension compilation now uses GCC 14, treating incompatible pointer types as errors and potentially requiring dependency updates or compiler flags. ([#705]([#705](https://github.com/railwayapp/railpack/pull/705)#user-content-breaking-changes))
+
+### CLI
+
+#### New
+
+* **Debian 13:** Builder and runtime base images are now upgraded to Debian 13 (Trixie). Configure [custom Apt packages](https://railpack.com/guides/installing-packages#apt) with Debian 13 package names using `RAILPACK_DEPLOY_APT_PACKAGES` or `deploy.aptPackages`. by @iloveitaly in [#698](https://github.com/railwayapp/railpack/pull/698)
+
+#### Fixed
+
+* **Debian 13:** Builder images now include `libicu-dev` to ensure .NET restore and native gem compilation succeed on Debian 13, and Railpack warns during build planning when custom Apt packages are detected. by @iloveitaly in [#705](https://github.com/railwayapp/railpack/pull/705)
+
+### Mise Upgrades
+
+Updated mise from v2026.8.4 to [v2026.8.6](https://github.com/jdx/mise/releases/tag/v2026.8.6).
+
+* **Resumable downloads:** Interrupted artifact downloads now resume via HTTP Range requests, and transient network errors such as HTTP/2 stream refusals are automatically retried. ([v2026.8.6](https://github.com/jdx/mise/releases/tag/v2026.8.6))
+* **Precompiled PyPy:** PyPy can now be installed via precompiled binaries when compilation is disabled. ([v2026.8.5](https://github.com/jdx/mise/releases/tag/v2026.8.5))
+* **Node source patching:** Node source builds can now apply local or remote patches before configuration using `node.apply_patches`. ([v2026.8.5](https://github.com/jdx/mise/releases/tag/v2026.8.5))
+* **Rust nightly toolchains:** The rolling `nightly` channel resolves to concrete date-based toolchains for reproducible lockfiles and caching. ([v2026.8.6](https://github.com/jdx/mise/releases/tag/v2026.8.6))
+
+**Full Changelog**: [v0.36.4...v0.37.0](https://github.com/railwayapp/railpack/compare/v0.36.4...v0.37.0)
+
 ## v0.36.4
 August 12, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.36.4)
 
@@ -929,23 +958,6 @@ August 27, 2025 · [GitHub release](https://github.com/railwayapp/railpack/relea
 * @jesse-c made their first contribution in [#231](https://github.com/railwayapp/railpack/pull/231)
 
 **Full Changelog**: [v0.3.0...v0.4.0](https://github.com/railwayapp/railpack/compare/v0.3.0...v0.4.0)
-
-## v0.3.0
-August 18, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.3.0)
-
-### What's Changed
-* update php snapshot by @coffee-cup in [#213](https://github.com/railwayapp/railpack/pull/213)
-* Enable jemalloc by default in Ruby setups by @RDIL in [#212](https://github.com/railwayapp/railpack/pull/212)
-* yarn v1 test by @iloveitaly in [#215](https://github.com/railwayapp/railpack/pull/215)
-* chore: mise update  by @iloveitaly in [#216](https://github.com/railwayapp/railpack/pull/216)
-* add schema to plan by @iloveitaly in [#222](https://github.com/railwayapp/railpack/pull/222)
-* react router v7 by @iloveitaly in [#221](https://github.com/railwayapp/railpack/pull/221)
-
-### New Contributors
-* @RDIL made their first contribution in [#212](https://github.com/railwayapp/railpack/pull/212)
-* @iloveitaly made their first contribution in [#215](https://github.com/railwayapp/railpack/pull/215)
-
-**Full Changelog**: [v0.2.3...v0.3.0](https://github.com/railwayapp/railpack/compare/v0.2.3...v0.3.0)
 
 ## Older releases
 
