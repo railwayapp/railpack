@@ -75,7 +75,7 @@ func pathFromEnv(t *testing.T, env []string) string {
 func duplicatePathEntries(path string) []string {
 	seen := map[string]bool{}
 	duplicates := []string{}
-	for _, entry := range strings.Split(path, ":") {
+	for entry := range strings.SplitSeq(path, ":") {
 		if seen[entry] {
 			duplicates = append(duplicates, entry)
 		}
