@@ -115,6 +115,7 @@
    ],
    "name": "install",
    "variables": {
+    "BUN_INSTALL_GLOBAL_STORE": "0",
     "CI": "true",
     "NODE_ENV": "production",
     "NPM_CONFIG_FETCH_RETRIES": "5",
