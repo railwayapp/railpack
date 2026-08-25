@@ -7,6 +7,31 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
+## v0.37.1
+August 24, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.37.1)
+
+### Breaking Changes
+
+* **Cache disabling:** `RAILPACK_DISABLE_CACHES` is no longer read from the host process environment and must be passed explicitly via `--env`. ([#696]([#696](https://github.com/railwayapp/railpack/pull/696)#user-content-breaking-changes))
+
+### CLI
+
+#### Fixed
+
+* **Cache disabling:** `RAILPACK_DISABLE_CACHES` is now configured via `--env` and applied during build plan generation, ensuring cache mounts are deterministically stripped matching other [build environment variables](https://railpack.com/config/environment-variables). by @iloveitaly in [#696](https://github.com/railwayapp/railpack/pull/696)
+* **Image environment:** Deduplicate inherited `PATH` entries when merging build and deploy environments, preventing duplicate paths in the final image while preserving precedence. by @iloveitaly in [#697](https://github.com/railwayapp/railpack/pull/697)
+
+### Mise Upgrades
+
+Updated mise from v2026.8.6 to [v2026.8.11](https://github.com/jdx/mise/releases/tag/v2026.8.11).
+
+* **Ruby on musl:** glibc precompiled Ruby binaries are now skipped on musl Linux environments, falling back to ruby-build. ([v2026.8.11](https://github.com/jdx/mise/releases/tag/v2026.8.11))
+* **npm version resolution:** Deprecated versions are now filtered out during tool version resolution. ([v2026.8.11](https://github.com/jdx/mise/releases/tag/v2026.8.11))
+* **Aqua Linux assets:** glibc Linux targets now prefer glibc release assets over musl binaries when resolving tools. ([v2026.8.9](https://github.com/jdx/mise/releases/tag/v2026.8.9))
+* **Erlang checksums:** Precompiled Erlang installations now verify checksums. ([v2026.8.7](https://github.com/jdx/mise/releases/tag/v2026.8.7))
+
+**Full Changelog**: [v0.37.0...v0.37.1](https://github.com/railwayapp/railpack/compare/v0.37.0...v0.37.1)
+
 ## v0.37.0
 August 18, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.37.0)
 
