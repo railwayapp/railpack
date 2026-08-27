@@ -7,6 +7,30 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
+## v0.38.0
+August 26, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.38.0)
+
+### Breaking Changes
+
+* **pnpm provisioning and devEngines precedence:** pnpm is now installed directly via Mise instead of Corepack, and `devEngines` declarations in `package.json` now take precedence over `engines`, `.nvmrc`, and lockfiles for Node.js and pnpm resolution. ([#678]([#678](https://github.com/railwayapp/railpack/pull/678)#user-content-breaking-changes))
+
+### Providers
+
+#### New
+
+* **Node:** Railpack now supports [pnpm idiomatic version files](https://railpack.com/languages/node#mise-idiomatic-file-parsing) and `devEngines.packageManager` in `package.json`, provisioning pnpm directly via Mise instead of Corepack. Specify your pnpm version using `"devEngines": { "packageManager": { "name": "pnpm", "version": "9.1.0" } }` (or the array syntax `[{ "name": "pnpm", "version": "9.1.0" }]`), and Railpack will automatically resolve and install it. by @iloveitaly in [#678](https://github.com/railwayapp/railpack/pull/678)
+
+### Mise Upgrades
+
+Updated mise from v2026.8.11 to [v2026.8.13](https://github.com/jdx/mise/releases/tag/v2026.8.13).
+
+* **GitHub install rate limits:** Lockfile-pinned tools with checksums no longer query the GitHub API at install time, avoiding rate-limit failures during builds. ([v2026.8.13](https://github.com/jdx/mise/releases/tag/v2026.8.13))
+* **UTF-8 BOM in version files:** Idiomatic version files such as `.tool-versions`, `.node-version`, and `package.json` that begin with a UTF-8 byte-order mark now parse correctly instead of corrupting version strings. ([v2026.8.12](https://github.com/jdx/mise/releases/tag/v2026.8.12))
+* **Monorepo lockfiles:** Tool versions across monorepo directories are now tracked in their respective lockfiles rather than merged into a single file. ([v2026.8.13](https://github.com/jdx/mise/releases/tag/v2026.8.13))
+* **Go GOROOT isolation:** `go install` no longer inherits a `GOROOT` exported for a different Go installation, preventing tool version mismatch errors. ([v2026.8.12](https://github.com/jdx/mise/releases/tag/v2026.8.12))
+
+**Full Changelog**: [v0.37.1...v0.38.0](https://github.com/railwayapp/railpack/compare/v0.37.1...v0.38.0)
+
 ## v0.37.1
 August 24, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.37.1)
 
