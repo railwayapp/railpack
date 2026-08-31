@@ -990,24 +990,6 @@ September 4, 2025 · [GitHub release](https://github.com/railwayapp/railpack/rel
 
 **Full Changelog**: [v0.4.0...v0.5.0](https://github.com/railwayapp/railpack/compare/v0.4.0...v0.5.0)
 
-## v0.4.0
-August 27, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.4.0)
-
-### What's Changed
-* fix: remove yarn gpg workaround by @iloveitaly in [#220](https://github.com/railwayapp/railpack/pull/220)
-* chore: mise update 2025.8.13 by @iloveitaly in [#224](https://github.com/railwayapp/railpack/pull/224)
-* build: use railpack as the binary output name by @iloveitaly in [#227](https://github.com/railwayapp/railpack/pull/227)
-* feat: add hidden dump-llb flag by @iloveitaly in [#225](https://github.com/railwayapp/railpack/pull/225)
-* consistent provider step naming by @iloveitaly in [#228](https://github.com/railwayapp/railpack/pull/228)
-* chore: mise update 2025.8.18 by @iloveitaly in [#229](https://github.com/railwayapp/railpack/pull/229)
-* test: update snapshots for new caddy version by @iloveitaly in [#230](https://github.com/railwayapp/railpack/pull/230)
-* fix: Support colocated hooks in Phoenix (LiveView) for Elixir by @jesse-c in [#231](https://github.com/railwayapp/railpack/pull/231)
-
-### New Contributors
-* @jesse-c made their first contribution in [#231](https://github.com/railwayapp/railpack/pull/231)
-
-**Full Changelog**: [v0.3.0...v0.4.0](https://github.com/railwayapp/railpack/compare/v0.3.0...v0.4.0)
-
 ## Older releases
 
 This page covers the last year. See all releases on [GitHub](https://github.com/railwayapp/railpack/releases).
