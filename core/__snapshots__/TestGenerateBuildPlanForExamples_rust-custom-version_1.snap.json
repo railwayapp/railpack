@@ -15,7 +15,7 @@
  },
  "deploy": {
   "base": {
-   "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.8.15"
+   "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.8.16"
   },
   "inputs": [
    {
@@ -55,7 +55,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.8.15"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.8.16"
     }
    ],
    "name": "packages:mise",
