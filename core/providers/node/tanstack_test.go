@@ -22,7 +22,7 @@ func TestTanstackStartSrvxFallback(t *testing.T) {
 		}
 		for packageManager, commandPrefix := range tests {
 			provider.packageManager = packageManager
-			require.Equal(t, commandPrefix+DefaultTanstackSrvxStartCommand, provider.getTanstackStartCommand())
+			require.Equal(t, commandPrefix+DefaultTanstackSrvxStartCommand, provider.getTanstackStartCommand(ctx))
 		}
 	})
 
@@ -34,7 +34,8 @@ func TestTanstackStartSrvxFallback(t *testing.T) {
 		require.NoError(t, err)
 
 		require.True(t, provider.isTanstackStart())
-		require.True(t, provider.usesTanstackSrvxFallback())
+		require.True(t, provider.usesTanstackStartFallback())
+		require.False(t, provider.usesTanstackNitro(ctx))
 		require.False(t, provider.isSPA(ctx))
 		require.False(t, provider.isVite(ctx))
 		expectedStartCommand := "npx " + DefaultTanstackSrvxStartCommand
@@ -53,11 +54,30 @@ func TestTanstackStartSrvxFallback(t *testing.T) {
 		require.NoError(t, err)
 
 		require.True(t, provider.isTanstackStart())
-		require.False(t, provider.usesTanstackSrvxFallback())
+		require.False(t, provider.usesTanstackStartFallback())
 		require.False(t, provider.isSPA(ctx))
 		require.Equal(t, "bun run start", provider.GetStartCommand(ctx))
 
 		err = provider.Plan(ctx)
 		require.NoError(t, err)
+	})
+
+	t.Run("nitro without start script uses the nitro server output", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/tanstack-nitro-nostart")
+		provider := NodeProvider{}
+
+		err := provider.Initialize(ctx)
+		require.NoError(t, err)
+
+		require.True(t, provider.isTanstackStart())
+		require.True(t, provider.usesTanstackStartFallback())
+		require.True(t, provider.usesTanstackNitro(ctx))
+		require.False(t, provider.isSPA(ctx))
+		require.False(t, provider.isVite(ctx))
+		require.Equal(t, DefaultTanstackNitroStartCommand, provider.GetStartCommand(ctx))
+
+		err = provider.Plan(ctx)
+		require.NoError(t, err)
+		require.Equal(t, DefaultTanstackNitroStartCommand, ctx.Deploy.StartCmd)
 	})
 }

@@ -151,12 +151,20 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	p.Build(ctx, build)
 
 	// note the best place for it, but it avoids having to worry about side effects in the framework helper functions
-	if p.usesTanstackSrvxFallback() {
-		ctx.Logger.LogInfo("No start script found; using srvx as production server")
-		ctx.Logger.LogSuggestion(
-			"Set up Nitro for production Node deploys",
-			"https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro",
-		)
+	if p.usesTanstackStartFallback() {
+		if p.usesTanstackNitro(ctx) {
+			ctx.Logger.LogInfo("No start script found; using the Nitro server at .output/server/index.mjs")
+			ctx.Logger.LogSuggestion(
+				"Add a start script to make the server command explicit",
+				"https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro",
+			)
+		} else {
+			ctx.Logger.LogInfo("No start script found; using srvx as production server")
+			ctx.Logger.LogSuggestion(
+				"Set up Nitro for production Node deploys",
+				"https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro",
+			)
+		}
 	}
 
 	// Deploy
@@ -261,7 +269,7 @@ func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	} else if p.isNuxt() {
 		// Default Nuxt start command
 		return "node .output/server/index.mjs"
-	} else if start := p.getTanstackStartCommand(); start != "" {
+	} else if start := p.getTanstackStartCommand(ctx); start != "" {
 		return start
 	} else if start := p.getSvelteKitStartCommand(); start != "" {
 		return start
