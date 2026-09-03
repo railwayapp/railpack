@@ -61,3 +61,27 @@ func TestTanstackStartSrvxFallback(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestTanstackStartMisplacedDependency(t *testing.T) {
+	t.Run("react-start in devDependencies deploys as SPA with a suggestion", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/tanstack-devdeps-spa")
+		provider := NodeProvider{}
+
+		err := provider.Initialize(ctx)
+		require.NoError(t, err)
+
+		require.False(t, provider.isTanstackStart())
+		require.True(t, provider.hasMisplacedTanstackStart())
+		require.True(t, provider.isSPA(ctx))
+	})
+
+	t.Run("react-start in dependencies is not misplaced", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/tanstack-latest")
+		provider := NodeProvider{}
+
+		err := provider.Initialize(ctx)
+		require.NoError(t, err)
+
+		require.False(t, provider.hasMisplacedTanstackStart())
+	})
+}
