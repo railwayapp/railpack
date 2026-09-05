@@ -10,7 +10,7 @@ var (
 	RailpackRuntimeImage = fmt.Sprintf("ghcr.io/railwayapp/railpack-runtime:mise-%s", mise.Version)
 )
 
-// serialized to railpack.json
+// serialized to railpack-plan.json
 type BuildPlan struct {
 	Steps   []Step            `json:"steps,omitempty"`
 	Caches  map[string]*Cache `json:"caches,omitempty"`

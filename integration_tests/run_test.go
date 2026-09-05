@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -51,6 +52,7 @@ type TestCase struct {
 	// matches against the entire output of the container if it cannot be found in a single line
 	ExpectedOutput StringOrArray     `json:"expectedOutput"`
 	Envs           map[string]string `json:"envs"`
+	Secrets        map[string]string `json:"secrets"`
 	ConfigFilePath string            `json:"configFile"`
 	ShouldFail     bool              `json:"shouldFail"`
 	HTTPCheck      *HTTPCheck        `json:"httpCheck"`
@@ -157,10 +159,16 @@ func TestExamplesIntegration(t *testing.T) {
 					strings.ToLower(strings.ReplaceAll(testName, "/", "-")),
 					strings.ToLower(uuid.New().String()))
 
+				// Every env name is added to the generated plan's secret catalog.
+				// Secrets bypass plan generation, but both value sets must be available to BuildKit.
+				buildSecrets := make(map[string]string, len(testCase.Envs)+len(testCase.Secrets))
+				maps.Copy(buildSecrets, testCase.Envs)
+				maps.Copy(buildSecrets, testCase.Secrets)
+
 				if err := buildkit.BuildWithBuildkitClient(examplePath, buildResult.Plan, buildkit.BuildWithBuildkitClientOptions{
 					ImageName: imageName,
 					Platform:  testCase.Platform,
-					Secrets:   testCase.Envs,
+					Secrets:   buildSecrets,
 					CacheKey:  imageName,
 					// Pass through GITHUB_TOKEN if it exists, this avoids mise timeouts during build
 					// this can easily occur since we run all integration tests in parallel via GHA

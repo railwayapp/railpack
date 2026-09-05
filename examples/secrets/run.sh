@@ -1,12 +1,7 @@
 #!/bin/bash
 
-# List of required secrets
-REQUIRED_SECRETS=(
-  "MY_SECRET"
-  "MY_OTHER_SECRET"
-  "HELLO_WORLD"
-  "NOT_SECRET"
-)
+# Each step passes the secret and variable names that it expects to use.
+REQUIRED_SECRETS=("$@")
 
 missing_secrets=()
 defined_secrets=()
@@ -25,7 +20,7 @@ for secret in "${REQUIRED_SECRETS[@]}"; do
       error_value_secrets+=("$secret")
       echo "❌ Secret $secret contains invalid value 'error'"
     else
-      echo "✅ Found secret: $secret = ${!secret}"
+      echo "✅ Found secret: $secret"
     fi
   fi
 done

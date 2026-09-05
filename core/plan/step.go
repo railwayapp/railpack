@@ -10,7 +10,7 @@ type Step struct {
 	Name      string            `json:"name,omitempty" jsonschema:"description=The name of the step"`
 	Inputs    []Layer           `json:"inputs,omitempty" jsonschema:"description=The inputs for this step"`
 	Commands  []Command         `json:"commands,omitempty" jsonschema:"description=The commands to run in this step"`
-	Secrets   []string          `json:"secrets,omitempty" jsonschema:"description=The secrets that this step uses"`
+	Secrets   []string          `json:"secrets,omitempty" jsonschema:"description=Secret names whose values invalidate this step's layer cache"`
 	Assets    map[string]string `json:"assets,omitempty" jsonschema:"description=The assets available to this step. The key is the name of the asset that is referenced in a file command"`
 	Variables map[string]string `json:"variables,omitempty" jsonschema:"description=The variables available to this step. The key is the name of the variable that is referenced in a variable command"`
 	Caches    []string          `json:"caches,omitempty" jsonschema:"description=The caches available to all commands in this step. Each cache must refer to a cache at the top level of the plan"`
@@ -21,7 +21,7 @@ func NewStep(name string) *Step {
 		Name:      name,
 		Assets:    make(map[string]string),
 		Variables: make(map[string]string),
-		Secrets:   []string{"*"}, // default to using all secrets
+		Secrets:   []string{"*"}, // default to invalidating for root-configured secrets
 	}
 }
 

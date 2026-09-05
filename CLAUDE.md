@@ -17,13 +17,22 @@ built on BuildKit with support for Node, Python, Go, PHP, and more.
 
 Follow these instructions carefully when writing code:
 
-- When writing a comment describing a function, do not start the comment with the name of the function
+- Add a concise one-line comment above functions whose purpose is not
+  immediately obvious. Describe their role or why they exist without starting
+  the comment with the function name.
 - Assume the person reading this code is an expert software engineer, but is not familiar with the internals of every system. Include concise one-line comments explaining key hooks, API usage, blocks of logic, etc., to help the reader quickly understand the code you've written.
 - Follow Go conventions and existing patterns in the codebase
+- Prefer modern Go standard-library APIs and idioms supported by the Go version
+  pinned in `mise.toml` when they make the code clearer or simpler.
+- Assume no external Go applications consume this project as a library; exported
+  APIs only need compatibility with in-repository consumers unless stated otherwise.
 - Prefer early `return`s or `continue`s to `if` nesting
 - Use appropriate error handling with proper error wrapping
 - Do not write comments that are obvious from the code itself; focus on
   explaining why something is done, not what it does
+- Do not end one-line comments with a period
+- Do not preserve behavior or add complexity solely to avoid snapshot changes;
+  update and review snapshots when intended behavior changes
 - Seriously, do not write comments that are obvious from the code itself.
 - Do not write one-line functions
 - Always use the App abstraction for file system operations.
@@ -82,6 +91,8 @@ There are normal unit tests, snapshot tests, and integration tests. The integrat
 
 - Assume the reader knows the documentation is about Railpack. Avoid
   redundantly naming Railpack when the subject is clear from context.
+- Always call a JSON array an "array". Do not use "list", "catalog", or other
+  terms for that concept.
 
 # File Conventions
 
