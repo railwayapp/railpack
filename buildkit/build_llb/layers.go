@@ -3,7 +3,6 @@ package build_llb
 import (
 	"fmt"
 	"path"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -263,15 +262,15 @@ func hasPathOverlap(paths1, paths2 []string) bool {
 func resolvePaths(include string, isLocal bool) (srcPath, destPath string) {
 	if isLocal {
 		// convert a local path reference to fully qualified container path
-		return include, filepath.Join("/app", filepath.Base(include))
+		return include, path.Join("/app", path.Base(include))
 	}
 
 	switch {
 	case include == "." || include == "/app" || include == "/app/":
 		return "/app", "/app"
-	case filepath.IsAbs(include):
+	case path.IsAbs(include):
 		return include, include
 	default:
-		return filepath.Join("/app", include), filepath.Join("/app", include)
+		return path.Join("/app", include), path.Join("/app", include)
 	}
 }
