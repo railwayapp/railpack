@@ -1,0 +1,14 @@
+name: mobile_only
+description: "Flutter app with no web target."
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
