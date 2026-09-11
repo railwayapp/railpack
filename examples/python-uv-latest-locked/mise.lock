@@ -40,5 +40,5 @@ url = "https://github.com/astral-sh/python-build-standalone/releases/download/20
 provenance = "github-attestations"
 
 [[tools.uv]]
-version = "0.12.9"
+version = "0.12.13"
 backend = "asdf:uv"
