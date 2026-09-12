@@ -11,6 +11,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/charmbracelet/log"
+	"github.com/moby/patternmatcher"
 	"github.com/railwayapp/railpack/internal/utils"
 	"gopkg.in/yaml.v2"
 )
@@ -20,6 +22,11 @@ var ErrNoFileFound = errors.New("unable to find a matching file")
 type App struct {
 	Source    string
 	globCache map[string][]string
+
+	// excludeMatcher filters out paths that will not exist in the build
+	// context. Nil until SetExcludePatterns is called, which means an App
+	// created on its own sees the source directory unfiltered.
+	excludeMatcher *patternmatcher.PatternMatcher
 }
 
 func NewApp(path string) (*App, error) {
@@ -51,6 +58,54 @@ func NewApp(path string) (*App, error) {
 	}, nil
 }
 
+// SetExcludePatterns compiles the patterns that keep files out of the build
+// context, so that path discovery cannot return a file BuildKit will never
+// load.
+//
+// The planner reads the source directory directly, while BuildKit only ever
+// sees the filtered context. Without this, a provider can glob up a file that
+// is excluded and emit a COPY for it; the build then fails late with
+// "failed to compute cache key: ... not found".
+//
+// Patterns come from .dockerignore and railpack.json's `exclude`. Negations
+// are honoured, since this is the same matcher BuildKit builds the context
+// with. Passing no patterns clears the filter.
+func (a *App) SetExcludePatterns(patterns []string) error {
+	if len(patterns) == 0 {
+		a.excludeMatcher = nil
+		return nil
+	}
+
+	matcher, err := patternmatcher.New(patterns)
+	if err != nil {
+		return fmt.Errorf("failed to compile exclude patterns: %w", err)
+	}
+
+	a.excludeMatcher = matcher
+	return nil
+}
+
+// isExcluded reports whether a path is kept out of the build context.
+func (a *App) isExcluded(path string) bool {
+	if a.excludeMatcher == nil {
+		return false
+	}
+
+	excluded, err := a.excludeMatcher.MatchesOrParentMatches(path)
+	if err != nil {
+		// Keep the path rather than silently dropping it; a build that copies
+		// one file too many is easier to debug than one missing a file.
+		log.Warnf("Failed to match %q against exclude patterns: %s", path, err)
+		return false
+	}
+
+	if excluded {
+		log.Debugf("Skipping %q, excluded from the build context", path)
+	}
+
+	return excluded
+}
+
 // findMatches returns a list of paths matching a glob pattern, filtered by isDir
 func (a *App) findMatches(pattern string, isDir bool) ([]string, error) {
 	matches, err := a.findGlob(pattern)
@@ -68,9 +123,15 @@ func (a *App) findMatches(pattern string, isDir bool) ([]string, error) {
 			continue
 		}
 
-		if info.IsDir() == isDir {
-			paths = append(paths, match)
+		if info.IsDir() != isDir {
+			continue
 		}
+
+		if a.isExcluded(match) {
+			continue
+		}
+
+		paths = append(paths, match)
 	}
 	return paths, nil
 }
