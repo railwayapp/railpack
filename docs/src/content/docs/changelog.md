@@ -7,6 +7,21 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
+## v0.39.0
+September 3, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.39.0)
+
+### What's Changed
+* chore: mise update 2026.8.14 by @github-actions[bot] in [#726](https://github.com/railwayapp/railpack/pull/726)
+* chore: mise update 2026.8.15 by @github-actions[bot] in [#729](https://github.com/railwayapp/railpack/pull/729)
+* chore: mise update 2026.8.16 by @github-actions[bot] in [#731](https://github.com/railwayapp/railpack/pull/731)
+* fix(node): don't crash TanStack Start apps that use Nitro without a start script by @codyde in [#734](https://github.com/railwayapp/railpack/pull/734)
+* feat(node): tell users when @tanstack/react-start is in the wrong dependency section by @codyde in [#735](https://github.com/railwayapp/railpack/pull/735)
+
+### New Contributors
+* @codyde made their first contribution in [#734](https://github.com/railwayapp/railpack/pull/734)
+
+**Full Changelog**: [v0.38.0...v0.39.0](https://github.com/railwayapp/railpack/compare/v0.38.0...v0.39.0)
+
 ## v0.38.0
 August 26, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.38.0)
 
@@ -946,49 +961,6 @@ September 16, 2025 · [GitHub release](https://github.com/railwayapp/railpack/re
 * @railway-bot made their first contribution in [#266](https://github.com/railwayapp/railpack/pull/266)
 
 **Full Changelog**: [v0.6.0...v0.6.1](https://github.com/railwayapp/railpack/compare/v0.6.0...v0.6.1)
-
-## v0.6.0
-September 11, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.6.0)
-
-### What's Changed
-* feat: support for expanded platform arguments by @iloveitaly in [#246](https://github.com/railwayapp/railpack/pull/246)
-* chore: mise update 2025.9.6 by @iloveitaly in [#254](https://github.com/railwayapp/railpack/pull/254)
-* fix: hard fail on invalid railpack.json by @iloveitaly in [#226](https://github.com/railwayapp/railpack/pull/226)
-* feat: add support for .bun-version file by @coffee-cup in [#258](https://github.com/railwayapp/railpack/pull/258)
-
-**Full Changelog**: [v0.5.1...v0.6.0](https://github.com/railwayapp/railpack/compare/v0.5.1...v0.6.0)
-
-## v0.5.1
-September 5, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.5.1)
-
-### What's Changed
-* Revert "fix: use default mise backends for python packages" by @coffee-cup in [#252](https://github.com/railwayapp/railpack/pull/252)
-
-**Full Changelog**: [v0.5.0...v0.5.1](https://github.com/railwayapp/railpack/compare/v0.5.0...v0.5.1)
-
-## v0.5.0
-September 4, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.5.0)
-
-### What's Changed
-* chore: mise update 2025.8.21 by @iloveitaly in [#236](https://github.com/railwayapp/railpack/pull/236)
-* test: fix php snapshot by @iloveitaly in [#239](https://github.com/railwayapp/railpack/pull/239)
-* fix(install): handle GitHub API throttling by @lionello in [#235](https://github.com/railwayapp/railpack/pull/235)
-* fix: add -e alias for --env by @iloveitaly in [#243](https://github.com/railwayapp/railpack/pull/243)
-* test: assert against exact yarn package manager versions by @iloveitaly in [#238](https://github.com/railwayapp/railpack/pull/238)
-* fix: fail early if no shell start script is detected, stop globbing shell script by @iloveitaly in [#240](https://github.com/railwayapp/railpack/pull/240)
-* fix: fallback to raw version when no package versions exist by @iloveitaly in [#245](https://github.com/railwayapp/railpack/pull/245)
-* test: pass GITHUB_TOKEN to docker containers running the railpack buildplan by @iloveitaly in [#247](https://github.com/railwayapp/railpack/pull/247)
-* fix: support node projects without dependencies by @iloveitaly in [#242](https://github.com/railwayapp/railpack/pull/242)
-* feat: support react router build cache by @iloveitaly in [#244](https://github.com/railwayapp/railpack/pull/244)
-* fix: improved buildkit error message by @iloveitaly in [#237](https://github.com/railwayapp/railpack/pull/237)
-* refactor: use consistent local layers entrypoint by @iloveitaly in [#241](https://github.com/railwayapp/railpack/pull/241)
-* fix: use default mise backends for python packages by @iloveitaly in [#249](https://github.com/railwayapp/railpack/pull/249)
-* fix: --verbose enables mise verbose logging by @iloveitaly in [#248](https://github.com/railwayapp/railpack/pull/248)
-
-### New Contributors
-* @lionello made their first contribution in [#235](https://github.com/railwayapp/railpack/pull/235)
-
-**Full Changelog**: [v0.4.0...v0.5.0](https://github.com/railwayapp/railpack/compare/v0.4.0...v0.5.0)
 
 ## Older releases
 
