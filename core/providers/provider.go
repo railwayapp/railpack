@@ -50,8 +50,10 @@ func GetLanguageProviders() []Provider {
 	}
 }
 
-func GetProvider(name string) Provider {
-	for _, provider := range GetLanguageProviders() {
+// GetProviderFrom looks up a provider by name (case-insensitive) within the
+// given list, returning nil if none match.
+func GetProviderFrom(name string, list []Provider) Provider {
+	for _, provider := range list {
 		if strings.EqualFold(provider.Name(), name) {
 			return provider
 		}
