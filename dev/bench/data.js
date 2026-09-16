@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789431862583,
+  "lastUpdate": 1789518184198,
   "repoUrl": "https://github.com/railwayapp/railpack",
   "entries": {
     "Benchmark": [
@@ -241959,6 +241959,1293 @@ window.BENCHMARK_DATA = {
           {
             "name": "tanstack-nitro-nostart (x86)",
             "value": 202774627,
+            "unit": "bytes"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "github-actions[bot]",
+            "username": "github-actions[bot]",
+            "email": "41898282+github-actions[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "GitHub",
+            "username": "web-flow",
+            "email": "noreply@github.com"
+          },
+          "id": "42a99f26e38cbaa1fbeb85443c56733c61fa2eda",
+          "message": "chore: mise update 2026.9.5 (#741)\n\n* fix: update mise to 2026.9.5\n\n* test: update snapshots\n\n* chore: update go, mise, and bun packages\n\n* test: update mise lock with latest version\n\n* docs: updated changelog\n\n---------\n\nCo-authored-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-09-14T23:05:45Z",
+          "url": "https://github.com/railwayapp/railpack/commit/42a99f26e38cbaa1fbeb85443c56733c61fa2eda"
+        },
+        "date": 1789518181833,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "bun-pnpm (arm)",
+            "value": 213740463,
+            "unit": "bytes"
+          },
+          {
+            "name": "bun-pnpm (x86)",
+            "value": 208863246,
+            "unit": "bytes"
+          },
+          {
+            "name": "config-file (arm)",
+            "value": 223281528,
+            "unit": "bytes"
+          },
+          {
+            "name": "config-file (x86)",
+            "value": 223037533,
+            "unit": "bytes"
+          },
+          {
+            "name": "cpp-cmake (arm)",
+            "value": 47100662,
+            "unit": "bytes"
+          },
+          {
+            "name": "cpp-cmake (x86)",
+            "value": 46365858,
+            "unit": "bytes"
+          },
+          {
+            "name": "cpp-meson (arm)",
+            "value": 47138885,
+            "unit": "bytes"
+          },
+          {
+            "name": "cpp-meson (x86)",
+            "value": 46404717,
+            "unit": "bytes"
+          },
+          {
+            "name": "deno-2 (arm)",
+            "value": 138786067,
+            "unit": "bytes"
+          },
+          {
+            "name": "deno-2 (x86)",
+            "value": 131737549,
+            "unit": "bytes"
+          },
+          {
+            "name": "dockerignore (arm)",
+            "value": 47069335,
+            "unit": "bytes"
+          },
+          {
+            "name": "dockerignore (x86)",
+            "value": 46336891,
+            "unit": "bytes"
+          },
+          {
+            "name": "dotnet-api (arm)",
+            "value": 299320822,
+            "unit": "bytes"
+          },
+          {
+            "name": "dotnet-api (x86)",
+            "value": 304471292,
+            "unit": "bytes"
+          },
+          {
+            "name": "dotnet-cli (arm)",
+            "value": 271607034,
+            "unit": "bytes"
+          },
+          {
+            "name": "dotnet-cli (x86)",
+            "value": 278313717,
+            "unit": "bytes"
+          },
+          {
+            "name": "elixir-ecto (arm)",
+            "value": 69197615,
+            "unit": "bytes"
+          },
+          {
+            "name": "elixir-ecto (x86)",
+            "value": 70029127,
+            "unit": "bytes"
+          },
+          {
+            "name": "elixir-latest (arm)",
+            "value": 70623950,
+            "unit": "bytes"
+          },
+          {
+            "name": "elixir-latest (x86)",
+            "value": 71174947,
+            "unit": "bytes"
+          },
+          {
+            "name": "elixir-phoenix (arm)",
+            "value": 73198213,
+            "unit": "bytes"
+          },
+          {
+            "name": "elixir-phoenix (x86)",
+            "value": 74199334,
+            "unit": "bytes"
+          },
+          {
+            "name": "expo-spa (arm)",
+            "value": 64324753,
+            "unit": "bytes"
+          },
+          {
+            "name": "expo-spa (x86)",
+            "value": 65131929,
+            "unit": "bytes"
+          },
+          {
+            "name": "gleam (arm)",
+            "value": 164670397,
+            "unit": "bytes"
+          },
+          {
+            "name": "gleam (x86)",
+            "value": 160683874,
+            "unit": "bytes"
+          },
+          {
+            "name": "gleam-custom-version (arm)",
+            "value": 173623221,
+            "unit": "bytes"
+          },
+          {
+            "name": "gleam-custom-version (x86)",
+            "value": 169841363,
+            "unit": "bytes"
+          },
+          {
+            "name": "gleam-include-source (arm)",
+            "value": 165352513,
+            "unit": "bytes"
+          },
+          {
+            "name": "gleam-include-source (x86)",
+            "value": 161366281,
+            "unit": "bytes"
+          },
+          {
+            "name": "go-cmd-dirs (arm)",
+            "value": 50006561,
+            "unit": "bytes"
+          },
+          {
+            "name": "go-cmd-dirs (x86)",
+            "value": 49556682,
+            "unit": "bytes"
+          },
+          {
+            "name": "go-mod (arm)",
+            "value": 47948616,
+            "unit": "bytes"
+          },
+          {
+            "name": "go-mod (x86)",
+            "value": 47281294,
+            "unit": "bytes"
+          },
+          {
+            "name": "go-workspaces (arm)",
+            "value": 47710398,
+            "unit": "bytes"
+          },
+          {
+            "name": "go-workspaces (x86)",
+            "value": 47023435,
+            "unit": "bytes"
+          },
+          {
+            "name": "java-gradle (arm)",
+            "value": 298647053,
+            "unit": "bytes"
+          },
+          {
+            "name": "java-gradle (x86)",
+            "value": 295054819,
+            "unit": "bytes"
+          },
+          {
+            "name": "java-maven (arm)",
+            "value": 292584374,
+            "unit": "bytes"
+          },
+          {
+            "name": "java-maven (x86)",
+            "value": 288992153,
+            "unit": "bytes"
+          },
+          {
+            "name": "java-zulu-version (arm)",
+            "value": 196687988,
+            "unit": "bytes"
+          },
+          {
+            "name": "java-zulu-version (x86)",
+            "value": 192096670,
+            "unit": "bytes"
+          },
+          {
+            "name": "mise-config (arm)",
+            "value": 280650972,
+            "unit": "bytes"
+          },
+          {
+            "name": "mise-config (x86)",
+            "value": 282810675,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-angular (arm)",
+            "value": 62985515,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-angular (x86)",
+            "value": 63792714,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-astro (arm)",
+            "value": 62907295,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-astro (x86)",
+            "value": 63714513,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-astro-server (arm)",
+            "value": 211329300,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-astro-server (x86)",
+            "value": 206324845,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-bun (arm)",
+            "value": 191620777,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-bun (x86)",
+            "value": 185599507,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-bun-bunfig (arm)",
+            "value": 187917451,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-bun-bunfig (x86)",
+            "value": 182043219,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-bun-no-deps (arm)",
+            "value": 128081937,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-bun-no-deps (x86)",
+            "value": 122199056,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-bun-workspaces (arm)",
+            "value": 187089808,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-bun-workspaces (x86)",
+            "value": 181515737,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-corepack (arm)",
+            "value": 169283671,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-corepack (x86)",
+            "value": 165005614,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-cra (arm)",
+            "value": 63199026,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-cra (x86)",
+            "value": 64006216,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-latest-npm-native-deps (arm)",
+            "value": 200257489,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-latest-npm-native-deps (x86)",
+            "value": 181426598,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-latest-pnpm-mise-native-deps (arm)",
+            "value": 208973837,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-latest-pnpm-mise-native-deps (x86)",
+            "value": 191862181,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-lts-npm-native-deps (arm)",
+            "value": 195687877,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-lts-npm-native-deps (x86)",
+            "value": 176978238,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-next (arm)",
+            "value": 303568223,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-next (x86)",
+            "value": 306108135,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-next-spa (arm)",
+            "value": 63146506,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-next-spa (x86)",
+            "value": 63953701,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-npm (arm)",
+            "value": 146842986,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-npm (x86)",
+            "value": 142039664,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-npm-install-in-build (arm)",
+            "value": 146639615,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-npm-install-in-build (x86)",
+            "value": 141836279,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-npm-workspaces (arm)",
+            "value": 153499459,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-npm-workspaces (x86)",
+            "value": 148222741,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-nuxt (arm)",
+            "value": 204434885,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-nuxt (x86)",
+            "value": 200437832,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-nx-next (arm)",
+            "value": 482954892,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-nx-next (x86)",
+            "value": 489058926,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-oldest (arm)",
+            "value": 138653410,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-oldest (x86)",
+            "value": 133388250,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-playwright (arm)",
+            "value": 606393387,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-playwright (x86)",
+            "value": 606841057,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-pnpm-11-engines (arm)",
+            "value": 200673548,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-pnpm-11-engines (x86)",
+            "value": 195063938,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-pnpm-dev-engines (arm)",
+            "value": 170264846,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-pnpm-dev-engines (x86)",
+            "value": 166127433,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-pnpm-engines (arm)",
+            "value": 170664150,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-pnpm-engines (x86)",
+            "value": 165699656,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-pnpm-json5 (arm)",
+            "value": 179149696,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-pnpm-json5 (x86)",
+            "value": 174617472,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-pnpm-workspaces (arm)",
+            "value": 167862789,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-pnpm-workspaces (x86)",
+            "value": 163667534,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-prisma (arm)",
+            "value": 258419710,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-prisma (x86)",
+            "value": 255582976,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-puppeteer (x86)",
+            "value": 587372427,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-remix (arm)",
+            "value": 186759641,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-remix (x86)",
+            "value": 182731707,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-spa-staticfile (arm)",
+            "value": 62903060,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-spa-staticfile (x86)",
+            "value": 63710250,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-svelte-kit (arm)",
+            "value": 213089600,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-svelte-kit (x86)",
+            "value": 211066553,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-tanstack-start (arm)",
+            "value": 231208085,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-tanstack-start (x86)",
+            "value": 225909198,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-turborepo (arm)",
+            "value": 316160090,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-turborepo (x86)",
+            "value": 318921214,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-version-precedence (arm)",
+            "value": 148744781,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-version-precedence (x86)",
+            "value": 143320954,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-vite-custom-caddyfile (arm)",
+            "value": 62903179,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-vite-custom-caddyfile (x86)",
+            "value": 63710375,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-vite-react (arm)",
+            "value": 62966515,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-vite-react (x86)",
+            "value": 63773654,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-vite-react-router-spa (arm)",
+            "value": 63014471,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-vite-react-router-spa (x86)",
+            "value": 63821670,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-vite-react-router-ssr (arm)",
+            "value": 217208595,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-vite-react-router-ssr (x86)",
+            "value": 213661015,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-vite-svelte (arm)",
+            "value": 62911327,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-vite-svelte (x86)",
+            "value": 63718507,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-vite-vanilla (arm)",
+            "value": 62905828,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-vite-vanilla (x86)",
+            "value": 63712995,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-yarn-1 (arm)",
+            "value": 157751726,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-yarn-1 (x86)",
+            "value": 152475416,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-yarn-2 (arm)",
+            "value": 138884739,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-yarn-2 (x86)",
+            "value": 133517141,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-yarn-2-node-linker (arm)",
+            "value": 151988666,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-yarn-2-node-linker (x86)",
+            "value": 146712058,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-yarn-3 (arm)",
+            "value": 171603242,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-yarn-3 (x86)",
+            "value": 166326938,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-yarn-4 (arm)",
+            "value": 161675028,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-yarn-4 (x86)",
+            "value": 156398711,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-yarn-workspaces (arm)",
+            "value": 152360724,
+            "unit": "bytes"
+          },
+          {
+            "name": "node-yarn-workspaces (x86)",
+            "value": 147084412,
+            "unit": "bytes"
+          },
+          {
+            "name": "npm-out-of-sync-package-lock (arm)",
+            "value": 149944147,
+            "unit": "bytes"
+          },
+          {
+            "name": "npm-out-of-sync-package-lock (x86)",
+            "value": 144667803,
+            "unit": "bytes"
+          },
+          {
+            "name": "php-laravel-11-react (arm)",
+            "value": 381098418,
+            "unit": "bytes"
+          },
+          {
+            "name": "php-laravel-11-react (x86)",
+            "value": 385723946,
+            "unit": "bytes"
+          },
+          {
+            "name": "php-laravel-12-react (arm)",
+            "value": 419116599,
+            "unit": "bytes"
+          },
+          {
+            "name": "php-laravel-12-react (x86)",
+            "value": 425605630,
+            "unit": "bytes"
+          },
+          {
+            "name": "php-vanilla (arm)",
+            "value": 239645921,
+            "unit": "bytes"
+          },
+          {
+            "name": "php-vanilla (x86)",
+            "value": 248846326,
+            "unit": "bytes"
+          },
+          {
+            "name": "php-vanilla-82 (arm)",
+            "value": 231871790,
+            "unit": "bytes"
+          },
+          {
+            "name": "php-vanilla-82 (x86)",
+            "value": 241038433,
+            "unit": "bytes"
+          },
+          {
+            "name": "pnpm-corepack-runtime-usage (arm)",
+            "value": 228046485,
+            "unit": "bytes"
+          },
+          {
+            "name": "pnpm-corepack-runtime-usage (x86)",
+            "value": 222339078,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-bot-only (arm)",
+            "value": 119359982,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-bot-only (x86)",
+            "value": 119549500,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-compiled (arm)",
+            "value": 173456064,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-compiled (x86)",
+            "value": 171304512,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-django (arm)",
+            "value": 152652235,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-django (x86)",
+            "value": 147407035,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-fastapi (arm)",
+            "value": 150443945,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-fastapi (x86)",
+            "value": 151341709,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-fasthtml (arm)",
+            "value": 133619414,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-fasthtml (x86)",
+            "value": 133918409,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-flask (arm)",
+            "value": 125065687,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-flask (x86)",
+            "value": 125253762,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-freethreaded (arm)",
+            "value": 200618115,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-freethreaded (x86)",
+            "value": 195662581,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-latest (arm)",
+            "value": 193952202,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-latest (x86)",
+            "value": 189260524,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-latest-psycopg (arm)",
+            "value": 141834290,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-latest-psycopg (x86)",
+            "value": 142616935,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-oldest (arm)",
+            "value": 119787373,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-oldest (x86)",
+            "value": 114004403,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-pdm (arm)",
+            "value": 164322377,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-pdm (x86)",
+            "value": 166781795,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-pip (arm)",
+            "value": 163846960,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-pip (x86)",
+            "value": 159288420,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-pipfile (arm)",
+            "value": 138972747,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-pipfile (x86)",
+            "value": 137940336,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-playwright (arm)",
+            "value": 584834831,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-playwright (x86)",
+            "value": 595889350,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-poetry (arm)",
+            "value": 156783981,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-poetry (x86)",
+            "value": 158988650,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-psycopg-binary (arm)",
+            "value": 143888170,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-psycopg-binary (x86)",
+            "value": 146590892,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-system-deps (arm)",
+            "value": 381010416,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-system-deps (x86)",
+            "value": 392107216,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-uv (arm)",
+            "value": 142707672,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-uv (x86)",
+            "value": 137477214,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-uv-latest-locked (arm)",
+            "value": 142185371,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-uv-latest-locked (x86)",
+            "value": 140658817,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-uv-packaged (arm)",
+            "value": 138868858,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-uv-packaged (x86)",
+            "value": 139539862,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-uv-tool-versions (arm)",
+            "value": 137878323,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-uv-tool-versions (x86)",
+            "value": 132680342,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-uv-workspace (arm)",
+            "value": 138868922,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-uv-workspace (x86)",
+            "value": 139540027,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-uv-workspace-postgres (arm)",
+            "value": 140860011,
+            "unit": "bytes"
+          },
+          {
+            "name": "python-uv-workspace-postgres (x86)",
+            "value": 141516486,
+            "unit": "bytes"
+          },
+          {
+            "name": "railpack-env-configuration (arm)",
+            "value": 141482141,
+            "unit": "bytes"
+          },
+          {
+            "name": "railpack-env-configuration (x86)",
+            "value": 142063309,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-2 (arm)",
+            "value": 116888007,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-2 (x86)",
+            "value": 111856119,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-3 (arm)",
+            "value": 173900498,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-3 (x86)",
+            "value": 169497480,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-3-precompiled (arm)",
+            "value": 181773237,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-3-precompiled (x86)",
+            "value": 178289707,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-execjs (arm)",
+            "value": 183162607,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-execjs (x86)",
+            "value": 178382223,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-jemalloc (arm)",
+            "value": 181862188,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-jemalloc (x86)",
+            "value": 178378564,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-latest (arm)",
+            "value": 188633213,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-latest (x86)",
+            "value": 185385358,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-local-deps (arm)",
+            "value": 123405509,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-local-deps (x86)",
+            "value": 118601877,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-no-version (arm)",
+            "value": 191197366,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-no-version (x86)",
+            "value": 187107549,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-rails-api-app (arm)",
+            "value": 166455053,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-rails-api-app (x86)",
+            "value": 162208609,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-rails-postgres (arm)",
+            "value": 565358696,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-rails-postgres (x86)",
+            "value": 572792040,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-sinatra (arm)",
+            "value": 128713247,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-sinatra (x86)",
+            "value": 123897556,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-vanilla (arm)",
+            "value": 171726368,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-vanilla (x86)",
+            "value": 167829221,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-with-node (arm)",
+            "value": 187004524,
+            "unit": "bytes"
+          },
+          {
+            "name": "ruby-with-node (x86)",
+            "value": 182224486,
+            "unit": "bytes"
+          },
+          {
+            "name": "rust-cargo-workspaces (arm)",
+            "value": 47269692,
+            "unit": "bytes"
+          },
+          {
+            "name": "rust-cargo-workspaces (x86)",
+            "value": 46538514,
+            "unit": "bytes"
+          },
+          {
+            "name": "rust-cargo-workspaces-glob (arm)",
+            "value": 47264022,
+            "unit": "bytes"
+          },
+          {
+            "name": "rust-cargo-workspaces-glob (x86)",
+            "value": 46529307,
+            "unit": "bytes"
+          },
+          {
+            "name": "rust-custom-toolchain (arm)",
+            "value": 47951186,
+            "unit": "bytes"
+          },
+          {
+            "name": "rust-custom-toolchain (x86)",
+            "value": 47226417,
+            "unit": "bytes"
+          },
+          {
+            "name": "rust-custom-version (arm)",
+            "value": 47947621,
+            "unit": "bytes"
+          },
+          {
+            "name": "rust-custom-version (x86)",
+            "value": 47232111,
+            "unit": "bytes"
+          },
+          {
+            "name": "rust-multiple-bins (arm)",
+            "value": 47659684,
+            "unit": "bytes"
+          },
+          {
+            "name": "rust-multiple-bins (x86)",
+            "value": 46922801,
+            "unit": "bytes"
+          },
+          {
+            "name": "rust-rocket (arm)",
+            "value": 48914523,
+            "unit": "bytes"
+          },
+          {
+            "name": "rust-rocket (x86)",
+            "value": 48177743,
+            "unit": "bytes"
+          },
+          {
+            "name": "rust-system-deps (arm)",
+            "value": 47269210,
+            "unit": "bytes"
+          },
+          {
+            "name": "rust-system-deps (x86)",
+            "value": 46536196,
+            "unit": "bytes"
+          },
+          {
+            "name": "secrets (arm)",
+            "value": 47069503,
+            "unit": "bytes"
+          },
+          {
+            "name": "secrets (x86)",
+            "value": 46337059,
+            "unit": "bytes"
+          },
+          {
+            "name": "shell-bash-arrays (arm)",
+            "value": 47068582,
+            "unit": "bytes"
+          },
+          {
+            "name": "shell-bash-arrays (x86)",
+            "value": 46336139,
+            "unit": "bytes"
+          },
+          {
+            "name": "shell-platform-arch (arm)",
+            "value": 52435034,
+            "unit": "bytes"
+          },
+          {
+            "name": "shell-platform-arch (x86)",
+            "value": 52435027,
+            "unit": "bytes"
+          },
+          {
+            "name": "shell-script (arm)",
+            "value": 47068382,
+            "unit": "bytes"
+          },
+          {
+            "name": "shell-script (x86)",
+            "value": 46335938,
+            "unit": "bytes"
+          },
+          {
+            "name": "staticfile-config (arm)",
+            "value": 62835393,
+            "unit": "bytes"
+          },
+          {
+            "name": "staticfile-config (x86)",
+            "value": 63645252,
+            "unit": "bytes"
+          },
+          {
+            "name": "staticfile-index (arm)",
+            "value": 62835344,
+            "unit": "bytes"
+          },
+          {
+            "name": "staticfile-index (x86)",
+            "value": 63645203,
+            "unit": "bytes"
+          },
+          {
+            "name": "staticfile-index-fallback (arm)",
+            "value": 62835368,
+            "unit": "bytes"
+          },
+          {
+            "name": "staticfile-index-fallback (x86)",
+            "value": 63645230,
+            "unit": "bytes"
+          },
+          {
+            "name": "tanstack-latest (arm)",
+            "value": 205921897,
+            "unit": "bytes"
+          },
+          {
+            "name": "tanstack-latest (x86)",
+            "value": 202115893,
+            "unit": "bytes"
+          },
+          {
+            "name": "tanstack-nitro-nostart (arm)",
+            "value": 206026518,
+            "unit": "bytes"
+          },
+          {
+            "name": "tanstack-nitro-nostart (x86)",
+            "value": 202774006,
             "unit": "bytes"
           }
         ]
