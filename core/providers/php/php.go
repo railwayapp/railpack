@@ -3,6 +3,7 @@ package php
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -407,9 +408,15 @@ func (p *PhpProvider) phpImagePackage(ctx *generate.GenerateContext) (*generate.
 
 	imageStep.AptPackages = append(imageStep.AptPackages, "git", "zip", "unzip", "ca-certificates")
 
-	// Include both build and runtime apt packages since we don't have a separate runtime image
-	imageStep.AptPackages = append(imageStep.AptPackages, ctx.Config.BuildAptPackages...)
-	imageStep.AptPackages = append(imageStep.AptPackages, ctx.Config.Deploy.AptPackages...)
+	// Include both build and runtime apt packages since we don't have a separate runtime image.
+	// The image step is assembled before config merging, so expand "..." here;
+	// otherwise the literal reaches apt-get and the install fails.
+	buildAptPackages := ctx.Config.BuildAptPackages
+	if buildAptPackages != nil && !slices.Contains(buildAptPackages, "...") {
+		buildAptPackages = append([]string{"..."}, buildAptPackages...)
+	}
+	imageStep.AptPackages = plan.SpreadStrings(buildAptPackages, imageStep.AptPackages)
+	imageStep.AptPackages = plan.SpreadStrings(ctx.Config.Deploy.AptPackages, imageStep.AptPackages)
 
 	php := imageStep.Default("php", DEFAULT_PHP_VERSION)
 
