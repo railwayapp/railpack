@@ -77,9 +77,23 @@ func (r *Resolver) ResolvePackages() (map[string]*ResolvedPackage, error) {
 
 		var latestVersion string
 
-		// If there is a custom version validator, we get possible versions and pick the latest one that matches
-		// Ex: this is used with PHP to match against a available runtime available on docker hub
-		if pkg.IsVersionAvailable != nil {
+		// A bounded or disjunctive range (">=1.1.0 <1.3.0", "20 || 22") cannot be expressed as a
+		// mise prefix query, so we enumerate the candidates and apply the constraint ourselves.
+		if constraint, ok := rangeConstraint(pkg.Version); ok {
+			// Enumerate every version rather than narrowing by prefix: a range can straddle
+			// majors (">=1.9 <2.1"), so any prefix we could derive risks hiding valid matches.
+			versions, err := r.mise.GetAllVersions(name, "")
+			if err != nil {
+				return nil, err
+			}
+
+			latestVersion = newestMatching(versions, constraint, pkg.IsVersionAvailable)
+			if latestVersion == "" {
+				return nil, fmt.Errorf("no version of %s satisfies %s (from %s)", name, pkg.Version, pkg.Source)
+			}
+		} else if pkg.IsVersionAvailable != nil {
+			// If there is a custom version validator, we get possible versions and pick the latest one that matches
+			// Ex: this is used with PHP to match against a available runtime available on docker hub
 			versions, err := r.mise.GetAllVersions(name, fuzzyVersion)
 			if err != nil {
 				return nil, err
