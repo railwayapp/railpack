@@ -1,0 +1,15 @@
+name: fvm_pinned
+description: "Flutter web app with the SDK pinned by FVM."
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.5.0
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
