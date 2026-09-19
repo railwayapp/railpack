@@ -923,45 +923,6 @@ September 25, 2025 · [GitHub release](https://github.com/railwayapp/railpack/re
 
 **Full Changelog**: [v0.7.2...v0.8.0](https://github.com/railwayapp/railpack/compare/v0.7.2...v0.8.0)
 
-## v0.7.2
-September 19, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.7.2)
-
-### What's Changed
-* fix: gracefully handle resolution failures for packages with SkipMiseInstall=true by @coffee-cup in [#273](https://github.com/railwayapp/railpack/pull/273)
-
-**Full Changelog**: [v0.7.1...v0.7.2](https://github.com/railwayapp/railpack/compare/v0.7.1...v0.7.2)
-
-## v0.7.1
-September 17, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.7.1)
-
-### What's Changed
-* Add configurable skippable commands list to pretty print output by @coffee-cup in [#271](https://github.com/railwayapp/railpack/pull/271)
-
-**Full Changelog**: [v0.7.0...v0.7.1](https://github.com/railwayapp/railpack/compare/v0.7.0...v0.7.1)
-
-## v0.7.0
-September 16, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.7.0)
-
-### What's Changed
-* Update Rust examples by @coffee-cup in [#268](https://github.com/railwayapp/railpack/pull/268)
-* Update default versions for Go, Python, Ruby, and Rust providers by @coffee-cup in [#267](https://github.com/railwayapp/railpack/pull/267)
-
-**Full Changelog**: [v0.6.1...v0.7.0](https://github.com/railwayapp/railpack/compare/v0.6.1...v0.7.0)
-
-## v0.6.1
-September 16, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.6.1)
-
-### What's Changed
-* test: use poetry cli to run python by @iloveitaly in [#257](https://github.com/railwayapp/railpack/pull/257)
-* chore: mise update 2025.9.9 by @iloveitaly in [#262](https://github.com/railwayapp/railpack/pull/262)
-* fix: remove python3-dev apt package by @iloveitaly in [#256](https://github.com/railwayapp/railpack/pull/256)
-* Update node examples by @railway-bot in [#266](https://github.com/railwayapp/railpack/pull/266)
-
-### New Contributors
-* @railway-bot made their first contribution in [#266](https://github.com/railwayapp/railpack/pull/266)
-
-**Full Changelog**: [v0.6.0...v0.6.1](https://github.com/railwayapp/railpack/compare/v0.6.0...v0.6.1)
-
 ## Older releases
 
 This page covers the last year. See all releases on [GitHub](https://github.com/railwayapp/railpack/releases).
