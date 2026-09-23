@@ -1,9 +1,10 @@
 {
   "$schema": "https://schema.railpack.com",
   "deploy": {
-    // PHP deploys from the FrankenPHP image instead of the standard runtime image.
-    // jq is not part of that image; index.php runs it so the HTTP check fails
-    // unless this deploy package is installed into the final image.
+    // PHP deploys from the FrankenPHP image instead of the standard runtime image,
+    // so build and deploy Apt packages are installed together on that image.
+    // jq is not part of it; index.php runs it so the HTTP check fails unless
+    // this deploy package is in the final image.
     "aptPackages": ["...", "jq"]
   }
 }
