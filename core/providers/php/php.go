@@ -12,6 +12,7 @@ import (
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/providers/node"
+	"github.com/railwayapp/railpack/internal/utils"
 	"github.com/stretchr/objx"
 )
 
@@ -20,6 +21,16 @@ const (
 	DefaultCaddyfilePath = "/Caddyfile"
 	COMPOSER_CACHE_DIR   = "/opt/cache/composer"
 )
+
+// git, zip, and unzip are Composer's image runtime dependencies (.composer-rundeps):
+// https://github.com/composer/docker/blob/master/latest/Dockerfile
+// That image is Alpine and already has CA certificates. FrankenPHP is Debian, so ca-certificates is included here too.
+var composerRuntimeAptPackages = []string{
+	"git",
+	"zip",
+	"unzip",
+	"ca-certificates",
+}
 
 //go:embed Caddyfile
 var caddyfileTemplate string
@@ -406,17 +417,7 @@ func (p *PhpProvider) phpImagePackage(ctx *generate.GenerateContext) (*generate.
 		return getPhpImage(DEFAULT_PHP_VERSION)
 	})
 
-	imageStep.AptPackages = append(imageStep.AptPackages, "git", "zip", "unzip", "ca-certificates")
-
-	// Include both build and runtime apt packages since we don't have a separate runtime image.
-	// The image step is assembled before config merging, so expand "..." here;
-	// otherwise the literal reaches apt-get and the install fails.
-	buildAptPackages := ctx.Config.BuildAptPackages
-	if buildAptPackages != nil && !slices.Contains(buildAptPackages, "...") {
-		buildAptPackages = append([]string{"..."}, buildAptPackages...)
-	}
-	imageStep.AptPackages = plan.SpreadStrings(buildAptPackages, imageStep.AptPackages)
-	imageStep.AptPackages = plan.SpreadStrings(ctx.Config.Deploy.AptPackages, imageStep.AptPackages)
+	imageStep.AptPackages = combinedImageAptPackages(ctx)
 
 	php := imageStep.Default("php", DEFAULT_PHP_VERSION)
 
@@ -451,6 +452,33 @@ func (p *PhpProvider) phpImagePackage(ctx *generate.GenerateContext) (*generate.
 	})
 
 	return imageStep, nil
+}
+
+// The FrankenPHP image is both the build environment and the final image, so the
+// two Apt lists are installed together. "..." is dropped because there is no
+// separate runtime base whose packages it would retain or replace.
+// Deploy packages are cleared so the generic runtime apt step does not install them again.
+func combinedImageAptPackages(ctx *generate.GenerateContext) []string {
+	configured := ctx.Config.BuildAptPackages != nil || ctx.Config.Deploy.AptPackages != nil
+	if configured {
+		ctx.Logger.LogInfo("Deploy and build apt packages are combined in the PHP provider")
+	}
+
+	packages := append([]string{}, composerRuntimeAptPackages...)
+	packages = append(packages, withoutSpread(ctx.Config.BuildAptPackages)...)
+	packages = append(packages, withoutSpread(ctx.Config.Deploy.AptPackages)...)
+	ctx.Config.Deploy.AptPackages = nil
+
+	return utils.RemoveDuplicates(packages)
+}
+
+// "..." is meaningless here. Build and deploy share the FrankenPHP image,
+// so there is no separate package list for the spread to retain or replace.
+func withoutSpread(packages []string) []string {
+	// Clone so the Mise builder still sees "..." on the original config list.
+	return slices.DeleteFunc(slices.Clone(packages), func(pkg string) bool {
+		return pkg == "..."
+	})
 }
 
 func getPhpImage(phpVersion string) string {
