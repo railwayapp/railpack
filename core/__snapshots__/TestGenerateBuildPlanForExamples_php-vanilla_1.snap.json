@@ -12,8 +12,8 @@
   {
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y ca-certificates git unzip zip'",
-     "customName": "install apt packages: ca-certificates git unzip zip"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y ca-certificates git jq unzip zip'",
+     "customName": "install apt packages: ca-certificates git jq unzip zip"
     }
    ],
    "inputs": [

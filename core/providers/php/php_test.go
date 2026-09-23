@@ -3,6 +3,7 @@ package php
 import (
 	"testing"
 
+	"github.com/railwayapp/railpack/core/generate"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -47,4 +48,26 @@ func TestPhpProvider(t *testing.T) {
 			require.Equal(t, tt.isLaravel, isLaravel)
 		})
 	}
+}
+
+// PHP installs build and deploy apt packages on one image, so "..." is removed and the lists are merged.
+func TestPhpCombinesBuildAndDeployAptPackages(t *testing.T) {
+	ctx := testingUtils.CreateGenerateContext(t, "../../../examples/php-vanilla")
+	ctx.Config.BuildAptPackages = []string{"...", "curl", "git"}
+	ctx.Config.Deploy.AptPackages = []string{"...", "curl", "jq"}
+
+	provider := PhpProvider{}
+	require.NoError(t, provider.Initialize(ctx))
+	require.NoError(t, provider.Plan(ctx))
+
+	var packages []string
+	for _, step := range ctx.Steps {
+		imageStep, ok := step.(*generate.ImageStepBuilder)
+		if !ok {
+			continue
+		}
+		packages = imageStep.AptPackages
+	}
+
+	require.Equal(t, []string{"git", "zip", "unzip", "ca-certificates", "curl", "jq"}, packages)
 }
