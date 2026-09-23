@@ -76,28 +76,64 @@ func getBinaryPath(cacheDir string) string {
 func ensureInstalled(cacheDir string) (string, error) {
 	binaryPath := getBinaryPath(cacheDir)
 
-	if _, err := os.Stat(binaryPath); err == nil {
+	if _, err := os.Stat(binaryPath); err != nil {
+		log.Debugf("Mise %s not found, installing", Version)
+
+		if err := os.MkdirAll(cacheDir, 0755); err != nil {
+			return "", fmt.Errorf("failed to create cache directory: %w", err)
+		}
+
+		if err := downloadAndInstall(cacheDir); err != nil {
+			return "", fmt.Errorf("failed to download and install: %w", err)
+		}
+
+		if err := validateInstallation(cacheDir); err != nil {
+			return "", fmt.Errorf("failed to validate installation: %w", err)
+		}
+
+		log.Debugf("Installed mise version: %s to %s", Version, binaryPath)
+	} else {
 		log.Debugf("Mise executable exists at %s", binaryPath)
-		return binaryPath, nil
 	}
 
-	log.Debugf("Mise %s not found, installing", Version)
-
-	if err := os.MkdirAll(cacheDir, 0755); err != nil {
-		return "", fmt.Errorf("failed to create cache directory: %w", err)
+	// php has no HTTP backend; clone vfox-php once so later MISE_SAFE=1 queries can list versions
+	if err := ensurePhpPlugin(binaryPath, cacheDir); err != nil {
+		return "", fmt.Errorf("failed to ensure php plugin: %w", err)
 	}
-
-	if err := downloadAndInstall(cacheDir); err != nil {
-		return "", fmt.Errorf("failed to download and install: %w", err)
-	}
-
-	if err := validateInstallation(cacheDir); err != nil {
-		return "", fmt.Errorf("failed to validate installation: %w", err)
-	}
-
-	log.Debugf("Installed mise version: %s to %s", Version, binaryPath)
 
 	return binaryPath, nil
+}
+
+// vfox-php must be present before safe-mode version queries; plugin install cannot run under MISE_SAFE=1
+func ensurePhpPlugin(binaryPath, cacheDir string) error {
+	pluginDir := filepath.Join(cacheDir, "data", "plugins", "php")
+	if _, err := os.Stat(pluginDir); err == nil {
+		return nil
+	}
+
+	log.Debugf("Installing vfox-php plugin into %s", pluginDir)
+
+	cmd := exec.Command(binaryPath, "plugin", "install", "php")
+	cmd.Dir = cacheDir
+	cmd.Env = []string{
+		fmt.Sprintf("HOME=%s", cacheDir),
+		fmt.Sprintf("MISE_CACHE_DIR=%s", filepath.Join(cacheDir, "cache")),
+		fmt.Sprintf("MISE_DATA_DIR=%s", filepath.Join(cacheDir, "data")),
+		fmt.Sprintf("MISE_STATE_DIR=%s", filepath.Join(cacheDir, "state")),
+		fmt.Sprintf("MISE_SYSTEM_CONFIG_DIR=%s", filepath.Join(cacheDir, "system")),
+		"MISE_NO_CONFIG=1",
+		fmt.Sprintf("PATH=%s", os.Getenv("PATH")),
+	}
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("GITHUB_TOKEN=%s", token))
+	}
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to install php plugin: %w\n%s", err, output)
+	}
+
+	return nil
 }
 
 func downloadAndInstall(cacheDir string) error {
