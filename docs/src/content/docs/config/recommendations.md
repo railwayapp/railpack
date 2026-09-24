@@ -150,8 +150,9 @@ python = "3.13.2"
 locked = true
 ```
 
-Commit the generated `mise.lock` file alongside your `mise.toml`. Railpack
-automatically includes `mise.lock` files in the build when present.
+Commit the generated lockfile alongside the config (`mise.lock`, or
+`mise.local.lock` / `mise.<env>.lock` for those configs). Railpack includes
+the lockfile for each detected config.
 
 ## Enable GPG Verification
 
