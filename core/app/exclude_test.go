@@ -85,3 +85,19 @@ func TestFindFilesRespectsExcludePatterns(t *testing.T) {
 		require.Error(t, app.SetExcludePatterns([]string{"["}))
 	})
 }
+
+func TestFindAllFilesKeepsExcludedMatches(t *testing.T) {
+	app := newExcludedApp(t,
+		[]string{"mise.toml", "mise.local.toml"},
+		[]string{"mise.local.toml"},
+	)
+
+	all, err := app.FindAllFiles("mise.*.toml")
+	require.NoError(t, err)
+	require.Equal(t, []string{"mise.local.toml"}, all)
+
+	included, err := app.FindFiles("mise.*.toml")
+	require.NoError(t, err)
+	require.Empty(t, included)
+	require.True(t, app.IsExcluded("mise.local.toml"))
+}
