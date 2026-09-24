@@ -54,6 +54,10 @@ Put a name in `miseConfigFiles` only when no glob matches it. Put everything els
 
 Update the two slices. Keep the doc URLs on `miseConfigGlobs`. A code comment may say why an exact name is absent from the public docs page. Do not describe that in user-facing docs.
 
+`miseLockfilePath` names the lockfile for each detected config the way `lockfile_path_for_config` does in mise's `src/lockfile.rs`. `conf.d` fragments use the parent directory. Do not look only for a sibling `mise.lock`.
+
+The lockfile formats can change. Look at the latest documentation to make sure that we are properly checking for them.
+
 Update the detection list in `docs/src/content/docs/config/mise.md` so it names the same files and globs. Keep it a flat list: config files, local and environment-specific configs, config fragments. No parenthetical about legacy names.
 
 Extend `TestGetSupportingMiseConfigFiles` in `core/generate/mise_step_builder_test.go`. New positive paths go in `included`. Keep negatives for files mise does not load: `other.toml`, `mise/tasks/build.toml`, and a nested `conf.d` file.
