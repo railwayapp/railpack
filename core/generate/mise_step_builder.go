@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -152,7 +153,7 @@ func (b *MiseStepBuilder) GetMisePackageVersions(ctx *GenerateContext) (map[stri
 	}
 
 	appDir := ctx.GetAppSource()
-	output, err := miseInstance.GetCurrentList(appDir)
+	output, err := miseInstance.GetCurrentList(appDir, b.absoluteIgnoredMiseConfigPaths(appDir))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get package versions: %w", err)
 	}
@@ -230,8 +231,11 @@ func (b *MiseStepBuilder) Name() string {
 	return b.DisplayName
 }
 
+// Files and directories the packages:mise step produces. Later steps include
+// these when they need the installed tools.
 func (b *MiseStepBuilder) GetOutputPaths() []string {
-	if len(b.MisePackages) == 0 && len(b.getSupportingMiseConfigFiles()) == 0 {
+	included, _ := b.partitionMiseConfigFiles()
+	if len(b.MisePackages) == 0 && len(included) == 0 {
 		return []string{}
 	}
 
@@ -269,7 +273,7 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 
 	step.Inputs = []plan.Layer{baseLayer}
 
-	supportingMiseConfigFiles := b.getSupportingMiseConfigFiles()
+	supportingMiseConfigFiles, _ := b.partitionMiseConfigFiles()
 	if len(b.MisePackages) > 0 || len(supportingMiseConfigFiles) > 0 {
 		step.AddCommands([]plan.Command{plan.NewPathCommand("/mise/shims")})
 		// NOTE make sure to keep (some) of the variables below in sync with install_bin_builder
@@ -402,9 +406,33 @@ var miseConfigGlobs = []string{
 	".config/mise/conf.d/*.toml",
 }
 
+// Splits discovered mise config into files the build copies and files mise list
+// must ignore. getSupportingMiseConfigFiles includes both.
+func (b *MiseStepBuilder) partitionMiseConfigFiles() (included, excluded []string) {
+	for _, file := range b.getSupportingMiseConfigFiles() {
+		if b.app.IsExcluded(file) {
+			excluded = append(excluded, file)
+			continue
+		}
+		included = append(included, file)
+	}
+	return included, excluded
+}
+
+// mise list's cwd is outside the app, so MISE_IGNORED_CONFIG_PATHS only matches absolute paths.
+func (b *MiseStepBuilder) absoluteIgnoredMiseConfigPaths(appDir string) []string {
+	_, excluded := b.partitionMiseConfigFiles()
+	paths := make([]string, len(excluded))
+	for i, rel := range excluded {
+		paths[i] = filepath.Join(appDir, rel)
+	}
+	return paths
+}
+
 // This logic casts a wide net to find any mise configuration that may exist in the app source.
 // this enables the user to use mise config to configure the runtime, options, etc in a pretty granular way but also
-// requires the user to understand how to enable mise for various environments if they have a more advanced configuration
+// requires the user to understand how to enable mise for various environments if they have a more advanced configuration.
+// The list includes files the build context will drop; callers split those out.
 func (b *MiseStepBuilder) getSupportingMiseConfigFiles() []string {
 	// depending on the size of the app source, this *could* be a expensive operation, so we cache the results so we can
 	// call multiple times without concern.
@@ -429,7 +457,9 @@ func (b *MiseStepBuilder) getSupportingMiseConfigFiles() []string {
 	}
 
 	for _, pattern := range miseConfigGlobs {
-		matches, err := b.app.FindFiles(pattern)
+		// Unfiltered: a dockerignored mise.local.toml still has to show up so
+		// version resolution can tell mise to ignore it.
+		matches, err := b.app.FindAllFiles(pattern)
 		if err != nil {
 			continue
 		}
@@ -438,16 +468,52 @@ func (b *MiseStepBuilder) getSupportingMiseConfigFiles() []string {
 		}
 	}
 
-	// For each directory containing a toml config, also check for a co-located mise.lock
+	// Name and directory match lockfile_path_for_config.
+	// https://github.com/jdx/mise/blob/main/src/lockfile.rs
+	// https://mise.jdx.dev/dev-tools/mise-lock.html#environment-specific-lockfiles
 	for _, file := range files {
 		if !strings.HasSuffix(file, ".toml") {
 			continue
 		}
-		if lockFile := filepath.Join(filepath.Dir(file), "mise.lock"); b.app.HasFile(lockFile) {
+		if lockFile := miseLockfilePath(file); b.app.HasFile(lockFile) {
 			add(lockFile)
 		}
 	}
 
 	b.supportingMiseConfigFiles = &files
 	return files
+}
+
+// mise.<env>.toml, .mise.<env>.toml, and config.<env>.toml. "local" is the unsuffixed local file, not an environment.
+var miseConfigEnvPattern = regexp.MustCompile(`^(?:\.?mise|config)\.([^.]+)(?:\.local)?\.toml$`)
+
+// Lockfile that sits next to a mise config, including conf.d fragments and mise.<env>.toml.
+func miseLockfilePath(configPath string) string {
+	name := filepath.Base(configPath)
+	dir := filepath.Dir(configPath)
+	// Fragments in conf.d share the lockfile of the directory that contains conf.d.
+	if filepath.Base(dir) == "conf.d" {
+		dir = filepath.Dir(dir)
+	}
+
+	env := ""
+	if match := miseConfigEnvPattern.FindStringSubmatch(name); len(match) == 2 && match[1] != "local" {
+		env = match[1]
+	}
+	local := strings.Contains(name, ".local.")
+
+	lockName := "mise.lock"
+	switch {
+	case env != "" && local:
+		lockName = "mise." + env + ".local.lock"
+	case env != "":
+		lockName = "mise." + env + ".lock"
+	case local:
+		lockName = "mise.local.lock"
+	}
+
+	if dir == "." {
+		return lockName
+	}
+	return filepath.Join(dir, lockName)
 }

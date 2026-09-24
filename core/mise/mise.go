@@ -172,8 +172,13 @@ func versionQueryCandidates(version string) []string {
 	return []string{semverVersion, version}
 }
 
-// returns the JSON output of 'mise list --current --json' for the app
-func (m *Mise) GetCurrentList(appDir string) (string, error) {
+// returns the JSON output of 'mise list --current --json' for the app.
+//
+// ignoredConfigPaths are files in appDir that will not be in the build context.
+// mise reads the directory itself, so a dockerignored mise.local.toml would
+// otherwise override the committed toolchain. Paths are colon-separated, which
+// is how mise parses MISE_IGNORED_CONFIG_PATHS.
+func (m *Mise) GetCurrentList(appDir string, ignoredConfigPaths []string) (string, error) {
 	// MISE_TRUSTED_CONFIG_PATHS allows mise to use configs in the app directory without a trust warning
 	trustedConfigEnv := fmt.Sprintf("MISE_TRUSTED_CONFIG_PATHS=%s", appDir)
 
@@ -188,7 +193,7 @@ func (m *Mise) GetCurrentList(appDir string) (string, error) {
 	// eliminates the need to have custom .python-version, etc parsing logic for each provider
 	enabledIdiomaticEnv := fmt.Sprintf("MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS=%s", IdiomaticVersionFileTools)
 
-	return m.runCmdWithEnv([]string{
+	env := []string{
 		trustedConfigEnv,
 		ceilingPathsEnv,
 		enabledIdiomaticEnv,
@@ -196,7 +201,13 @@ func (m *Mise) GetCurrentList(appDir string) (string, error) {
 		"MISE_PARANOID=1",
 		// Safe mode keeps the app's own mise config inert (no code execution or host env mutation) while still reporting versions
 		"MISE_SAFE=1",
-	}, "--cd", appDir, "list", "--current", "--json")
+	}
+	if len(ignoredConfigPaths) > 0 {
+		// Also skips idiomatic version files such as .nvmrc and .node-version.
+		env = append(env, "MISE_IGNORED_CONFIG_PATHS="+strings.Join(ignoredConfigPaths, ":"))
+	}
+
+	return m.runCmdWithEnv(env, "--cd", appDir, "list", "--current", "--json")
 }
 
 // runCmdWithEnv runs a mise command with additional environment variables
