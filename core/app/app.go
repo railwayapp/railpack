@@ -23,9 +23,9 @@ type App struct {
 	Source    string
 	globCache map[string][]string
 
-	// excludeMatcher filters out paths that will not exist in the build
-	// context. Nil until SetExcludePatterns is called, which means an App
-	// created on its own sees the source directory unfiltered.
+	// Nil until SetExcludePatterns runs. The root app gets that call from
+	// GenerateContext. The Phoenix assets App, and tests that only call
+	// NewApp, never do, so they see every file.
 	excludeMatcher *patternmatcher.PatternMatcher
 }
 
@@ -85,8 +85,8 @@ func (a *App) SetExcludePatterns(patterns []string) error {
 	return nil
 }
 
-// isExcluded reports whether a path is kept out of the build context.
-func (a *App) isExcluded(path string) bool {
+// True when path will not be in the build context.
+func (a *App) IsExcluded(path string) bool {
 	if a.excludeMatcher == nil {
 		return false
 	}
@@ -108,8 +108,8 @@ func (a *App) isExcluded(path string) bool {
 	return excluded
 }
 
-// findMatches returns a list of paths matching a glob pattern, filtered by isDir
-func (a *App) findMatches(pattern string, isDir bool) ([]string, error) {
+// findMatches returns paths matching a glob. dropExcluded omits files the build context will not contain.
+func (a *App) findMatches(pattern string, isDir bool, dropExcluded bool) ([]string, error) {
 	matches, err := a.findGlob(pattern)
 
 	if err != nil {
@@ -132,7 +132,7 @@ func (a *App) findMatches(pattern string, isDir bool) ([]string, error) {
 		}
 
 		// since this is run outside of the build context, we need to explicitly check if the file is excluded
-		if a.isExcluded(match) {
+		if dropExcluded && a.IsExcluded(match) {
 			continue
 		}
 
@@ -141,14 +141,19 @@ func (a *App) findMatches(pattern string, isDir bool) ([]string, error) {
 	return paths, nil
 }
 
-// returns a list of file paths matching a glob pattern
+// returns a list of file paths matching a glob pattern, respecting configured ignore patterns
 func (a *App) FindFiles(pattern string) ([]string, error) {
-	return a.findMatches(pattern, false)
+	return a.findMatches(pattern, false, true)
+}
+
+// Same scan as FindFiles, ignoring any configured ignore patterns.
+func (a *App) FindAllFiles(pattern string) ([]string, error) {
+	return a.findMatches(pattern, false, false)
 }
 
 // FindDirectories returns a list of directory paths matching a glob pattern
 func (a *App) FindDirectories(pattern string) ([]string, error) {
-	return a.findMatches(pattern, true)
+	return a.findMatches(pattern, true, true)
 }
 
 // findGlob finds paths matching a glob pattern, with caching
