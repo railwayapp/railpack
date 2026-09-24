@@ -43,6 +43,7 @@
   ],
   "startCommand": "caddy run --config /Caddyfile --adapter caddyfile 2\u003e\u00261",
   "variables": {
+   "BUN_INSTALL_GLOBAL_STORE": "0",
    "CI": "true",
    "NODE_ENV": "production",
    "NPM_CONFIG_FETCH_RETRIES": "5",
