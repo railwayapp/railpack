@@ -159,7 +159,6 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 
 	buildPlan := plan.NewBuildPlan()
 
-	// Merge exclude patterns from .dockerignore and railpack.json
 	excludePatterns := c.ExcludePatterns()
 	if len(excludePatterns) > 0 {
 		buildPlan.Exclude = excludePatterns
@@ -354,11 +353,8 @@ func (c *GenerateContext) GetLogger() *logger.Logger {
 	return c.Logger
 }
 
-// ExcludePatterns returns the exclude patterns that will be applied to the
-// build context, merged from .dockerignore and railpack.json's `exclude`.
+// Dockerignore patterns come first so a later railpack.json `exclude` entry
+// can negate them. The planner and BuildKit both apply this single list.
 func (c *GenerateContext) ExcludePatterns() []string {
-	patterns := make([]string, 0, len(c.dockerignoreCtx.Excludes)+len(c.Config.Exclude))
-	patterns = append(patterns, c.dockerignoreCtx.Excludes...)
-	patterns = append(patterns, c.Config.Exclude...)
-	return patterns
+	return slices.Concat(c.dockerignoreCtx.Excludes, c.Config.Exclude)
 }
