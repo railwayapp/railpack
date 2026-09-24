@@ -1,0 +1,3 @@
+{
+  "exclude": ["!kept.txt", "also-secret.txt"]
+}

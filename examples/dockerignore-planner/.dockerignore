@@ -1,0 +1,7 @@
+# The manifest under docs/ is never loaded into the build context, so nothing
+# in the plan may reference it. See docs/marketing/package.json.
+docs/
+
+# Local mise overrides. The planner globs mise.*.toml, so this file must not be
+# copied and must not change the resolved toolchain.
+mise.local.toml

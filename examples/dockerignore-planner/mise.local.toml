@@ -1,0 +1,3 @@
+# Dockerignored local override. The build must follow mise.toml, not this file.
+[tools]
+node = "20"

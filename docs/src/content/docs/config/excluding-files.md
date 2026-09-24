@@ -46,8 +46,9 @@ When you run `railpack build --show-plan`, you'll see this gets converted to:
 ## Using railpack.json
 
 You can also specify `exclude` patterns directly in your `railpack.json`
-configuration file instead of (or in addition to) using `.dockerignore`.
-Negation patterns (starting with `!`) can be included in the `exclude` array:
+configuration file instead of using `.dockerignore`. Pick one of those
+approaches. Negation patterns (starting with `!`) can be included in the
+`exclude` array:
 
 ```json title="railpack.json"
 {
@@ -64,9 +65,10 @@ Negation patterns (starting with `!`) can be included in the `exclude` array:
 }
 ```
 
-This gives you more control and allows you to manage all build configuration in
-one place. If both `.dockerignore` and `railpack.json` exclude patterns are
-present, they are merged together.
+This keeps exclude patterns with the rest of your build configuration. If both
+`.dockerignore` and `railpack.json` exclude patterns are present, the lists are
+merged and can negate each other. See
+[Pick One Ignore Approach](/config/recommendations#pick-one-ignore-approach).
 
 ## Default Behavior
 

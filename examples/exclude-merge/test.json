@@ -1,0 +1,11 @@
+[
+  {
+    // .dockerignore drops secret.txt and kept.txt. railpack.json re-includes
+    // kept.txt and drops also-secret.txt. BuildKit applies the merged list.
+    "expectedOutput": [
+      "kept.txt",
+      "secret.txt excluded",
+      "also-secret.txt excluded"
+    ]
+  }
+]

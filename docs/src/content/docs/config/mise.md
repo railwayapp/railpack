@@ -43,15 +43,20 @@ into the build. This includes:
 
 - **Config files**: `mise.toml`, `.mise.toml`, `mise/config.toml`,
   `.mise/config.toml`, `.config/mise.toml`, `.config/mise/config.toml`,
+  `.config/mise/mise.toml`, `.config/mise/mise.local.toml`,
   `.tool-versions`
-- **Environment-specific configs**: `mise.*.toml`, `.mise.*.toml`,
+- **Local and environment-specific configs**: `mise.*.toml`, `.mise.*.toml`,
+  `.config/mise.*.toml`, `mise/config.*.toml`, `.mise/config.*.toml`,
+  `.config/mise/config.*.toml`
+- **Config fragments**: `mise/conf.d/*.toml`, `.mise/conf.d/*.toml`,
   `.config/mise/conf.d/*.toml`
 - **Idiomatic version files**: `.ruby-version`, `.python-version`,
   `.python-versions`, `.node-version`, `.nvmrc`, `.go-version`,
   `.java-version`, `.sdkmanrc`, `.deno-version`, `rust-toolchain.toml`,
   `.bun-version`, `.yvmrc`, `global.json`
-- **Lock files**: `mise.lock` files co-located with any detected
-  `*.toml` config
+- **Lock files**: the lockfile for each detected config (`mise.lock`,
+  `mise.local.lock`, `mise.<env>.lock`, `mise.<env>.local.lock`). Fragments
+  in `conf.d` use the lockfile in the parent directory.
 
 ### Example: Precompiled Ruby
 

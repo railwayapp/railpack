@@ -1,0 +1,5 @@
+# Dropped here. railpack.json does not bring this file back.
+secret.txt
+
+# Dropped here, then re-included by a later railpack.json exclude entry.
+kept.txt

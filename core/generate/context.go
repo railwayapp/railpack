@@ -81,6 +81,14 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 		log.Debugf("Dockerignore patterns: %v", dockerignoreCtx.Excludes)
 	}
 
+	// Later patterns win, so an entry in one list can undo a pattern from the other.
+	if len(dockerignoreCtx.Excludes) > 0 && len(config.Exclude) > 0 {
+		logger.LogSuggestion(
+			"Use either `.dockerignore` or `railpack.json` `exclude`. These lists are merged and can negate each other",
+			"/config/recommendations#pick-one-ignore-approach",
+		)
+	}
+
 	ctx := &GenerateContext{
 		App:             app,
 		Env:             env,
@@ -93,6 +101,11 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 		Resolver:        resolver,
 		Logger:          logger,
 		dockerignoreCtx: dockerignoreCtx,
+	}
+
+	// Path discovery must not return files that BuildKit will never load.
+	if err := app.SetExcludePatterns(ctx.ExcludePatterns()); err != nil {
+		return nil, err
 	}
 
 	ctx.applyPackagesFromConfig()
@@ -154,10 +167,7 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 
 	buildPlan := plan.NewBuildPlan()
 
-	// Merge exclude patterns from .dockerignore and railpack.json
-	excludePatterns := []string{}
-	excludePatterns = append(excludePatterns, c.dockerignoreCtx.Excludes...)
-	excludePatterns = append(excludePatterns, c.Config.Exclude...)
+	excludePatterns := c.ExcludePatterns()
 	if len(excludePatterns) > 0 {
 		buildPlan.Exclude = excludePatterns
 	}
@@ -349,4 +359,10 @@ func (c *GenerateContext) GetAppSource() string {
 
 func (c *GenerateContext) GetLogger() *logger.Logger {
 	return c.Logger
+}
+
+// Dockerignore patterns come first so a later railpack.json `exclude` entry
+// can negate them. The planner and BuildKit both apply this single list.
+func (c *GenerateContext) ExcludePatterns() []string {
+	return slices.Concat(c.dockerignoreCtx.Excludes, c.Config.Exclude)
 }

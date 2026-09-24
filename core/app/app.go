@@ -11,6 +11,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/charmbracelet/log"
+	"github.com/moby/patternmatcher"
 	"github.com/railwayapp/railpack/internal/utils"
 	"gopkg.in/yaml.v2"
 )
@@ -20,6 +22,11 @@ var ErrNoFileFound = errors.New("unable to find a matching file")
 type App struct {
 	Source    string
 	globCache map[string][]string
+
+	// Nil until SetExcludePatterns runs. The root app gets that call from
+	// GenerateContext. The Phoenix assets App, and tests that only call
+	// NewApp, never do, so they see every file.
+	excludeMatcher *patternmatcher.PatternMatcher
 }
 
 func NewApp(path string) (*App, error) {
@@ -51,8 +58,58 @@ func NewApp(path string) (*App, error) {
 	}, nil
 }
 
-// findMatches returns a list of paths matching a glob pattern, filtered by isDir
-func (a *App) findMatches(pattern string, isDir bool) ([]string, error) {
+// SetExcludePatterns compiles the patterns that keep files out of the build
+// context, so that path discovery cannot return a file BuildKit will never
+// load.
+//
+// The planner reads the source directory directly, while BuildKit only ever
+// sees the filtered context. Without this, a provider can glob up a file that
+// is excluded and emit a COPY for it; the build then fails late with
+// "failed to compute cache key: ... not found".
+//
+// Patterns come from .dockerignore and railpack.json's `exclude`. Negations
+// are honoured, since this is the same matcher BuildKit builds the context
+// with. Passing no patterns clears the filter.
+func (a *App) SetExcludePatterns(patterns []string) error {
+	if len(patterns) == 0 {
+		a.excludeMatcher = nil
+		return nil
+	}
+
+	matcher, err := patternmatcher.New(patterns)
+	if err != nil {
+		return fmt.Errorf("failed to compile exclude patterns: %w", err)
+	}
+
+	a.excludeMatcher = matcher
+	return nil
+}
+
+// True when path will not be in the build context.
+func (a *App) IsExcluded(path string) bool {
+	if a.excludeMatcher == nil {
+		return false
+	}
+
+	// TODO this function is picky about the order of patterns, and since we are merging patterns (dockerignore + railpack.json)
+	//      this could create issues for users.
+	excluded, err := a.excludeMatcher.MatchesOrParentMatches(path)
+	if err != nil {
+		// Keep the path rather than silently dropping it; a build that copies
+		// one file too many is easier to debug than one missing a file.
+		log.Warnf("Failed to match %q against exclude patterns: %s", path, err)
+		return false
+	}
+
+	if excluded {
+		log.Debugf("Skipping %q, excluded from the build context", path)
+	}
+
+	return excluded
+}
+
+// findMatches returns paths matching a glob. dropExcluded omits files the build context will not contain.
+func (a *App) findMatches(pattern string, isDir bool, dropExcluded bool) ([]string, error) {
 	matches, err := a.findGlob(pattern)
 
 	if err != nil {
@@ -65,24 +122,38 @@ func (a *App) findMatches(pattern string, isDir bool) ([]string, error) {
 
 		info, err := os.Stat(fullPath)
 		if err != nil {
+			// TODO unclear in what cases this could occur, should we hard fail?
+			log.Warnf("Failed to stat %q: %s", fullPath, err)
 			continue
 		}
 
-		if info.IsDir() == isDir {
-			paths = append(paths, match)
+		if info.IsDir() != isDir {
+			continue
 		}
+
+		// since this is run outside of the build context, we need to explicitly check if the file is excluded
+		if dropExcluded && a.IsExcluded(match) {
+			continue
+		}
+
+		paths = append(paths, match)
 	}
 	return paths, nil
 }
 
-// returns a list of file paths matching a glob pattern
+// returns a list of file paths matching a glob pattern, respecting configured ignore patterns
 func (a *App) FindFiles(pattern string) ([]string, error) {
-	return a.findMatches(pattern, false)
+	return a.findMatches(pattern, false, true)
+}
+
+// Same scan as FindFiles, ignoring any configured ignore patterns.
+func (a *App) FindAllFiles(pattern string) ([]string, error) {
+	return a.findMatches(pattern, false, false)
 }
 
 // FindDirectories returns a list of directory paths matching a glob pattern
 func (a *App) FindDirectories(pattern string) ([]string, error) {
-	return a.findMatches(pattern, true)
+	return a.findMatches(pattern, true, true)
 }
 
 // findGlob finds paths matching a glob pattern, with caching
