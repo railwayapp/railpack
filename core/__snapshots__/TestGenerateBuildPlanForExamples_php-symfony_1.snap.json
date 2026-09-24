@@ -27,6 +27,7 @@
    "LOG_LEVEL": "debug",
    "OCTANE_SERVER": "frankenphp",
    "PHP_INI_DIR": "/usr/local/etc/php",
+   "RAILPACK_VERSION": "dev",
    "SERVER_NAME": ":80"
   }
  },
@@ -40,7 +41,7 @@
    ],
    "inputs": [
     {
-     "image": "dunglas/frankenphp:php8.5.8-bookworm"
+     "image": "dunglas/frankenphp:php8.5.10-trixie"
     }
    ],
    "name": "packages:image"
