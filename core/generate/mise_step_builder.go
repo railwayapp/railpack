@@ -372,6 +372,8 @@ var miseIdiomaticFiles = []string{
 }
 
 // https://mise.jdx.dev/configuration.html#configuration-hierarchy
+// .config/mise/mise.toml and .config/mise/mise.local.toml are legacy filenames
+// mise still loads. The public docs omit them.
 var miseConfigFiles = []string{
 	"mise.toml",
 	".mise.toml",
@@ -379,15 +381,24 @@ var miseConfigFiles = []string{
 	".mise/config.toml",
 	".config/mise.toml",
 	".config/mise/config.toml",
+	".config/mise/mise.toml",
+	".config/mise/mise.local.toml",
 	".tool-versions",
 }
 
 // https://mise.jdx.dev/configuration.html#mise-toml
-// the env-specific mise files are not as well documented, but we should look for them and include them in the install
-// step in case a user specified a MISE_ENV. They won't negatively impact builds otherwise (outside of more frequency cache busting)
+// https://mise.jdx.dev/configuration/environments.html
+// All mise config files that mise is documented to support. Some non-glob patterns are listed above.
+// Environment files are copied so a build that sets MISE_ENV sees them; otherwise they only add cache inputs.
 var miseConfigGlobs = []string{
 	"mise.*.toml",
 	".mise.*.toml",
+	".config/mise.*.toml",
+	"mise/config.*.toml",
+	".mise/config.*.toml",
+	".config/mise/config.*.toml",
+	"mise/conf.d/*.toml",
+	".mise/conf.d/*.toml",
 	".config/mise/conf.d/*.toml",
 }
 
