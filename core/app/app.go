@@ -91,6 +91,8 @@ func (a *App) isExcluded(path string) bool {
 		return false
 	}
 
+	// TODO this function is picky about the order of patterns, and since we are merging patterns (dockerignore + railpack.json)
+	//      this could create issues for users.
 	excluded, err := a.excludeMatcher.MatchesOrParentMatches(path)
 	if err != nil {
 		// Keep the path rather than silently dropping it; a build that copies
@@ -120,6 +122,8 @@ func (a *App) findMatches(pattern string, isDir bool) ([]string, error) {
 
 		info, err := os.Stat(fullPath)
 		if err != nil {
+			// TODO unclear in what cases this could occur, should we hard fail?
+			log.Warnf("Failed to stat %q: %s", fullPath, err)
 			continue
 		}
 
@@ -127,6 +131,7 @@ func (a *App) findMatches(pattern string, isDir bool) ([]string, error) {
 			continue
 		}
 
+		// since this is run outside of the build context, we need to explicitly check if the file is excluded
 		if a.isExcluded(match) {
 			continue
 		}
