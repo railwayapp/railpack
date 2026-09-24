@@ -1,0 +1,57 @@
+{
+ "deploy": {
+  "base": {
+   "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.9.1"
+  },
+  "inputs": [
+   {
+    "include": [
+     "."
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "sh start.sh",
+  "variables": {
+   "RAILPACK_VERSION": "dev"
+  }
+ },
+ "exclude": [
+  "secret.txt",
+  "kept.txt",
+  "!kept.txt",
+  "also-secret.txt"
+ ],
+ "steps": [
+  {
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.9.1"
+    }
+   ],
+   "name": "packages:mise"
+  },
+  {
+   "commands": [
+    {
+     "cmd": "chmod +x start.sh"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ]
+  }
+ ]
+}
