@@ -15,6 +15,10 @@
   "node-modules": {
    "directory": "/app/node_modules/.cache",
    "type": "shared"
+  },
+  "vite": {
+   "directory": "/app/node_modules/.vite",
+   "type": "shared"
   }
  },
  "deploy": {
@@ -24,33 +28,24 @@
   "inputs": [
    {
     "include": [
-     "/mise/shims",
-     "/mise/installs",
-     "/usr/local/bin/mise",
-     "/etc/mise/config.toml",
-     "/root/.local/state/mise"
+     "/railpack/caddy"
     ],
-    "step": "packages:mise"
+    "step": "packages:caddy"
    },
    {
     "include": [
-     "/app/node_modules"
+     "/Caddyfile"
     ],
-    "step": "build"
+    "step": "caddy"
    },
    {
-    "exclude": [
-     "node_modules",
-     ".yarn"
-    ],
     "include": [
-     "/root/.cache",
-     "."
+     "dist"
     ],
     "step": "build"
    }
   ],
-  "startCommand": "bun index.ts",
+  "startCommand": "caddy run --config /Caddyfile --adapter caddyfile 2\u003e\u00261",
   "variables": {
    "BUN_INSTALL_GLOBAL_STORE": "0",
    "CI": "true",
@@ -70,10 +65,6 @@
    "commands": [
     {
      "path": "/mise/shims"
-    },
-    {
-     "dest": ".bun-version",
-     "src": ".bun-version"
     },
     {
      "customName": "create mise config",
@@ -115,16 +106,12 @@
      "src": "bun.lock"
     },
     {
+     "dest": "bunfig.toml",
+     "src": "bunfig.toml"
+    },
+    {
      "dest": "package.json",
      "src": "package.json"
-    },
-    {
-     "dest": "packages/pkg-a/package.json",
-     "src": "packages/pkg-a/package.json"
-    },
-    {
-     "dest": "packages/pkg-b/package.json",
-     "src": "packages/pkg-b/package.json"
     },
     {
      "cmd": "bun install --frozen-lockfile"
@@ -148,7 +135,13 @@
   },
   {
    "caches": [
-    "node-modules"
+    "node-modules",
+    "vite"
+   ],
+   "commands": [
+    {
+     "cmd": "bun run build"
+    }
    ],
    "inputs": [
     {
@@ -162,6 +155,51 @@
     }
    ],
    "name": "build",
+   "secrets": [
+    "*"
+   ]
+  },
+  {
+   "commands": [
+    {
+     "cmd": "mise install-into caddy@2.11.4 /railpack/caddy"
+    },
+    {
+     "path": "/railpack/caddy"
+    },
+    {
+     "path": "/railpack/caddy/bin"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.9.12"
+    }
+   ],
+   "name": "packages:caddy",
+   "variables": {
+    "MISE_PARANOID": "1"
+   }
+  },
+  {
+   "assets": {
+    "Caddyfile": "# global options\n{\n\tadmin off\n\tpersist_config off\n\tauto_https off\n\n\tlog {\n\t\tformat json\n\t}\n\n\tservers {\n\t\ttrusted_proxies static private_ranges 100.0.0.0/8 # trust railway's proxy\n\t}\n}\n\n# site block, listens on the $PORT environment variable, automatically assigned by railway\n:{$PORT:80} {\n\tlog {\n\t\tformat json\n\t}\n\n\trespond /health 200\n\n\t# Security headers\n\theader {\n\t\t# Prevent some browsers from MIME-sniffing a response away from the declared Content-Type\n\t\tX-Content-Type-Options \"nosniff\"\n\t\t# Remove Server header\n\t\t-Server\n\t}\n\n\t# serve from the 'dist' folder (Vite builds into the 'dist' folder)\n\troot * /app/dist\n\n\t# Handle static files\n\tfile_server {\n\t\thide .git\n\t\thide .env*\n\t}\n\n\t# Compression with more formats\n\tencode {\n\t\tgzip\n\t\tzstd\n\t}\n\n\t# match against direct against HTML file matches, folder-level index.html, and optionally fallback to root index.html\n\ttry_files {path} {path}.html {path}/index.html /index.html\n}\n"
+   },
+   "commands": [
+    {
+     "name": "Caddyfile",
+     "path": "/Caddyfile"
+    },
+    {
+     "cmd": "caddy fmt --overwrite /Caddyfile"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:caddy"
+    }
+   ],
+   "name": "caddy",
    "secrets": [
     "*"
    ]

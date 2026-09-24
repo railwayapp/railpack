@@ -369,6 +369,10 @@ func (p *NodeProvider) shouldPrune(ctx *generate.GenerateContext) bool {
 func (p *NodeProvider) PruneNodeDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
 	ctx.Logger.LogInfo("Pruning node dependencies")
 	prune.Variables["NPM_CONFIG_PRODUCTION"] = "true"
+	if p.packageManager == PackageManagerBun {
+		// Keep symlinks project-local in node_modules across container build layers
+		prune.Variables["BUN_INSTALL_GLOBAL_STORE"] = "0"
+	}
 	prune.Secrets = []string{}
 	p.packageManager.PruneDeps(ctx, prune)
 }
@@ -504,6 +508,11 @@ func (p *NodeProvider) GetNodeEnvVars(ctx *generate.GenerateContext) map[string]
 
 	if p.packageManager == PackageManagerYarn1 {
 		envVars["YARN_PRODUCTION"] = "false"
+	}
+
+	if p.packageManager == PackageManagerBun {
+		// Keep symlinks project-local in node_modules across container build layers
+		envVars["BUN_INSTALL_GLOBAL_STORE"] = "0"
 	}
 
 	// TODO why are we special-casing astro here? Smells like a misunderstanding of how astro works...
