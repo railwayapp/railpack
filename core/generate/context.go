@@ -81,6 +81,14 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 		log.Debugf("Dockerignore patterns: %v", dockerignoreCtx.Excludes)
 	}
 
+	// Later patterns win, so an entry in one list can undo a pattern from the other.
+	if len(dockerignoreCtx.Excludes) > 0 && len(config.Exclude) > 0 {
+		logger.LogSuggestion(
+			"Use either `.dockerignore` or `railpack.json` `exclude`. These lists are merged and can negate each other",
+			"/config/recommendations#pick-one-ignore-approach",
+		)
+	}
+
 	ctx := &GenerateContext{
 		App:             app,
 		Env:             env,
