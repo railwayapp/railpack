@@ -37,8 +37,7 @@ type GenerateContext struct {
 	Steps     []StepBuilder
 	Deploy    *DeployBuilder
 
-	Caches  *CacheContext
-	Secrets []string
+	Caches *CacheContext
 
 	SubContexts []string
 
@@ -96,7 +95,6 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 		Steps:           make([]StepBuilder, 0),
 		Deploy:          NewDeployBuilder(),
 		Caches:          NewCacheContext(),
-		Secrets:         []string{},
 		Metadata:        NewMetadata(),
 		Resolver:        resolver,
 		Logger:          logger,
@@ -186,10 +184,10 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 	}
 
 	buildPlan.Caches = c.Caches.Caches
-	buildPlan.Secrets = utils.RemoveDuplicates(c.Secrets)
 	c.Deploy.Build(buildPlan, buildStepOptions)
 
 	buildPlan.Normalize()
+	buildPlan.Secrets, buildPlan.Steps = resolveSecrets(c.Config, buildPlan.Steps)
 
 	return buildPlan, resolvedPackages, nil
 }
@@ -223,7 +221,6 @@ func (c *GenerateContext) applyConfig() {
 
 	// Apply the cache config to the context
 	maps.Copy(c.Caches.Caches, c.Config.Caches)
-	c.Secrets = plan.SpreadStrings(c.Config.Secrets, c.Secrets)
 
 	// Update deploy from config
 	if c.Config.Deploy != nil {
