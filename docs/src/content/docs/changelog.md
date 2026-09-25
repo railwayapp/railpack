@@ -7,6 +7,33 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
+## v0.40.0
+September 24, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.40.0)
+
+### Providers
+
+#### Fixed
+
+* **Node:** [Bun projects](https://railpack.com/languages/bun#global-store-bun_install_global_store) now set `BUN_INSTALL_GLOBAL_STORE=0` by default to keep the isolated dependency store local and prevent broken symlinks across container layers. by @iloveitaly in [#756](https://github.com/railwayapp/railpack/pull/756)
+* **PHP:** [Apt package lists](https://railpack.com/languages/php#apt-packages) in FrankenPHP images now properly expand `...` spread operators instead of passing them literally to `apt-get`. by @Tyagiquamar in [#748](https://github.com/railwayapp/railpack/pull/748)
+
+### CLI
+
+#### Fixed
+
+* **Planner:** File discovery now respects [excluded files](https://railpack.com/config/excluding-files) from `.dockerignore` and `railpack.json`, preventing build failures caused by copying excluded manifests and ignoring excluded local mise configs. by @iloveitaly in [#757](https://github.com/railwayapp/railpack/pull/757)
+
+### Mise Upgrades
+
+Updated mise from v2026.8.16 to [v2026.9.12](https://github.com/jdx/mise/releases/tag/v2026.9.12).
+
+* **Lockfile revision 2:** Newly generated lockfiles now use revision 2 format with `.mise/locks/` dependency sidecars, and locked installs verify graph integrity. ([v2026.9.7](https://github.com/jdx/mise/releases/tag/v2026.9.7))
+* **Go workspace toolchains:** Active `go.work` files with a `toolchain` directive now select the Go version during builds while member `go.mod` files are ignored. ([v2026.9.12](https://github.com/jdx/mise/releases/tag/v2026.9.12))
+* **Ruby Gemfile version files:** Bundler `ruby file: ".ruby-version"` declarations in `Gemfile` are now parsed to resolve the project's Ruby version. ([v2026.9.2](https://github.com/jdx/mise/releases/tag/v2026.9.2))
+* **Lockfile URL validation:** Installs now fail early if a locked platform URL mismatches the entry's version, preventing silent installation of mismatched releases. ([v2026.9.12](https://github.com/jdx/mise/releases/tag/v2026.9.12))
+
+**Full Changelog**: [v0.39.0...v0.40.0](https://github.com/railwayapp/railpack/compare/v0.39.0...v0.40.0)
+
 ## v0.39.0
 September 3, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.39.0)
 
