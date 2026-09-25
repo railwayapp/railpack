@@ -31,6 +31,7 @@ func TestFromEnvs(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, map[string]string{
 		"PLAIN":          "value",
+		"EMPTY":          "",
 		"INHERITED":      "from the process environment",
 		"LEADING_EQUALS": "=value",
 		"EQUALS":         "value=with=equals==",
