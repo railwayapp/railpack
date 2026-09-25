@@ -89,3 +89,51 @@ func TestCommandMarshalUnmarshal(t *testing.T) {
 		})
 	}
 }
+func TestUnmarshalCommandFromJSONRawMessage(t *testing.T) {
+	tests := []struct {
+		name      string
+		jsonRaw   string
+		checkType func(Command) bool
+	}{
+		{
+			name:    "shorthand COPY with JSON quotes",
+			jsonRaw: `"COPY:src.txt dst.txt"`,
+			checkType: func(c Command) bool {
+				copyCmd, ok := c.(CopyCommand)
+				return ok && copyCmd.Src == "src.txt" && copyCmd.Dest == "dst.txt"
+			},
+		},
+		{
+			name:    "shorthand PATH with JSON quotes",
+			jsonRaw: `"PATH:/usr/local/bin"`,
+			checkType: func(c Command) bool {
+				pathCmd, ok := c.(PathCommand)
+				return ok && pathCmd.Path == "/usr/local/bin"
+			},
+		},
+		{
+			name:    "shorthand RUN with custom name and JSON quotes",
+			jsonRaw: `"RUN#Say Hello:echo hello"`,
+			checkType: func(c Command) bool {
+				execCmd, ok := c.(ExecCommand)
+				return ok && execCmd.CustomName == "Say Hello" && execCmd.Cmd == "sh -c 'echo hello'"
+			},
+		},
+		{
+			name:    "shorthand FILE with JSON quotes",
+			jsonRaw: `"FILE:/etc/conf config.yaml"`,
+			checkType: func(c Command) bool {
+				fileCmd, ok := c.(FileCommand)
+				return ok && fileCmd.Path == "/etc/conf" && fileCmd.Name == "config.yaml"
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd, err := UnmarshalCommand([]byte(tt.jsonRaw))
+			require.NoError(t, err)
+			require.True(t, tt.checkType(cmd), "Command was not parsed into expected type: %+v", cmd)
+		})
+	}
+}
