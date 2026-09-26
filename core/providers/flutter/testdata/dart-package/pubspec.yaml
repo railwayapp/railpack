@@ -1,0 +1,10 @@
+name: dart_package
+description: "Plain Dart package that does not depend on the Flutter SDK."
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  shelf: ^1.4.0
