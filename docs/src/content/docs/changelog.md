@@ -939,17 +939,6 @@ October 7, 2025 · [GitHub release](https://github.com/railwayapp/railpack/relea
 
 **Full Changelog**: [v0.8.0...v0.9.0](https://github.com/railwayapp/railpack/compare/v0.8.0...v0.9.0)
 
-## v0.8.0
-September 25, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.8.0)
-
-### What's Changed
-* chore: mise update 2025.9.17 by @iloveitaly in [#274](https://github.com/railwayapp/railpack/pull/274)
-* feat: dockerignore support by @iloveitaly in [#263](https://github.com/railwayapp/railpack/pull/263)
-* fix: missing local layer usage by @iloveitaly in [#276](https://github.com/railwayapp/railpack/pull/276)
-* chore: mise update 2025.9.18 by @iloveitaly in [#275](https://github.com/railwayapp/railpack/pull/275)
-
-**Full Changelog**: [v0.7.2...v0.8.0](https://github.com/railwayapp/railpack/compare/v0.7.2...v0.8.0)
-
 ## Older releases
 
 This page covers the last year. See all releases on [GitHub](https://github.com/railwayapp/railpack/releases).
