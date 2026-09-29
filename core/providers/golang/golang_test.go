@@ -1,6 +1,8 @@
 package golang
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	testingUtils "github.com/railwayapp/railpack/core/testing"
@@ -77,4 +79,12 @@ func TestGolang(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGolangVersionFromGoModIgnoresTrailingComment(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/app\n\ngo 1.24.2 // keep in sync with CI\n"), 0o644))
+
+	ctx := testingUtils.CreateGenerateContext(t, dir)
+	require.Equal(t, "1.24.2", (&GoProvider{}).extractGoVersionFromMod(ctx))
 }
