@@ -83,7 +83,13 @@ func (p *JavaProvider) Plan(ctx *generate.GenerateContext) error {
 func (p *JavaProvider) getStartCmd(ctx *generate.GenerateContext) string {
 	if p.usesGradle(ctx) {
 		buildGradle := p.readBuildGradle(ctx)
-		return fmt.Sprintf("java $JAVA_OPTS -jar %s $(ls -1 */build/libs/*jar | grep -v plain)", getGradlePortConfig(buildGradle))
+		portConfig := getGradlePortConfig(buildGradle)
+		jarTarget := "$(ls -1 build/libs/*jar */build/libs/*jar 2>/dev/null | grep -v plain | head -n 1)"
+
+		if portConfig != "" {
+			return fmt.Sprintf("java %s $JAVA_OPTS -jar %s", portConfig, jarTarget)
+		}
+		return fmt.Sprintf("java $JAVA_OPTS -jar %s", jarTarget)
 	} else if ctx.App.HasMatch("pom.xml") {
 		return fmt.Sprintf("java %s $JAVA_OPTS -jar target/*jar", getMavenPortConfig(ctx))
 	} else {
