@@ -43,6 +43,7 @@ func (p *JavaProvider) Plan(ctx *generate.GenerateContext) error {
 		}
 
 		build.AddCommand(plan.NewExecCommand("./gradlew clean build -x check -x test -Pproduction"))
+		build.AddCommand(plan.NewExecShellCommand(`cp $(find . -path "*/build/libs/*.jar" ! -name "*-plain.jar" | sort | head -n 1) app.jar`))
 		build.AddCache(p.gradleCache(ctx))
 	} else {
 		ctx.Logger.LogInfo("Using Maven")
@@ -83,13 +84,7 @@ func (p *JavaProvider) Plan(ctx *generate.GenerateContext) error {
 func (p *JavaProvider) getStartCmd(ctx *generate.GenerateContext) string {
 	if p.usesGradle(ctx) {
 		buildGradle := p.readBuildGradle(ctx)
-		portConfig := getGradlePortConfig(buildGradle)
-		jarTarget := "$(ls -1 build/libs/*jar */build/libs/*jar 2>/dev/null | grep -v plain | head -n 1)"
-
-		if portConfig != "" {
-			return fmt.Sprintf("java %s $JAVA_OPTS -jar %s", portConfig, jarTarget)
-		}
-		return fmt.Sprintf("java $JAVA_OPTS -jar %s", jarTarget)
+		return fmt.Sprintf("java %s $JAVA_OPTS -jar app.jar", getGradlePortConfig(buildGradle))
 	} else if ctx.App.HasMatch("pom.xml") {
 		return fmt.Sprintf("java %s $JAVA_OPTS -jar target/*jar", getMavenPortConfig(ctx))
 	} else {

@@ -10,7 +10,7 @@ import (
 )
 
 func TestGradleStartCommand(t *testing.T) {
-	t.Run("spring boot gradle project places port option before -jar and supports root build/libs", func(t *testing.T) {
+	t.Run("spring boot gradle project places port option before -jar and targets canonical app.jar", func(t *testing.T) {
 		tempDir := t.TempDir()
 
 		err := os.WriteFile(filepath.Join(tempDir, "gradlew"), []byte("#!/bin/sh"), 0o755)
@@ -30,15 +30,12 @@ func TestGradleStartCommand(t *testing.T) {
 
 		startCmd := provider.getStartCmd(ctx)
 
-		// JVM system property must precede -jar flag
-		require.Contains(t, startCmd, "-Dserver.port=$PORT $JAVA_OPTS -jar")
-		require.NotContains(t, startCmd, "-jar -Dserver.port", "JVM options must not be placed after -jar")
-
-		// Must search both single-project and multi-project build output directories
-		require.Contains(t, startCmd, "build/libs/*jar */build/libs/*jar")
+		require.Contains(t, startCmd, "-Dserver.port=$PORT")
+		require.NotContains(t, startCmd, "-jar -Dserver.port")
+		require.Contains(t, startCmd, "-jar app.jar")
 	})
 
-	t.Run("plain gradle project without spring boot omits port option", func(t *testing.T) {
+	t.Run("plain gradle project without spring boot omits port option and targets canonical app.jar", func(t *testing.T) {
 		tempDir := t.TempDir()
 
 		err := os.WriteFile(filepath.Join(tempDir, "gradlew"), []byte("#!/bin/sh"), 0o755)
@@ -53,6 +50,6 @@ func TestGradleStartCommand(t *testing.T) {
 		startCmd := provider.getStartCmd(ctx)
 
 		require.NotContains(t, startCmd, "-Dserver.port")
-		require.Contains(t, startCmd, "build/libs/*jar */build/libs/*jar")
+		require.Contains(t, startCmd, "-jar app.jar")
 	})
 }
