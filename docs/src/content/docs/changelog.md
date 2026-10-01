@@ -7,6 +7,28 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
+## v0.40.1
+September 28, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.40.1)
+
+### CLI
+
+#### Fixed
+
+* **Config:** Fixed `railpack.json` [string shorthand commands](https://railpack.com/config/file#string-format) such as `COPY:src dest` and `PATH:/bin` failing at runtime with `sh: 1: COPY:... not found`. by @vunas in [#760](https://github.com/railwayapp/railpack/pull/760)
+
+### Mise Upgrades
+
+Updated mise from v2026.9.12 to [v2026.9.15](https://github.com/jdx/mise/releases/tag/v2026.9.15).
+
+* **Pinned pnpm:** A configured pnpm version now overrides Node's bundled pnpm regardless of tool order. ([v2026.9.13](https://github.com/jdx/mise/releases/tag/v2026.9.13))
+* **Stable lockfiles:** Locked tools stay on their locked backend when the registry moves a tool, with the new `mise backends switch` command to migrate them intentionally. ([v2026.9.13](https://github.com/jdx/mise/releases/tag/v2026.9.13))
+* **Fewer GitHub rate limits:** Version and release metadata for public GitHub repos now resolves through the mise-versions mirror instead of consuming the GitHub API rate limit. ([v2026.9.14](https://github.com/jdx/mise/releases/tag/v2026.9.14))
+* **Verified installs:** Registry GitHub backends can now require verified GitHub attestations for downloaded assets, with a missing attestation failing the install. ([v2026.9.14](https://github.com/jdx/mise/releases/tag/v2026.9.14))
+
+**Full Changelog**: [v0.40.0...v0.40.1](https://github.com/railwayapp/railpack/compare/v0.40.0...v0.40.1)
+
+*Internal mise updates and removal of the temporary Debian upgrade notice for custom apt packages by @iloveitaly.*
+
 ## v0.40.0
 September 24, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.40.0)
 

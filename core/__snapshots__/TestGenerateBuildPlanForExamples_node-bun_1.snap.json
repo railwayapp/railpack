@@ -83,7 +83,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.9.15"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.9.18"
     }
    ],
    "name": "packages:mise",
@@ -172,7 +172,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.9.15"
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.9.18"
     }
    ],
    "name": "packages:apt:runtime"
