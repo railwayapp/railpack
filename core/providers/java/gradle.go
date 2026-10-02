@@ -34,29 +34,17 @@ func (p *JavaProvider) setGradleVersion(ctx *generate.GenerateContext) {
 		return
 	}
 
-	versionRegex, err := regexp.Compile(`(distributionUrl[\S].*[gradle])(-)([0-9|\.]*)`)
+	versionRegex, err := regexp.Compile(`gradle-([0-9][0-9A-Za-z.-]*)-(?:bin|all)\.zip`)
 	if err != nil {
 		return
 	}
 
-	if !versionRegex.Match([]byte(wrapperProps)) {
+	matches := versionRegex.FindStringSubmatch(wrapperProps)
+	if len(matches) < 2 {
 		return
 	}
 
-	customVersion := string(versionRegex.FindSubmatch([]byte(wrapperProps))[3])
-
-	parseVersionRegex, err := regexp.Compile(`^(?:[\sa-zA-Z-"']*)(\d*)(?:\.*)(\d*)(?:\.*\d*)(?:["']?)$`)
-	if err != nil {
-		return
-	}
-
-	if !parseVersionRegex.Match([]byte(customVersion)) {
-		return
-	}
-
-	parsedVersion := string(parseVersionRegex.FindSubmatch([]byte(customVersion))[1])
-
-	miseStep.Version(gradle, parsedVersion, "gradle-wrapper.properties")
+	miseStep.Version(gradle, matches[1], "gradle-wrapper.properties")
 }
 
 func (p *JavaProvider) gradleCache(ctx *generate.GenerateContext) string {
