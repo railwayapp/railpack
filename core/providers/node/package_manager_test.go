@@ -25,6 +25,22 @@ func TestInstallDeps_NpmInstallOverride(t *testing.T) {
 	require.Contains(t, install.Commands, plan.NewExecCommand("npm ci"))
 }
 
+func TestSupportingInstallFiles_Turborepo(t *testing.T) {
+	ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-turborepo")
+
+	files := PackageManagerNpm.SupportingInstallFiles(ctx)
+
+	require.Contains(t, files, "turbo.json")
+}
+
+func TestSupportingInstallFiles_NoTurbo(t *testing.T) {
+	ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-npm")
+
+	files := PackageManagerNpm.SupportingInstallFiles(ctx)
+
+	require.NotContains(t, files, "turbo.json")
+}
+
 func TestGetPackageManagerPackages_PnpmLockfileVersion(t *testing.T) {
 	tests := []struct {
 		name        string
