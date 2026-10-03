@@ -162,8 +162,10 @@ func (p *GoProvider) extractGoVersionFromMod(ctx *generate.GenerateContext) stri
 		// Split content into lines and look for "go X.XX" line
 		lines := strings.SplitSeq(string(goModContents), "\n")
 		for line := range lines {
-			if strings.HasPrefix(strings.TrimSpace(line), "go ") {
-				// Extract version number
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, "go ") {
+				// drop a trailing comment, which go.mod allows after the version
+				line, _, _ = strings.Cut(line, "//")
 				if goVersion := strings.TrimSpace(strings.TrimPrefix(line, "go")); goVersion != "" {
 					return goVersion
 				}
