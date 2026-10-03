@@ -1,8 +1,11 @@
 package golang
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/railwayapp/railpack/core/plan"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -77,4 +80,54 @@ func TestGolang(t *testing.T) {
 			}
 		})
 	}
+}
+
+func buildCommands(t *testing.T, files map[string]string) []string {
+	t.Helper()
+
+	dir := t.TempDir()
+	for name, contents := range files {
+		path := filepath.Join(dir, name)
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte(contents), 0o644))
+	}
+
+	ctx := testingUtils.CreateGenerateContext(t, dir)
+	provider := GoProvider{}
+	require.NoError(t, provider.Plan(ctx))
+
+	buildPlan, _, err := ctx.Generate()
+	require.NoError(t, err)
+
+	cmds := []string{}
+	for _, step := range buildPlan.Steps {
+		if step.Name != "build" {
+			continue
+		}
+		for _, cmd := range step.Commands {
+			if exec, ok := cmd.(plan.ExecCommand); ok {
+				cmds = append(cmds, exec.Cmd)
+			}
+		}
+	}
+	return cmds
+}
+
+func TestGolangBuildsCmdDirWhenRootPackageIsALibrary(t *testing.T) {
+	cmds := buildCommands(t, map[string]string{
+		"go.mod":             "module example.com/app\n\ngo 1.25\n",
+		"lib.go":             "package app\n\nfunc Add(a, b int) int { return a + b }\n",
+		"lib_test.go":        "package main\n",
+		"cmd/server/main.go": "package main\n\nfunc main() {}\n",
+	})
+	require.Equal(t, []string{`go build -ldflags="-w -s" -o out ./cmd/server`}, cmds)
+}
+
+func TestGolangBuildsRootWhenRootPackageIsMain(t *testing.T) {
+	cmds := buildCommands(t, map[string]string{
+		"go.mod":             "module example.com/app\n\ngo 1.25\n",
+		"main.go":            "// Command app does things.\npackage main\n\nfunc main() {}\n",
+		"cmd/server/main.go": "package main\n\nfunc main() {}\n",
+	})
+	require.Equal(t, []string{`go build -ldflags="-w -s" -o out`}, cmds)
 }
