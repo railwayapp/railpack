@@ -202,20 +202,33 @@ func failedBuildResult(logger *logger.Logger, err error) (*BuildResult, error) {
 	return result, nil
 }
 
-// GetConfig merges the options, environment, and file config into a single config
+// merges the options, environment, and file config into a single config
+// note that this is not run in the frontend process, since the buildkit frontend consumed the "compiled" railpack-plan.json which this logic helps generate
 func GetConfig(app *app.App, env *app.Environment, options *GenerateBuildPlanOptions, logger *logger.Logger) (*c.Config, error) {
-	optionsConfig := GenerateConfigFromOptions(options)
+	// cli options first, takes precedence over environment and file config
+	cliOptionsConfig := GenerateConfigFromOptions(options)
 
+	// environment variables next, takes precedence over file config
 	envConfig := GenerateConfigFromEnvironment(env)
 
+	// file config last
 	fileConfig, err := GenerateConfigFromFile(app, env, options, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	mergedConfig := c.Merge(optionsConfig, envConfig, fileConfig)
-	// Environment-provided secrets must remain available when file configuration replaces slice values.
-	mergedConfig.Secrets = utils.RemoveDuplicates(slices.Concat(envConfig.Secrets, mergedConfig.Secrets))
+	// NOTE incredibly important line! This defined the precedence order for most of the configuration (right to left)
+	mergedConfig := c.Merge(fileConfig, envConfig, cliOptionsConfig)
+
+	// Secrets are unique: the values are *not* part of the configuration/railpack plan, only the names are
+	// the values are only provided to the build system (either directly to the buildctl / docker build cmd, or to `railpack build`)
+	// Additionally, it would unintuitive for a CLI option to replace a file-provided secret instead of concatenating them.
+	// For this reason, we merge the list of secret names together and deduplicate them.
+	mergedConfig.Secrets = utils.RemoveDuplicates(slices.Concat(
+		fileConfig.Secrets,
+		envConfig.Secrets,
+		// cli options don't define secrets
+	))
 
 	return mergedConfig, nil
 }
@@ -224,12 +237,11 @@ func GenerateConfigFromFile(app *app.App, env *app.Environment, options *Generat
 	config := c.EmptyConfig()
 
 	configFileName := defaultConfigFileName
-	if options.ConfigFilePath != "" {
-		configFileName = options.ConfigFilePath
-	}
-
 	if envConfigFileName, _ := env.GetConfigVariable("CONFIG_FILE"); envConfigFileName != "" {
 		configFileName = envConfigFileName
+	}
+	if options.ConfigFilePath != "" {
+		configFileName = options.ConfigFilePath
 	}
 
 	// always assume config file path is relative to the app source directory
@@ -296,12 +308,13 @@ func GenerateConfigFromEnvironment(env *app.Environment) *c.Config {
 		config.Deploy.AptPackages = aptPackages
 	}
 
+	// TODO why do we add all the environment variables to the secrets?
 	config.Secrets = append(config.Secrets, slices.Sorted(maps.Keys(env.Variables))...)
 
 	return config
 }
 
-// generates a config from the CLI options
+// generates a config from the CLI options, this takes precedence over the environment and file config
 func GenerateConfigFromOptions(options *GenerateBuildPlanOptions) *c.Config {
 	config := c.EmptyConfig()
 
