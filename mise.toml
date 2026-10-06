@@ -27,10 +27,13 @@ run = [
 [tasks.run-buildkit-container]
 # Mount buildkitd.toml so host.docker.internal:7890 (local registry) is reachable over HTTP
 # `.template` ensures it isn't picked up by the mise task management
+# Named volume for /var/lib/buildkit: the image declares it as a VOLUME, so
+# without this every run mints a leaked 64-hex anonymous volume
 run = '''
 docker rm -f buildkit 2>/dev/null || true
 docker run --rm --privileged -d --name buildkit \
   -e BUILDKIT_DEBUG=1 \
+  -v buildkit-state:/var/lib/buildkit \
   -v "$PWD/.mise/tasks/buildkitd.toml.template:/etc/buildkit/buildkitd.toml:ro" \
   moby/buildkit:latest \
   --config /etc/buildkit/buildkitd.toml
@@ -52,10 +55,12 @@ run = [
   "rm -rf bin dist docs/dist",
   "find . -type d -name node_modules -prune -exec rm -rf {} +",
   # clean up buildkit cache, avoids cached layers from being used
-  "docker exec buildkit buildctl prune",
+  "docker exec buildkit buildctl prune || true",
   "rm -f *.test",
   # stop all railpack containers
   "docker ps -q --filter name=railpack | xargs -r docker stop",
+  # remove leaked integration-test service containers and their anonymous volumes (-v)
+  "docker ps -aq --filter \"label=com.railpack.integration-test\" | xargs -r docker rm -f -v",
   # remove all images created by the integration test suite
   "docker images 'railpack-test-*' -q | xargs -r docker rmi -f",
   # remove images created by manually running `railpack build` against a project example
