@@ -1,6 +1,9 @@
 services:
   postgres:
     image: postgres:17-alpine
+    # marks test services so leaked containers can be cleaned up (see mise clean)
+    labels:
+      com.railpack.integration-test: "true"
     environment:
       POSTGRES_DB: django_db
       POSTGRES_USER: django_user
@@ -13,6 +16,9 @@ services:
 
   redis:
     image: redis:7-alpine
+    # marks test services so leaked containers can be cleaned up (see mise clean)
+    labels:
+      com.railpack.integration-test: "true"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

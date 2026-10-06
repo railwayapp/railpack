@@ -337,6 +337,18 @@ Integration tests can define services (postgres, redis, anything with a docker i
 are required for the application to run. Create a `docker-compose.yml` in a test directory
 and it will automatically be picked up and run before the project container is run.
 
+Label every service with `com.railpack.integration-test: "true"` so containers
+leaked by interrupted runs can be found and removed (with their anonymous
+volumes) by `mise run clean`:
+
+```yaml
+services:
+  postgres:
+    image: postgres:17-alpine
+    labels:
+      com.railpack.integration-test: "true"
+```
+
 Here's an example of how to run the container locally to manually test it:
 
 ```shell

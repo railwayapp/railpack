@@ -1,6 +1,9 @@
 services:
   postgres:
     image: postgres:17-alpine
+    # marks test services so leaked containers can be cleaned up (see mise clean)
+    labels:
+      com.railpack.integration-test: "true"
     environment:
       POSTGRES_DB: rails_db
       POSTGRES_USER: rails_user
