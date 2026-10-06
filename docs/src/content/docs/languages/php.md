@@ -138,7 +138,7 @@ When detected:
 
 - The document root is set to the `/app/public` directory
 - `APP_ENV` is set to `prod` and `APP_DEBUG` to `0`
-- `var/cache` and `var/log` are made writable at build time
+- `var/cache` and `var/log` are created and made writable when the container starts
 - On startup, Doctrine migrations run when available (unless
   `RAILPACK_SKIP_MIGRATIONS` is set) and the production cache is warmed
 
