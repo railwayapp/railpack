@@ -112,9 +112,6 @@ func (p *PhpProvider) Plan(ctx *generate.GenerateContext) error {
 		build := ctx.NewCommandStep("build")
 		build.AddInput(plan.NewStepLayer(composer.Name()))
 		build.AddInput(plan.NewLocalLayer())
-		if framework == "symfony" {
-			p.addSymfonyBuildCommands(build)
-		}
 		ctx.Deploy.Base = plan.NewStepLayer(build.Name())
 		p.ConditionallyIncludeMise(ctx)
 	}
@@ -151,11 +148,14 @@ func (p *PhpProvider) Prepare(ctx *generate.GenerateContext, prepare *generate.C
 		"SERVER_NAME":   ":80",
 		"PHP_INI_DIR":   "/usr/local/etc/php",
 		"OCTANE_SERVER": "frankenphp",
-		// TODO: remove IS_LARAVEL once custom start-container.sh overrides
-		// no longer depend on it (framework is selected at plan time now).
+		// Copied start-container.sh files still branch on $IS_LARAVEL. Unset, they skip Laravel startup.
+		// https://github.com/railwayapp/railpack/blob/main/core/providers/php/start-container.sh
 		"IS_LARAVEL": strconv.FormatBool(framework == "laravel"),
 	}
 	if framework == "symfony" {
+		// Symfony only treats the env name "prod" as production (when@prod, .env.prod). "production" does not match.
+		// APP_DEBUG must be "0". A bool cast of the string "false" is true, and the runtime treats only "1" as debug.
+		// https://symfony.com/doc/current/configuration.html#selecting-the-active-environment
 		envVars["APP_ENV"] = "prod"
 		envVars["APP_DEBUG"] = "0"
 	}
@@ -242,6 +242,7 @@ func (p *PhpProvider) DeployWithNode(ctx *generate.GenerateContext, nodeProvider
 
 	if framework == "laravel" {
 		build.AddCommands([]plan.Command{
+			// artisan cache commands below write into these directories, so they have to exist in this step.
 			plan.NewExecShellCommand("mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs bootstrap/cache && chmod -R a+rw storage"),
 			// config values like APP_KEY are resolved and baked into bootstrap/cache/config.php. Runtime env vars are ignored
 			// for cached configs, leading to MissingAppKeyException if APP_KEY was unset at cache time.
@@ -250,10 +251,6 @@ func (p *PhpProvider) DeployWithNode(ctx *generate.GenerateContext, nodeProvider
 			plan.NewExecCommand("php artisan route:cache"),
 			plan.NewExecCommand("php artisan view:cache"),
 		})
-	}
-
-	if framework == "symfony" {
-		p.addSymfonyBuildCommands(build)
 	}
 
 	ctx.Deploy.Base = plan.NewStepLayer(composer.Name())
@@ -270,12 +267,6 @@ func (p *PhpProvider) DeployWithNode(ctx *generate.GenerateContext, nodeProvider
 	})
 
 	return nil
-}
-
-func (p *PhpProvider) addSymfonyBuildCommands(build *generate.CommandStepBuilder) {
-	build.AddCommands([]plan.Command{
-		plan.NewExecShellCommand("mkdir -p var/cache var/log && chmod -R a+rw var"),
-	})
 }
 
 // Include mise and packages in the final image if the user has specified any additional packages
@@ -370,7 +361,7 @@ func (p *PhpProvider) getPhpExtensions(ctx *generate.GenerateContext) []string {
 		extensions = append(extensions, "redis")
 	}
 
-	// Map iteration order from composer.json is non-deterministic
+	// Map iteration order from composer.json is non-deterministic, so sort to keep the extension list stable across plans.
 	sort.Strings(extensions)
 
 	return extensions
@@ -431,10 +422,14 @@ func (p *PhpProvider) usesSymfony(ctx *generate.GenerateContext) bool {
 	if p.composerRequires(ctx, "symfony/framework-bundle") {
 		return true
 	}
-	// Flex-managed projects without a parseable require entry
+	// Flex is Symfony's Composer plugin. It installs config recipes and records them in symfony.lock.
+	// bin/console is the framework CLI. Both files mean this is a Symfony app when composer.json
+	// does not list symfony/framework-bundle directly.
+	// https://symfony.com/doc/current/setup/flex.html
 	return ctx.App.HasFile("bin/console") && ctx.App.HasFile("symfony.lock")
 }
 
+// True when composer.json require or require-dev contains the package.
 func (p *PhpProvider) composerRequires(ctx *generate.GenerateContext, pkg string) bool {
 	composerJson, err := p.readComposerJson(ctx)
 	if err != nil {
