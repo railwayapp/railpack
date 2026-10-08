@@ -947,20 +947,6 @@ October 16, 2025 · [GitHub release](https://github.com/railwayapp/railpack/rele
 
 **Full Changelog**: [v0.9.0...v0.9.1](https://github.com/railwayapp/railpack/compare/v0.9.0...v0.9.1)
 
-## v0.9.0
-October 7, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.9.0)
-
-### What's Changed
-* fix: use containerd platform parsing to fix platform parsing by @iloveitaly in [#277](https://github.com/railwayapp/railpack/pull/277)
-* test: php snapshot update by @iloveitaly in [#280](https://github.com/railwayapp/railpack/pull/280)
-* chore: mise update 2025.9.19 by @iloveitaly in [#281](https://github.com/railwayapp/railpack/pull/281)
-* feat: add --hide-pretty-plan and --show-plan to prepare by @iloveitaly in [#284](https://github.com/railwayapp/railpack/pull/284)
-* feat: use py package versions from any mise-supported version specification file by @iloveitaly in [#261](https://github.com/railwayapp/railpack/pull/261)
-* chore: mise update 2025.9.25 by @iloveitaly in [#288](https://github.com/railwayapp/railpack/pull/288)
-* chore: mise update 2025.10.4 by @iloveitaly in [#289](https://github.com/railwayapp/railpack/pull/289)
-
-**Full Changelog**: [v0.8.0...v0.9.0](https://github.com/railwayapp/railpack/compare/v0.8.0...v0.9.0)
-
 ## Older releases
 
 This page covers the last year. See all releases on [GitHub](https://github.com/railwayapp/railpack/releases).
