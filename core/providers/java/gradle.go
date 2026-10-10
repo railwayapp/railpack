@@ -54,9 +54,7 @@ func (p *JavaProvider) setGradleVersion(ctx *generate.GenerateContext) {
 		return
 	}
 
-	parsedVersion := string(parseVersionRegex.FindSubmatch([]byte(customVersion))[1])
-
-	miseStep.Version(gradle, parsedVersion, "gradle-wrapper.properties")
+	miseStep.Version(gradle, customVersion, "gradle-wrapper.properties")
 }
 
 func (p *JavaProvider) gradleCache(ctx *generate.GenerateContext) string {
