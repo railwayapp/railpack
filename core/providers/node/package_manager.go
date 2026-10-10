@@ -327,7 +327,8 @@ func (p PackageManager) GetInstallFolder(ctx *generate.GenerateContext) []string
 	switch p {
 	case PackageManagerYarnBerry:
 		installFolders := []string{"/app/.yarn", p.getYarnBerryGlobalFolder(ctx)}
-		if p.getYarnBerryNodeLinker(ctx) == "node-modules" {
+		// both the node-modules and pnpm linkers install into node_modules
+		if p.getYarnBerryNodeLinker(ctx) != "pnp" {
 			installFolders = append(installFolders, "/app/node_modules")
 		}
 		return installFolders
