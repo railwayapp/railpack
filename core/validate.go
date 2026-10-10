@@ -14,10 +14,11 @@ import (
 type ValidatePlanOptions struct {
 	ErrorMissingStartCommand bool
 	ProviderToUse            providers.Provider
+	AvailableProviders       []providers.Provider
 }
 
 func ValidatePlan(plan *plan.BuildPlan, app *app.App, logger *logger.Logger, options *ValidatePlanOptions) bool {
-	if !validateCommands(plan, app, logger) {
+	if !validateCommands(plan, app, logger, options) {
 		return false
 	}
 
@@ -35,7 +36,7 @@ func ValidatePlan(plan *plan.BuildPlan, app *app.App, logger *logger.Logger, opt
 }
 
 // validateCommands checks if the plan has at least one command
-func validateCommands(plan *plan.BuildPlan, app *app.App, logger *logger.Logger) bool {
+func validateCommands(plan *plan.BuildPlan, app *app.App, logger *logger.Logger, options *ValidatePlanOptions) bool {
 	var atLeastOneCommand = false
 	for _, step := range plan.Steps {
 		if len(step.Commands) > 0 {
@@ -44,7 +45,7 @@ func validateCommands(plan *plan.BuildPlan, app *app.App, logger *logger.Logger)
 	}
 
 	if !atLeastOneCommand {
-		logger.LogError("%s", getNoProviderError(app))
+		logger.LogError("%s", getNoProviderError(app, options.AvailableProviders))
 		return false
 	}
 
@@ -107,9 +108,9 @@ func validateDeployLayers(plan *plan.BuildPlan, logger *logger.Logger) bool {
 	return true
 }
 
-func getNoProviderError(app *app.App) string {
+func getNoProviderError(app *app.App, availableProviders []providers.Provider) string {
 	providerNames := []string{}
-	for _, provider := range providers.GetLanguageProviders() {
+	for _, provider := range availableProviders {
 		providerNames = append(providerNames, utils.CapitalizeFirst(provider.Name()))
 	}
 
