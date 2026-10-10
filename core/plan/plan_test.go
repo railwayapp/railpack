@@ -27,7 +27,6 @@ func TestSerialization(t *testing.T) {
 					{"cmd": "npm ci"},
 					{"cmd": "npm run build"}
 				],
-				"useSecrets": true,
 				"outputs": [
 					"dist",
 					"node_modules/.cache"
@@ -44,8 +43,7 @@ func TestSerialization(t *testing.T) {
 					{"cmd": "npm run test"},
 					{"path": "/usr/local/bin"},
 					{"name": "NODE_ENV", "value": "production"}
-				],
-				"useSecrets": false
+				]
 			}
 		],
 		"start": {
