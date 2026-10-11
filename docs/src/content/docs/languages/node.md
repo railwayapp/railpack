@@ -13,14 +13,18 @@ exists in the root directory.
 
 ## Versions
 
+### Node.js
+
 The Node.js version is determined in the following order of priority:
 
 1. Set via the `RAILPACK_NODE_VERSION` environment variable
-2. Read from the `engines.node` field in `package.json`
-3. Read from the `.nvmrc` file
-4. Read from the `.node-version` file
-5. Read from `mise.toml` or `.tool-versions` files
-6. Defaults to `lts`
+2. Read from `devEngines.runtime` in `package.json` through
+   [Mise's idiomatic file parsing](#mise-idiomatic-file-parsing)
+3. Read from the `engines.node` field in `package.json`
+4. Read from the `.nvmrc` file
+5. Read from the `.node-version` file
+6. Read from `mise.toml` or `.tool-versions` files
+7. Defaults to `lts`
 
 This version resolution logic is applied consistently across all scenarios where
 Node is needed, including when Bun is the primary package manager but Node is
@@ -33,6 +37,33 @@ Node.js will likely still work but are not officially supported.
 Node.js GPG verification is disabled by default; see the [GPG verification
 recommendation](/config/recommendations#enable-gpg-verification) to enable it in
 your project.
+
+### Package Manager Versions
+
+The detected package manager's version is determined in the following order:
+
+1. `package.json`, through Mise's idiomatic file parsing described below.
+2. The package manager's `engines` field, such as `engines.pnpm`.
+3. The detected lock file, when its format identifies a compatible version.
+4. The default version for the detected package manager.
+
+### Mise Idiomatic File Parsing
+
+For Node.js, npm, Yarn, pnpm, and Bun, Mise parses `package.json` as an
+[idiomatic version file](https://mise.jdx.dev/configuration.html#idiomatic-version-files).
+For Node.js, Mise reads `devEngines.runtime.version` when
+`devEngines.runtime.name` is `node`.
+
+For package managers, Mise checks these fields in order:
+
+1. `devEngines.packageManager`: Uses `version` when `name` matches the detected
+   package manager. The value may be an object or an array, in which case Mise
+   reads the first entry.
+2. `packageManager`: Parses `<package-manager>@<version>` and removes an optional
+   `+hash` suffix.
+
+Railpack parses additional package manager version sources as described in
+[Versions](#package-manager-versions).
 
 ## Runtime Variables
 
@@ -96,23 +127,25 @@ available during the build.
 Railpack detects your package manager in the following order:
 
 1. **packageManager field**: Reads the `packageManager` field from
-   `package.json` (uses Corepack to install the specified version)
-2. **Lock files**: Falls back to detecting based on lock files:
+   `package.json`
+2. **Mise idiomatic version files**: If Mise resolves exactly one of
+   pnpm, Yarn, Bun, or npm from `package.json` (`devEngines.packageManager`
+   or `packageManager`), that manager is used. A tool listed only in
+   `mise.toml` or `.tool-versions` does not select the package manager.
+3. **Lock files**: Falls back to detecting based on lock files:
    - `pnpm-lock.yaml` for pnpm
    - `bun.lockb` or `bun.lock` for Bun
    - `.yarnrc.yml` or `.yarnrc.yaml` for Yarn Berry (2+)
    - `yarn.lock` for Yarn 1
-3. **engines field**: As a fallback, checks the `engines` field in
+4. **engines field**: As a fallback, checks the `engines` field in
    `package.json` for package manager versions:
    - `engines.pnpm` for pnpm version
    - `engines.bun` for Bun version
    - `engines.yarn` for Yarn version
    - Defaults to npm if no package manager is detected
 
-When the `packageManager` field is present, Railpack will use Corepack to
-install the specified package manager version. When a package manager is
-detected via the `engines` field, the specified version constraint will be
-used.
+When the `packageManager` field selects npm or Yarn, Corepack installs its
+specified version.
 
 Railpack supports building native modules and automatically configures `node-gyp`.
 

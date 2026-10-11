@@ -83,6 +83,33 @@ Example `composer.json` with required extensions:
 }
 ```
 
+## Apt Packages
+
+Railpack normally normally installs build and deploy apt packages on different images.
+However, PHP uses the FrankenPHP image for both the build and the final image, instead of
+the standard railpack runtime base because mise does not support precompiled PHP binaries natively.
+
+[`buildAptPackages`](/guides/installing-packages#apt) and
+[`deploy.aptPackages`](/guides/installing-packages#apt) are therefore installed
+together on the FrankenPHP image. `...` entries from apt package lists are removed,
+and combined list of build and deploy packages are available in the final deploy image.
+
+Packages added for Composer (`git`, `zip`, `unzip`, and `ca-certificates`) stay installed.
+
+For example:
+
+```json title="railpack.json"
+{
+  "$schema": "https://schema.railpack.com",
+  "buildAptPackages": ["libpng-dev"],
+  "deploy": {
+    "aptPackages": ["jq", "ffmpeg"]
+  }
+}
+```
+
+Will result in `libpng-dev`, `jq`, and `ffmpeg` in the final deploy image.
+
 ## Laravel Support
 
 Laravel applications are detected by the presence of an `artisan` file. When

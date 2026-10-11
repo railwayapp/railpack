@@ -1,0 +1,3 @@
+# The root ignore matches every mise.local.toml. This fixture has to be
+# committed so the planner test can see a dockerignored local override.
+!mise.local.toml

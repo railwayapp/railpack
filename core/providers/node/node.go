@@ -151,12 +151,20 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	p.Build(ctx, build)
 
 	// note the best place for it, but it avoids having to worry about side effects in the framework helper functions
-	if p.usesTanstackSrvxFallback() {
-		ctx.Logger.LogInfo("No start script found; using srvx as production server")
-		ctx.Logger.LogSuggestion(
-			"Set up Nitro for production Node deploys",
-			"https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro",
-		)
+	if p.usesTanstackStartFallback() {
+		if p.usesTanstackNitro(ctx) {
+			ctx.Logger.LogInfo("No start script found; using the Nitro server at .output/server/index.mjs")
+			ctx.Logger.LogSuggestion(
+				"Add a start script to make the server command explicit",
+				"https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro",
+			)
+		} else {
+			ctx.Logger.LogInfo("No start script found; using srvx as production server")
+			ctx.Logger.LogSuggestion(
+				"Set up Nitro for production Node deploys",
+				"https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro",
+			)
+		}
 	}
 
 	// Deploy
@@ -261,7 +269,7 @@ func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	} else if p.isNuxt() {
 		// Default Nuxt start command
 		return "node .output/server/index.mjs"
-	} else if start := p.getTanstackStartCommand(); start != "" {
+	} else if start := p.getTanstackStartCommand(ctx); start != "" {
 		return start
 	} else if start := p.getSvelteKitStartCommand(); start != "" {
 		return start
@@ -361,6 +369,10 @@ func (p *NodeProvider) shouldPrune(ctx *generate.GenerateContext) bool {
 func (p *NodeProvider) PruneNodeDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
 	ctx.Logger.LogInfo("Pruning node dependencies")
 	prune.Variables["NPM_CONFIG_PRODUCTION"] = "true"
+	if p.packageManager == PackageManagerBun {
+		// Keep symlinks project-local in node_modules across container build layers
+		prune.Variables["BUN_INSTALL_GLOBAL_STORE"] = "0"
+	}
 	prune.Secrets = []string{}
 	p.packageManager.PruneDeps(ctx, prune)
 }
@@ -498,6 +510,11 @@ func (p *NodeProvider) GetNodeEnvVars(ctx *generate.GenerateContext) map[string]
 		envVars["YARN_PRODUCTION"] = "false"
 	}
 
+	if p.packageManager == PackageManagerBun {
+		// Keep symlinks project-local in node_modules across container build layers
+		envVars["BUN_INSTALL_GLOBAL_STORE"] = "0"
+	}
+
 	// TODO why are we special-casing astro here? Smells like a misunderstanding of how astro works...
 	if p.isAstro(ctx) && !p.isAstroSPA(ctx) {
 		maps.Copy(envVars, p.getAstroEnvVars())
@@ -510,9 +527,12 @@ func (p *NodeProvider) hasDependency(dependency string) bool {
 	return p.packageJson.hasDependency(dependency)
 }
 
-// if 'packageManager' field exists in package.json, then assume corepack unless using bun
+// Use Corepack for package managers that are not installed directly through mise.
 func (p *NodeProvider) usesCorepack() bool {
-	return p.packageJson != nil && p.packageJson.PackageManager != nil && p.packageManager != PackageManagerBun
+	return p.packageJson != nil &&
+		p.packageJson.PackageManager != nil &&
+		p.packageManager != PackageManagerBun &&
+		p.packageManager != PackageManagerPnpm
 }
 
 func (p *NodeProvider) usesPuppeteer() bool {
@@ -521,6 +541,38 @@ func (p *NodeProvider) usesPuppeteer() bool {
 
 func (p *NodeProvider) usesProductionPlaywright() bool {
 	return p.workspace.HasProductionDependency("playwright")
+}
+
+// Mise already parsed package.json (devEngines / packageManager). Use that when it names exactly one manager.
+func packageManagerFromIdiomaticMise(ctx *generate.GenerateContext) (PackageManager, bool) {
+	versions, err := ctx.GetMiseStepBuilder().GetMisePackageVersions(ctx)
+	if err != nil {
+		ctx.Logger.LogWarn("Failed to get package versions from mise: %s", err.Error())
+		return "", false
+	}
+
+	var found []string
+	for _, name := range []string{"pnpm", "yarn", "bun", "npm"} {
+		if pkg := versions[name]; pkg != nil && pkg.Source == "idiomatic-version-file" {
+			found = append(found, name)
+		}
+	}
+	if len(found) != 1 {
+		return "", false
+	}
+
+	switch found[0] {
+	case "pnpm":
+		return PackageManagerPnpm, true
+	case "npm":
+		return PackageManagerNpm, true
+	case "bun":
+		return PackageManagerBun, true
+	case "yarn":
+		return parseYarnPackageManager(versions["yarn"].Version), true
+	default:
+		return "", false
+	}
 }
 
 // determine the major version of yarn from a version string. These major versions are installed and managed quite
@@ -554,6 +606,10 @@ func (p *NodeProvider) getPackageManager(ctx *generate.GenerateContext) PackageM
 		} else {
 			log.Warnf("Unknown package manager `%s` specified in package.json, defaulting to npm", pmName)
 		}
+	}
+
+	if pm, ok := packageManagerFromIdiomaticMise(ctx); ok {
+		return pm
 	}
 
 	// Fall back to file-based detection

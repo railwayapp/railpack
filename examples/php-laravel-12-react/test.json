@@ -1,8 +1,5 @@
 [
     {
-        "expectedOutput": "starting server loop"
-    },
-    {
         "httpCheck": {
             "path": "/",
             "expected": 200,

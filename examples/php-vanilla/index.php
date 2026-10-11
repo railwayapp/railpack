@@ -1,3 +1,10 @@
+<?php
+exec('jq --version 2>&1', $jqOutput, $jqExitCode);
+$jqVersion = trim(implode("\n", $jqOutput));
+if ($jqExitCode !== 0 || !str_starts_with($jqVersion, 'jq-')) {
+	http_response_code(500);
+}
+?>
 <!DOCTYPE html>
 <html>
 	<head>
@@ -36,6 +43,7 @@
 		  <h1>Hello World!</h1>
 		  <p>Welcome to <a href="https://github.com/railwayapp/railpack">Railpack</a>!</p>
 		  <p><b>PHP Version:</b> <?php echo phpversion() ?></p>
+		  <p><b>jq:</b> <?php echo htmlspecialchars($jqVersion) ?></p>
 		</div>
 	</body>
 </html>

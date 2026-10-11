@@ -11,7 +11,7 @@
  },
  "deploy": {
   "base": {
-   "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.8.6"
+   "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.10.5"
   },
   "inputs": [
    {
@@ -44,6 +44,7 @@
   ],
   "startCommand": "bun run start",
   "variables": {
+   "BUN_INSTALL_GLOBAL_STORE": "0",
    "CI": "true",
    "NODE_ENV": "production",
    "NPM_CONFIG_FETCH_RETRIES": "5",
@@ -74,7 +75,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.8.6"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.10.5"
     }
    ],
    "name": "packages:mise",
@@ -112,6 +113,7 @@
    ],
    "name": "install",
    "variables": {
+    "BUN_INSTALL_GLOBAL_STORE": "0",
     "CI": "true",
     "NODE_ENV": "production",
     "NPM_CONFIG_FETCH_RETRIES": "5",

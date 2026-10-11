@@ -150,8 +150,9 @@ python = "3.13.2"
 locked = true
 ```
 
-Commit the generated `mise.lock` file alongside your `mise.toml`. Railpack
-automatically includes `mise.lock` files in the build when present.
+Commit the generated lockfile alongside the config (`mise.lock`, or
+`mise.local.lock` / `mise.<env>.lock` for those configs). Railpack includes
+the lockfile for each detected config.
 
 ## Enable GPG Verification
 
@@ -247,3 +248,14 @@ and assets available inside the running container environment:
 
 See [Excluding Files](/config/excluding-files) for full details on pattern
 matching and using `railpack.json` exclusions.
+
+## Pick One Ignore Approach
+
+Use a `.dockerignore` file or the `exclude` field in `railpack.json`. Pick one
+of those approaches.
+
+When both are present, the two lists are merged into a single pattern list.
+`.dockerignore` patterns come first, then `railpack.json` patterns. The last
+matching pattern wins, so the lists can negate each other if you aren't
+careful. An entry in `railpack.json` can undo a `.dockerignore` rule, and a
+`!` pattern in either list can pull a file back into the build.

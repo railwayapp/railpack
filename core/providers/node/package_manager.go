@@ -182,11 +182,12 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 
 			// pnpm 11+ installs global bins under PNPM_HOME/bin.
 			//
-			// We compare against the mise-resolved version rather than the requested one solely to handle
-			// the Node ecosystem's "x-range" engines notation (e.g. `engines.pnpm: "11.5.x"`), which is not
-			// valid semver and so cannot be parsed directly. Mise resolves it to a concrete version
-			// (e.g. "11.5.1") that we can compare. For any other source (exact version, mise.toml, etc.)
-			// resolving vs. using the requested string would yield the same result.
+			// Compare against the mise-resolved version rather than the requested one. The Node ecosystem
+			// permits x-ranges such as `engines.pnpm: "11.5.x"`, which are not valid semver and cannot be
+			// compared directly. Mise resolves them to a concrete version (e.g. "11.5.1"). Mise's idiomatic
+			// package.json parsing may also override Railpack's requested engines or lockfile fallback via
+			// `devEngines.packageManager` or `packageManager` (including values with a hash suffix), so the
+			// resolved version is the authoritative version that will actually be installed.
 			if usesPnpmBinSubdir(resolvePnpmVersion(ctx)) {
 				pnpmBinPath = PNPM_HOME + "/bin"
 			}
@@ -278,18 +279,13 @@ func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate
 }
 
 func (p PackageManager) prunePnpm(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
-	if packageJson, err := p.getPackageJsonFromContext(ctx); err == nil {
-		_, pnpmVersion := packageJson.GetPackageManagerInfo()
-		if pnpmVersion != "" {
-			pnpmVersion, err := semver.NewVersion(pnpmVersion)
+	pnpmVersion, err := semver.NewVersion(resolvePnpmVersion(ctx))
 
-			// pnpm 8.15.6 added the --ignore-scripts flag to the prune command
-			// https://github.com/pnpm/pnpm/releases/tag/v8.15.6
-			if err == nil && pnpmVersion.Compare(semver.MustParse("8.15.6")) == -1 {
-				prune.AddCommand(plan.NewExecCommand("pnpm prune --prod"))
-				return
-			}
-		}
+	// pnpm 8.15.6 added the --ignore-scripts flag to the prune command
+	// https://github.com/pnpm/pnpm/releases/tag/v8.15.6
+	if err == nil && pnpmVersion.Compare(semver.MustParse("8.15.6")) == -1 {
+		prune.AddCommand(plan.NewExecCommand("pnpm prune --prod"))
+		return
 	}
 
 	prune.AddCommand(plan.NewExecCommand("pnpm prune --prod --ignore-scripts"))
@@ -405,13 +401,6 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 			packages.Version(pnpm, packageJson.Engines["pnpm"], "package.json > engines > pnpm")
 		}
 
-		if pmName == "pnpm" && pmVersion != "" {
-			packages.Version(pnpm, pmVersion, "package.json > packageManager")
-
-			// skip installing via Mise and install with corepack instead
-			// https://github.com/railwayapp/railpack/issues/201
-			packages.SkipMiseInstall(pnpm)
-		}
 	}
 
 	// Yarn

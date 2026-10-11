@@ -12,13 +12,13 @@
   {
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y ca-certificates git unzip zip'",
-     "customName": "install apt packages: ca-certificates git unzip zip"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y ca-certificates git jq unzip zip'",
+     "customName": "install apt packages: ca-certificates git jq unzip zip"
     }
    ],
    "inputs": [
     {
-     "image": "dunglas/frankenphp:php8.4.24-trixie"
+     "image": "dunglas/frankenphp:php8.4.26-trixie"
     }
    ],
    "name": "packages:image"

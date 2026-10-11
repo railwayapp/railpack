@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/gkampitakis/go-snaps/snaps"
@@ -231,4 +232,45 @@ func TestGenerateBuildPlan_DockerignoreMetadata(t *testing.T) {
 	require.NotNil(t, buildResult.Metadata)
 	require.Equal(t, "true", buildResult.Metadata["dockerIgnore"])
 	require.NotEmpty(t, buildResult.Plan.Exclude)
+}
+
+func TestGenerateBuildPlan_DockerignoreExcludesDiscoveredFiles(t *testing.T) {
+	appPath := "../examples/dockerignore-planner"
+	userApp, err := app.NewApp(appPath)
+	require.NoError(t, err)
+
+	env := app.NewEnvironment(nil)
+	buildResult, err := GenerateBuildPlan(userApp, env, &GenerateBuildPlanOptions{})
+	require.NoError(t, err)
+	require.True(t, buildResult.Success)
+
+	srcs := copySources(buildResult.Plan)
+	require.Contains(t, srcs, "package.json")
+	require.Contains(t, srcs, "mise.toml")
+	require.NotContains(t, srcs, "mise.local.toml")
+	require.NotContains(t, srcs, "docs/marketing/package.json")
+	require.Contains(t, buildResult.Plan.Exclude, "mise.local.toml")
+
+	nodePkg := buildResult.ResolvedPackages["node"]
+	require.NotNil(t, nodePkg)
+	require.NotNil(t, nodePkg.RequestedVersion)
+	require.Truef(t, strings.HasPrefix(*nodePkg.RequestedVersion, "22"),
+		"dockerignored mise.local.toml changed the node version to %s (%s)",
+		*nodePkg.RequestedVersion, nodePkg.Source)
+	require.Equal(t, "mise.toml", nodePkg.Source)
+}
+
+// Src of each copy command. The plan stores copies as command values, not as a field on the step.
+func copySources(p *plan.BuildPlan) []string {
+	var srcs []string
+	for _, step := range p.Steps {
+		for _, cmd := range step.Commands {
+			copyCmd, ok := cmd.(plan.CopyCommand)
+			if !ok {
+				continue
+			}
+			srcs = append(srcs, copyCmd.Src)
+		}
+	}
+	return srcs
 }

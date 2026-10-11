@@ -7,6 +7,148 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
+## v0.40.1
+September 28, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.40.1)
+
+### CLI
+
+#### Fixed
+
+* **Config:** Fixed `railpack.json` [string shorthand commands](https://railpack.com/config/file#string-format) such as `COPY:src dest` and `PATH:/bin` failing at runtime with `sh: 1: COPY:... not found`. by @vunas in [#760](https://github.com/railwayapp/railpack/pull/760)
+
+### Mise Upgrades
+
+Updated mise from v2026.9.12 to [v2026.9.15](https://github.com/jdx/mise/releases/tag/v2026.9.15).
+
+* **Pinned pnpm:** A configured pnpm version now overrides Node's bundled pnpm regardless of tool order. ([v2026.9.13](https://github.com/jdx/mise/releases/tag/v2026.9.13))
+* **Stable lockfiles:** Locked tools stay on their locked backend when the registry moves a tool, with the new `mise backends switch` command to migrate them intentionally. ([v2026.9.13](https://github.com/jdx/mise/releases/tag/v2026.9.13))
+* **Fewer GitHub rate limits:** Version and release metadata for public GitHub repos now resolves through the mise-versions mirror instead of consuming the GitHub API rate limit. ([v2026.9.14](https://github.com/jdx/mise/releases/tag/v2026.9.14))
+* **Verified installs:** Registry GitHub backends can now require verified GitHub attestations for downloaded assets, with a missing attestation failing the install. ([v2026.9.14](https://github.com/jdx/mise/releases/tag/v2026.9.14))
+
+**Full Changelog**: [v0.40.0...v0.40.1](https://github.com/railwayapp/railpack/compare/v0.40.0...v0.40.1)
+
+*Internal mise updates and removal of the temporary Debian upgrade notice for custom apt packages by @iloveitaly.*
+
+## v0.40.0
+September 24, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.40.0)
+
+### Providers
+
+#### Fixed
+
+* **Node:** [Bun projects](https://railpack.com/languages/bun#global-store-bun_install_global_store) now set `BUN_INSTALL_GLOBAL_STORE=0` by default to keep the isolated dependency store local and prevent broken symlinks across container layers. by @iloveitaly in [#756](https://github.com/railwayapp/railpack/pull/756)
+* **PHP:** [Apt package lists](https://railpack.com/languages/php#apt-packages) in FrankenPHP images now properly expand `...` spread operators instead of passing them literally to `apt-get`. by @Tyagiquamar in [#748](https://github.com/railwayapp/railpack/pull/748)
+
+### CLI
+
+#### Fixed
+
+* **Planner:** File discovery now respects [excluded files](https://railpack.com/config/excluding-files) from `.dockerignore` and `railpack.json`, preventing build failures caused by copying excluded manifests and ignoring excluded local mise configs. by @iloveitaly in [#757](https://github.com/railwayapp/railpack/pull/757)
+
+### Mise Upgrades
+
+Updated mise from v2026.8.16 to [v2026.9.12](https://github.com/jdx/mise/releases/tag/v2026.9.12).
+
+* **Lockfile revision 2:** Newly generated lockfiles now use revision 2 format with `.mise/locks/` dependency sidecars, and locked installs verify graph integrity. ([v2026.9.7](https://github.com/jdx/mise/releases/tag/v2026.9.7))
+* **Go workspace toolchains:** Active `go.work` files with a `toolchain` directive now select the Go version during builds while member `go.mod` files are ignored. ([v2026.9.12](https://github.com/jdx/mise/releases/tag/v2026.9.12))
+* **Ruby Gemfile version files:** Bundler `ruby file: ".ruby-version"` declarations in `Gemfile` are now parsed to resolve the project's Ruby version. ([v2026.9.2](https://github.com/jdx/mise/releases/tag/v2026.9.2))
+* **Lockfile URL validation:** Installs now fail early if a locked platform URL mismatches the entry's version, preventing silent installation of mismatched releases. ([v2026.9.12](https://github.com/jdx/mise/releases/tag/v2026.9.12))
+
+**Full Changelog**: [v0.39.0...v0.40.0](https://github.com/railwayapp/railpack/compare/v0.39.0...v0.40.0)
+
+## v0.39.0
+September 3, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.39.0)
+
+### What's Changed
+* chore: mise update 2026.8.14 by @github-actions[bot] in [#726](https://github.com/railwayapp/railpack/pull/726)
+* chore: mise update 2026.8.15 by @github-actions[bot] in [#729](https://github.com/railwayapp/railpack/pull/729)
+* chore: mise update 2026.8.16 by @github-actions[bot] in [#731](https://github.com/railwayapp/railpack/pull/731)
+* fix(node): don't crash TanStack Start apps that use Nitro without a start script by @codyde in [#734](https://github.com/railwayapp/railpack/pull/734)
+* feat(node): tell users when @tanstack/react-start is in the wrong dependency section by @codyde in [#735](https://github.com/railwayapp/railpack/pull/735)
+
+### New Contributors
+* @codyde made their first contribution in [#734](https://github.com/railwayapp/railpack/pull/734)
+
+**Full Changelog**: [v0.38.0...v0.39.0](https://github.com/railwayapp/railpack/compare/v0.38.0...v0.39.0)
+
+## v0.38.0
+August 26, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.38.0)
+
+### Breaking Changes
+
+* **pnpm provisioning and devEngines precedence:** pnpm is now installed directly via Mise instead of Corepack, and `devEngines` declarations in `package.json` now take precedence over `engines`, `.nvmrc`, and lockfiles for Node.js and pnpm resolution. ([#678]([#678](https://github.com/railwayapp/railpack/pull/678)#user-content-breaking-changes))
+
+### Providers
+
+#### New
+
+* **Node:** Railpack now supports [pnpm idiomatic version files](https://railpack.com/languages/node#mise-idiomatic-file-parsing) and `devEngines.packageManager` in `package.json`, provisioning pnpm directly via Mise instead of Corepack. Specify your pnpm version using `"devEngines": { "packageManager": { "name": "pnpm", "version": "9.1.0" } }` (or the array syntax `[{ "name": "pnpm", "version": "9.1.0" }]`), and Railpack will automatically resolve and install it. by @iloveitaly in [#678](https://github.com/railwayapp/railpack/pull/678)
+
+### Mise Upgrades
+
+Updated mise from v2026.8.11 to [v2026.8.13](https://github.com/jdx/mise/releases/tag/v2026.8.13).
+
+* **GitHub install rate limits:** Lockfile-pinned tools with checksums no longer query the GitHub API at install time, avoiding rate-limit failures during builds. ([v2026.8.13](https://github.com/jdx/mise/releases/tag/v2026.8.13))
+* **UTF-8 BOM in version files:** Idiomatic version files such as `.tool-versions`, `.node-version`, and `package.json` that begin with a UTF-8 byte-order mark now parse correctly instead of corrupting version strings. ([v2026.8.12](https://github.com/jdx/mise/releases/tag/v2026.8.12))
+* **Monorepo lockfiles:** Tool versions across monorepo directories are now tracked in their respective lockfiles rather than merged into a single file. ([v2026.8.13](https://github.com/jdx/mise/releases/tag/v2026.8.13))
+* **Go GOROOT isolation:** `go install` no longer inherits a `GOROOT` exported for a different Go installation, preventing tool version mismatch errors. ([v2026.8.12](https://github.com/jdx/mise/releases/tag/v2026.8.12))
+
+**Full Changelog**: [v0.37.1...v0.38.0](https://github.com/railwayapp/railpack/compare/v0.37.1...v0.38.0)
+
+## v0.37.1
+August 24, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.37.1)
+
+### Breaking Changes
+
+* **Cache disabling:** `RAILPACK_DISABLE_CACHES` is no longer read from the host process environment and must be passed explicitly via `--env`. ([#696]([#696](https://github.com/railwayapp/railpack/pull/696)#user-content-breaking-changes))
+
+### CLI
+
+#### Fixed
+
+* **Cache disabling:** `RAILPACK_DISABLE_CACHES` is now configured via `--env` and applied during build plan generation, ensuring cache mounts are deterministically stripped matching other [build environment variables](https://railpack.com/config/environment-variables). by @iloveitaly in [#696](https://github.com/railwayapp/railpack/pull/696)
+* **Image environment:** Deduplicate inherited `PATH` entries when merging build and deploy environments, preventing duplicate paths in the final image while preserving precedence. by @iloveitaly in [#697](https://github.com/railwayapp/railpack/pull/697)
+
+### Mise Upgrades
+
+Updated mise from v2026.8.6 to [v2026.8.11](https://github.com/jdx/mise/releases/tag/v2026.8.11).
+
+* **Ruby on musl:** glibc precompiled Ruby binaries are now skipped on musl Linux environments, falling back to ruby-build. ([v2026.8.11](https://github.com/jdx/mise/releases/tag/v2026.8.11))
+* **npm version resolution:** Deprecated versions are now filtered out during tool version resolution. ([v2026.8.11](https://github.com/jdx/mise/releases/tag/v2026.8.11))
+* **Aqua Linux assets:** glibc Linux targets now prefer glibc release assets over musl binaries when resolving tools. ([v2026.8.9](https://github.com/jdx/mise/releases/tag/v2026.8.9))
+* **Erlang checksums:** Precompiled Erlang installations now verify checksums. ([v2026.8.7](https://github.com/jdx/mise/releases/tag/v2026.8.7))
+
+**Full Changelog**: [v0.37.0...v0.37.1](https://github.com/railwayapp/railpack/compare/v0.37.0...v0.37.1)
+
+## v0.37.0
+August 18, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.37.0)
+
+### Breaking Changes
+
+* **Debian 13 base images:** New builds now use Debian 13 (Trixie), requiring custom Apt package lists and pinned base images to be compatible with Debian 13. ([#698]([#698](https://github.com/railwayapp/railpack/pull/698)#user-content-breaking-changes))
+* **GCC 14 native builds:** Native gem and extension compilation now uses GCC 14, treating incompatible pointer types as errors and potentially requiring dependency updates or compiler flags. ([#705]([#705](https://github.com/railwayapp/railpack/pull/705)#user-content-breaking-changes))
+
+### CLI
+
+#### New
+
+* **Debian 13:** Builder and runtime base images are now upgraded to Debian 13 (Trixie). Configure [custom Apt packages](https://railpack.com/guides/installing-packages#apt) with Debian 13 package names using `RAILPACK_DEPLOY_APT_PACKAGES` or `deploy.aptPackages`. by @iloveitaly in [#698](https://github.com/railwayapp/railpack/pull/698)
+
+#### Fixed
+
+* **Debian 13:** Builder images now include `libicu-dev` to ensure .NET restore and native gem compilation succeed on Debian 13, and Railpack warns during build planning when custom Apt packages are detected. by @iloveitaly in [#705](https://github.com/railwayapp/railpack/pull/705)
+
+### Mise Upgrades
+
+Updated mise from v2026.8.4 to [v2026.8.6](https://github.com/jdx/mise/releases/tag/v2026.8.6).
+
+* **Resumable downloads:** Interrupted artifact downloads now resume via HTTP Range requests, and transient network errors such as HTTP/2 stream refusals are automatically retried. ([v2026.8.6](https://github.com/jdx/mise/releases/tag/v2026.8.6))
+* **Precompiled PyPy:** PyPy can now be installed via precompiled binaries when compilation is disabled. ([v2026.8.5](https://github.com/jdx/mise/releases/tag/v2026.8.5))
+* **Node source patching:** Node source builds can now apply local or remote patches before configuration using `node.apply_patches`. ([v2026.8.5](https://github.com/jdx/mise/releases/tag/v2026.8.5))
+* **Rust nightly toolchains:** The rolling `nightly` channel resolves to concrete date-based toolchains for reproducible lockfiles and caching. ([v2026.8.6](https://github.com/jdx/mise/releases/tag/v2026.8.6))
+
+**Full Changelog**: [v0.36.4...v0.37.0](https://github.com/railwayapp/railpack/compare/v0.36.4...v0.37.0)
+
 ## v0.36.4
 August 12, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.36.4)
 
@@ -804,148 +946,6 @@ October 16, 2025 · [GitHub release](https://github.com/railwayapp/railpack/rele
 * fix: support + character in environment variable names by @coffee-cup in [#294](https://github.com/railwayapp/railpack/pull/294)
 
 **Full Changelog**: [v0.9.0...v0.9.1](https://github.com/railwayapp/railpack/compare/v0.9.0...v0.9.1)
-
-## v0.9.0
-October 7, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.9.0)
-
-### What's Changed
-* fix: use containerd platform parsing to fix platform parsing by @iloveitaly in [#277](https://github.com/railwayapp/railpack/pull/277)
-* test: php snapshot update by @iloveitaly in [#280](https://github.com/railwayapp/railpack/pull/280)
-* chore: mise update 2025.9.19 by @iloveitaly in [#281](https://github.com/railwayapp/railpack/pull/281)
-* feat: add --hide-pretty-plan and --show-plan to prepare by @iloveitaly in [#284](https://github.com/railwayapp/railpack/pull/284)
-* feat: use py package versions from any mise-supported version specification file by @iloveitaly in [#261](https://github.com/railwayapp/railpack/pull/261)
-* chore: mise update 2025.9.25 by @iloveitaly in [#288](https://github.com/railwayapp/railpack/pull/288)
-* chore: mise update 2025.10.4 by @iloveitaly in [#289](https://github.com/railwayapp/railpack/pull/289)
-
-**Full Changelog**: [v0.8.0...v0.9.0](https://github.com/railwayapp/railpack/compare/v0.8.0...v0.9.0)
-
-## v0.8.0
-September 25, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.8.0)
-
-### What's Changed
-* chore: mise update 2025.9.17 by @iloveitaly in [#274](https://github.com/railwayapp/railpack/pull/274)
-* feat: dockerignore support by @iloveitaly in [#263](https://github.com/railwayapp/railpack/pull/263)
-* fix: missing local layer usage by @iloveitaly in [#276](https://github.com/railwayapp/railpack/pull/276)
-* chore: mise update 2025.9.18 by @iloveitaly in [#275](https://github.com/railwayapp/railpack/pull/275)
-
-**Full Changelog**: [v0.7.2...v0.8.0](https://github.com/railwayapp/railpack/compare/v0.7.2...v0.8.0)
-
-## v0.7.2
-September 19, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.7.2)
-
-### What's Changed
-* fix: gracefully handle resolution failures for packages with SkipMiseInstall=true by @coffee-cup in [#273](https://github.com/railwayapp/railpack/pull/273)
-
-**Full Changelog**: [v0.7.1...v0.7.2](https://github.com/railwayapp/railpack/compare/v0.7.1...v0.7.2)
-
-## v0.7.1
-September 17, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.7.1)
-
-### What's Changed
-* Add configurable skippable commands list to pretty print output by @coffee-cup in [#271](https://github.com/railwayapp/railpack/pull/271)
-
-**Full Changelog**: [v0.7.0...v0.7.1](https://github.com/railwayapp/railpack/compare/v0.7.0...v0.7.1)
-
-## v0.7.0
-September 16, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.7.0)
-
-### What's Changed
-* Update Rust examples by @coffee-cup in [#268](https://github.com/railwayapp/railpack/pull/268)
-* Update default versions for Go, Python, Ruby, and Rust providers by @coffee-cup in [#267](https://github.com/railwayapp/railpack/pull/267)
-
-**Full Changelog**: [v0.6.1...v0.7.0](https://github.com/railwayapp/railpack/compare/v0.6.1...v0.7.0)
-
-## v0.6.1
-September 16, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.6.1)
-
-### What's Changed
-* test: use poetry cli to run python by @iloveitaly in [#257](https://github.com/railwayapp/railpack/pull/257)
-* chore: mise update 2025.9.9 by @iloveitaly in [#262](https://github.com/railwayapp/railpack/pull/262)
-* fix: remove python3-dev apt package by @iloveitaly in [#256](https://github.com/railwayapp/railpack/pull/256)
-* Update node examples by @railway-bot in [#266](https://github.com/railwayapp/railpack/pull/266)
-
-### New Contributors
-* @railway-bot made their first contribution in [#266](https://github.com/railwayapp/railpack/pull/266)
-
-**Full Changelog**: [v0.6.0...v0.6.1](https://github.com/railwayapp/railpack/compare/v0.6.0...v0.6.1)
-
-## v0.6.0
-September 11, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.6.0)
-
-### What's Changed
-* feat: support for expanded platform arguments by @iloveitaly in [#246](https://github.com/railwayapp/railpack/pull/246)
-* chore: mise update 2025.9.6 by @iloveitaly in [#254](https://github.com/railwayapp/railpack/pull/254)
-* fix: hard fail on invalid railpack.json by @iloveitaly in [#226](https://github.com/railwayapp/railpack/pull/226)
-* feat: add support for .bun-version file by @coffee-cup in [#258](https://github.com/railwayapp/railpack/pull/258)
-
-**Full Changelog**: [v0.5.1...v0.6.0](https://github.com/railwayapp/railpack/compare/v0.5.1...v0.6.0)
-
-## v0.5.1
-September 5, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.5.1)
-
-### What's Changed
-* Revert "fix: use default mise backends for python packages" by @coffee-cup in [#252](https://github.com/railwayapp/railpack/pull/252)
-
-**Full Changelog**: [v0.5.0...v0.5.1](https://github.com/railwayapp/railpack/compare/v0.5.0...v0.5.1)
-
-## v0.5.0
-September 4, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.5.0)
-
-### What's Changed
-* chore: mise update 2025.8.21 by @iloveitaly in [#236](https://github.com/railwayapp/railpack/pull/236)
-* test: fix php snapshot by @iloveitaly in [#239](https://github.com/railwayapp/railpack/pull/239)
-* fix(install): handle GitHub API throttling by @lionello in [#235](https://github.com/railwayapp/railpack/pull/235)
-* fix: add -e alias for --env by @iloveitaly in [#243](https://github.com/railwayapp/railpack/pull/243)
-* test: assert against exact yarn package manager versions by @iloveitaly in [#238](https://github.com/railwayapp/railpack/pull/238)
-* fix: fail early if no shell start script is detected, stop globbing shell script by @iloveitaly in [#240](https://github.com/railwayapp/railpack/pull/240)
-* fix: fallback to raw version when no package versions exist by @iloveitaly in [#245](https://github.com/railwayapp/railpack/pull/245)
-* test: pass GITHUB_TOKEN to docker containers running the railpack buildplan by @iloveitaly in [#247](https://github.com/railwayapp/railpack/pull/247)
-* fix: support node projects without dependencies by @iloveitaly in [#242](https://github.com/railwayapp/railpack/pull/242)
-* feat: support react router build cache by @iloveitaly in [#244](https://github.com/railwayapp/railpack/pull/244)
-* fix: improved buildkit error message by @iloveitaly in [#237](https://github.com/railwayapp/railpack/pull/237)
-* refactor: use consistent local layers entrypoint by @iloveitaly in [#241](https://github.com/railwayapp/railpack/pull/241)
-* fix: use default mise backends for python packages by @iloveitaly in [#249](https://github.com/railwayapp/railpack/pull/249)
-* fix: --verbose enables mise verbose logging by @iloveitaly in [#248](https://github.com/railwayapp/railpack/pull/248)
-
-### New Contributors
-* @lionello made their first contribution in [#235](https://github.com/railwayapp/railpack/pull/235)
-
-**Full Changelog**: [v0.4.0...v0.5.0](https://github.com/railwayapp/railpack/compare/v0.4.0...v0.5.0)
-
-## v0.4.0
-August 27, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.4.0)
-
-### What's Changed
-* fix: remove yarn gpg workaround by @iloveitaly in [#220](https://github.com/railwayapp/railpack/pull/220)
-* chore: mise update 2025.8.13 by @iloveitaly in [#224](https://github.com/railwayapp/railpack/pull/224)
-* build: use railpack as the binary output name by @iloveitaly in [#227](https://github.com/railwayapp/railpack/pull/227)
-* feat: add hidden dump-llb flag by @iloveitaly in [#225](https://github.com/railwayapp/railpack/pull/225)
-* consistent provider step naming by @iloveitaly in [#228](https://github.com/railwayapp/railpack/pull/228)
-* chore: mise update 2025.8.18 by @iloveitaly in [#229](https://github.com/railwayapp/railpack/pull/229)
-* test: update snapshots for new caddy version by @iloveitaly in [#230](https://github.com/railwayapp/railpack/pull/230)
-* fix: Support colocated hooks in Phoenix (LiveView) for Elixir by @jesse-c in [#231](https://github.com/railwayapp/railpack/pull/231)
-
-### New Contributors
-* @jesse-c made their first contribution in [#231](https://github.com/railwayapp/railpack/pull/231)
-
-**Full Changelog**: [v0.3.0...v0.4.0](https://github.com/railwayapp/railpack/compare/v0.3.0...v0.4.0)
-
-## v0.3.0
-August 18, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.3.0)
-
-### What's Changed
-* update php snapshot by @coffee-cup in [#213](https://github.com/railwayapp/railpack/pull/213)
-* Enable jemalloc by default in Ruby setups by @RDIL in [#212](https://github.com/railwayapp/railpack/pull/212)
-* yarn v1 test by @iloveitaly in [#215](https://github.com/railwayapp/railpack/pull/215)
-* chore: mise update  by @iloveitaly in [#216](https://github.com/railwayapp/railpack/pull/216)
-* add schema to plan by @iloveitaly in [#222](https://github.com/railwayapp/railpack/pull/222)
-* react router v7 by @iloveitaly in [#221](https://github.com/railwayapp/railpack/pull/221)
-
-### New Contributors
-* @RDIL made their first contribution in [#212](https://github.com/railwayapp/railpack/pull/212)
-* @iloveitaly made their first contribution in [#215](https://github.com/railwayapp/railpack/pull/215)
-
-**Full Changelog**: [v0.2.3...v0.3.0](https://github.com/railwayapp/railpack/compare/v0.2.3...v0.3.0)
 
 ## Older releases
 

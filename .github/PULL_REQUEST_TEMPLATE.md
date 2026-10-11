@@ -13,7 +13,11 @@
 
 ## Test
 
-<!-- how is this change tested? Do not indicate that snapshots were updated -->
+<!--
+- Describe only targeted validation that specifically exercises this change.
+- Do not state or imply that all unit tests were run.
+- Do not indicate that snapshots were updated.
+-->
 
 ## Links
 

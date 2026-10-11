@@ -87,6 +87,13 @@ func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.
 	ctx.Logger.LogInfo("Deploying as %s static site", spaFramework)
 	ctx.Logger.LogInfo("Output directory: %s", outputDir)
 
+	if p.hasMisplacedTanstackStart() {
+		ctx.Logger.LogSuggestion(
+			"Found @tanstack/react-start in devDependencies; move it to dependencies to deploy with SSR instead of a static site",
+			"https://docs.railway.com/guides/tanstack-start",
+		)
+	}
+
 	// default all paths to use the root index.html by default on SPA apps, but allow the user to override
 	indexFallback := true
 	if indexFallbackConfig := staticfile.GetIndexFallback(ctx); indexFallbackConfig != nil {
