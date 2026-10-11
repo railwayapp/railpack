@@ -50,12 +50,9 @@ commands:
 | Name                | Description                              |
 | :------------------ | :--------------------------------------- |
 | `RAILPACK_VERSION`  | Version used to produce the image        |
-| `RAILPACK_BUILT_AT` | Build time as Unix epoch seconds (UTC)   |
 
-Runtime metadata is added after generating the build graph, so it does not
-invalidate application layer caches. The `RAILPACK_` namespace in the final
-image is reserved for generated runtime metadata, which takes precedence over
-deploy variables with the same name.
+Wall-clock build timestamps are not injected into the image, so an unchanged
+build can retain its digest.
 
 ## Secrets
 

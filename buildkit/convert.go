@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/buildkit/util/system"
@@ -112,7 +110,6 @@ func getImageEnv(graphOutput *build_llb.BuildGraphOutput, plan *p.BuildPlan) []s
 	maps.Copy(envMap, plan.Deploy.Variables)
 
 	envMap["PATH"] = pathString
-	envMap["RAILPACK_BUILT_AT"] = strconv.FormatInt(time.Now().Unix(), 10)
 
 	envVars := make([]string, 0, len(envMap))
 	for _, k := range slices.Sorted(maps.Keys(envMap)) {
