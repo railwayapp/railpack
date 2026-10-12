@@ -2,8 +2,8 @@
   {
     "expectedOutput": [
       "Hello from Python UV latest locked!",
-      "Python 3.14.",
-      "uv 0.12."
+      "Python 3.15.",
+      "uv 0.13."
     ]
   }
 ]
