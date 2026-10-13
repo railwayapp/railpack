@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    # Marks test services so leaked containers can be cleaned up (see mise clean).
+    labels:
+      com.railpack.integration-test: "true"
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: symfony_password
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "app", "-d", "app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
