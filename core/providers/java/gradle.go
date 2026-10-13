@@ -12,6 +12,13 @@ const (
 	GRADLE_CACHE_KEY       = "gradle"
 )
 
+// Matches the version in a gradle wrapper's distributionUrl, e.g. `9.5.0` in
+// `https\://services.gradle.org/distributions/gradle-9.5.0-bin.zip`. The
+// version stops at the first non-numeric segment, so a pre-release URL such as
+// `gradle-9.0-milestone-1-bin.zip` yields `9.0`: mise has no tag for the
+// milestone itself, and the wrapper bootstraps its own distribution anyway.
+var gradleDistributionVersionRegex = regexp.MustCompile(`(?m)^\s*distributionUrl\s*=.*gradle-(\d+(?:\.\d+){0,2})[-.]`)
+
 func (p *JavaProvider) usesGradle(ctx *generate.GenerateContext) bool {
 	return ctx.App.HasFile("gradlew")
 }
@@ -34,29 +41,15 @@ func (p *JavaProvider) setGradleVersion(ctx *generate.GenerateContext) {
 		return
 	}
 
-	versionRegex, err := regexp.Compile(`(distributionUrl[\S].*[gradle])(-)([0-9|\.]*)`)
-	if err != nil {
+	match := gradleDistributionVersionRegex.FindStringSubmatch(wrapperProps)
+	if match == nil {
 		return
 	}
 
-	if !versionRegex.Match([]byte(wrapperProps)) {
-		return
-	}
-
-	customVersion := string(versionRegex.FindSubmatch([]byte(wrapperProps))[3])
-
-	parseVersionRegex, err := regexp.Compile(`^(?:[\sa-zA-Z-"']*)(\d*)(?:\.*)(\d*)(?:\.*\d*)(?:["']?)$`)
-	if err != nil {
-		return
-	}
-
-	if !parseVersionRegex.Match([]byte(customVersion)) {
-		return
-	}
-
-	parsedVersion := string(parseVersionRegex.FindSubmatch([]byte(customVersion))[1])
-
-	miseStep.Version(gradle, parsedVersion, "gradle-wrapper.properties")
+	// The distribution URL pins an exact version, so request that version from
+	// mise. Asking for the major alone lets mise pick the newest tag under it,
+	// which can be a milestone preview the project never uses.
+	miseStep.Version(gradle, match[1], "gradle-wrapper.properties")
 }
 
 func (p *JavaProvider) gradleCache(ctx *generate.GenerateContext) string {
