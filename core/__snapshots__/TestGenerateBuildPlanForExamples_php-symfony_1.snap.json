@@ -99,7 +99,7 @@
    ],
    "commands": [
     {
-     "cmd": "install-php-extensions ctype iconv intl"
+     "cmd": "install-php-extensions ctype iconv intl pdo_pgsql"
     }
    ],
    "inputs": [
