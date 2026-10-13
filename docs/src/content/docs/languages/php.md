@@ -71,7 +71,7 @@ in the project root.
 
 PHP extensions are automatically installed based on:
 
-- Requirements specified in `composer.json` (e.g., `ext-redis`)
+- Requirements specified in `composer.json` (e.g., `ext-redis`, `ext-pdo_pgsql`)
 - Extensions listed in the `RAILPACK_PHP_EXTENSIONS` environment variable
 
 Example `composer.json` with required extensions:
