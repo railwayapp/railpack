@@ -327,9 +327,15 @@ func (p PackageManager) GetInstallFolder(ctx *generate.GenerateContext) []string
 	switch p {
 	case PackageManagerYarnBerry:
 		installFolders := []string{"/app/.yarn", p.getYarnBerryGlobalFolder(ctx)}
-		// both the node-modules and pnpm linkers install into node_modules
-		if p.getYarnBerryNodeLinker(ctx) != "pnp" {
+		// https://yarnpkg.com/configuration/yarnrc#nodeLinker
+		linker := p.getYarnBerryNodeLinker(ctx)
+		switch linker {
+		case "pnpm", "node-modules":
 			installFolders = append(installFolders, "/app/node_modules")
+		case "pnp":
+			// packages are loaded from the .yarn zip cache
+		default:
+			ctx.Logger.LogWarn("Unknown yarn nodeLinker '%s', not including node_modules", linker)
 		}
 		return installFolders
 	default:

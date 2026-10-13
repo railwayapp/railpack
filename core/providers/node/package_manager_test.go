@@ -157,3 +157,49 @@ func TestGetPackageManagerPackages_PnpmVersionPrecedence(t *testing.T) {
 		require.False(t, pnpm.SkipMiseInstall)
 	})
 }
+
+func TestYarnBerryNodeModulesFollowsNodeLinker(t *testing.T) {
+	tests := []struct {
+		name   string
+		yarnrc string
+		want   []string
+	}{
+		{
+			name: "pnp default",
+			want: []string{"/app/.yarn", "/root/.yarn"},
+		},
+		{
+			name:   "pnp",
+			yarnrc: "nodeLinker: pnp\n",
+			want:   []string{"/app/.yarn", "/root/.yarn"},
+		},
+		{
+			name:   "pnpm",
+			yarnrc: "nodeLinker: pnpm\n",
+			want:   []string{"/app/.yarn", "/root/.yarn", "/app/node_modules"},
+		},
+		{
+			name:   "node-modules",
+			yarnrc: "nodeLinker: node-modules\n",
+			want:   []string{"/app/.yarn", "/root/.yarn", "/app/node_modules"},
+		},
+		{
+			name:   "unknown",
+			yarnrc: "nodeLinker: custom\n",
+			want:   []string{"/app/.yarn", "/root/.yarn"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			if tt.yarnrc != "" {
+				require.NoError(t, os.WriteFile(filepath.Join(tmpDir, ".yarnrc.yml"), []byte(tt.yarnrc), 0o644))
+			}
+
+			ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+
+			require.Equal(t, tt.want, PackageManagerYarnBerry.GetInstallFolder(ctx))
+		})
+	}
+}
