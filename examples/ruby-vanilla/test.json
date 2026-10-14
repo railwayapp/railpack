@@ -2,7 +2,8 @@
     {
         "expectedOutput": [
             "Hello from Ruby",
-            "Ruby version: 3.3.0"
+            "Ruby version: 3.3.0",
+            "Bundler version: 2.3.7"
         ]
     }
 ]
