@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
@@ -16,9 +15,14 @@ const (
 	ZIG_CACHE_DIR = "/root/.cache/zig"
 )
 
-// `.name` is an enum literal since Zig 0.14 (`.name = .my_app`) and a string before that
-// (`.name = "my_app"`), so both spellings are matched.
-var zonNameRegex = regexp.MustCompile(`\.name\s*=\s*(?:\.([A-Za-z_][A-Za-z0-9_]*)|"([^"]+)")`)
+// Tried in order at each position: a `.name` assignment, a string literal, or a comment.
+// The assignment has to beat the string pattern so `.name = "my_app"` is captured.
+// Strings have to beat comments so "https://..." is not treated as a comment, and a
+// `//` comment or a `\\` multiline-string line is consumed whole so a `.name` inside it cannot match.
+// `.name` is an enum literal since Zig 0.14 (`.name = .my_app`) and a string before that.
+var zonNameToken = regexp.MustCompile(
+	`(?m)\.name\s*=\s*(?:\.([A-Za-z_][A-Za-z0-9_]*)|"([^"]+)")|"(?:\\.|[^"\\])*"|//.*|^[ \t]*\\\\.*`,
+)
 
 type ZigProvider struct{}
 
@@ -51,7 +55,7 @@ func (p *ZigProvider) Plan(ctx *generate.GenerateContext) error {
 	build.AddInput(plan.NewLocalLayer())
 	// the global cache holds compiled artifacts that are reused across builds
 	build.AddCache(ctx.Caches.AddCache(ZIG_CACHE_KEY, ZIG_CACHE_DIR))
-	build.AddCommand(plan.NewExecCommand(fmt.Sprintf("zig build %s", p.releaseFlag(ctx))))
+	build.AddCommand(plan.NewExecCommand("zig build --release=safe"))
 
 	binaryName := p.binaryName(ctx)
 
@@ -61,14 +65,6 @@ func (p *ZigProvider) Plan(ctx *generate.GenerateContext) error {
 	})
 
 	return nil
-}
-
-func (p *ZigProvider) releaseFlag(ctx *generate.GenerateContext) string {
-	if mode, _ := ctx.Env.GetConfigVariable("ZIG_RELEASE_MODE"); mode != "" {
-		return fmt.Sprintf("--release=%s", mode)
-	}
-
-	return "--release=safe"
 }
 
 // the executable that `zig build` produces is named after `.name` in build.zig.zon,
@@ -84,17 +80,11 @@ func (p *ZigProvider) binaryName(ctx *generate.GenerateContext) string {
 }
 
 func parseZonName(contents string) string {
-	for _, line := range strings.Split(contents, "\n") {
-		// skip commented lines so the documentation in a generated build.zig.zon is not matched
-		if strings.HasPrefix(strings.TrimSpace(line), "//") {
-			continue
+	for _, match := range zonNameToken.FindAllStringSubmatch(contents, -1) {
+		if match[1] != "" {
+			return match[1]
 		}
-
-		if match := zonNameRegex.FindStringSubmatch(line); match != nil {
-			if match[1] != "" {
-				return match[1]
-			}
-
+		if match[2] != "" {
 			return match[2]
 		}
 	}

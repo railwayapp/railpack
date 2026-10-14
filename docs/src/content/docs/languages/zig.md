@@ -3,7 +3,7 @@ title: Zig
 description: Building Zig applications with Railpack
 ---
 
-Railpack builds and deploys Zig applications with zero configuration.
+Railpack builds and deploys Zig applications.
 
 ## Detection
 
@@ -18,15 +18,14 @@ mise-supported version file (`mise.toml`, `.tool-versions`, etc) or the
 
 ## Configuration
 
-Railpack builds your application with `zig build --release=safe` and runs the
-executable that is installed into `zig-out/bin`. The executable is named after
-the `.name` field in `build.zig.zon`, and falls back to the name of the
-application directory when that file is absent.
+Railpack builds your application with `zig build --release=safe`. Only
+`zig-out/bin` is copied into the final container, so the source tree and the
+build cache are not shipped.
 
-Only `zig-out/bin` is copied into the final container, so the source tree and
-the build cache are not shipped.
+The start command is `./zig-out/bin/<name>`. `<name>` is the `.name` field in
+`build.zig.zon`, or the application directory name when that file is absent.
+Override it with `RAILPACK_START_CMD`:
 
-Variables available:
-
-- `RAILPACK_ZIG_RELEASE_MODE` - the release mode passed to `zig build`
-  (`safe`, `fast`, or `small`). Defaults to `safe`.
+```sh
+RAILPACK_START_CMD="./zig-out/bin/zig_example"
+```

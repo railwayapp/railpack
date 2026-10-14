@@ -31,6 +31,31 @@ func TestParseZonName(t *testing.T) {
 			want:     "real_name",
 		},
 		{
+			name:     "trailing inline comment on name line",
+			contents: ".{\n    .name = .my_app, // application entry point\n}",
+			want:     "my_app",
+		},
+		{
+			name:     "inline comment cannot shadow the real name",
+			contents: ".{\n    .version = \"0.0.0\", // .name = .fake_name\n    .name = .real_name,\n}",
+			want:     "real_name",
+		},
+		{
+			name:     "slashes inside a string are not a comment",
+			contents: ".{\n    .url = \"https://example.com/repo\", // .name = .fake_name\n    .name = .real_name,\n}",
+			want:     "real_name",
+		},
+		{
+			name:     "name-shaped text inside a string is ignored",
+			contents: ".{\n    .url = \"https://example.com/.name = .fake_name\",\n    .name = .real_name,\n}",
+			want:     "real_name",
+		},
+		{
+			name:     "multiline string line is ignored",
+			contents: ".{\n    .note =\n        \\\\ .name = .fake_name\n    ,\n    .name = .real_name,\n}",
+			want:     "real_name",
+		},
+		{
 			name:     "no name field",
 			contents: ".{\n    .version = \"0.0.0\",\n}",
 			want:     "",
@@ -44,7 +69,7 @@ func TestParseZonName(t *testing.T) {
 	}
 }
 
-func TestZig(t *testing.T) {
+func TestZigDetectionAndStartCommand(t *testing.T) {
 	tests := []struct {
 		name     string
 		path     string
