@@ -1,6 +1,10 @@
 package resolver
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/Masterminds/semver/v3"
+)
 
 func resolveToFuzzyVersion(version string) string {
 	// Remove any whitespace
@@ -44,4 +48,60 @@ func resolveToFuzzyVersion(version string) string {
 	version = strings.TrimRight(version, ".")
 
 	return version
+}
+
+// rangeConstraint parses the version strings whose meaning the fuzzy prefix form cannot
+// carry: an upper bound, a disjunction, a hyphen range, or a tilde range.
+//
+// mise only understands prefix queries (`bun@1`), so ">=1.1.0 <1.3.0" degrades to "1"
+// and mise happily installs 1.4.x. For these we enumerate the available versions and
+// pick the match ourselves. Anything the prefix form already expresses faithfully
+// (exact versions, "14.x", "^20", ">=22") keeps the cheaper mise-side resolution.
+func rangeConstraint(version string) (*semver.Constraints, bool) {
+	version = strings.TrimSpace(version)
+	if !needsConstraintResolution(version) {
+		return nil, false
+	}
+
+	constraint, err := semver.NewConstraint(version)
+	if err != nil {
+		// Not a constraint we understand; leave it to the existing fuzzy path so behavior
+		// is unchanged for anything exotic.
+		return nil, false
+	}
+
+	return constraint, true
+}
+
+func needsConstraintResolution(version string) bool {
+	if strings.HasPrefix(version, "~") {
+		return true
+	}
+
+	return strings.Contains(version, "<") ||
+		strings.Contains(version, "||") ||
+		strings.Contains(version, " - ")
+}
+
+// newestMatching returns the highest version in versions that satisfies constraint and
+// passes isAvailable. versions is ascending, so we walk it backwards.
+func newestMatching(versions []string, constraint *semver.Constraints, isAvailable func(string) bool) string {
+	for i := len(versions) - 1; i >= 0; i-- {
+		parsed, err := semver.NewVersion(versions[i])
+		if err != nil {
+			continue
+		}
+
+		if !constraint.Check(parsed) {
+			continue
+		}
+
+		if isAvailable != nil && !isAvailable(versions[i]) {
+			continue
+		}
+
+		return versions[i]
+	}
+
+	return ""
 }
