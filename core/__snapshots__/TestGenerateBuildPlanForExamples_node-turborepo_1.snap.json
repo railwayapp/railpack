@@ -153,6 +153,10 @@
      "src": "packages/utils/package.json"
     },
     {
+     "dest": "turbo.json",
+     "src": "turbo.json"
+    },
+    {
      "cmd": "npm install"
     }
    ],
