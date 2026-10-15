@@ -25,9 +25,9 @@ node_modules
 
 # End of https://www.toptal.com/developers/gitignore/api/go
 
-bin
-test
-dist
+/bin
+/test
+/dist
 
 .vscode/
 .DS_Store
