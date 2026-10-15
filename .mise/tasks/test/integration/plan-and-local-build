@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+#MISE description="Generate plan via CLI and execute local build using Railpack's native BuildKit client"
+
+set -euo pipefail
+
+# cli-e2e sets this to an examples/ directory basename.
+example_dir="examples/$EXAMPLE_PROJECT_NAME"
+echo "Testing plan-and-local-build with: $example_dir"
+
+plan_dir="tmp/test-integration/plan-and-local-build"
+mkdir -p "$plan_dir"
+
+mise run cli plan "$example_dir" --out "$plan_dir/railpack-plan.json"
+jq -e '.deploy != null' "$plan_dir/railpack-plan.json" > /dev/null
+
+# The plan names secrets but not their values. Any placeholder satisfies the mount.
+env_args=()
+while IFS= read -r secret; do
+  export "$secret=cli-e2e"
+  env_args+=(--env "$secret=cli-e2e")
+done < <(jq -r '.secrets[]?' "$plan_dir/railpack-plan.json")
+
+image_name="railpack-local-build-test:$EXAMPLE_PROJECT_NAME"
+mise run cli build "$example_dir" \
+  --name "$image_name" \
+  "${env_args[@]}"

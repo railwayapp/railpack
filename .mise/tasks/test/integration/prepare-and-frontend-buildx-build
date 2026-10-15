@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+#MISE description="Prepare an example and build with docker buildx using the frontend image"
+
+set -euo pipefail
+
+# cli-e2e sets this to an examples/ directory basename.
+example_dir="examples/$EXAMPLE_PROJECT_NAME"
+echo "Testing prepare-and-frontend-buildx-build with: $example_dir"
+
+plan_dir="tmp/test-integration/prepare-and-frontend-buildx-build"
+mkdir -p "$plan_dir"
+
+mise run cli prepare "$example_dir" \
+  --plan-out "$plan_dir/railpack-plan.json" \
+  --info-out "$plan_dir/railpack-info.json"
+
+jq -e '.success == true' "$plan_dir/railpack-info.json" > /dev/null
+
+# The plan names secrets but not their values. Any placeholder satisfies the mount.
+secret_args=()
+while IFS= read -r secret; do
+  export "$secret=cli-e2e"
+  secret_args+=(--secret "id=$secret,env=$secret")
+done < <(jq -r '.secrets[]?' "$plan_dir/railpack-plan.json")
+
+# The host daemon can see railpack-frontend:local, which the buildctl task just built.
+# buildctl has to pull that image from the registry instead.
+docker buildx build \
+  --build-arg BUILDKIT_SYNTAX="railpack-frontend:local" \
+  "${secret_args[@]}" \
+  -f "$plan_dir/railpack-plan.json" \
+  "$example_dir"
