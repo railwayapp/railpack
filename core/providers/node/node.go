@@ -332,6 +332,10 @@ func (p *NodeProvider) addFrameworkCaches(ctx *generate.GenerateContext, build *
 func (p *NodeProvider) addCachesToBuildStep(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
 	build.AddCache(ctx.Caches.AddCache("node-modules", NODE_MODULES_CACHE))
 
+	if dir := p.turboCacheDir(ctx); dir != "" {
+		build.AddCache(ctx.Caches.AddCache("turbo", dir))
+	}
+
 	p.addFrameworkCaches(ctx, build, "next", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
 		// Script-based Next apps (including monorepo packages with explicit next build)
 		if pkg.PackageJson.BuildScriptContains("next build") {

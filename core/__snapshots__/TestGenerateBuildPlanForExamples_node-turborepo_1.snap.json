@@ -19,6 +19,10 @@
   "npm-install": {
    "directory": "/root/.npm",
    "type": "shared"
+  },
+  "turbo": {
+   "directory": "/app/.turbo/cache",
+   "type": "shared"
   }
  },
  "deploy": {
@@ -179,6 +183,7 @@
   {
    "caches": [
     "node-modules",
+    "turbo",
     "next-apps-web"
    ],
    "commands": [

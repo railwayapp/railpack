@@ -276,6 +276,8 @@ Including:
 - Remix: Caches `.cache`
 - Vite: Caches `node_modules/.vite`
 - Astro: Caches `node_modules/.astro`
+- Turborepo: Caches turbo's local task cache (`.turbo/cache`, or `cacheDir` from
+  `turbo.json` / `TURBO_CACHE_DIR`), so unchanged workspace packages are not rebuilt
 - React Router: Caches `.react-router`
 - Nuxt:
   - Start command defaults to `node .output/server/index.mjs`

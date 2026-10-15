@@ -1,0 +1,12 @@
+[
+  {
+    "envs": {
+      "RAILPACK_START_CMD": "pnpm --filter web start"
+    },
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 3000
+    }
+  }
+]
