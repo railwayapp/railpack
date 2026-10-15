@@ -42,19 +42,23 @@ func (l *Logger) LogWarn(format string, args ...any) {
 	l.log(Warn, format, args...)
 }
 
-func (l *Logger) LogDeprecation(format string, args ...any) {
-	l.log(Deprecation, format, args...)
+// Records a deprecation. An optional docs path is rendered as a link.
+func (l *Logger) LogDeprecation(msg string, docsPath ...string) {
+	l.logWithDocs(Deprecation, msg, docsPath...)
 }
 
-// LogSuggestion records a helpful config suggestion with an optional docs link.
-// Relative paths resolve against railpack.com; absolute URLs are used unchanged.
+// Records a config suggestion. An optional docs path is rendered as a link.
 func (l *Logger) LogSuggestion(msg string, docsPath ...string) {
+	l.logWithDocs(Suggestion, msg, docsPath...)
+}
+
+func (l *Logger) logWithDocs(level Level, msg string, docsPath ...string) {
 	path := ""
 	if len(docsPath) > 0 {
 		path = docsPath[0]
 	}
 	l.Logs = append(l.Logs, Msg{
-		Level:    Suggestion,
+		Level:    level,
 		Msg:      msg,
 		DocsPath: path,
 	})
