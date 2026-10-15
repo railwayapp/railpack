@@ -29,10 +29,12 @@ run = [
 # Mount buildkitd.toml so host.docker.internal:7890 (local registry) is reachable over HTTP
 # `.template` ensures it isn't picked up by the mise task management
 # Named volume for /var/lib/buildkit: the image declares it as a VOLUME, so
-# without this every run mints a leaked 64-hex anonymous volume
+# without this every run mints a leaked 64-hex anonymous volume.
+# host-gateway is required on Linux (including GHA) so host.docker.internal resolves to the host, allowing BuildKit to access the local image registry (:7890)
 run = '''
 docker rm -f buildkit 2>/dev/null || true
 docker run --rm --privileged -d --name buildkit \
+  --add-host=host.docker.internal:host-gateway \
   -e BUILDKIT_DEBUG=1 \
   -v buildkit-state:/var/lib/buildkit \
   -v "$PWD/.mise/tasks/buildkitd.toml.template:/etc/buildkit/buildkitd.toml:ro" \
