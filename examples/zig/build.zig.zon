@@ -25,7 +25,7 @@
     .fingerprint = 0x1d7cddc766472aa2, // Changing this has security and trust implications.
     // Tracks the earliest Zig version that the package considers to be a
     // supported use case.
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.17.0",
     // This field is optional.
     // Each dependency must either provide a `url` and `hash`, or a `path`.
     // `zig build --fetch` can be used to fetch all dependencies of a package, recursively.
@@ -47,8 +47,6 @@
         //    // This field is the source of truth; packages do not come from a `url`; they
         //    // come from a `hash`. `url` is just one of many possible mirrors for how to
         //    // obtain a package matching this `hash`.
-        //    //
-        //    // Uses the [multihash](https://multiformats.io/multihash/) format.
         //    .hash = "...",
         //
         //    // When this is provided, the package is found in a directory relative to the
