@@ -15,13 +15,17 @@ const (
 	ZIG_CACHE_DIR = "/root/.cache/zig"
 )
 
+// ZON allows line comments between the name assignment's tokens.
+const zonWhitespaceOrComments = `(?:\s|//[^\r\n]*(?:\r?\n|$))*`
+
 // Tried in order at each position: a `.name` assignment, a string literal, or a comment.
 // The assignment has to beat the string pattern so `.name = "my_app"` is captured.
 // Strings have to beat comments so "https://..." is not treated as a comment, and a
 // `//` comment or a `\\` multiline-string line is consumed whole so a `.name` inside it cannot match.
 // `.name` is an enum literal since Zig 0.14 (`.name = .my_app`) and a string before that.
 var zonNameToken = regexp.MustCompile(
-	`(?m)\.name\s*=\s*(?:\.([A-Za-z_][A-Za-z0-9_]*)|"([^"]+)")|"(?:\\.|[^"\\])*"|//.*|^[ \t]*\\\\.*`,
+	`(?m)\.name` + zonWhitespaceOrComments + `=` + zonWhitespaceOrComments +
+		`(?:\.([A-Za-z_][A-Za-z0-9_]*)|"([^"]+)")|"(?:\\.|[^"\\])*"|//.*|^[ \t]*\\\\.*`,
 )
 
 type ZigProvider struct{}

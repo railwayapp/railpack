@@ -26,6 +26,36 @@ func TestParseZonName(t *testing.T) {
 			want:     "my_app",
 		},
 		{
+			name:     "comment before enum name",
+			contents: ".{\n    .name = // package name\n        .my_app,\n}",
+			want:     "my_app",
+		},
+		{
+			name:     "comment before string name",
+			contents: ".{\n    .name = // package name\n        \"my_app\",\n}",
+			want:     "my_app",
+		},
+		{
+			name:     "comments around equals",
+			contents: ".{\n    .name // package name\n        = // chosen name\n        .my_app,\n}",
+			want:     "my_app",
+		},
+		{
+			name:     "repeated comments cannot shadow the name",
+			contents: ".{\n    .name = // .fake_name\n        // .name = .another_fake_name\n        .real_name,\n}",
+			want:     "real_name",
+		},
+		{
+			name:     "comments with CRLF line endings",
+			contents: ".{\r\n    .name // package name\r\n        = // chosen name\r\n        .my_app,\r\n}",
+			want:     "my_app",
+		},
+		{
+			name:     "unterminated comment has no name value",
+			contents: ".{\n    .name = // .fake_name",
+			want:     "",
+		},
+		{
 			name:     "commented example is skipped",
 			contents: ".{\n    // .name = .from_the_comment,\n    .name = .real_name,\n}",
 			want:     "real_name",
