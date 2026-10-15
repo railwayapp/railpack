@@ -50,7 +50,7 @@ into the build. This includes:
   `.config/mise/config.*.toml`
 - **Config fragments**: `mise/conf.d/*.toml`, `.mise/conf.d/*.toml`,
   `.config/mise/conf.d/*.toml`
-- **Idiomatic version files**: `.ruby-version`, `.python-version`,
+- **Idiomatic version files**: `.ruby-version`, `Gemfile`, `.python-version`,
   `.python-versions`, `.node-version`, `.nvmrc`, `.go-version`,
   `.java-version`, `.sdkmanrc`, `.deno-version`, `rust-toolchain.toml`,
   `.bun-version`, `.yvmrc`, `global.json`
