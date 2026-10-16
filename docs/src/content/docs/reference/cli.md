@@ -11,7 +11,7 @@ The following options are available across multiple commands:
 
 | Flag                    | Description                                                                                                                |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `--env`                 | Environment variables to set. Format: `KEY=VALUE`                                                                          |
+| `--env`, `-e`           | Environment variables to set. Format: `KEY=VALUE`                                                                          |
 | `--previous`            | Versions of packages used for previous builds. These versions will be used instead of the defaults. Format: `NAME@VERSION` |
 | `--build-cmd`           | Build command to use                                                                                                       |
 | `--start-cmd`           | Start command to use                                                                                                       |
@@ -32,17 +32,17 @@ railpack build [options] DIRECTORY
 
 **Options:**
 
-| Flag           | Description                                                                 | Default |
-| -------------- | --------------------------------------------------------------------------- | ------- |
-| `--name`       | Name of the image to build                                                  |         |
-| `--output`     | Output the final filesystem to a local directory                            |         |
-| `--platform`   | Platform to build for (e.g. linux/amd64, linux/arm64)                       |         |
-| `--progress`   | BuildKit progress output mode (auto, plain, tty)                            | `auto`  |
-| `--show-plan`  | Show the build plan before building                                         | `false` |
-| `--cache-key`  | Unique id to prefix to cache keys                                           |         |
-| `--cache-from` | External cache sources (same as docker buildx). e.g. type=registry,ref=...  |         |
-| `--cache-to`   | Cache export destinations (same as docker buildx). e.g. type=registry,ref=... |       |
-| `--no-cache`   | Do not use cache when building (boolean flag)                               | `false` |
+| Flag           | Description                                                                    | Default |
+| -------------- | ------------------------------------------------------------------------------ | ------- |
+| `--name`       | Name of the image to build                                                     |         |
+| `--output`     | Output the final filesystem to a local directory                               |         |
+| `--platform`   | Platform to build for (e.g. linux/amd64, linux/arm64)                          |         |
+| `--progress`   | BuildKit progress output mode (auto, plain, tty)                               | `auto`  |
+| `--show-plan`  | Show the build plan before building                                            | `false` |
+| `--cache-key`  | Unique id to prefix to cache keys                                              |         |
+| `--cache-from` | External cache sources (same as docker buildx). e.g. type=registry,ref=...     |         |
+| `--cache-to`   | Cache export destinations (same as docker buildx). e.g. type=registry,ref=...  |         |
+| `--no-cache`   | Do not use cache when building (boolean flag)                                  | `false` |
 
 `railpack build` uses credentials from your Docker CLI config
 (`$DOCKER_CONFIG`, default `~/.docker/config.json`) so BuildKit can pull or
@@ -50,13 +50,12 @@ push private registry images. Log in with `docker login` first if needed.
 
 ### prepare
 
-Generates build configuration files without performing the actual build. This is
-useful for platforms that want to:
+Generates build configuration and metadata files without performing the actual build. This is the recommended command for platforms and CI build pipelines that want to:
 
 - Build with a custom frontend and need to save the build plan to a
   `railpack-plan.json` file
 - Log the Railpack pretty output to stdout
-- Save the additional build information for later use
+- Save the additional build information for later use (even if planning fails)
 
 **Usage:**
 
@@ -66,14 +65,20 @@ railpack prepare [options] DIRECTORY
 
 **Options:**
 
-| Flag         | Description                                           |
-| ------------ | ----------------------------------------------------- |
-| `--plan-out` | Output file for the JSON serialized build plan        |
-| `--info-out` | Output file for the JSON serialized build result info |
+| Flag                 | Description                                           | Default |
+| -------------------- | ----------------------------------------------------- | ------- |
+| `--plan-out`         | Output file for the JSON serialized build plan        |         |
+| `--info-out`         | Output file for the JSON serialized build result info |         |
+| `--show-plan`        | Dump the build plan JSON to stdout                    | `false` |
+| `--hide-pretty-plan` | Hide the pretty-printed build result output           | `false` |
 
 ### plan
 
 Analyzes a directory and outputs the build plan that would be used.
+
+:::note
+`plan` is intended for **local development and debugging**. Platforms and CI/CD pipelines should use [`prepare`](#prepare) instead, which provides structured metadata (`--info-out`), proper error exit codes, and user-facing build logs.
+:::
 
 **Usage:**
 
@@ -100,10 +105,11 @@ railpack info [options] DIRECTORY
 
 **Options:**
 
-| Flag       | Description                  | Default  |
-| ---------- | ---------------------------- | -------- |
-| `--format` | Output format (pretty, json) | `pretty` |
-| `--out`    | Output file name             |          |
+| Flag          | Description                  | Default  |
+| ------------- | ---------------------------- | -------- |
+| `--format`    | Output format (pretty, json) | `pretty` |
+| `--out`       | Output file name             |          |
+| `--show-plan` | Show the generated build plan | `false`  |
 
 ### schema
 

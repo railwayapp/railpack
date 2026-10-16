@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+#MISE description="Generate plan via CLI and execute local build using Railpack's native BuildKit client"
+#MISE env.EXAMPLE_PROJECT_NAME = { required = true }
+
+set -euo pipefail
+
+example_dir="examples/$EXAMPLE_PROJECT_NAME"
+image_name="railpack-local-build-test:$EXAMPLE_PROJECT_NAME"
+
+echo "Testing plan-and-local-build with: $example_dir"
+plan_dir=$(mktemp -d -p "$TMP_DIR")
+
+mise run cli plan "$example_dir" --out "$plan_dir/railpack-plan.json"
+jq -e '.deploy != null' "$plan_dir/railpack-plan.json" > /dev/null
+
+# The plan names secrets but not their values. Any placeholder satisfies the mount.
+jq -r '.secrets[]?' "$plan_dir/railpack-plan.json" > "$plan_dir/secrets.txt"
+env_args=()
+while IFS= read -r secret; do
+  env_args+=(--env "$secret=cli-e2e")
+done < "$plan_dir/secrets.txt"
+
+mise run cli build "$example_dir" \
+  --name "$image_name" \
+  "${env_args[@]}"

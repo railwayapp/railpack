@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#MISE description="Test 'railpack info' CLI output on an example"
+#MISE env.EXAMPLE_PROJECT_NAME = { required = true }
+
+set -euo pipefail
+
+example_dir="examples/$EXAMPLE_PROJECT_NAME"
+
+echo "Testing info with: $example_dir"
+tmp_dir=$(mktemp -d -p "$TMP_DIR")
+
+mise run cli info "$example_dir" --format json --out "$tmp_dir/info.json"
+jq -e '.success == true' "$tmp_dir/info.json" > /dev/null
+jq -e '.resolvedPackages != null' "$tmp_dir/info.json" > /dev/null
+
+mise run cli info "$example_dir" --format pretty --show-plan > /dev/null

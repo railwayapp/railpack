@@ -22,3 +22,7 @@ http_retries = 5
 
 # require URLs to be present in the mise.lockfile to ensure there is consistent versions used across CI runs
 locked = true
+
+[tools]
+"github:moby/buildkit" = "latest"
+

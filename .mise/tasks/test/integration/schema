@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Test 'railpack schema' CLI output"
+
+set -euo pipefail
+
+output=$(mise run cli schema)
+echo "$output" | jq -e '.["$schema"] != null' > /dev/null

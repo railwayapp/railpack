@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#MISE description="Prepare an example and build with docker buildx using the frontend image"
+#MISE env.EXAMPLE_PROJECT_NAME = { required = true }
+
+set -euo pipefail
+
+example_dir="examples/$EXAMPLE_PROJECT_NAME"
+
+echo "Testing prepare-and-frontend-buildx-build with: $example_dir"
+plan_dir=$(mktemp -d -p "$TMP_DIR")
+
+docker build -f images/alpine/frontend/Dockerfile -t railpack-frontend:local .
+
+mise run cli prepare "$example_dir" \
+  --plan-out "$plan_dir/railpack-plan.json" \
+  --info-out "$plan_dir/railpack-info.json"
+
+jq -e '.success == true' "$plan_dir/railpack-info.json" > /dev/null
+
+# Provide placeholders through files so secret names cannot overwrite the task environment.
+jq -r '.secrets[]?' "$plan_dir/railpack-plan.json" > "$plan_dir/secrets.txt"
+printf '%s' cli-e2e > "$plan_dir/secret-value"
+secret_args=()
+while IFS= read -r secret; do
+  secret_args+=(--secret "id=$secret,src=$plan_dir/secret-value")
+done < "$plan_dir/secrets.txt"
+
+# Use the active context's daemon builder so it can see the local frontend image.
+# CI creates a named Docker context, where selecting `--builder default` fails.
+github_token_args=()
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+  github_token_args+=(--build-arg "github-token=$GITHUB_TOKEN")
+fi
+docker buildx build --builder "$(docker context show)" \
+  "${github_token_args[@]}" \
+  --build-arg BUILDKIT_SYNTAX="railpack-frontend:local" \
+  "${secret_args[@]}" \
+  -f "$plan_dir/railpack-plan.json" \
+  "$example_dir"
