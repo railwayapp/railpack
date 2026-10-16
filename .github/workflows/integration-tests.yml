@@ -121,8 +121,8 @@ jobs:
       - name: Start local registry
         run: mise run image-run-registry
 
-      - name: Start BuildKit
-        run: mise run retry --attempts 5 -- mise run run-buildkit-container
+      - name: Set up test environment
+        run: mise run retry --attempts 5 -- mise run setup
 
       - name: Test schema
         run: mise run test:integration:schema
