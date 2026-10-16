@@ -218,10 +218,9 @@ func (c *GenerateContext) getExcludePatterns() []string {
 		formattedExcludes[i] = fmt.Sprintf("`%s`", exclude)
 	}
 
-	c.Logger.LogWarn(
-		// TODO allow url as second param
-		"Applying default exclude patterns: %s. Add a .dockerignore to customize. https://railpack.com/config/excluding-files",
-		strings.Join(formattedExcludes, ", "),
+	c.Logger.LogSuggestion(
+		fmt.Sprintf("Applying default exclude patterns: %s. Add a `.dockerignore` to customize", strings.Join(formattedExcludes, ", ")),
+		"/config/excluding-files",
 	)
 
 	return slices.Clone(c.providerDefaultExcludes)
