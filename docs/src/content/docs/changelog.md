@@ -7,6 +7,45 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
+## v0.42.0
+October 15, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.42.0)
+
+### Providers
+
+#### New
+
+* **Node:** Turborepo builds now reuse turbo's local task cache across builds via the [framework cache](https://railpack.com/languages/node#framework-support), so unchanged workspace packages are skipped instead of rebuilt. Detection is automatic from `turbo.json`/`turbo.jsonc` or a `turbo` dependency, honoring `TURBO_CACHE_DIR`, then `cacheDir` in `turbo.json`, then `.turbo/cache`. by @edganiukov in [#788](https://github.com/railwayapp/railpack/pull/788)
+* **Zig:** Railpack now supports building [Zig](https://railpack.com/languages/zig) applications detected via `build.zig`, compiling with `zig build --release=safe` and running the binary from `zig-out/bin`. The binary name comes from `.name` in `build.zig.zon` (falling back to the app directory name); override the start command with `RAILPACK_START_CMD="./zig-out/bin/my_app"` when needed. by @iloveitaly in [#790](https://github.com/railwayapp/railpack/pull/790)
+
+#### Fixed
+
+* **Node:** Turborepo projects no longer fail with `Could not find turbo.json` because `turbo.json` and `turbo.jsonc` are now copied into the install layer when present. by @Tyagiquamar in [#770](https://github.com/railwayapp/railpack/pull/770)
+* **Node:** Yarn Berry projects using the `pnpm` linker now ship `node_modules` in the final image so deployed apps can load packages at runtime. by @fusion2004 in [#783](https://github.com/railwayapp/railpack/pull/783)
+
+**Full Changelog**: [v0.41.0...v0.42.0](https://github.com/railwayapp/railpack/compare/v0.41.0...v0.42.0)
+
+## v0.41.0
+October 13, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.41.0)
+
+### Providers
+
+#### New
+
+* **PHP:** we've added [Symfony support](https://railpack.com/languages/php/#symfony-support) to the PHP provider: Symfony apps are now detected automatically and get the `public/` document root, production defaults (`APP_ENV=prod`, `APP_DEBUG=0`), and a startup script that runs Doctrine migrations and warms the production cache. Detection needs no configuration — if your `composer.json` requires `symfony/framework-bundle`, it just works — and you can set `RAILPACK_SKIP_MIGRATIONS=true` to skip migrations at startup. by @iloveitaly in [#626](https://github.com/railwayapp/railpack/pull/626)
+
+### Mise Upgrades
+
+Updated mise from v2026.9.15 to [v2026.10.8](https://github.com/jdx/mise/releases/tag/v2026.10.8).
+
+* **Java now defaults to Temurin:** unprefixed Java versions (`java@21`, `lts`, `latest`) now install current Eclipse Temurin builds instead of the stale jdk.java.net OpenJDK builds, though existing `mise.lock` entries pinning OpenJDK may need `mise lock --bump java` to switch. ([v2026.10.5](https://github.com/jdx/mise/releases/tag/v2026.10.5))
+* **Node downloads always GPG-verified:** Node runtimes are now checked against their published GPG signature for every version, not just `2.x`, so set `node.gpg_verify = false` if you install from a mirror without signatures. ([v2026.10.5](https://github.com/jdx/mise/releases/tag/v2026.10.5))
+* **Untrusted configs hardened:** `mise.toml` tool entries with inline options now require trust, closing a hole where an untrusted project could redirect a `github:` tool at an attacker host and leak `GITHUB_TOKEN`. ([v2026.9.18](https://github.com/jdx/mise/releases/tag/v2026.9.18))
+* **Lockfile revision 3:** new `mise.lock` files record packslip repository IDs so tools keep installing after a GitHub or GitLab repo rename, but older mise versions reject the new format, so upgrade everyone sharing the lockfile before running `mise lock --upgrade`. ([v2026.9.16](https://github.com/jdx/mise/releases/tag/v2026.9.16))
+
+**Full Changelog**: [v0.40.1...v0.41.0](https://github.com/railwayapp/railpack/compare/v0.40.1...v0.41.0)
+
+*Routine mise version maintenance with test snapshot and changelog updates by @iloveitaly.*
+
 ## v0.40.1
 September 28, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.40.1)
 
@@ -938,14 +977,6 @@ October 22, 2025 · [GitHub release](https://github.com/railwayapp/railpack/rele
 * @crisog made their first contribution in [#290](https://github.com/railwayapp/railpack/pull/290)
 
 **Full Changelog**: [v0.9.1...v0.9.2](https://github.com/railwayapp/railpack/compare/v0.9.1...v0.9.2)
-
-## v0.9.1
-October 16, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.9.1)
-
-### What's Changed
-* fix: support + character in environment variable names by @coffee-cup in [#294](https://github.com/railwayapp/railpack/pull/294)
-
-**Full Changelog**: [v0.9.0...v0.9.1](https://github.com/railwayapp/railpack/compare/v0.9.0...v0.9.1)
 
 ## Older releases
 
