@@ -3,6 +3,7 @@ package golang
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/railwayapp/railpack/core/generate"
@@ -15,6 +16,8 @@ const (
 	GO_BINARY_NAME     = "out"
 	GO_PATH            = "/go"
 )
+
+var mainPackageRegex = regexp.MustCompile(`(?m)^package main\b`)
 
 type GoProvider struct{}
 
@@ -209,12 +212,20 @@ func (p *GoProvider) goBuildCache(ctx *generate.GenerateContext) string {
 	return ctx.Caches.AddCache(GO_BUILD_CACHE_KEY, "/root/.cache/go-build")
 }
 
+// only a root package named main produces a binary; a library at the root must not shadow cmd/*
 func (p *GoProvider) hasRootGoFiles(ctx *generate.GenerateContext) bool {
-	if files, err := ctx.App.FindFiles("*.go"); err == nil {
-		for _, file := range files {
-			if filepath.Dir(file) == "." {
-				return true
-			}
+	files, err := ctx.App.FindFiles("*.go")
+	if err != nil {
+		return false
+	}
+
+	for _, file := range files {
+		if filepath.Dir(file) != "." || strings.HasSuffix(file, "_test.go") {
+			continue
+		}
+
+		if contents, err := ctx.App.ReadFile(file); err == nil && mainPackageRegex.MatchString(contents) {
+			return true
 		}
 	}
 	return false
