@@ -81,7 +81,7 @@ There are normal unit tests, snapshot tests, and integration tests. The integrat
 
 ## Unit tests
 
-* Do not test log output.
+* Do not assert that specific log messages exist unless asked.
 * Name a test after the behavior it checks. Do not use a generic name such as `TestZig` when the function checks detection, a start command, or another specific outcome.
 
 # Documentation

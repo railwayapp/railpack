@@ -65,6 +65,9 @@
    "YARN_PRODUCTION": "false"
   }
  },
+ "exclude": [
+  "node_modules"
+ ],
  "steps": [
   {
    "caches": [
