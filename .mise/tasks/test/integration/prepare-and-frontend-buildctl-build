@@ -1,50 +1,51 @@
 #!/usr/bin/env bash
 #MISE description="Build frontend image, push to local registry, prepare example, and build via buildctl"
+#MISE depends=["prepare-tmp"]
 
 set -euo pipefail
 
-docker build -f images/alpine/frontend/Dockerfile -t railpack-frontend:local .
-docker tag railpack-frontend:local localhost:7890/railpack-frontend:local
-docker push localhost:7890/railpack-frontend:local
+# Fix the example so we can assert that --previous and --start-cmd survive the
+# prepare -> frontend build -> container run path. node-bun leaves Node unpinned
+# and normally runs Bun, so `node -v` verifies both overrides in one short-lived run.
+# It also builds without app-specific secrets or external services; this task
+# does not load test.json envs, and placeholders cannot satisfy every random app.
+example_name="node-bun"
+example_dir="examples/$example_name"
+image_name="test-buildctl-build:$example_name"
+previous_node="22.22.0"
+start_cmd="node -v"
 
-# cli-e2e pins this to node-bun so the --previous and --start-cmd checks below are observable.
-example_dir="examples/$EXAMPLE_PROJECT_NAME"
-echo "Testing prepare-and-frontend-buildctl-build with: $example_dir"
-
-plan_dir="tmp/test-integration/prepare-and-frontend-buildctl-build"
-image_name="test-buildctl-build:$EXAMPLE_PROJECT_NAME"
-mkdir -p "$plan_dir"
-
-prepare_args=()
-if [[ "$EXAMPLE_PROJECT_NAME" == "node-bun" ]]; then
-  # node-bun does not pin Node, and its default command (`bun index.ts`) prints "hello from Bun".
-  # 22.22.0 is the Node version that example's own test installs. --previous keeps it as a
-  # previously resolved default instead of whatever the provider default is now.
-  # --start-cmd replaces the bun script so the image prints the Node version.
-  previous_node="22.22.0"
-  start_cmd="node -v"
-  prepare_args+=(--previous "node@$previous_node" --start-cmd "$start_cmd")
+if [[ ! -d "$example_dir" ]]; then
+  echo "Example directory not found: $example_dir" >&2
+  exit 1
 fi
 
+echo "Testing prepare-and-frontend-buildctl-build with: $example_dir"
+plan_dir=$(mktemp -d -p "$TMP_DIR")
+
+mise run image-frontend-build
+
+# test.json pins Node via RAILPACK_NODE_VERSION for the example's own integration
+# test. Omit that override here so --previous is what selects the Node version.
 mise run cli prepare "$example_dir" \
-  "${prepare_args[@]}" \
+  --previous "node@$previous_node" \
+  --start-cmd "$start_cmd" \
   --plan-out "$plan_dir/railpack-plan.json" \
   --info-out "$plan_dir/railpack-info.json"
 
 jq -e '.success == true' "$plan_dir/railpack-info.json" > /dev/null
 
-if [[ "$EXAMPLE_PROJECT_NAME" == "node-bun" ]]; then
-  jq -e '.resolvedPackages.node.source == "previous installed version"' "$plan_dir/railpack-info.json" > /dev/null
-  jq -e --arg ver "$previous_node" '.resolvedPackages.node.resolvedVersion | startswith($ver)' "$plan_dir/railpack-info.json" > /dev/null
-  jq -e --arg cmd "$start_cmd" '.deploy.startCommand == $cmd' "$plan_dir/railpack-plan.json" > /dev/null
-fi
+jq -e '.resolvedPackages.node.source == "previous installed version"' "$plan_dir/railpack-info.json" > /dev/null
+jq -e --arg ver "$previous_node" '.resolvedPackages.node.resolvedVersion == $ver' "$plan_dir/railpack-info.json" > /dev/null
+jq -e --arg cmd "$start_cmd" '.deploy.startCommand == $cmd' "$plan_dir/railpack-plan.json" > /dev/null
 
-# The plan names secrets but not their values. Any placeholder satisfies the mount.
+# Provide placeholders through files so secret names cannot overwrite the task environment.
+jq -r '.secrets[]?' "$plan_dir/railpack-plan.json" > "$plan_dir/secrets.txt"
+printf '%s' cli-e2e > "$plan_dir/secret-value"
 secret_args=()
 while IFS= read -r secret; do
-  export "$secret=cli-e2e"
-  secret_args+=(--secret "id=$secret,env=$secret")
-done < <(jq -r '.secrets[]?' "$plan_dir/railpack-plan.json")
+  secret_args+=(--secret "id=$secret,src=$plan_dir/secret-value")
+done < "$plan_dir/secrets.txt"
 
 # Pass GITHUB_TOKEN to prevent GitHub API rate-limiting (HTTP 403) when mise downloads packages
 github_token_args=()
@@ -64,11 +65,8 @@ buildctl build \
   "${secret_args[@]}" \
   --output "type=docker,name=$image_name" | docker load
 
-if [[ "$EXAMPLE_PROJECT_NAME" == "node-bun" ]]; then
-  # v22.22.0 means --previous survived the frontend build. "hello from Bun" would mean
-  # the start command was still `bun index.ts`.
-  output=$(docker run --rm "$image_name")
-  echo "$output"
-  [[ "$output" == *v${previous_node}* ]]
-  [[ "$output" != *"hello from Bun"* ]]
-fi
+# v22.22.0 means --previous survived the frontend build. "hello from Bun" would mean
+# the start command was still `bun index.ts`.
+output=$(docker run --rm "$image_name")
+echo "$output"
+[[ "$output" == "v$previous_node" ]]
