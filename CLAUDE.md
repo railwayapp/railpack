@@ -44,6 +44,9 @@ Follow these instructions carefully when writing code:
 
 - If mise is not available in your environment, [install it](https://mise.jdx.dev/installing-mise.html)
 - Take a careful look at @mise.toml to understand what commands should be run at different points in the project lifecycle
+- Before every change to a Mise TOML configuration file or Mise task, consult
+  the [Mise documentation index](https://mise.jdx.dev/llms.txt) and read the
+  relevant linked documentation to verify the syntax and behavior being changed.
 - Do not worry about docker cache, etc. Never run `docker system prune` or other similar commands.
 - Do not run `go` directly. Instead, inspect @mise.toml and use `mise run <task>` to run various dev lifecycle commands. For instance, you should not run `go vet`, `go fmt`, `go test`, etc directly.
 - After making code changes, run `mise run check`
