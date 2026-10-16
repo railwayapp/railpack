@@ -15,11 +15,16 @@ the root directory.
 
 The Ruby version is determined in the following order:
 
-- Set via the `RAILPACK_RUBY_VERSION` environment variable
-- Read from the `.ruby-version` file
-- Read from the `Gemfile` file
-- Read from mise-compatible version files (`.tool-versions`, `mise.toml`)
-- Defaults to `3.4.6`
+1. The `RAILPACK_RUBY_VERSION` environment variable
+2. A [mise config file](/config/mise#configuration-files), such as `mise.toml`
+   or `.tool-versions`
+3. An [idiomatic version file](https://mise.jdx.dev/lang/ruby.html#version-files).
+   Mise reads `.ruby-version` and a `ruby` directive in the `Gemfile`. The
+   `Gemfile` directive wins when both set a version.
+4. The `RUBY VERSION` section of `Gemfile.lock`, such as `ruby 3.1.2p20`.
+   The patchlevel is ignored. Support for extracting this from the Gemfile.lock
+   is deprecated.
+5. Default to Ruby `3.4` as a last resort
 
 ## Runtime Variables
 

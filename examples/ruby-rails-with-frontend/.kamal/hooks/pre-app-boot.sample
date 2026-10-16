@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+
+echo "Booting app version $KAMAL_VERSION on $KAMAL_HOSTS..."

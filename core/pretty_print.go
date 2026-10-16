@@ -192,13 +192,9 @@ func formatLogs(output *strings.Builder, logs []logger.Msg) {
 		case logger.Warn:
 			output.WriteString(logWarnStyle.Render(fmt.Sprintf("⚠ %s", msg)))
 		case logger.Deprecation:
-			output.WriteString(logDeprecationStyle.Render(fmt.Sprintf("⚑ Deprecated: %s", msg)))
+			output.WriteString(renderLogLine(logDeprecationStyle, fmt.Sprintf("⚑ Deprecated: %s", msg), log.DocsPath))
 		case logger.Suggestion:
-			rendered := logSuggestionStyle.Render(fmt.Sprintf("→ %s", msg))
-			if log.DocsPath != "" {
-				rendered += " " + logDocsLinkStyle.Render(logger.DocsURL(log.DocsPath))
-			}
-			output.WriteString(rendered)
+			output.WriteString(renderLogLine(logSuggestionStyle, fmt.Sprintf("→ %s", msg), log.DocsPath))
 		case logger.Error:
 			lines := strings.Split(msg, "\n")
 			for i, line := range lines {
@@ -216,6 +212,16 @@ func formatLogs(output *strings.Builder, logs []logger.Msg) {
 		}
 		output.WriteString("\n")
 	}
+}
+
+// Suggestion and deprecation logs append the same docs link.
+func renderLogLine(style lipgloss.Style, text, docsPath string) string {
+	rendered := style.Render(text)
+	if docsPath == "" {
+		return rendered
+	}
+
+	return rendered + " " + logDocsLinkStyle.Render(logger.DocsURL(docsPath))
 }
 
 func formatPackages(output *strings.Builder, packages map[string]*resolver.ResolvedPackage) {

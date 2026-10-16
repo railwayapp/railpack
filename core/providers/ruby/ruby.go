@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"maps"
-	"regexp"
 	"strings"
 
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/providers/node"
+	"github.com/railwayapp/railpack/core/resolver"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -129,7 +129,7 @@ func (p *RubyProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 				ctx.Logger.LogWarn("bin/rails not found, run `bundle binstubs railties` to avoid potential startup problems")
 			}
 
-			return "bundle exec bin/rails server -b 0.0.0.0 -p ${PORT:-3000} -e $RAILS_ENV"
+			return "bundle exec bin/rails server -b 0.0.0.0 -p ${PORT:-3000}"
 		}
 	} else if app.HasFile("config/environment.rb") && app.HasMatch("script") {
 		return "bundle exec ruby script/server -b 0.0.0.0 -p ${PORT:-3000}"
@@ -252,15 +252,19 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	// rdoc (a) slows down builds (b) increases build size and (c) mostly importantly, will cause builds to fail if the locale is not properly set
 	miseStep.Variables["RUBY_CONFIGURE_OPTS"] = "--disable-install-doc"
 
-	// TODO mise parses simple versions from the Gemfile now, maybe that's all we should do and eliminate our custom parser?
-	if gemfileVersion := parseVersionFromGemfile(ctx); gemfileVersion != "" {
-		miseStep.Version(ruby, gemfileVersion, "Gemfile")
-	}
-
 	miseStep.UseMiseVersions(ctx, []string{"ruby"})
 
 	if envVersion, varName := ctx.Env.GetConfigVariable("RUBY_VERSION"); envVersion != "" {
 		miseStep.Version(ruby, envVersion, varName)
+	}
+
+	// Lockfile version is a deprecated fallback. Supported sources already
+	// replaced the railpack default when they set a version.
+	if pkg := miseStep.Resolver.Get("ruby"); pkg != nil && pkg.Source == resolver.DefaultSource {
+		if version := parseRubyVersionFromGemfileLock(ctx); version != "" {
+			miseStep.Version(ruby, version, "Gemfile.lock")
+			ctx.Logger.LogDeprecation("Gemfile.lock RUBY VERSION is deprecated.", "/languages/ruby#versions")
+		}
 	}
 
 	miseStep.AddSupportingAptPackage("libyaml-dev")
@@ -338,31 +342,25 @@ func (p *RubyProvider) addMetadata(ctx *generate.GenerateContext) {
 	ctx.Metadata.SetBool("rubyBootsnap", p.usesDep(ctx, "bootsnap"))
 }
 
-var (
-	gemfileVersionRegex     = regexp.MustCompile(`ruby (?:'|")(.*)(?:'|")[^>]"`)
-	gemfileLockVersionRegex = regexp.MustCompile(`ruby ((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*))[^>]`)
-)
-
-func parseVersionFromGemfile(ctx *generate.GenerateContext) string {
-	gemfile, err := ctx.App.ReadFile("Gemfile")
-	if err != nil {
-		return ""
-	}
-
-	matches := gemfileVersionRegex.FindStringSubmatch(string(gemfile))
-
-	if len(matches) > 2 {
-		return matches[2]
-	}
-
+// Bundler writes a RUBY VERSION section whose next line looks like "ruby 3.1.2p20".
+func parseRubyVersionFromGemfileLock(ctx *generate.GenerateContext) string {
 	gemfileLock, err := ctx.App.ReadFile("Gemfile.lock")
 	if err != nil {
 		return ""
 	}
 
-	matches = gemfileLockVersionRegex.FindStringSubmatch(string(gemfileLock))
-	if len(matches) > 1 {
-		return matches[1]
+	scanner := bufio.NewScanner(strings.NewReader(gemfileLock))
+	foundRubyVersion := false
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if foundRubyVersion {
+			// Drop the Bundler patchlevel so mise gets a semver.
+			return utils.ExtractSemverVersion(line)
+		}
+
+		if line == "RUBY VERSION" {
+			foundRubyVersion = true
+		}
 	}
 
 	return ""
