@@ -200,9 +200,9 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 }
 
 func (c *GenerateContext) getExcludePatterns() []string {
+	// .dockerignore comes first so a later railpack.json pattern can negate it.
 	if c.dockerignoreCtx.HasFile || c.Config.Exclude != nil {
-		excludes := slices.Clone(c.dockerignoreCtx.Excludes)
-		return append(excludes, c.Config.Exclude...)
+		return slices.Concat(c.dockerignoreCtx.Excludes, c.Config.Exclude)
 	}
 
 	if len(c.providerDefaultExcludes) == 0 {
