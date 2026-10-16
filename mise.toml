@@ -1,5 +1,6 @@
 [env]
 BUILDKIT_HOST = "docker-container://buildkit"
+TMP_DIR = "{{config_root}}/tmp"
 RAILPACK_MISE_VERSION = "{{read_file(path='core/mise/version.txt')}}"
 
 _.path = './bin'
@@ -22,6 +23,7 @@ locked = true
 
 [tasks.setup]
 run = [
+  'mkdir -p "$TMP_DIR"',
   "mise install",
   "mise run run-buildkit-container",
 ]
