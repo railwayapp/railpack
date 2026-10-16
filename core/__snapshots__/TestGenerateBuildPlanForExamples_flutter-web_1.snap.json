@@ -70,18 +70,20 @@
      "cmd": "flutter precache --web"
     },
     {
+     "dest": "pubspec.yaml",
+     "src": "pubspec.yaml"
+    },
+    {
+     "dest": "pubspec.lock",
+     "src": "pubspec.lock"
+    },
+    {
      "cmd": "flutter pub get"
     }
    ],
    "inputs": [
     {
      "step": "packages:mise"
-    },
-    {
-     "include": [
-      "."
-     ],
-     "local": true
     }
    ],
    "name": "install",
