@@ -102,12 +102,10 @@ jobs:
           cache-from: type=registry,ref=${{ env.PRODUCTION_BUILDER_IMAGE_REF }}
           cache-to: type=inline
 
-  # Smoke-tests the production frontend path: generate a plan via CLI, then
-  # docker buildx with BUILDKIT_SYNTAX pointing at a locally built frontend.
-  # Both `plan` (local/debug) and `prepare` (platform) are exercised; the
-  # frontend build uses the prepare output.
-  frontend-e2e:
-    name: Frontend E2E
+  # End-to-end integration tests for CLI subcommands (schema, info, plan, prepare, build)
+  # and frontend builds (using buildctl and docker buildx). Tasks are defined in .mise/tasks/test/integration/.
+  cli-e2e:
+    name: CLI E2E
     needs: [build-images, find-examples]
     runs-on: ubuntu-latest
     steps:
@@ -120,55 +118,46 @@ jobs:
         with:
           version: ${{ env.DOCKER_VERSION }}
 
-      - name: Build Frontend Image
-        run: |
-          docker build \
-            -f images/alpine/frontend/Dockerfile \
-            -t railpack-frontend:local \
-            .
+      - name: Start local registry
+        run: mise run image-run-registry
+
+      - name: Start BuildKit
+        run: mise run retry --attempts 5 -- mise run run-buildkit-container
+
+      - name: Test schema
+        run: mise run test:integration:schema
 
       - name: Select Random Example
-        id: example
         env:
           EXAMPLES: ${{ needs.find-examples.outputs.examples }}
         run: |
           example=$(jq -r '.[]' <<< "$EXAMPLES" | shuf -n 1)
           echo "Selected $example"
-          echo "name=$example" >> "$GITHUB_OUTPUT"
+          echo "EXAMPLE_PROJECT_NAME=$example" >> "$GITHUB_ENV"
 
-      - name: Generate Build Plan
+      - name: Test info
+        run: mise run test:integration:info
+
+      - name: Test plan and local build
+        run: mise run test:integration:plan-and-local-build
+
+      # The task fixes node-bun so it can verify --previous and --start-cmd at runtime.
+      - name: Test prepare and frontend buildctl build
+        # Pass GITHUB_TOKEN to BuildKit to prevent GitHub API rate-limiting (HTTP 403) when mise downloads tool packages
         env:
-          EXAMPLE: ${{ steps.example.outputs.name }}
-        run: |
-          mkdir -p tmp/frontend-plan
-          mise run cli plan "examples/$EXAMPLE" --out tmp/frontend-plan/from-plan.json
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: mise run test:integration:prepare-and-frontend-buildctl-build
 
-      - name: Prepare Build
+      - name: Test prepare and frontend buildx build
         env:
-          EXAMPLE: ${{ steps.example.outputs.name }}
-        run: |
-          mise run cli prepare "examples/$EXAMPLE" \
-            --plan-out tmp/frontend-plan/railpack-plan.json \
-            --info-out tmp/frontend-plan/railpack-info.json
-          jq -e '.success == true' tmp/frontend-plan/railpack-info.json
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: mise run test:integration:prepare-and-frontend-buildx-build
 
-      - name: Build Example With Frontend Image
-        env:
-          EXAMPLE: ${{ steps.example.outputs.name }}
+      - name: Stop BuildKit
+        if: always()
         run: |
-          # This smoke test does not load test.json, so provide non-sensitive values
-          # for every plan-declared secret through BuildKit's secret mount interface.
-          secret_args=()
-          while IFS= read -r secret; do
-            export "$secret=frontend-e2e"
-            secret_args+=(--secret "id=$secret,env=$secret")
-          done < <(jq -r '.secrets[]?' tmp/frontend-plan/railpack-plan.json)
-
-          docker buildx build \
-            --build-arg BUILDKIT_SYNTAX="railpack-frontend:local" \
-            "${secret_args[@]}" \
-            -f tmp/frontend-plan/railpack-plan.json \
-            "examples/$EXAMPLE"
+          docker stop buildkit || true
+          docker stop railpack-registry || true
 
   test:
     needs: [build-images, find-examples]
