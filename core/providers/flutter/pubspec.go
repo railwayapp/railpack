@@ -13,7 +13,6 @@ const (
 	FvmConfigPath = ".fvm/fvm_config.json"
 )
 
-// the subset of pubspec.yaml that we care about
 type Pubspec struct {
 	Name         string         `yaml:"name"`
 	Environment  map[string]any `yaml:"environment"`
@@ -22,7 +21,7 @@ type Pubspec struct {
 	Flutter map[string]any `yaml:"flutter"`
 }
 
-// UsesFlutterSDK reports whether this pubspec describes a Flutter app rather than a plain Dart package.
+// Reports whether this pubspec describes a Flutter app rather than a plain Dart package.
 func (p *Pubspec) UsesFlutterSDK() bool {
 	if p.Flutter != nil {
 		return true
@@ -35,7 +34,6 @@ func (p *Pubspec) UsesFlutterSDK() bool {
 	return sdk == "flutter"
 }
 
-// nestedString reads a string field out of a nested YAML mapping.
 // gopkg.in/yaml.v2 decodes a mapping into map[any]any whenever the surrounding value type is
 // `any`, so asserting map[string]any alone silently misses every nested lookup.
 func nestedString(value any, key string) (string, bool) {
@@ -51,8 +49,7 @@ func nestedString(value any, key string) (string, bool) {
 	return "", false
 }
 
-// FlutterConstraint returns the `environment > flutter` constraint (e.g. ">=3.24.0") if one is set.
-// The value is passed through to the resolver as-is, the same way node engines constraints are.
+// Passed through to the resolver as-is, the same way node engines constraints are.
 func (p *Pubspec) FlutterConstraint() string {
 	constraint, _ := p.Environment["flutter"].(string)
 	return strings.TrimSpace(constraint)
@@ -84,7 +81,6 @@ type fvmConfig struct {
 	FlutterSdkVer string `json:"flutterSdkVersion"`
 }
 
-// getFvmVersion returns the pinned version and the file it came from, or empty strings if FVM is not in use.
 func getFvmVersion(ctx *generate.GenerateContext) (string, string) {
 	for _, path := range []string{FvmrcPath, FvmConfigPath} {
 		if !ctx.App.HasFile(path) {
@@ -113,7 +109,6 @@ func getFvmVersion(ctx *generate.GenerateContext) (string, string) {
 	return "", ""
 }
 
-// isFlutterChannel reports whether the value is a Flutter release channel rather than a version.
 func isFlutterChannel(version string) bool {
 	switch version {
 	case "stable", "beta", "master", "main", "dev":

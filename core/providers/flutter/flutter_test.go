@@ -57,7 +57,7 @@ func TestDetect(t *testing.T) {
 	}
 }
 
-func TestPubspec(t *testing.T) {
+func TestPubspecSDKAndConstraint(t *testing.T) {
 	tests := []struct {
 		name           string
 		path           string

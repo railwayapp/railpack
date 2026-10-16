@@ -99,7 +99,7 @@ func (p *FlutterProvider) StartCommandHelp() string {
 		"4. The \"environment > flutter\" constraint in pubspec.yaml"
 }
 
-// installFlutter resolves the Flutter version, from lowest to highest precedence.
+// Resolves the Flutter version from lowest to highest precedence.
 // UseMiseVersions overwrites anything set before it, so the env override is applied last.
 func (p *FlutterProvider) installFlutter(ctx *generate.GenerateContext) {
 	miseStep := ctx.GetMiseStepBuilder()
