@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 #MISE description="Test 'railpack info' CLI output on an example"
-#MISE depends=["prepare-tmp"]
 #MISE env.EXAMPLE_PROJECT_NAME = { required = true }
 
 set -euo pipefail

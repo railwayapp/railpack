@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 #MISE description="Generate plan via CLI and execute local build using Railpack's native BuildKit client"
-#MISE depends=["prepare-tmp"]
 #MISE env.EXAMPLE_PROJECT_NAME = { required = true }
 
 set -euo pipefail

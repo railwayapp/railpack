@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 #MISE description="Build frontend image, push to local registry, prepare example, and build via buildctl"
-#MISE depends=["prepare-tmp"]
 
 set -euo pipefail
 

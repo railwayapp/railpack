@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 #MISE description="Prepare an example and build with docker buildx using the frontend image"
-#MISE depends=["prepare-tmp"]
 #MISE env.EXAMPLE_PROJECT_NAME = { required = true }
 
 set -euo pipefail
