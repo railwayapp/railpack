@@ -35,17 +35,25 @@ print_rule() {
 
 format_ref() {
   local ref=$1
+  local tag=${2:-}
+  local display
   if [[ ${#ref} -ge 40 ]] && [[ "$ref" =~ ^[0-9a-fA-F]+$ ]]; then
-    echo "${ref:0:7}…"
+    display="${ref:0:7}…"
   else
-    echo "$ref"
+    display="$ref"
+  fi
+
+  if [[ -n "$tag" && "$tag" != "$ref" && "$tag" != "$display" ]]; then
+    echo "${display} (${tag})"
+  else
+    echo "$display"
   fi
 }
 
 prompt_update() {
-  local repo=$1 ref=$2 latest_sha=$3
+  local repo=$1 from_label=$2 to_label=$3
   if [[ -t 0 ]] && [[ -r /dev/tty ]]; then
-    echo -n "    ${c_bold}Update${c_reset} ${c_dim}@${ref}${c_reset} ${c_dim}→${c_reset} ${c_cyan}@${latest_sha}${c_reset}? ${c_dim}(y/N)${c_reset} "
+    echo -n "    ${c_bold}Update${c_reset} ${c_dim}${from_label}${c_reset} ${c_dim}→${c_reset} ${c_cyan}${to_label}${c_reset}? ${c_dim}(y/N)${c_reset} "
     read -k 1 choice < /dev/tty
     echo
     [[ "$choice" == "y" || "$choice" == "Y" ]]
@@ -84,19 +92,122 @@ for repo in ${(f)repos}; do
   print_rule
   echo "${c_bold}${c_cyan}${repo}${c_reset}"
 
-  latest_tag=$(gh release view --repo "$repo" --json tagName --jq .tagName 2>/dev/null || true)
-  if [[ -z "$latest_tag" ]]; then
-    latest_tag=$(gh api "repos/$repo/tags" --jq '.[0].name' 2>/dev/null || true)
+  owner="${repo%%/*}"
+  repo_name="${repo#*/}"
+  repo_name="${repo_name%%/*}"
+  repo_slug="${owner}/${repo_name}"
+
+  current_refs=(${(f)"$(echo "$all_actions" | grep "^$repo@" | cut -d'@' -f2)"})
+  refs_json=$(printf '%s\n' "${current_refs[@]}" | jq -R . | jq -s .)
+
+  gql_raw=$(gh api graphql -f query='
+  query($owner: String!, $name: String!) {
+    repository(owner: $owner, name: $name) {
+      latestRelease {
+        tagName
+        name
+        url
+        tagCommit { oid }
+      }
+      releases(first: 50, orderBy: {field: CREATED_AT, direction: DESC}) {
+        nodes {
+          tagName
+          url
+          tagCommit { oid }
+        }
+      }
+      refs(refPrefix: "refs/tags/", first: 100, direction: DESC) {
+        nodes {
+          name
+          target {
+            oid
+            ... on Tag {
+              target { oid }
+            }
+          }
+        }
+      }
+    }
+  }
+  ' -F owner="$owner" -F name="$repo_name" 2>/dev/null || true)
+
+  parsed_data=""
+  if [[ -n "$gql_raw" ]]; then
+    parsed_data=$(echo "$gql_raw" | jq --arg repo_slug "$repo_slug" --argjson refs "$refs_json" '
+      .data.repository as $r |
+      if $r == null then null else
+      {
+        latest_tag: ($r.latestRelease.tagName // $r.refs.nodes[0].name // null),
+        latest_url: ($r.latestRelease.url // (if ($r.refs.nodes[0].name // null) then "https://github.com/\($repo_slug)/releases/tag/\($r.refs.nodes[0].name)" else null end)),
+        latest_sha: (
+          $r.latestRelease.tagCommit.oid //
+          ($r.refs.nodes[]? | select(.name == $r.latestRelease.tagName) | (.target.target.oid // .target.oid)) //
+          ($r.refs.nodes[0].target.target.oid // $r.refs.nodes[0].target.oid) //
+          null
+        ),
+        releases: [($r.releases.nodes // [])[] | {tag: .tagName, url: .url, sha: .tagCommit.oid}],
+        tags: [($r.refs.nodes // [])[] | {name: .name, sha: (.target.target.oid // .target.oid)}]
+      } as $data |
+      $data |
+      def find_tag_info($ref):
+        if ($ref | test("^[0-9a-fA-F]{40}$")) then
+          (
+            [
+              ($data.releases[]? | select(.sha == $ref) | {tag: .tag, url: .url}),
+              ($data.tags[]? | select(.sha == $ref) | {tag: .name, url: ("https://github.com/\($repo_slug)/releases/tag/\(.name)")})
+            ] | map(select(.tag != null)) | sort_by(.tag | length) | reverse | first
+          ) // {tag: "", url: ""}
+        else
+          {
+            tag: $ref,
+            url: (
+              ($data.releases[]? | select(.tag == $ref) | .url) //
+              "https://github.com/\($repo_slug)/releases/tag/\($ref)"
+            )
+          }
+        end;
+      {
+        latest_tag: .latest_tag,
+        latest_sha: .latest_sha,
+        latest_url: .latest_url,
+        refs: [
+          $refs[] | {
+            ref: .,
+            tag: find_tag_info(.).tag,
+            url: find_tag_info(.).url
+          }
+        ]
+      }
+      end
+    ' 2>/dev/null || true)
   fi
 
-  if [[ -z "$latest_tag" ]]; then
-    echo "  ${c_red}✗${c_reset} Could not find releases or tags"
-    count_error=$(( count_error + 1 ))
-    echo
-    continue
+  latest_tag=""
+  latest_sha=""
+  latest_url=""
+
+  if [[ -n "$parsed_data" && "$parsed_data" != "null" ]]; then
+    latest_tag=$(echo "$parsed_data" | jq -r '.latest_tag // empty')
+    latest_sha=$(echo "$parsed_data" | jq -r '.latest_sha // empty')
+    latest_url=$(echo "$parsed_data" | jq -r '.latest_url // empty')
   fi
 
-  latest_sha=$(gh api "repos/$repo/commits/$latest_tag" --header 'Accept: application/vnd.github.sha' 2>/dev/null || true)
+  if [[ -z "$latest_tag" || -z "$latest_sha" ]]; then
+    latest_tag=$(gh release view --repo "$repo_slug" --json tagName --jq .tagName 2>/dev/null || true)
+    if [[ -z "$latest_tag" ]]; then
+      latest_tag=$(gh api "repos/$repo_slug/tags" --jq '.[0].name' 2>/dev/null || true)
+    fi
+
+    if [[ -z "$latest_tag" ]]; then
+      echo "  ${c_red}✗${c_reset} Could not find releases or tags"
+      count_error=$(( count_error + 1 ))
+      echo
+      continue
+    fi
+
+    latest_sha=$(gh api "repos/$repo_slug/commits/$latest_tag" --header 'Accept: application/vnd.github.sha' 2>/dev/null || true)
+    latest_url="https://github.com/${repo_slug}/releases/tag/${latest_tag}"
+  fi
 
   if [[ -z "$latest_sha" ]]; then
     echo "  ${c_dim}Latest tag${c_reset}  ${c_bold}${latest_tag}${c_reset}"
@@ -110,18 +221,27 @@ for repo in ${(f)repos}; do
   echo "           ${c_dim}${latest_sha}${c_reset}"
   echo
 
-  current_refs=$(echo "$all_actions" | grep "^$repo@" | cut -d'@' -f2)
-  for ref in ${(f)current_refs}; do
-    local_label="$(format_ref "$ref")"
-    if [[ "$ref" == "$latest_sha" ]]; then
-      printf "  ${c_green}✓${c_reset}  %-12s  ${c_green}up to date${c_reset}\n" "@${local_label}"
+  for ref in "${current_refs[@]}"; do
+    ref_tag=""
+    if [[ -n "$parsed_data" && "$parsed_data" != "null" ]]; then
+      ref_tag=$(echo "$parsed_data" | jq -r --arg ref "$ref" '(.refs[]? | select(.ref == $ref) | .tag) // empty')
+    fi
+
+    local_label="$(format_ref "$ref" "$ref_tag")"
+    latest_label="$(format_ref "$latest_sha" "$latest_tag")"
+
+    if [[ "$ref" == "$latest_sha" || "$ref" == "$latest_tag" ]]; then
+      printf "  ${c_green}✓${c_reset}  %-24s  ${c_green}up to date${c_reset}\n" "@${local_label}"
       count_ok=$(( count_ok + 1 ))
     else
-      printf "  ${c_yellow}↑${c_reset}  %-12s  ${c_yellow}update available${c_reset}\n" "@${local_label}"
-      echo "           ${c_dim}https://github.com/${repo}/compare/${ref}...${latest_sha}${c_reset}"
+      printf "  ${c_yellow}↑${c_reset}  %-24s  ${c_yellow}update available${c_reset}\n" "@${local_label}"
+      if [[ -n "$latest_url" ]]; then
+        echo "           ${c_dim}Release: ${latest_url}${c_reset}"
+      fi
+      echo "           ${c_dim}Compare: https://github.com/${repo_slug}/compare/${ref}...${latest_sha}${c_reset}"
       count_update=$(( count_update + 1 ))
 
-      if prompt_update "$repo" "$ref" "$latest_sha"; then
+      if prompt_update "$repo" "@${local_label}" "@${latest_label}"; then
         perl -i -pe "s|uses: $repo\@$ref\b|uses: $repo\@$latest_sha|g" .github/workflows/*.yml
         echo "    ${c_green}✓${c_reset} Updated workflow files"
         count_updated=$(( count_updated + 1 ))
