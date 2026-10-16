@@ -131,6 +131,16 @@ else
   echo "Error: failed to generate docs changelog (continuing upgrade)" >&2
 fi
 
+echo "Updating GitHub Actions..."
+if GITHUB_TOKEN="$(mise token github --raw)" pinact run -u; then
+  if [[ -n "$(git status --porcelain -- .github/workflows)" ]]; then
+    git add -- .github/workflows
+    git commit -m "chore: update github actions"
+  fi
+else
+  echo "Error: failed to update GitHub Actions (continuing upgrade)" >&2
+fi
+
 # Push the branch (needed in CI and good practice locally)
 git push -u origin "$branch"
 
