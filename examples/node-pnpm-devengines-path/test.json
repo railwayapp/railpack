@@ -1,0 +1,6 @@
+[
+  // Passing control only; README.md describes the symlink build that reproduces #786.
+  {
+    "expectedOutput": ["runtime pnpm:", "sharp native operation succeeded"]
+  }
+]

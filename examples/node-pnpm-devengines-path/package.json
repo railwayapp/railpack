@@ -1,0 +1,28 @@
+{
+  "name": "node-pnpm-devengines-path",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "prepare": "node -e \"console.log('prepare pnpm: ' + process.env.npm_config_user_agent)\"",
+    "start": "node main.js"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": ">=24 <26",
+      "onFail": "warn"
+    },
+    "packageManager": {
+      "name": "pnpm",
+      "version": ">=11.0.0 <13.0.0",
+      "onFail": "download"
+    }
+  },
+  "engines": {
+    "node": ">=24",
+    "pnpm": ">=10"
+  },
+  "dependencies": {
+    "sharp": "0.35.5"
+  }
+}
