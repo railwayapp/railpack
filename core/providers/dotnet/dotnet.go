@@ -82,22 +82,41 @@ func (p *DotnetProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 		return ""
 	}
 	projFile := projFiles[0]
-	return fmt.Sprintf("ASPNETCORE_URLS=http://0.0.0.0:${PORT:-3000} ./out/%s", p.getPublishedOutputName(ctx, projFile))
+	projName := strings.TrimSuffix(path.Base(projFile), ".csproj")
+
+	// dotnet publish names the executable after AssemblyName, which defaults to the project file name
+	if assemblyName := p.getAssemblyName(ctx, projFile); assemblyName != "" {
+		projName = assemblyName
+	}
+
+	return fmt.Sprintf("ASPNETCORE_URLS=http://0.0.0.0:${PORT:-3000} ./out/%s", projName)
 }
 
-func (p *DotnetProvider) getPublishedOutputName(ctx *generate.GenerateContext, projFile string) string {
-	projName := strings.TrimSuffix(path.Base(projFile), ".csproj")
-	if data, err := ctx.App.ReadFile(projFile); err == nil {
-		var project Project
-		if err := xml.Unmarshal([]byte(data), &project); err == nil {
-			for _, pg := range project.PropertyGroups {
-				if pg.AssemblyName != "" {
-					return pg.AssemblyName
-				}
-			}
+func (p *DotnetProvider) getAssemblyName(ctx *generate.GenerateContext, projFile string) string {
+	data, err := ctx.App.ReadFile(projFile)
+	if err != nil {
+		return ""
+	}
+
+	var project Project
+	if err := xml.Unmarshal([]byte(data), &project); err != nil {
+		return ""
+	}
+
+	// MSBuild properties are evaluated in document order; later definitions override earlier ones
+	assemblyName := ""
+	for _, pg := range project.PropertyGroups {
+		if name := strings.TrimSpace(pg.AssemblyName); name != "" {
+			assemblyName = name
 		}
 	}
-	return projName
+
+	// MSBuild expressions cannot be evaluated statically without full MSBuild evaluation
+	if strings.Contains(assemblyName, "$(") {
+		return ""
+	}
+
+	return assemblyName
 }
 
 func (p *DotnetProvider) Install(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
