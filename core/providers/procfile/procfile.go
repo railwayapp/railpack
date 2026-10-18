@@ -69,7 +69,7 @@ func (p *ProcfileProvider) Plan(ctx *generate.GenerateContext) (bool, error) {
 func parseProcfile(contents string) []procfileEntry {
 	entries := []procfileEntry{}
 
-	for _, line := range strings.Split(contents, "\n") {
+	for line := range strings.SplitSeq(contents, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
