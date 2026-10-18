@@ -40,6 +40,8 @@ func TestDotnet(t *testing.T) {
 
 				err = provider.Plan(ctx)
 				require.NoError(t, err)
+
+				require.Equal(t, "ASPNETCORE_URLS=http://0.0.0.0:${PORT:-3000} ./out/csharp-cli", provider.GetStartCommand(ctx))
 			}
 		})
 	}

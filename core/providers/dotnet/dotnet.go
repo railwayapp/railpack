@@ -82,8 +82,22 @@ func (p *DotnetProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 		return ""
 	}
 	projFile := projFiles[0]
-	projName := strings.TrimSuffix(projFile, ".csproj")
-	return fmt.Sprintf("ASPNETCORE_URLS=http://0.0.0.0:${PORT:-3000} ./out/%s", projName)
+	return fmt.Sprintf("ASPNETCORE_URLS=http://0.0.0.0:${PORT:-3000} ./out/%s", p.getPublishedOutputName(ctx, projFile))
+}
+
+func (p *DotnetProvider) getPublishedOutputName(ctx *generate.GenerateContext, projFile string) string {
+	projName := strings.TrimSuffix(path.Base(projFile), ".csproj")
+	if data, err := ctx.App.ReadFile(projFile); err == nil {
+		var project Project
+		if err := xml.Unmarshal([]byte(data), &project); err == nil {
+			for _, pg := range project.PropertyGroups {
+				if pg.AssemblyName != "" {
+					return pg.AssemblyName
+				}
+			}
+		}
+	}
+	return projName
 }
 
 func (p *DotnetProvider) Install(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
@@ -187,6 +201,7 @@ type Project struct {
 type PropertyGroup struct {
 	TargetFramework  string `xml:"TargetFramework"`
 	TargetFrameworks string `xml:"TargetFrameworks"`
+	AssemblyName     string `xml:"AssemblyName"`
 }
 
 func extractVersionFromCsproj(framework string) string {
