@@ -7,7 +7,7 @@
       "path": "/WeatherForecast",
       "expected": 200,
       "internalPort": 8080,
-      "expectedOutput": "temperatureC"
+      "expectedOutput": ["temperatureC", "ConfiguredForecast (fr-FR: 12,5)"]
     }
   }
 ]

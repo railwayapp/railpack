@@ -77,27 +77,76 @@ func (p *DotnetProvider) StartCommandHelp() string {
 }
 
 func (p *DotnetProvider) GetStartCommand(ctx *generate.GenerateContext) string {
+	projFile := p.findCsprojFile(ctx)
+	if projFile == "" {
+		return ""
+	}
+	projName := strings.TrimSuffix(path.Base(projFile), ".csproj")
+
+	// dotnet publish names the executable after AssemblyName, which defaults to the project file name
+	if assemblyName := p.getAssemblyName(ctx, projFile, projName); assemblyName != "" {
+		projName = assemblyName
+	}
+
+	return fmt.Sprintf("ASPNETCORE_URLS=http://0.0.0.0:${PORT:-3000} ./out/%s", projName)
+}
+
+func (p *DotnetProvider) findCsprojFile(ctx *generate.GenerateContext) string {
 	projFiles, err := ctx.App.FindFiles("*.csproj")
 	if err != nil || len(projFiles) == 0 {
 		return ""
 	}
-	projFile := projFiles[0]
-	return fmt.Sprintf("ASPNETCORE_URLS=http://0.0.0.0:${PORT:-3000} ./out/%s", p.getPublishedOutputName(ctx, projFile))
+	return projFiles[0]
 }
 
-func (p *DotnetProvider) getPublishedOutputName(ctx *generate.GenerateContext, projFile string) string {
-	projName := strings.TrimSuffix(path.Base(projFile), ".csproj")
-	if data, err := ctx.App.ReadFile(projFile); err == nil {
-		var project Project
-		if err := xml.Unmarshal([]byte(data), &project); err == nil {
-			for _, pg := range project.PropertyGroups {
-				if pg.AssemblyName != "" {
-					return pg.AssemblyName
-				}
+func (p *DotnetProvider) parseCsproj(ctx *generate.GenerateContext, projFile string) (*Project, error) {
+	data, err := ctx.App.ReadFile(projFile)
+	if err != nil {
+		return nil, err
+	}
+
+	var project Project
+	if err := xml.Unmarshal([]byte(data), &project); err != nil {
+		return nil, err
+	}
+
+	return &project, nil
+}
+
+func (p *DotnetProvider) getAssemblyName(ctx *generate.GenerateContext, projFile string, defaultProjName string) string {
+	project, err := p.parseCsproj(ctx, projFile)
+	if err != nil {
+		return ""
+	}
+
+	// MSBuild properties are evaluated in document order; later unconditional definitions override earlier ones
+	assemblyName := ""
+	for _, pg := range project.PropertyGroups {
+		if strings.TrimSpace(pg.Condition) != "" {
+			continue
+		}
+
+		for _, an := range pg.AssemblyNames {
+			if strings.TrimSpace(an.Condition) != "" {
+				continue
 			}
+
+			name := strings.TrimSpace(an.Value)
+			if name == "" {
+				continue
+			}
+
+			name = strings.ReplaceAll(name, "$(MSBuildProjectName)", defaultProjName)
+			// Arbitrary MSBuild expressions cannot be evaluated statically without full MSBuild evaluation
+			if strings.Contains(name, "$(") {
+				continue
+			}
+
+			assemblyName = name
 		}
 	}
-	return projName
+
+	return assemblyName
 }
 
 func (p *DotnetProvider) Install(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
@@ -132,15 +181,8 @@ func (p *DotnetProvider) GetEnvVars(ctx *generate.GenerateContext) map[string]st
 func (p *DotnetProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	dotnet := miseStep.Default("dotnet", DEFAULT_DOTNET_VERSION)
 
-	if files, err := ctx.App.FindFiles("*.csproj"); err == nil && len(files) > 0 {
-		if data, err := ctx.App.ReadFile(files[0]); err == nil {
-			var project *Project
-			err = xml.Unmarshal([]byte(data), &project)
-			if err != nil {
-				fmt.Printf("Error parsing XML: %v\n", err)
-				return
-			}
-
+	if projFile := p.findCsprojFile(ctx); projFile != "" {
+		if project, err := p.parseCsproj(ctx, projFile); err == nil {
 			for _, pg := range project.PropertyGroups {
 				if pg.TargetFramework != "" {
 					version := extractVersionFromCsproj(pg.TargetFramework)
@@ -178,11 +220,11 @@ func (p *DotnetProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		}
 	}
 
+	miseStep.UseMiseVersions(ctx, []string{"dotnet"})
+
 	if envVersion, varName := ctx.Env.GetConfigVariable("DOTNET_VERSION"); envVersion != "" {
 		miseStep.Version(dotnet, envVersion, varName)
 	}
-
-	miseStep.UseMiseVersions(ctx, []string{"dotnet"})
 }
 
 func (p *DotnetProvider) getDotnetVersion(ctx *generate.GenerateContext) string {
@@ -199,9 +241,15 @@ type Project struct {
 }
 
 type PropertyGroup struct {
-	TargetFramework  string `xml:"TargetFramework"`
-	TargetFrameworks string `xml:"TargetFrameworks"`
-	AssemblyName     string `xml:"AssemblyName"`
+	Condition        string             `xml:"Condition,attr"`
+	TargetFramework  string             `xml:"TargetFramework"`
+	TargetFrameworks string             `xml:"TargetFrameworks"`
+	AssemblyNames    []ConditionalValue `xml:"AssemblyName"`
+}
+
+type ConditionalValue struct {
+	Condition string `xml:"Condition,attr"`
+	Value     string `xml:",chardata"`
 }
 
 func extractVersionFromCsproj(framework string) string {

@@ -25,7 +25,7 @@ Railpack builds your Dotnet application based on your project structure. The bui
 - Installs Dotnet SDK and Runtime
 - Caches dependencies using `dotnet restore`
 - Builds the project using `dotnet publish --no-restore -c Release -o out`
-- Sets up the start command based on the publish output `./out/{project_name}`
+- Sets up the start command based on the publish output `./out/{assembly_name}`, where `{assembly_name}` is the `AssemblyName` property or the project file name
 
 ### Config Variables
 
