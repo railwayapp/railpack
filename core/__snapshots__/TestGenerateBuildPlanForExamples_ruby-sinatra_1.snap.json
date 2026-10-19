@@ -106,7 +106,7 @@
   {
    "commands": [
     {
-     "cmd": "gem install -N bundler:2.3.7"
+     "cmd": "gem install -N bundler:2.4.6"
     },
     {
      "dest": "Gemfile",
