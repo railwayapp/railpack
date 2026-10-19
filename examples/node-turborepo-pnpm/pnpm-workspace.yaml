@@ -9,3 +9,9 @@ minimumReleaseAgeExclude:
   - '@turbo/windows-64@2.11.8'
   - '@turbo/windows-arm64@2.11.8'
   - turbo@2.11.8
+overrides:
+  flatted: 3.4.2
+  picomatch@^2: 2.3.2
+  nanoid@^3: 3.3.18
+  source-map-js: 1.2.2
+  sharp: 0.35.5
