@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
+    <!-- Allows the net6.0 binary to run on newer major runtimes when testing RAILPACK_DOTNET_VERSION=8.0.404 -->
     <RollForward>LatestMajor</RollForward>
     <AssemblyName>$(MSBuildProjectName)-app</AssemblyName>
     <RootNamespace>csharp_cli</RootNamespace>
