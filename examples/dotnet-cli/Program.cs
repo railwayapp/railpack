@@ -1,2 +1,2 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello from dotnet");
+// See https://aka.ms/new-console-template for more information
+Console.WriteLine($"Hello from dotnet {Environment.Version}");

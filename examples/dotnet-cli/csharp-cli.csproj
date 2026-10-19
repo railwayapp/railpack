@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <RollForward>LatestMajor</RollForward>
-    <AssemblyName>$(MSBuildProjectName).App</AssemblyName>
+    <AssemblyName>$(MSBuildProjectName)-app</AssemblyName>
     <RootNamespace>csharp_cli</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

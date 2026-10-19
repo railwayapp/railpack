@@ -43,7 +43,7 @@ func TestDotnet(t *testing.T) {
 				err = provider.Plan(ctx)
 				require.NoError(t, err)
 
-				require.Equal(t, "ASPNETCORE_URLS=http://0.0.0.0:${PORT:-3000} ./out/csharp-cli.App", ctx.Deploy.StartCmd)
+				require.Equal(t, "ASPNETCORE_URLS=http://0.0.0.0:${PORT:-3000} ./out/csharp-cli-app", ctx.Deploy.StartCmd)
 			}
 		})
 	}
@@ -144,7 +144,8 @@ func TestDotnetVersionResolution(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dir := t.TempDir()
+			dir, err := filepath.EvalSymlinks(t.TempDir())
+			require.NoError(t, err)
 			require.NoError(t, os.WriteFile(filepath.Join(dir, "my-project.csproj"), []byte(tt.csproj), 0o644))
 			if tt.globalJSON != "" {
 				require.NoError(t, os.WriteFile(filepath.Join(dir, "global.json"), []byte(tt.globalJSON), 0o644))

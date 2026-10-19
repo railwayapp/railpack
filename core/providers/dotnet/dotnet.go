@@ -220,11 +220,11 @@ func (p *DotnetProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 		}
 	}
 
+	miseStep.UseMiseVersions(ctx, []string{"dotnet"})
+
 	if envVersion, varName := ctx.Env.GetConfigVariable("DOTNET_VERSION"); envVersion != "" {
 		miseStep.Version(dotnet, envVersion, varName)
 	}
-
-	miseStep.UseMiseVersions(ctx, []string{"dotnet"})
 }
 
 func (p *DotnetProvider) getDotnetVersion(ctx *generate.GenerateContext) string {

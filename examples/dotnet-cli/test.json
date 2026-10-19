@@ -1,11 +1,11 @@
 [
   {
-    "expectedOutput": "Hello from dotnet"
+    "expectedOutput": "Hello from dotnet 6.0.36"
   },
   {
     "envs": {
-      "RAILPACK_DOTNET_VERSION": "8.0"
+      "RAILPACK_DOTNET_VERSION": "8.0.404"
     },
-    "expectedOutput": "Hello from dotnet"
+    "expectedOutput": "Hello from dotnet 8.0.11"
   }
 ]
