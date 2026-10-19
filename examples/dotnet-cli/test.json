@@ -1,5 +1,11 @@
 [
   {
     "expectedOutput": "Hello from dotnet"
+  },
+  {
+    "envs": {
+      "RAILPACK_DOTNET_VERSION": "8.0"
+    },
+    "expectedOutput": "Hello from dotnet"
   }
 ]
