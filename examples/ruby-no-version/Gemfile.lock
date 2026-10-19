@@ -1,24 +1,31 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    base64 (0.2.0)
-    mustermann (1.1.1)
-      ruby2_keywords (~> 0.0.1)
+    base64 (0.3.0)
+    logger (1.7.0)
+    mustermann (3.1.1)
     nio4r (2.7.5)
-    puma (5.6.4)
+    puma (5.6.9)
       nio4r (~> 2.0)
-    rack (2.2.3.1)
-    rack-protection (2.2.0)
-      rack
-    ruby2_keywords (0.0.5)
-    sinatra (2.2.0)
-      mustermann (~> 1.0)
-      rack (~> 2.2)
-      rack-protection (= 2.2.0)
+    rack (3.2.7)
+    rack-protection (4.2.1)
+      base64 (>= 0.1.0)
+      logger (>= 1.6.0)
+      rack (>= 3.0.0, < 4)
+    rack-session (2.1.2)
+      base64 (>= 0.1.0)
+      rack (>= 3.0.0)
+    sinatra (4.2.1)
+      logger (>= 1.6.0)
+      mustermann (~> 3.0)
+      rack (>= 3.0.0, < 4)
+      rack-protection (= 4.2.1)
+      rack-session (>= 2.0.0, < 3)
       tilt (~> 2.0)
-    tilt (2.0.10)
+    tilt (2.9.0)
 
 PLATFORMS
+  arm64-darwin-23
   x86_64-linux
 
 DEPENDENCIES
@@ -27,4 +34,4 @@ DEPENDENCIES
   sinatra
 
 BUNDLED WITH
-   2.3.12
+   2.4.6
