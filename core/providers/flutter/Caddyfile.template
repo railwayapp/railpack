@@ -29,8 +29,8 @@
 		-Server
 	}
 
-	# `flutter build web` always writes to build/web
-	root * {{.DistDir}}
+	# serve from the 'build/web' folder (`flutter build web` output directory)
+	root * {{.DIST_DIR}}
 
 	# Compression with more formats
 	encode {
@@ -38,16 +38,20 @@
 		zstd
 	}
 
-	# directives inside a route run in written order, unlike the rest of the Caddyfile.
-	# The cache header has to be matched *after* try_files rewrites, otherwise a request
-	# for "/" is still "/" when the matcher runs and never matches /index.html.
+	# --- Flutter-specific routing & cache control ---
+	# Unlike Vite/Webpack SPAs that content-hash every bundle filename, `flutter build web`
+	# emits fixed-name bootstrap files (`index.html`, `flutter_bootstrap.js`, `main.dart.js`,
+	# `flutter_service_worker.js`, `version.json`) and relies on its service worker manifest
+	# for cache invalidation. Browsers must revalidate these files on every load (`no-cache`)
+	# so users are not stranded on a stale build after a deploy.
+	#
+	# Wrapped in a `route` block so directives execute in written order: Caddy's default
+	# directive order runs `header` *before* `try_files`, which would mean a request to `/`
+	# or `/settings` has not yet been rewritten to `/index.html` when `@bootstrap` is evaluated.
 	route {
-		# match against direct HTML file matches, folder-level index.html, and optionally fall back to
-		# the root index.html so client-side routes (usePathUrlStrategy) resolve
+		# match against direct HTML file matches, folder-level index.html, and optionally fallback to root index.html
 		try_files {path} {path}.html {path}/index.html{{if .IndexFallback}} /index.html{{end}}
 
-		# Flutter's bootstrap files have stable names and are versioned by the service worker's
-		# resource map rather than by a content hash. Caching them strands users on a stale build.
 		@bootstrap path /index.html /flutter_bootstrap.js /flutter_service_worker.js /main.dart.js /version.json
 		header @bootstrap Cache-Control "no-cache"
 
