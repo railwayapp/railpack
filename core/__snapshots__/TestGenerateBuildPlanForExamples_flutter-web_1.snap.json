@@ -1,7 +1,7 @@
 {
  "deploy": {
   "base": {
-   "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.10.11"
+   "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.10.15"
   },
   "inputs": [
    {
@@ -56,7 +56,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.10.11"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.10.15"
     }
    ],
    "name": "packages:mise",
@@ -141,7 +141,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.10.11"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.10.15"
     }
    ],
    "name": "packages:caddy",
