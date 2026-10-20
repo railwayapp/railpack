@@ -7,9 +7,11 @@ import (
 )
 
 const (
+	// Primary project manifest (equivalent to package.json)
 	PubspecPath = "pubspec.yaml"
-	FvmrcPath   = ".fvmrc"
-	// legacy FVM config location, still present in plenty of repos
+	// Current FVM (Flutter Version Management) SDK pin file
+	FvmrcPath = ".fvmrc"
+	// Legacy FVM SDK pin file, still present in older repositories
 	FvmConfigPath = ".fvm/fvm_config.json"
 )
 
@@ -34,8 +36,16 @@ func (p *Pubspec) UsesFlutterSDK() bool {
 	return sdk == "flutter"
 }
 
-// gopkg.in/yaml.v2 decodes a mapping into map[any]any whenever the surrounding value type is
-// `any`, so asserting map[string]any alone silently misses every nested lookup.
+// In pubspec.yaml, `dependencies:` values can be either version strings or nested maps:
+//
+//	dependencies:
+//	  http: ^1.2.0
+//	  flutter:
+//	    sdk: flutter
+//
+// Because Pubspec.Dependencies is typed as `map[string]any` to accept both, gopkg.in/yaml.v2
+// decodes the inner `flutter:` block as `map[any]any{"sdk": "flutter"}` rather than `map[string]any`.
+// Asserting `map[string]any` alone would silently fail to match `sdk: flutter`.
 func nestedString(value any, key string) (string, bool) {
 	switch m := value.(type) {
 	case map[string]any:
