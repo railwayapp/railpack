@@ -22,18 +22,25 @@ const (
 	// the web target is only present when this file exists
 	WebIndexPath = "web/index.html"
 
-	CaddyfilePath = "/Caddyfile"
+	CaddyfilePath = "/etc/caddy/Caddyfile"
 	// dart2js resolves imports straight out of PUB_CACHE via absolute paths in
 	// .dart_tool/package_config.json, so the package store has to travel with the step layer.
 	// A BuildKit cache mount would drop it between the install and build steps.
 	PubCacheDir = "/app/.pub-cache"
 )
 
-// applied to every step that shells out to flutter. The analytics prompt would otherwise
-// appear on first run and the default pub cache lives outside /app.
+var flutterDefaultExcludePatterns = []string{".dart_tool", "build"}
+
 var flutterVariables = map[string]string{
-	"PUB_CACHE":                  PubCacheDir,
+	// Relocates the Dart package store from ~/.pub-cache into /app so packages persist across layers.
+	// https://dart.dev/tools/pub/environment-variables
+	"PUB_CACHE": PubCacheDir,
+	// Disables Flutter's first-run welcome banner and legacy usage telemetry.
+	// https://github.com/flutter/flutter/blob/master/packages/flutter_tools/lib/src/runner/flutter_command_runner.dart
 	"FLUTTER_SUPPRESS_ANALYTICS": "true",
+	// Signals non-interactive bot/CI mode to Flutter's BotDetector and Dart pub (disabling CLI spinners, prompts, and unified analytics).
+	// https://github.com/flutter/flutter/blob/master/packages/flutter_tools/lib/src/base/bot_detector.dart
+	"CI": "true",
 }
 
 type FlutterProvider struct {
@@ -78,6 +85,8 @@ func (p *FlutterProvider) Initialize(ctx *generate.GenerateContext) error {
 }
 
 func (p *FlutterProvider) Plan(ctx *generate.GenerateContext) error {
+	ctx.SetProviderDefaultExcludes(flutterDefaultExcludePatterns)
+
 	p.installFlutter(ctx)
 
 	install := p.installStep(ctx)
@@ -89,14 +98,8 @@ func (p *FlutterProvider) Plan(ctx *generate.GenerateContext) error {
 func (p *FlutterProvider) CleansePlan(buildPlan *plan.BuildPlan) {}
 
 func (p *FlutterProvider) StartCommandHelp() string {
-	return "Railpack builds Flutter apps for the web and serves the output with Caddy.\n\n" +
-		"The build output is read from build/web. To customize the build, set RAILPACK_BUILD_CMD, e.g.\n" +
-		"   RAILPACK_BUILD_CMD=\"flutter build web --wasm --base-href /app/\"\n\n" +
-		"To pin the Flutter version, Railpack will check:\n\n" +
-		"1. The RAILPACK_FLUTTER_VERSION environment variable\n\n" +
-		"2. A mise or asdf version file (mise.toml, .tool-versions)\n\n" +
-		"3. An FVM pin (.fvmrc or .fvm/fvm_config.json)\n\n" +
-		"4. The \"environment > flutter\" constraint in pubspec.yaml"
+	return "Railpack builds Flutter web apps (`flutter build web`) and serves build/web with Caddy.\n" +
+		"See the Flutter documentation for configuration options: https://railpack.com/languages/flutter"
 }
 
 // Resolves the Flutter version from lowest to highest precedence.
@@ -125,25 +128,46 @@ func (p *FlutterProvider) installFlutter(ctx *generate.GenerateContext) {
 func (p *FlutterProvider) installStep(ctx *generate.GenerateContext) *generate.CommandStepBuilder {
 	install := ctx.NewCommandStep("install")
 	install.AddInput(plan.NewStepLayer(ctx.GetMiseStepBuilder().Name()))
-	install.AddInput(plan.NewLocalLayer())
 
 	install.AddVariables(flutterVariables)
 
-	install.AddCommands([]plan.Command{
-		// download the web SDK now so it lands in the layer the build step inherits
-		plan.NewExecCommand("flutter precache --web"),
-		plan.NewExecCommand("flutter pub get"),
-	})
+	// Downloading the web SDK before copying manifests ensures code/pubspec changes reuse the precached ~600 MB layer.
+	install.AddCommand(plan.NewExecCommand("flutter precache --web"))
+
+	// Copy dependency manifests without the rest of the repo to avoid busting the package layer on source code changes
+	for _, file := range p.supportingInstallFiles(ctx) {
+		install.AddCommand(plan.NewCopyCommand(file))
+	}
+
+	install.AddCommand(plan.NewExecCommand("flutter pub get"))
 
 	return install
+}
+
+// Discovers dependency manifests and configuration files needed to install packages.
+func (p *FlutterProvider) supportingInstallFiles(ctx *generate.GenerateContext) []string {
+	var files []string
+
+	// Project manifest declaring packages, SDK constraints, and plugin registrations
+	if ctx.App.HasFile(PubspecPath) {
+		files = append(files, PubspecPath)
+	}
+	// Lockfile pinning exact package versions for deterministic dependency resolution
+	if ctx.App.HasFile("pubspec.lock") {
+		files = append(files, "pubspec.lock")
+	}
+	// Localization configuration; pub get invokes synthetic package generation when generate: true
+	if ctx.App.HasFile("l10n.yaml") {
+		files = append(files, "l10n.yaml")
+	}
+
+	return files
 }
 
 func (p *FlutterProvider) buildStep(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) *generate.CommandStepBuilder {
 	build := ctx.NewCommandStep("build")
 
-	// intentionally unfiltered: Flutter precaches dart-sdk and flutter_web_sdk into its mise
-	// install dir, and an unfiltered step layer carries /mise forward. Anchoring on the bare
-	// mise layer instead would re-download roughly 600 MB on every build.
+	// Carries forward the precached web SDK in /mise and downloaded packages in /app/.pub-cache from install.
 	build.AddInput(plan.NewStepLayer(install.Name()))
 	build.AddInput(plan.NewLocalLayer())
 
@@ -166,7 +190,7 @@ func (p *FlutterProvider) deploy(ctx *generate.GenerateContext, build *generate.
 	}
 
 	caddyfile, err := ctx.TemplateFiles([]string{"Caddyfile.template", "Caddyfile"}, caddyfileTemplate, map[string]any{
-		"DistDir":       fmt.Sprintf("/app/%s", WebOutputDir),
+		"DIST_DIR":      fmt.Sprintf("/app/%s", WebOutputDir),
 		"IndexFallback": indexFallback,
 	})
 	if err != nil {

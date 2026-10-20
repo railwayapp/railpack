@@ -1,5 +1,7 @@
 # global options
 {
+	# Disable the admin API, config autosave to disk (persist_config), and automatic TLS
+	# provisioning (auto_https), since the container is immutable and TLS terminates at the proxy
 	admin off
 	persist_config off
 	auto_https off
@@ -9,7 +11,8 @@
 	}
 
 	servers {
-		trusted_proxies static private_ranges 100.0.0.0/8 # trust railway's proxy
+		# trust railway's proxy
+		trusted_proxies static private_ranges 100.0.0.0/8
 	}
 }
 
