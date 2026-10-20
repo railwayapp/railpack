@@ -7,6 +7,37 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
+## v0.43.0
+October 19, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.43.0)
+
+### Breaking Changes
+
+* **Default build excludes:** Projects without a `.dockerignore` or configured excludes now omit `node_modules` (Node, Deno) and `venv`/`.venv` (Python) from the build context. ([#670]([#670](https://github.com/railwayapp/railpack/pull/670)#user-content-breaking-changes))
+
+### Providers
+
+#### New
+
+* **Generate:** Node, Deno, and Python projects without a `.dockerignore` or configured excludes now get sensible [default exclude patterns](https://railpack.com/config/excluding-files) (`node_modules` for Node and Deno, `venv` and `.venv` for Python) to keep dependencies out of the build context. Your own `.dockerignore` or `exclude` config still takes precedence — add one to customize the defaults. by @iloveitaly in [#670](https://github.com/railwayapp/railpack/pull/670)
+* **Ruby:** Ruby versions declared in your `Gemfile` are now resolved by mise natively instead of railpack's own parsing, and falling back to the `Gemfile.lock` `RUBY VERSION` is deprecated with a warning linking to the docs. If you relied on the lockfile version alone, pin Ruby explicitly via `.ruby-version`, `mise.toml`, or your `Gemfile` — see [Ruby version resolution](https://railpack.com/languages/ruby) for the precedence order. by @iloveitaly in [#791](https://github.com/railwayapp/railpack/pull/791)
+
+#### Fixed
+
+* **.NET:** The start command now uses `<AssemblyName>` from the `.csproj` when set, so apps with a custom assembly name start the correct executable. by @Tyagiquamar in [#803](https://github.com/railwayapp/railpack/pull/803)
+* **.NET:** Assembly-name handling now covers multiple and conditional `<AssemblyName>` property groups (last one wins, matching MSBuild) and falls back to the project file name for unevaluatable `$(...)` expressions. See the [.NET docs](https://railpack.com/languages/dotnet) for how the start command picks the executable name. by @RaphaelFakhri in [#802](https://github.com/railwayapp/railpack/pull/802)
+* **Procfile:** Procfiles are now parsed line by line instead of as YAML, so commands containing `: ` or starting with quotes no longer fail plan generation, and multi-process Procfiles without `web` or `worker` now fall back to the first process deterministically. by @RaphaelFakhri in [#766](https://github.com/railwayapp/railpack/pull/766)
+
+### Mise Upgrades
+
+Updated mise from v2026.10.8 to [v2026.10.14](https://github.com/jdx/mise/releases/tag/v2026.10.14).
+
+* **Faster installs, fewer GitHub API calls:** Public GitHub metadata now resolves via mise-versions, speeding up installs and avoiding anonymous API rate limits in builds without a token. ([v2026.10.11](https://github.com/jdx/mise/releases/tag/v2026.10.11))
+* **Resilient version lookups:** GitHub metadata lookups now retry against `api.github.com` when mise-versions times out or errors, making tool installs more reliable. ([v2026.10.12](https://github.com/jdx/mise/releases/tag/v2026.10.12))
+* **Untrusted project settings ignored:** `[settings]` in a project's `mise.toml` that can redirect downloads or builds now apply only after trust, closing a supply-chain vector. ([v2026.10.13](https://github.com/jdx/mise/releases/tag/v2026.10.13))
+* **Strict tool-option checks:** Installs now fail when a tool declares an option its backend doesn't read, so typos surface as errors instead of being silently ignored. ([v2026.10.14](https://github.com/jdx/mise/releases/tag/v2026.10.14))
+
+**Full Changelog**: [v0.42.0...v0.43.0](https://github.com/railwayapp/railpack/compare/v0.42.0...v0.43.0)
+
 ## v0.42.0
 October 15, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.42.0)
 
