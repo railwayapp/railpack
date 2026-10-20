@@ -12,7 +12,7 @@
    },
    {
     "include": [
-     "/Caddyfile"
+     "/etc/caddy/Caddyfile"
     ],
     "step": "caddy"
    },
@@ -26,7 +26,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "caddy run --config /Caddyfile --adapter caddyfile 2\u003e\u00261",
+  "startCommand": "caddy run --config /etc/caddy/Caddyfile --adapter caddyfile 2\u003e\u00261",
   "variables": {
    "RAILPACK_VERSION": "dev"
   }
@@ -91,6 +91,7 @@
     "*"
    ],
    "variables": {
+    "CI": "true",
     "FLUTTER_SUPPRESS_ANALYTICS": "true",
     "PUB_CACHE": "/app/.pub-cache"
    }
@@ -117,6 +118,7 @@
     "*"
    ],
    "variables": {
+    "CI": "true",
     "FLUTTER_SUPPRESS_ANALYTICS": "true",
     "PUB_CACHE": "/app/.pub-cache"
    }
@@ -124,7 +126,7 @@
   {
    "commands": [
     {
-     "cmd": "mise install-into caddy@2.11.6 /railpack/caddy"
+     "cmd": "mise install-into caddy@2.11.7 /railpack/caddy"
     },
     {
      "path": "/railpack/caddy"
@@ -145,15 +147,15 @@
   },
   {
    "assets": {
-    "Caddyfile": "# global options\n{\n\tadmin off\n\tpersist_config off\n\tauto_https off\n\n\tlog {\n\t\tformat json\n\t}\n\n\tservers {\n\t\ttrusted_proxies static private_ranges 100.0.0.0/8 # trust railway's proxy\n\t}\n}\n\n# site block, listens on the $PORT environment variable, automatically assigned by railway\n:{$PORT:80} {\n\tlog {\n\t\tformat json\n\t}\n\n\trespond /health 200\n\n\t# Security headers\n\theader {\n\t\t# Prevent some browsers from MIME-sniffing a response away from the declared Content-Type\n\t\tX-Content-Type-Options \"nosniff\"\n\t\t# Remove Server header\n\t\t-Server\n\t}\n\n\t# `flutter build web` always writes to build/web\n\troot * /app/build/web\n\n\t# Compression with more formats\n\tencode {\n\t\tgzip\n\t\tzstd\n\t}\n\n\t# directives inside a route run in written order, unlike the rest of the Caddyfile.\n\t# The cache header has to be matched *after* try_files rewrites, otherwise a request\n\t# for \"/\" is still \"/\" when the matcher runs and never matches /index.html.\n\troute {\n\t\t# match against direct HTML file matches, folder-level index.html, and optionally fall back to\n\t\t# the root index.html so client-side routes (usePathUrlStrategy) resolve\n\t\ttry_files {path} {path}.html {path}/index.html /index.html\n\n\t\t# Flutter's bootstrap files have stable names and are versioned by the service worker's\n\t\t# resource map rather than by a content hash. Caching them strands users on a stale build.\n\t\t@bootstrap path /index.html /flutter_bootstrap.js /flutter_service_worker.js /main.dart.js /version.json\n\t\theader @bootstrap Cache-Control \"no-cache\"\n\n\t\t# Handle static files\n\t\tfile_server {\n\t\t\thide .git\n\t\t\thide .env*\n\t\t}\n\t}\n}\n"
+    "Caddyfile": "# global options\n{\n\tadmin off\n\tpersist_config off\n\tauto_https off\n\n\tlog {\n\t\tformat json\n\t}\n\n\tservers {\n\t\ttrusted_proxies static private_ranges 100.0.0.0/8 # trust railway's proxy\n\t}\n}\n\n# site block, listens on the $PORT environment variable, automatically assigned by railway\n:{$PORT:80} {\n\tlog {\n\t\tformat json\n\t}\n\n\trespond /health 200\n\n\t# Security headers\n\theader {\n\t\t# Prevent some browsers from MIME-sniffing a response away from the declared Content-Type\n\t\tX-Content-Type-Options \"nosniff\"\n\t\t# Remove Server header\n\t\t-Server\n\t}\n\n\t# serve from the 'build/web' folder (`flutter build web` output directory)\n\troot * /app/build/web\n\n\t# Compression with more formats\n\tencode {\n\t\tgzip\n\t\tzstd\n\t}\n\n\t# --- Flutter-specific routing \u0026 cache control ---\n\t# Unlike Vite/Webpack SPAs that content-hash every bundle filename, `flutter build web`\n\t# emits fixed-name bootstrap files (`index.html`, `flutter_bootstrap.js`, `main.dart.js`,\n\t# `flutter_service_worker.js`, `version.json`) and relies on its service worker manifest\n\t# for cache invalidation. Browsers must revalidate these files on every load (`no-cache`)\n\t# so users are not stranded on a stale build after a deploy.\n\t#\n\t# Wrapped in a `route` block so directives execute in written order: Caddy's default\n\t# directive order runs `header` *before* `try_files`, which would mean a request to `/`\n\t# or `/settings` has not yet been rewritten to `/index.html` when `@bootstrap` is evaluated.\n\troute {\n\t\t# match against direct HTML file matches, folder-level index.html, and optionally fallback to root index.html\n\t\ttry_files {path} {path}.html {path}/index.html /index.html\n\n\t\t@bootstrap path /index.html /flutter_bootstrap.js /flutter_service_worker.js /main.dart.js /version.json\n\t\theader @bootstrap Cache-Control \"no-cache\"\n\n\t\t# Handle static files\n\t\tfile_server {\n\t\t\thide .git\n\t\t\thide .env*\n\t\t}\n\t}\n}\n"
    },
    "commands": [
     {
      "name": "Caddyfile",
-     "path": "/Caddyfile"
+     "path": "/etc/caddy/Caddyfile"
     },
     {
-     "cmd": "caddy fmt --overwrite /Caddyfile"
+     "cmd": "caddy fmt --overwrite /etc/caddy/Caddyfile"
     }
    ],
    "inputs": [
