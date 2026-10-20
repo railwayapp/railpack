@@ -1,6 +1,8 @@
 [
   // Passing control only; README.md describes the symlink build that reproduces #786.
   {
-    "expectedOutput": ["runtime pnpm:", "sharp native operation succeeded"]
+    "expectedOutput": ["runtime pnpm:", "sharp native operation succeeded"],
+    // pnpm prints the invoked script command to stderr.
+    "stderrAllowed": true
   }
 ]
