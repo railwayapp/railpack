@@ -103,7 +103,7 @@ func (p *PhpProvider) Plan(ctx *generate.GenerateContext) error {
 	ctx.Metadata.Set("phpFramework", framework)
 
 	if isNode {
-		err = p.DeployWithNode(ctx, nodeProvider, composer, framework)
+		err = p.DeployWithNode(ctx, nodeProvider, composer)
 		if err != nil {
 			return err
 		}
@@ -212,7 +212,7 @@ func (p *PhpProvider) InstallCompose(ctx *generate.GenerateContext, composer *ge
 	}
 }
 
-func (p *PhpProvider) DeployWithNode(ctx *generate.GenerateContext, nodeProvider node.NodeProvider, composer *generate.CommandStepBuilder, framework string) error {
+func (p *PhpProvider) DeployWithNode(ctx *generate.GenerateContext, nodeProvider node.NodeProvider, composer *generate.CommandStepBuilder) error {
 	err := nodeProvider.Initialize(ctx)
 	if err != nil {
 		return err
@@ -239,19 +239,6 @@ func (p *PhpProvider) DeployWithNode(ctx *generate.GenerateContext, nodeProvider
 		}),
 	}
 	nodeProvider.Build(ctx, build)
-
-	if framework == "laravel" {
-		build.AddCommands([]plan.Command{
-			// artisan cache commands below write into these directories, so they have to exist in this step.
-			plan.NewExecShellCommand("mkdir -p storage/framework/{sessions,views,cache,testing} storage/logs bootstrap/cache && chmod -R a+rw storage"),
-			// config values like APP_KEY are resolved and baked into bootstrap/cache/config.php. Runtime env vars are ignored
-			// for cached configs, leading to MissingAppKeyException if APP_KEY was unset at cache time.
-			plan.NewExecCommand("php artisan config:cache"),
-			plan.NewExecCommand("php artisan event:cache"),
-			plan.NewExecCommand("php artisan route:cache"),
-			plan.NewExecCommand("php artisan view:cache"),
-		})
-	}
 
 	ctx.Deploy.Base = plan.NewStepLayer(composer.Name())
 
@@ -403,6 +390,10 @@ func (p *PhpProvider) getFramework(ctx *generate.GenerateContext) string {
 	return ""
 }
 
+// Framework caches (artisan optimize, bin/console cache:warmup) run at container startup rather than
+// image build so config and routes resolve runtime environment variables instead of baking build-time defaults.
+// https://laravel.com/docs/12.x/configuration#configuration-caching
+// https://symfony.com/doc/current/deployment.html#d-clear-your-symfony-cache
 func (p *PhpProvider) startContainerScriptFor(framework string) string {
 	switch framework {
 	case "laravel":

@@ -1,9 +1,11 @@
 package php
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/railwayapp/railpack/core/generate"
+	"github.com/railwayapp/railpack/core/plan"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -75,4 +77,43 @@ func TestPhpCombinesBuildAndDeployAptPackages(t *testing.T) {
 	}
 
 	require.Equal(t, []string{"git", "zip", "unzip", "ca-certificates", "curl", "jq"}, packages)
+}
+
+// Laravel caches must be warmed at container startup (with config:clear before migrate) rather than during the image build.
+func TestLaravelDefersCacheWarmingToStartupScript(t *testing.T) {
+	ctx := testingUtils.CreateGenerateContext(t, "../../../examples/php-laravel-12-react")
+
+	provider := PhpProvider{}
+	require.NoError(t, provider.Initialize(ctx))
+	require.NoError(t, provider.Plan(ctx))
+
+	var startScript string
+	for _, step := range ctx.Steps {
+		cmdStep, ok := step.(*generate.CommandStepBuilder)
+		if !ok {
+			continue
+		}
+		if cmdStep.Name() == "prepare" {
+			startScript = cmdStep.Assets["start-container.sh"]
+		}
+		if cmdStep.Name() == "build" {
+			for _, cmd := range cmdStep.Commands {
+				execCmd, ok := cmd.(plan.ExecCommand)
+				if !ok {
+					continue
+				}
+				require.NotContains(t, execCmd.Cmd, "php artisan")
+			}
+		}
+	}
+
+	require.NotEmpty(t, startScript)
+	require.NotContains(t, startScript, "php artisan optimize:clear")
+
+	clearIdx := strings.Index(startScript, "php artisan config:clear")
+	migrateIdx := strings.Index(startScript, "php artisan migrate --force")
+	optimizeIdx := strings.Index(startScript, "php artisan optimize")
+	require.Greater(t, clearIdx, -1)
+	require.Greater(t, migrateIdx, clearIdx)
+	require.Greater(t, optimizeIdx, migrateIdx)
 }
