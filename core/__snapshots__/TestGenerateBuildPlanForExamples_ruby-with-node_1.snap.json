@@ -181,7 +181,7 @@
      "src": "package.json"
     },
     {
-     "cmd": "npm install"
+     "cmd": "npm install --include=dev"
     }
    ],
    "inputs": [
@@ -195,7 +195,6 @@
     "NODE_ENV": "production",
     "NPM_CONFIG_FETCH_RETRIES": "5",
     "NPM_CONFIG_FUND": "false",
-    "NPM_CONFIG_PRODUCTION": "false",
     "NPM_CONFIG_UPDATE_NOTIFIER": "false"
    }
   },
@@ -205,7 +204,7 @@
    ],
    "commands": [
     {
-     "cmd": "npm prune --ignore-scripts"
+     "cmd": "npm prune --omit=dev --ignore-scripts"
     }
    ],
    "inputs": [
@@ -213,10 +212,7 @@
      "step": "install:node"
     }
    ],
-   "name": "prune:node",
-   "variables": {
-    "NPM_CONFIG_OMIT": "dev,optional"
-   }
+   "name": "prune:node"
   },
   {
    "caches": [
