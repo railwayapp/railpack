@@ -188,13 +188,13 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 			// package.json parsing may also override Railpack's requested engines or lockfile fallback via
 			// `devEngines.packageManager` or `packageManager` (including values with a hash suffix), so the
 			// resolved version is the authoritative version that will actually be installed.
-			if usesPnpmBinSubdir(resolvePnpmVersion(ctx)) {
+			if usesPnpmBinSubdir(ctx.Resolver.ResolveVersion("pnpm")) {
 				pnpmBinPath = PNPM_HOME + "/bin"
 			}
 
 			// The path must be added before `pnpm add -g`, otherwise pnpm errors that the global bin dir is not in PATH
 			install.AddPaths([]string{pnpmBinPath})
-			install.AddCommand(plan.NewExecCommand("pnpm add -g node-gyp"))
+			install.AddCommand(plan.NewExecCommand("pnpm add -g " + nodeGypPackage(ctx.Resolver.ResolveVersion("node"))))
 		}
 
 		if ctx.App.HasFile("pnpm-lock.yaml") {
@@ -232,27 +232,35 @@ func usesPnpmBinSubdir(version string) bool {
 	return pnpmVersion.Compare(pnpmPathLayoutVersion) >= 0
 }
 
-// resolvePnpmVersion returns the mise-resolved pnpm version (e.g. "11.5.1").
-//
-// This exists only to normalize the Node ecosystem's x-range engines notation (e.g. "11.5.x") into a
-// concrete semver. We let mise do the resolution instead of reimplementing npm's range semantics ourselves.
-// Falls back to the requested version string if resolution fails; the real error is surfaced later when
-// the context resolves packages for the plan.
-//
-// Some build configuration depends on the exact pnpm version that exists, which is why this is critical.
-// TODO we should make this a generic function with a mise tool name param
-func resolvePnpmVersion(ctx *generate.GenerateContext) string {
-	if pkgs, err := ctx.Resolver.ResolvePackages(); err == nil {
-		if pnpm, ok := pkgs["pnpm"]; ok && pnpm.ResolvedVersion != nil {
-			return *pnpm.ResolvedVersion
+// Keep the latest node-gyp unpinned where supported; older Node releases need a compatible major.
+// Ranges follow engines.node in each node-gyp major's package.json, newest first.
+// https://github.com/nodejs/node-gyp/blob/main/package.json
+func nodeGypPackage(nodeVersion string) string {
+	version, err := semver.NewVersion(nodeVersion)
+	if err != nil {
+		return "node-gyp"
+	}
+
+	for _, compatibility := range []struct {
+		nodeRange string
+		pkg       string
+	}{
+		{"^22.22.2 || ^24.15.0 || >=26.0.0", "node-gyp"},
+		{"^20.17.0 || >=22.9.0", "node-gyp@12"},
+		{"^18.17.0 || >=20.5.0", "node-gyp@11"},
+		{"^16.14.0 || >=18.0.0", "node-gyp@10"},
+		{"^12.13.0 || ^14.13.0 || >=16.0.0", "node-gyp@9"},
+	} {
+		constraint, err := semver.NewConstraint(compatibility.nodeRange)
+		if err != nil {
+			panic(err)
+		}
+		if constraint.Check(version) {
+			return compatibility.pkg
 		}
 	}
 
-	if requested := ctx.Resolver.Get("pnpm"); requested != nil {
-		return requested.Version
-	}
-
-	return ""
+	return "node-gyp"
 }
 
 func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
@@ -279,7 +287,7 @@ func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate
 }
 
 func (p PackageManager) prunePnpm(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
-	pnpmVersion, err := semver.NewVersion(resolvePnpmVersion(ctx))
+	pnpmVersion, err := semver.NewVersion(ctx.Resolver.ResolveVersion("pnpm"))
 
 	// pnpm 8.15.6 added the --ignore-scripts flag to the prune command
 	// https://github.com/pnpm/pnpm/releases/tag/v8.15.6
