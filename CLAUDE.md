@@ -103,6 +103,14 @@ If work requires deep knowledge of mise internals, clone the project into `tmp/m
 
 https://github.com/jdx/mise
 
+## Writing Git Commits
+
+Follow these guidelines when creating git commits:
+
+- Use Conventional Commits formatting (`feat:`, `fix:`, `docs:`, `test:`, `chore:`, etc. with an optional scope, e.g., `fix(php):`).
+- Separate snapshot changes into their own commit (`test: update snapshots` or `test(<scope>): update snapshots`).
+- Separate documentation changes into their own commit (`docs: ...` or `docs(<scope>): ...`).
+
 ## Pull Requests
 
 When writing a pull request add a "---\nPlease remove this to indicate you've reviewed and deslopped your PR description"
