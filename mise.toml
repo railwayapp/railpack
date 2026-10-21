@@ -151,7 +151,7 @@ if [ "${usage_local:-false}" = "true" ]; then
   mise run image-builder-build
   image="railpack-builder:local"
 else
-  image="ghcr.io/railwayapp/railpack-builder:mise-$RAILPACK_MISE_VERSION"
+  image="ghcr.io/unkeyed/railpack-builder:mise-$RAILPACK_MISE_VERSION"
 fi
 exec docker run -it --rm "$image" bash
 '''

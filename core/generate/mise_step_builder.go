@@ -23,7 +23,7 @@ const (
 )
 
 var (
-	RailpackBuilderImage = fmt.Sprintf("ghcr.io/railwayapp/railpack-builder:mise-%s", mise.Version)
+	RailpackBuilderImage = fmt.Sprintf("ghcr.io/unkeyed/railpack-builder:mise-%s", mise.Version)
 )
 
 // represents a app-local mise package

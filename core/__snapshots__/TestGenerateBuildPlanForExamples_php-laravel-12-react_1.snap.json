@@ -69,7 +69,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.6.1"
     }
    ],
    "name": "packages:mise",
@@ -90,7 +90,7 @@
    ],
    "inputs": [
     {
-     "image": "dunglas/frankenphp:php8.2.31-bookworm"
+     "image": "dunglas/frankenphp:php8.2.34-bookworm"
     }
    ],
    "name": "packages:image"
