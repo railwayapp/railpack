@@ -12,6 +12,10 @@ const (
 	GRADLE_CACHE_KEY       = "gradle"
 )
 
+// Stop at the first non-numeric segment so pre-release URLs like
+// gradle-9.0-milestone-1-bin.zip resolve to 9.0 (mise does not index milestone tags).
+var gradleDistributionVersionRegex = regexp.MustCompile(`(?m)^\s*distributionUrl\s*=.*gradle-(\d+(?:\.\d+){0,2})[-.]`)
+
 func (p *JavaProvider) usesGradle(ctx *generate.GenerateContext) bool {
 	return ctx.App.HasFile("gradlew")
 }
@@ -34,27 +38,12 @@ func (p *JavaProvider) setGradleVersion(ctx *generate.GenerateContext) {
 		return
 	}
 
-	versionRegex, err := regexp.Compile(`(distributionUrl[\S].*[gradle])(-)([0-9|\.]*)`)
-	if err != nil {
+	match := gradleDistributionVersionRegex.FindStringSubmatch(wrapperProps)
+	if match == nil {
 		return
 	}
 
-	if !versionRegex.Match([]byte(wrapperProps)) {
-		return
-	}
-
-	customVersion := string(versionRegex.FindSubmatch([]byte(wrapperProps))[3])
-
-	parseVersionRegex, err := regexp.Compile(`^(?:[\sa-zA-Z-"']*)(\d*)(?:\.*)(\d*)(?:\.*\d*)(?:["']?)$`)
-	if err != nil {
-		return
-	}
-
-	if !parseVersionRegex.Match([]byte(customVersion)) {
-		return
-	}
-
-	miseStep.Version(gradle, customVersion, "gradle-wrapper.properties")
+	miseStep.Version(gradle, match[1], "gradle-wrapper.properties")
 }
 
 func (p *JavaProvider) gradleCache(ctx *generate.GenerateContext) string {
