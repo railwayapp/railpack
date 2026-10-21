@@ -25,6 +25,14 @@ func ValidatePlan(plan *plan.BuildPlan, app *app.App, logger *logger.Logger, opt
 		return false
 	}
 
+	if !validateEntrypoint(plan, logger) {
+		return false
+	}
+
+	if !validateHealthcheck(plan, logger) {
+		return false
+	}
+
 	for _, step := range plan.Steps {
 		if !validateInputs(step.Inputs, step.Name, logger) {
 			return false
@@ -52,7 +60,7 @@ func validateCommands(plan *plan.BuildPlan, app *app.App, logger *logger.Logger)
 }
 
 func validateStartCommand(plan *plan.BuildPlan, logger *logger.Logger, options *ValidatePlanOptions) bool {
-	if plan.Deploy.StartCmd != "" {
+	if plan.Deploy.StartCmd != "" || len(plan.Deploy.Entrypoint) > 0 {
 		return true
 	}
 
@@ -70,6 +78,48 @@ func validateStartCommand(plan *plan.BuildPlan, logger *logger.Logger, options *
 
 	logger.LogWarn("%s", msg)
 	return true
+}
+
+func validateEntrypoint(buildPlan *plan.BuildPlan, logger *logger.Logger) bool {
+	if buildPlan.Deploy.Entrypoint == nil {
+		return true
+	}
+	if len(buildPlan.Deploy.Entrypoint) == 0 {
+		logger.LogError("deploy.entrypoint must include at least one argument")
+		logger.LogSuggestion("See how to configure an entrypoint", "/config/file/#entrypoint")
+		return false
+	}
+	for _, arg := range buildPlan.Deploy.Entrypoint {
+		if arg == "" {
+			logger.LogError("deploy.entrypoint arguments must be non-empty")
+			logger.LogSuggestion("See how to configure an entrypoint", "/config/file/#entrypoint")
+			return false
+		}
+	}
+	return true
+}
+
+func validateHealthcheck(buildPlan *plan.BuildPlan, logger *logger.Logger) bool {
+	healthcheck := buildPlan.Deploy.Healthcheck
+	if healthcheck == nil {
+		return true
+	}
+
+	_, err := healthcheck.ToImageConfig()
+	if err == nil {
+		return true
+	}
+
+	// Conversion reports every invalid field together instead of stopping at the first.
+	if joined, ok := err.(interface{ Unwrap() []error }); ok {
+		for _, item := range joined.Unwrap() {
+			logger.LogError("%s", item.Error())
+		}
+		return false
+	}
+
+	logger.LogError("%s", err.Error())
+	return false
 }
 
 // validateInputs checks that
