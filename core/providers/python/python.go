@@ -238,8 +238,7 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	// Collect all packages that will be used by the provider
 	packages := []string{"python"}
 
-	pm := p.detectPackageManager(ctx)
-	packages = append(packages, pm.InstallMisePackages(miseStep)...)
+	packages = append(packages, p.getPackageManagerTools(ctx, miseStep)...)
 
 	miseStep.UseMiseVersions(ctx, packages)
 

@@ -161,6 +161,46 @@ func TestRequirementsNeedLocalFiles(t *testing.T) {
 			content: "fastapi-ipware @ git+https://github.com/iloveitaly/fastapi-ipware.git\n",
 			want:    false,
 		},
+		{
+			name:    "compact editable local file URL",
+			content: "-efile:///app/vendor/pkg\n",
+			want:    true,
+		},
+		{
+			name:    "compact editable local git file URL",
+			content: "-egit+file:///app/vendor/pkg#egg=pkg\n",
+			want:    true,
+		},
+		{
+			name:    "compact local find-links",
+			content: "-ffile:///app/vendor\n",
+			want:    true,
+		},
+		{
+			name:    "spaced editable local file URL",
+			content: "-e file:///app/vendor/pkg\n",
+			want:    true,
+		},
+		{
+			name:    "spaced local find-links file URL",
+			content: "-f file:///app/vendor\n",
+			want:    true,
+		},
+		{
+			name:    "compact remote find-links URL",
+			content: "-fhttps://example.com/wheels\n",
+			want:    false,
+		},
+		{
+			name:    "remote git requirement spec",
+			content: "pkg @ git+https://example.com/pkg.git\n",
+			want:    false,
+		},
+		{
+			name:    "comment with compact local option",
+			content: "# -efile:///app/vendor/pkg\nrequests==2.31.0\n",
+			want:    false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -213,6 +253,33 @@ func TestInstallNeedsAllFiles(t *testing.T) {
 				name:      "poetry path dependency",
 				pyproject: "[tool.poetry.dependencies]\nlocal-lib = { path = \"./local-lib\" }\n",
 				want:      true,
+			},
+			{
+				name:      "uv dotted path dependency without workspace table",
+				pyproject: "[project]\nname = \"app\"\nversion = \"0.1.0\"\ndependencies = [\"pkg\"]\n\n[tool.uv.sources]\npkg.path = \"./vendor/pkg\"\n",
+				want:      true,
+			},
+			{
+				name:      "poetry dotted path dependency",
+				pyproject: "[tool.poetry]\nname = \"app\"\nversion = \"0.1.0\"\n\n[tool.poetry.dependencies]\npython = \">=3.11\"\npkg.path = \"./vendor/pkg\"\n",
+				want:      true,
+			},
+			{
+				name:         "remote requirements takes precedence over uv dotted path",
+				requirements: "requests==2.31.0\n",
+				pyproject:    "[project]\nname = \"app\"\nversion = \"0.1.0\"\ndependencies = [\"pkg\"]\n\n[tool.uv.sources]\npkg.path = \"./vendor/pkg\"\n",
+				want:         false,
+			},
+			{
+				name:         "remote requirements takes precedence over poetry dotted path",
+				requirements: "requests==2.31.0\n",
+				pyproject:    "[tool.poetry]\nname = \"app\"\nversion = \"0.1.0\"\n\n[tool.poetry.dependencies]\npython = \">=3.11\"\npkg.path = \"./vendor/pkg\"\n",
+				want:         false,
+			},
+			{
+				name:      "commented dotted path dependency",
+				pyproject: "[project]\nname = \"app\"\n# pkg.path = \"./vendor/pkg\"\n",
+				want:      false,
 			},
 		}
 
@@ -332,4 +399,192 @@ func TestInstallStepLocalLayerWiring(t *testing.T) {
 		require.NotContains(t, installStep.Inputs, plan.NewLocalLayer())
 		require.Contains(t, installStep.Commands, plan.NewCopyCommand("requirements.txt"))
 	})
+
+	t.Run("compact editable requirement includes local layer in install step", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "requirements.txt"), []byte("-efile:///app/vendor/pkg\n"), 0o644))
+		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+		provider := PythonProvider{}
+
+		require.NoError(t, provider.Plan(ctx))
+		step := ctx.GetStepByName("install")
+		require.NotNil(t, step)
+		installStep, ok := (*step).(*generate.CommandStepBuilder)
+		require.True(t, ok)
+		require.Contains(t, installStep.Inputs, plan.NewLocalLayer())
+	})
+
+	t.Run("compact find-links requirement includes local layer in install step", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "requirements.txt"), []byte("-ffile:///app/vendor\n"), 0o644))
+		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+		provider := PythonProvider{}
+
+		require.NoError(t, provider.Plan(ctx))
+		step := ctx.GetStepByName("install")
+		require.NotNil(t, step)
+		installStep, ok := (*step).(*generate.CommandStepBuilder)
+		require.True(t, ok)
+		require.Contains(t, installStep.Inputs, plan.NewLocalLayer())
+	})
+
+	t.Run("uv dotted path includes local layer in install step", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		pyproject := "[project]\nname = \"app\"\nversion = \"0.1.0\"\ndependencies = [\"pkg\"]\n\n[tool.uv.sources]\npkg.path = \"./vendor/pkg\"\n"
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "pyproject.toml"), []byte(pyproject), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "uv.lock"), []byte(""), 0o644))
+		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+		provider := PythonProvider{}
+
+		require.NoError(t, provider.Plan(ctx))
+		step := ctx.GetStepByName("install")
+		require.NotNil(t, step)
+		installStep, ok := (*step).(*generate.CommandStepBuilder)
+		require.True(t, ok)
+		require.Contains(t, installStep.Inputs, plan.NewLocalLayer())
+	})
+
+	t.Run("poetry dotted path includes local layer in install step", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		pyproject := "[tool.poetry]\nname = \"app\"\nversion = \"0.1.0\"\n\n[tool.poetry.dependencies]\npython = \">=3.11\"\npkg.path = \"./vendor/pkg\"\n"
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "pyproject.toml"), []byte(pyproject), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "poetry.lock"), []byte(""), 0o644))
+		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+		provider := PythonProvider{}
+
+		require.NoError(t, provider.Plan(ctx))
+		step := ctx.GetStepByName("install")
+		require.NotNil(t, step)
+		installStep, ok := (*step).(*generate.CommandStepBuilder)
+		require.True(t, ok)
+		require.Contains(t, installStep.Inputs, plan.NewLocalLayer())
+	})
+}
+
+func TestPackageManagerToolProvisioning(t *testing.T) {
+	t.Run("requirements + pyproject + uv.lock", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "main.py"), []byte("print('hello')\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "requirements.txt"), []byte("requests==2.31.0\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "pyproject.toml"), []byte("[project]\nname = \"app\"\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "uv.lock"), []byte(""), 0o644))
+
+		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+		provider := PythonProvider{}
+		require.NoError(t, provider.Plan(ctx))
+
+		pkgNames := getMisePackageNames(ctx.GetMiseStepBuilder())
+		require.Equal(t, []string{"python", "uv"}, pkgNames)
+		require.True(t, stepHasExecCommand(ctx, "install", "pip install -r requirements.txt"))
+		require.False(t, stepHasExecCommand(ctx, "build", "uv sync --locked --no-dev --no-editable"))
+	})
+
+	t.Run("pyproject + uv.lock + poetry.lock", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "main.py"), []byte("print('hello')\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "pyproject.toml"), []byte("[project]\nname = \"app\"\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "uv.lock"), []byte(""), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "poetry.lock"), []byte(""), 0o644))
+
+		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+		provider := PythonProvider{}
+		require.NoError(t, provider.Plan(ctx))
+
+		pkgNames := getMisePackageNames(ctx.GetMiseStepBuilder())
+		require.Equal(t, []string{"python", "poetry", "uv"}, pkgNames)
+		require.True(t, stepHasExecCommand(ctx, "install", "uv sync --locked --no-dev --no-install-project"))
+		require.True(t, stepHasExecCommand(ctx, "build", "uv sync --locked --no-dev --no-editable"))
+	})
+
+	t.Run("pyproject + pdm.lock + Pipfile", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "main.py"), []byte("print('hello')\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "pyproject.toml"), []byte("[project]\nname = \"app\"\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "pdm.lock"), []byte(""), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "Pipfile"), []byte("[packages]\n"), 0o644))
+
+		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+		provider := PythonProvider{}
+		require.NoError(t, provider.Plan(ctx))
+
+		pkgNames := getMisePackageNames(ctx.GetMiseStepBuilder())
+		require.Equal(t, []string{"python", "pipx", "uv", "pipx:pdm", "pipx:pipenv"}, pkgNames)
+		require.True(t, stepHasExecCommand(ctx, "install", "pdm install --check --prod --no-editable"))
+	})
+
+	t.Run("all indicators", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "main.py"), []byte("print('hello')\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "requirements.txt"), []byte("requests==2.31.0\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "pyproject.toml"), []byte("[project]\nname = \"app\"\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "uv.lock"), []byte(""), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "poetry.lock"), []byte(""), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "pdm.lock"), []byte(""), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "Pipfile"), []byte("[packages]\n"), 0o644))
+
+		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+		provider := PythonProvider{}
+		require.NoError(t, provider.Plan(ctx))
+
+		pkgNames := getMisePackageNames(ctx.GetMiseStepBuilder())
+		require.Equal(t, []string{"python", "pipx", "uv", "poetry", "pipx:pdm", "pipx:pipenv"}, pkgNames)
+		require.True(t, stepHasExecCommand(ctx, "install", "pip install -r requirements.txt"))
+	})
+
+	t.Run("main.py + uv.lock without pyproject.toml", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "main.py"), []byte("print('hello')\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "uv.lock"), []byte(""), 0o644))
+
+		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+		provider := PythonProvider{}
+		require.NoError(t, provider.Plan(ctx))
+
+		pkgNames := getMisePackageNames(ctx.GetMiseStepBuilder())
+		require.Equal(t, []string{"python", "uv"}, pkgNames)
+
+		step := ctx.GetStepByName("install")
+		require.NotNil(t, step)
+		installStep, ok := (*step).(*generate.CommandStepBuilder)
+		require.True(t, ok)
+		require.Empty(t, installStep.Commands)
+	})
+
+	t.Run("python-only app", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "main.py"), []byte("print('hello')\n"), 0o644))
+
+		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+		provider := PythonProvider{}
+		require.NoError(t, provider.Plan(ctx))
+
+		pkgNames := getMisePackageNames(ctx.GetMiseStepBuilder())
+		require.Equal(t, []string{"python"}, pkgNames)
+	})
+
+	t.Run("version override on nonselected detected manager", func(t *testing.T) {
+		tmpDir, err := filepath.EvalSymlinks(t.TempDir())
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "main.py"), []byte("print('hello')\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "requirements.txt"), []byte("requests==2.31.0\n"), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "uv.lock"), []byte(""), 0o644))
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "mise.toml"), []byte("[tools]\nuv = \"0.4.0\"\n"), 0o644))
+
+		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+		provider := PythonProvider{}
+		require.NoError(t, provider.Plan(ctx))
+
+		uvPkg := ctx.GetMiseStepBuilder().Resolver.Get("uv")
+		require.NotNil(t, uvPkg)
+		require.Equal(t, "0.4.0", uvPkg.Version)
+		require.True(t, stepHasExecCommand(ctx, "install", "pip install -r requirements.txt"))
+	})
+}
+
+func getMisePackageNames(miseStep *generate.MiseStepBuilder) []string {
+	names := make([]string, len(miseStep.MisePackages))
+	for i, pkg := range miseStep.MisePackages {
+		names[i] = pkg.Name
+	}
+	return names
 }
