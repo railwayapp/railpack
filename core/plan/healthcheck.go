@@ -23,6 +23,19 @@ const (
 	DefaultHealthcheckRetries       = 3
 )
 
+// TCP port numbers occupy 16 bits; zero is reserved rather than a service port.
+const maxHealthcheckPort = 65535
+
+// The URL is supplied as $1, so its contents are never parsed as shell code.
+const urlHealthcheckCommand = `probe_url=$1
+if [[ "$probe_url" == *'${PORT}'* ]]; then
+    probe_url=${probe_url//\$\{PORT\}/"${PORT:?PORT must be set for this healthcheck}"}
+fi
+status=$(curl --disable --silent --show-error --fail --globoff --noproxy '*' \
+    --output /dev/null --write-out '%{http_code}' -- "$probe_url") || exit 1
+# A 2xx response proves success; redirects are not followed or treated as healthy.
+[[ "$status" == 2[0-9][0-9] ]]`
+
 // Container healthcheck from railpack.json, using either a shell command or an HTTP(S) URL.
 type Healthcheck struct {
 	Command       string `json:"command,omitempty" jsonschema:"minLength=1,description=Shell command the runtime runs. Exit 0 is healthy. Set exactly one of command or url."`
@@ -57,11 +70,11 @@ func (h *Healthcheck) ToImageConfig() (*dockerspec.HealthcheckConfig, error) {
 		errs = append(errs, errors.New("deploy.healthcheck must set exactly one of command or url"))
 	}
 	if h.URL != "" {
-		command, err := h.urlCommand()
-		if err != nil {
+		if err := validateHealthcheckURL(h.URL); err != nil {
 			errs = append(errs, err)
 		} else {
-			config.Test = []string{"CMD", "/bin/bash", "-c", command}
+			// bash -c consumes the first argument after the script as $0, leaving the URL in $1.
+			config.Test = []string{"CMD", "/bin/bash", "-c", urlHealthcheckCommand, "railpack-healthcheck", h.URL}
 		}
 	}
 	if h.Retries < 0 {
@@ -111,21 +124,24 @@ func parseHealthcheckDuration(value string) (time.Duration, error) {
 	return duration, nil
 }
 
-// Quote the URL as data, permitting only the documented runtime port substitution.
-func (h Healthcheck) urlCommand() (string, error) {
-	parsed, err := url.Parse(strings.ReplaceAll(h.URL, "${PORT}", "8080"))
-	if err != nil || parsed == nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" || strings.ContainsAny(h.URL, " \t\r\n") {
-		return "", errors.New("deploy.healthcheck.url must be an absolute http:// or https:// URL")
+// Validate literal URLs at plan time; curl validates templates after runtime expansion.
+func validateHealthcheckURL(address string) error {
+	if (!strings.HasPrefix(address, "http://") && !strings.HasPrefix(address, "https://")) || strings.ContainsAny(address, " \t\r\n") {
+		return errors.New("deploy.healthcheck.url must be an absolute http:// or https:// URL")
+	}
+	if strings.Contains(address, "${PORT}") {
+		// The final port is unknown until the container starts; do not substitute a build-time value.
+		return nil
+	}
+	parsed, err := url.Parse(address)
+	if err != nil || parsed.Hostname() == "" {
+		return errors.New("deploy.healthcheck.url must be an absolute http:// or https:// URL")
 	}
 	if port := parsed.Port(); port != "" {
-		value, err := strconv.ParseUint(port, 10, 16)
-		if err != nil || value == 0 {
-			return "", errors.New("deploy.healthcheck.url port must be between 1 and 65535")
+		value, err := strconv.Atoi(port)
+		if err != nil || value < 1 || value > maxHealthcheckPort {
+			return fmt.Errorf("deploy.healthcheck.url port must be between 1 and %d", maxHealthcheckPort)
 		}
 	}
-	quoted := strings.NewReplacer(`\`, `\\`, `"`, `\"`, "$", `\$`, "`", "\\`").Replace(h.URL)
-	quoted = `"` + strings.ReplaceAll(quoted, `\${PORT}`, "${PORT}") + `"`
-	// Ignore curl config, proxies, and URL globbing so the probe targets exactly the configured endpoint.
-	command := `status=$(curl --disable --silent --show-error --fail --globoff --noproxy '*' --output /dev/null --write-out '%{http_code}' -- ` + quoted + `) && [[ "$status" == 2[0-9][0-9] ]]`
-	return command, nil
+	return nil
 }

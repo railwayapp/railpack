@@ -416,7 +416,8 @@ Set exactly one of `url` or `command`. The healthcheck must be an object.
 Use `url` for an HTTP or HTTPS GET probe. Only 2xx responses are healthy;
 redirects, connection errors, and certificate errors fail the check. HTTPS
 verifies the server certificate. `${PORT}` expands when the container runs;
-other shell expressions in the URL are treated literally. If you omit the port,
+it must be set when used. Templated URLs are validated by curl after runtime
+expansion. Other shell expressions in the URL are treated literally. If you omit the port,
 HTTP uses port 80 and HTTPS uses port 443.
 
 ```json title="railpack.json"
