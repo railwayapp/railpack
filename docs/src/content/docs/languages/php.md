@@ -119,13 +119,10 @@ Laravel applications are detected by the presence of an `artisan` file. When
 detected:
 
 - The document root is set to the `/app/public` directory
-- Storage directory permissions are set to be writable
-- Composer dependencies are installed
-- Artisan caches are optimized at build time:
-  - Configuration cache
-  - Event cache
-  - Route cache
-  - View cache
+- `storage` and `bootstrap/cache` directories are created and made writable when the container starts
+- On startup, any stale configuration cache is cleared, database migrations run (unless
+  `RAILPACK_SKIP_MIGRATIONS` is set), the public storage symlink is created, and
+  `php artisan optimize` warms the configuration, event, route, and view caches
 
 ## Symfony Support
 
