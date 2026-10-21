@@ -88,7 +88,7 @@ func TestHealthcheckRejectsInvalidProbeConfiguration(t *testing.T) {
 }
 
 func TestHealthcheckURLResponseStatus(t *testing.T) {
-	for _, status := range []int{200, 204, 302, 404, 500} {
+	for _, status := range []int{http.StatusOK, http.StatusNoContent, http.StatusFound, http.StatusNotFound, http.StatusInternalServerError} {
 		t.Run(strconv.Itoa(status), func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, http.MethodGet, r.Method)
@@ -97,7 +97,7 @@ func TestHealthcheckURLResponseStatus(t *testing.T) {
 			}))
 			defer server.Close()
 			_, err := runURLHealthcheck(t, server.URL)
-			if status >= 200 && status < 300 {
+			if status >= http.StatusOK && status < http.StatusMultipleChoices {
 				require.NoError(t, err)
 			} else {
 				require.Error(t, err)
@@ -162,4 +162,31 @@ func runURLHealthcheck(t *testing.T, address string) (string, error) {
 	defer cancel()
 	output, err := exec.CommandContext(ctx, config.Test[1], config.Test[2:]...).CombinedOutput()
 	return string(output), err
+}
+
+func TestHealthcheckURLRejectsInvalidRuntimePort(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		port string
+	}{
+		{"unset", ""},
+		{"nonnumeric", "not-a-port"},
+		{"out of range", strconv.Itoa(maxHealthcheckPort + 1)},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("PORT", tt.port)
+			output, err := runURLHealthcheck(t, "http://localhost:${PORT}/status")
+			require.Error(t, err, output)
+		})
+	}
+}
+
+func TestHealthcheckURLTreatsRuntimePortAsData(t *testing.T) {
+	marker := filepath.Join(t.TempDir(), "unexpected-command")
+	// An environment value must not gain shell syntax when inserted into the URL.
+	t.Setenv("PORT", "$(touch "+marker+")")
+	_, err := runURLHealthcheck(t, "http://localhost:${PORT}/status")
+	require.Error(t, err)
+	_, err = os.Stat(marker)
+	require.True(t, os.IsNotExist(err))
 }
