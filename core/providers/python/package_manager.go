@@ -3,6 +3,7 @@ package python
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/charmbracelet/log"
@@ -47,27 +48,44 @@ func (p *PythonProvider) detectPackageManager(ctx *generate.GenerateContext) Pac
 	return PackageManagerNone
 }
 
-// pip ships with Python; the other managers need separate Mise tools
-func (pm PackageManager) InstallMisePackages(miseStep *generate.MiseStepBuilder) []string {
+// discover all package-manager tools needed by the application's manifests
+func (p *PythonProvider) getPackageManagerTools(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) []string {
 	var packages []string
-	switch pm {
-	case PackageManagerPdm:
-		miseStep.Default("pipx", "latest")
-		miseStep.Default("uv", "latest")
-		miseStep.Default("pipx:pdm", "latest")
-		packages = append(packages, "pipx", "uv", "pipx:pdm")
-	case PackageManagerPipenv:
-		miseStep.Default("pipx", "latest")
-		miseStep.Default("uv", "latest")
-		miseStep.Default("pipx:pipenv", "latest")
-		packages = append(packages, "pipx", "uv", "pipx:pipenv")
-	case PackageManagerPoetry:
-		miseStep.Default("poetry", "latest")
-		packages = append(packages, "poetry")
-	case PackageManagerUv:
-		miseStep.Default("uv", "latest")
-		packages = append(packages, "uv")
+
+	addTool := func(pkg string) {
+		if !slices.Contains(packages, pkg) {
+			packages = append(packages, pkg)
+		}
 	}
+
+	if p.hasPdm(ctx) || p.hasPipfile(ctx) {
+		miseStep.Default("pipx", "latest")
+		addTool("pipx")
+
+		miseStep.Default("uv", "latest")
+		addTool("uv")
+	}
+
+	if p.hasPoetry(ctx) {
+		miseStep.Default("poetry", "latest")
+		addTool("poetry")
+	}
+
+	if p.hasPdm(ctx) {
+		miseStep.Default("pipx:pdm", "latest")
+		addTool("pipx:pdm")
+	}
+
+	if p.hasUv(ctx) {
+		miseStep.Default("uv", "latest")
+		addTool("uv")
+	}
+
+	if p.hasPipfile(ctx) {
+		miseStep.Default("pipx:pipenv", "latest")
+		addTool("pipx:pipenv")
+	}
+
 	return packages
 }
 
@@ -257,9 +275,9 @@ var (
 	localFileSchemeRegex = regexp.MustCompile(`(?:^|[\s@='"])(?:(?:git|svn|hg|bzr)\+)?file:`)
 
 	// requirements.txt accepts pip options and bare paths that pyproject.toml dependency tables do not
-	editableRequirementRegex = regexp.MustCompile(`^(?:-e|--editable)(?:\s|=)`)
+	editableRequirementRegex = regexp.MustCompile(`^(?:-e(?:\s*|=)?|--editable(?:\s+|=))(\S*)`)
 
-	findLinksOptionRegex = regexp.MustCompile(`^(?:-f|--find-links)(?:\s+|=)(\S+)`)
+	findLinksOptionRegex = regexp.MustCompile(`^(?:-f(?:\s*|=)?|--find-links(?:\s+|=))(\S+)`)
 
 	pep508LocalPathRegex = regexp.MustCompile(`@\s*(?:\.\.?/|/)`)
 
@@ -269,7 +287,7 @@ var (
 
 	// pyproject.toml path keys identify local dependencies, unlike its readme and license file keys
 	// Match TOML `path = ...` keys without false-positiving on `pythonpath =` or `include-path =`.
-	pyprojectLocalPathKeyRegex = regexp.MustCompile(`(?:^|[{\s,])path\s*=`)
+	pyprojectLocalPathKeyRegex = regexp.MustCompile(`(?:^|[{\s,.])path\s*=`)
 )
 
 // Inspect python dependency files and determine if local packages are referenced, and therefore all files are required
