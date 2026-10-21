@@ -29,6 +29,12 @@ type Deploy struct {
 	// The command to run in the container
 	StartCmd string `json:"startCommand,omitempty"`
 
+	// Nil keeps /bin/bash -c. An empty slice is explicit and fails validation.
+	Entrypoint []string `json:"entrypoint,omitempty"`
+
+	// Nil means the image has no healthcheck.
+	Healthcheck *Healthcheck `json:"healthcheck,omitempty"`
+
 	// The variables available to this step. The key is the name of the variable that is referenced in a variable command
 	Variables map[string]string `json:"variables,omitempty"`
 

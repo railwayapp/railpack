@@ -17,6 +17,8 @@ type DeployConfig struct {
 	Base        *plan.Layer       `json:"base,omitempty" jsonschema:"description=The base image to use for the deploy step"`
 	Inputs      []plan.Layer      `json:"inputs,omitempty" jsonschema:"description=The inputs for the deploy step"`
 	StartCmd    string            `json:"startCommand,omitempty" jsonschema:"description=The command to run in the container"`
+	Entrypoint  []string          `json:"entrypoint,omitempty" jsonschema:"description=Exec-form container entrypoint. Replaces the default /bin/bash -c. The start command when set is passed as a single argument."`
+	Healthcheck *plan.Healthcheck `json:"healthcheck,omitempty" jsonschema:"description=Docker image healthcheck. The container runtime runs it. A hosting platform HTTP healthcheck path is configured separately."`
 	Variables   map[string]string `json:"variables,omitempty" jsonschema:"description=The variables available to this step. The key is the name of the variable that is referenced in a variable command"`
 	Paths       []string          `json:"paths,omitempty" jsonschema:"description=The paths to prepend to the $PATH environment variable"`
 }
