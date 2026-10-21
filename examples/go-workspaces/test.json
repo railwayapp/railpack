@@ -1,5 +1,12 @@
 [
   {
-    "expectedOutput": "This is the api"
+    // Verifies go.work resolves cross-module imports (api -> shared) and builds the main module (./api)
+    "expectedOutput": ["This is the api", "(from shared)"]
+  },
+  {
+    "envs": {
+      "RAILPACK_GO_WORKSPACE_MODULE": "worker"
+    },
+    "expectedOutput": ["This is the worker", "(from shared)"]
   }
 ]
