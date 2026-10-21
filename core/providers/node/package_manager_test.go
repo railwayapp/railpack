@@ -5,10 +5,25 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/resolver"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
+
+func TestInstallDeps_NpmInstallOverride(t *testing.T) {
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte("{}"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "package-lock.json"), []byte("{}"), 0o644))
+
+	ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+	ctx.Env.Variables["RAILPACK_NODE_NPM_INSTALL"] = "npm ci"
+	install := ctx.NewCommandStep("install")
+
+	PackageManagerNpm.installDeps(ctx, install, false)
+
+	require.Contains(t, install.Commands, plan.NewExecCommand("npm ci"))
+}
 
 func TestGetPackageManagerPackages_PnpmLockfileVersion(t *testing.T) {
 	tests := []struct {
@@ -113,7 +128,7 @@ func TestGetPackageManagerPackages_PnpmVersionPrecedence(t *testing.T) {
 		require.Equal(t, "package.json > engines > pnpm", pnpm.Source)
 	})
 
-	t.Run("packageManager overrides lockfile", func(t *testing.T) {
+	t.Run("packageManager is not parsed before mise resolution", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
 		miseStep := ctx.NewMiseStepBuilder("test")
 		pm := "pnpm@10.4.1"
@@ -123,8 +138,22 @@ func TestGetPackageManagerPackages_PnpmVersionPrecedence(t *testing.T) {
 
 		pnpm := ctx.Resolver.Get("pnpm")
 		require.NotNil(t, pnpm)
+		require.Equal(t, "8", pnpm.Version)
+		require.Equal(t, "pnpm-lock.yaml", pnpm.Source)
+		require.False(t, pnpm.SkipMiseInstall)
+	})
+
+	t.Run("mise idiomatic version overrides lockfile", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-corepack")
+		provider := NodeProvider{}
+
+		require.NoError(t, provider.Initialize(ctx))
+		require.NoError(t, provider.Plan(ctx))
+
+		pnpm := ctx.Resolver.Get("pnpm")
+		require.NotNil(t, pnpm)
 		require.Equal(t, "10.4.1", pnpm.Version)
-		require.Equal(t, "package.json > packageManager", pnpm.Source)
-		require.True(t, pnpm.SkipMiseInstall)
+		require.Equal(t, "idiomatic-version-file", pnpm.Source)
+		require.False(t, pnpm.SkipMiseInstall)
 	})
 }

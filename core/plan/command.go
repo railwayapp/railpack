@@ -152,12 +152,14 @@ func UnmarshalJsonCommand(data []byte) (Command, error) {
 }
 
 func UnmarshalStringCommand(data []byte) (Command, error) {
-	str := string(data)
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		str = strings.Trim(string(data), "\"")
+	}
 
 	// If no prefix, treat as exec command
 	if !strings.Contains(str, ":") {
-		cmdToRun := strings.Trim(str, "\"")
-		return NewExecShellCommand(cmdToRun, ExecOptions{CustomName: cmdToRun}), nil
+		return NewExecShellCommand(str, ExecOptions{CustomName: str}), nil
 	}
 
 	parts := strings.SplitN(str, ":", 2)

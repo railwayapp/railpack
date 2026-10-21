@@ -140,6 +140,20 @@ func (w *Workspace) HasDependency(dependency string) bool {
 	return false
 }
 
+func (w *Workspace) HasProductionDependency(dependency string) bool {
+	if w.Root.PackageJson.hasProductionDependency(dependency) {
+		return true
+	}
+
+	for _, pkg := range w.Packages {
+		if pkg.PackageJson.hasProductionDependency(dependency) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (w *Workspace) AllPackageJson() []*PackageJson {
 	packageJsons := []*PackageJson{w.Root.PackageJson}
 

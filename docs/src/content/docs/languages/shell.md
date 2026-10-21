@@ -17,7 +17,7 @@ of these conditions are met:
 
 Create a shell script in your project root (e.g., `start.sh`):
 
-```bash
+```bash title="start.sh"
 #!/bin/bash
 
 echo "Hello world..."

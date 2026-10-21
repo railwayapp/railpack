@@ -7,7 +7,7 @@
  },
  "deploy": {
   "base": {
-   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.6.1"
+   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.10.3"
   },
   "inputs": [
    {
@@ -43,7 +43,8 @@
    "PYTHONDONTWRITEBYTECODE": "1",
    "PYTHONFAULTHANDLER": "1",
    "PYTHONHASHSEED": "random",
-   "PYTHONUNBUFFERED": "1"
+   "PYTHONUNBUFFERED": "1",
+   "RAILPACK_VERSION": "dev"
   }
  },
  "steps": [
@@ -67,7 +68,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.10.3"
     }
    ],
    "name": "packages:mise",

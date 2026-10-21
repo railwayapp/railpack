@@ -20,13 +20,15 @@ the docs for each language that Railpack supports.
 - [Deno](languages/deno)
 - [Rust](languages/rust)
 - [Elixir](languages/elixir)
+- [Gleam](languages/gleam)
+- [C/C++](languages/cpp)
 - [Shell scripts](languages/shell)
 
 ---
 
 If you want to run Railpack locally, follow the steps below. Follow [this
-guide](/guides/running-railpack-in-production) if you want to run Railpack on a
-platform in production.
+guide](/platforms/running-railpack-in-production) if you want to run Railpack on
+a platform in production.
 
 ## Installation
 
@@ -54,7 +56,8 @@ through the `BUILDKIT_HOST` environment variable. The easiest way to do this is
 to run a BuildKit instance as a container:
 
 ```bash
-mise run setup
+docker run --rm --privileged -d --name buildkit moby/buildkit
+export BUILDKIT_HOST='docker-container://buildkit'
 ```
 
 Now you can build your image using Railpack:
@@ -62,6 +65,9 @@ Now you can build your image using Railpack:
 ```sh
 railpack build ./path/to/project
 ```
+
+For a remote BuildKit host on a different CPU architecture, set `--platform`
+to an architecture supported by the remote builder.
 
 _(there are many examples in the [Railpack
 repo](https://github.com/railwayapp/railpack/tree/main/examples) that you can

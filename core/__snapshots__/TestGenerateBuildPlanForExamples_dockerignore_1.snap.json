@@ -1,7 +1,7 @@
 {
  "deploy": {
   "base": {
-   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.6.1"
+   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.10.3"
   },
   "inputs": [
    {
@@ -11,13 +11,36 @@
     "step": "build"
    }
   ],
-  "startCommand": "sh start.sh"
+  "startCommand": "sh start.sh",
+  "variables": {
+   "RAILPACK_VERSION": "dev"
+  }
  },
+ "exclude": [
+  ".vscode",
+  ".copier",
+  ".env-specific",
+  ".env*",
+  "__pycache__",
+  "test",
+  "tmp/*",
+  "*.log",
+  "Justfile",
+  "TODO*",
+  "README.md",
+  "docker-compose*.yml",
+  "negation_test/*",
+  "!negation_test/should_exist.txt",
+  "!negation_test/should_not_exist.txt",
+  "!negation_test/folder_does_not_exist",
+  "!negation_test/existing_folder",
+  "**/node_modules"
+ ],
  "steps": [
   {
    "inputs": [
     {
-     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.10.3"
     }
    ],
    "name": "packages:mise"
@@ -33,25 +56,8 @@
      "step": "packages:mise"
     },
     {
-     "exclude": [
-      ".vscode",
-      ".copier",
-      ".env-specific",
-      ".env*",
-      "__pycache__",
-      "test",
-      "tmp/*",
-      "*.log",
-      "Justfile",
-      "TODO*",
-      "README.md",
-      "docker-compose*.yml",
-      "negation_test/*"
-     ],
      "include": [
-      ".",
-      "negation_test/should_exist.txt",
-      "negation_test/existing_folder"
+      "."
      ],
      "local": true
     }

@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	"github.com/railwayapp/railpack/core/providers/staticfile"
 )
 
 const (
@@ -22,7 +24,7 @@ func (p *NodeProvider) isSPA(ctx *generate.GenerateContext) bool {
 		return false
 	}
 
-	// Setting the output dir directly will force an SPA build
+	// Setting the output dir directly via a ENV will force an SPA build regardless of framework detection
 	if value, _ := ctx.Env.GetConfigVariable(OUTPUT_DIR_VAR); value != "" {
 		return true
 	}
@@ -32,46 +34,79 @@ func (p *NodeProvider) isSPA(ctx *generate.GenerateContext) bool {
 		return false
 	}
 
+	if p.isReactRouter(ctx) {
+		return p.isReactRouterSPA(ctx) && p.getOutputDirectory(ctx) != ""
+	}
+
 	isVite := p.isVite(ctx)
 	isAstro := p.isAstroSPA(ctx)
+	isNext := p.isNextSPA(ctx)
 	isCRA := p.isCRA(ctx)
 	isAngular := p.isAngular(ctx)
-	isReactRouter := p.isReactRouter(ctx)
+	isExpoSPA := p.isExpoSPA(ctx)
 
-	return (isVite || isAstro || isCRA || isAngular || isReactRouter) && p.getOutputDirectory(ctx) != ""
+	return (isVite || isAstro || isNext || isCRA || isAngular || isExpoSPA) && p.getOutputDirectory(ctx) != ""
 }
 
-func (p *NodeProvider) getSPAFramework(ctx *generate.GenerateContext) string {
-	if !p.isSPA(ctx) {
+// returns the canonical lowercase SPA framework name, or "" when none is detected.
+func (p *NodeProvider) getSPAName(ctx *generate.GenerateContext) string {
+	if p.isReactRouter(ctx) {
+		if p.isReactRouterSPA(ctx) {
+			return "react-router"
+		}
 		return ""
 	}
-
-	if p.isReactRouter(ctx) {
-		return "react-router"
-	} else if p.isVite(ctx) {
+	if p.isVite(ctx) {
 		return "vite"
-	} else if p.isAstro(ctx) {
+	}
+	if p.isAstro(ctx) {
 		return "astro"
-	} else if p.isCRA(ctx) {
-		return "CRA"
-	} else if p.isAngular(ctx) {
-		return "Angular"
+	}
+	if p.isNextSPA(ctx) {
+		return "next"
+	}
+	if p.isCRA(ctx) {
+		return "cra"
+	}
+	if p.isAngular(ctx) {
+		return "angular"
+	}
+	if p.isExpoSPA(ctx) {
+		return "expo"
 	}
 
+	// This can happen when the output directory environment variable forces SPA mode.
+	log.Infof("No SPA framework detected")
 	return ""
 }
 
 func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) error {
 	outputDir := p.getOutputDirectory(ctx)
-	spaFramework := p.getSPAFramework(ctx)
+	spaFramework := p.getSPAName(ctx)
 
 	ctx.Logger.LogInfo("Deploying as %s static site", spaFramework)
 	ctx.Logger.LogInfo("Output directory: %s", outputDir)
 
-	data := map[string]any{
-		"DIST_DIR": path.Join("/app", outputDir),
+	if p.hasMisplacedTanstackStart() {
+		ctx.Logger.LogSuggestion(
+			"Found @tanstack/react-start in devDependencies; move it to dependencies to deploy with SSR instead of a static site",
+			"https://docs.railway.com/guides/tanstack-start",
+		)
 	}
 
+	// default all paths to use the root index.html by default on SPA apps, but allow the user to override
+	indexFallback := true
+	if indexFallbackConfig := staticfile.GetIndexFallback(ctx); indexFallbackConfig != nil {
+		indexFallback = *indexFallbackConfig
+	}
+
+	data := map[string]any{
+		"DIST_DIR":      path.Join("/app", outputDir),
+		"IndexFallback": indexFallback,
+	}
+
+	// TODO this template stuff is a bit odd: I don't see the use case for passing these specific variables to the template.
+	//      if the user is customizing the Caddyfile, they can just hardcode what they want into the Caddyfile?
 	caddyfileTemplate, err := ctx.TemplateFiles([]string{"Caddyfile.template", "Caddyfile"}, caddyfileTemplate, data)
 	if err != nil {
 		return err
@@ -106,19 +141,6 @@ func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.
 		}),
 	})
 
-	// ctx.Deploy.Inputs = []plan.Layer{
-	// 	ctx.DefaultRuntimeInput(),
-	// 	plan.NewStepLayer(installCaddyStep.Name(), plan.InputOptions{
-	// 		Include: installCaddyStep.GetOutputPaths(),
-	// 	}),
-	// 	plan.NewStepLayer(caddy.Name(), plan.InputOptions{
-	// 		Include: []string{DefaultCaddyfilePath},
-	// 	}),
-	// 	plan.NewStepLayer(build.Name(), plan.InputOptions{
-	// 		Include: []string{outputDir},
-	// 	}),
-	// }
-
 	return nil
 }
 
@@ -128,15 +150,21 @@ func (p *NodeProvider) getOutputDirectory(ctx *generate.GenerateContext) string 
 	if dir, _ := ctx.Env.GetConfigVariable(OUTPUT_DIR_VAR); dir != "" {
 		outputDir = dir
 	} else if p.isReactRouter(ctx) {
-		outputDir = p.getReactRouterOutputDirectory(ctx)
+		if p.isReactRouterSPA(ctx) {
+			outputDir = p.getReactRouterOutputDirectory(ctx)
+		}
 	} else if p.isVite(ctx) {
 		outputDir = p.getViteOutputDirectory(ctx)
 	} else if p.isAstroSPA(ctx) {
 		outputDir = p.getAstroOutputDirectory(ctx)
+	} else if p.isNextSPA(ctx) {
+		outputDir = p.getNextOutputDirectory(ctx)
 	} else if p.isCRA(ctx) {
 		outputDir = p.getCRAOutputDirectory(ctx)
 	} else if p.isAngular(ctx) {
 		outputDir = p.getAngularOutputDirectory(ctx)
+	} else if p.isExpoSPA(ctx) {
+		outputDir = p.getExpoOutputDirectory(ctx)
 	}
 
 	return outputDir
@@ -147,7 +175,12 @@ func (p *NodeProvider) hasCustomStartCommand(ctx *generate.GenerateContext) bool
 	if startCommand == "" {
 		startCommand = p.packageJson.Scripts["start"]
 	}
+
 	isAngularDefaultStartCommand := startCommand == DefaultAngularStartCommand
 	isCRAStartCommand := startCommand == DefaultCRAStartCommand
-	return startCommand != "" && !isAngularDefaultStartCommand && !isCRAStartCommand
+	isExpoStartCommand := startCommand == DefaultExpoStartCommand
+	isNextStartCommand := startCommand == DefaultNextStartCommand
+	isReactRouterStartCommand := startCommand == DefaultReactRouterStartCommand
+
+	return startCommand != "" && !isAngularDefaultStartCommand && !isCRAStartCommand && !isExpoStartCommand && !isNextStartCommand && !isReactRouterStartCommand
 }

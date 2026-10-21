@@ -9,6 +9,16 @@ import starlightPageActions from "starlight-page-actions";
 export default defineConfig({
   site: "https://railpack.com",
 
+  redirects: {
+    "/architecture/buildkit": "/platforms/buildkit",
+    "/architecture/caching": "/platforms/caching",
+    "/architecture/recommendations": "/config/recommendations",
+    "/guides/running-railpack-in-production":
+      "/platforms/running-railpack-in-production",
+    "/reference/frontend": "/platforms/buildkit-frontend",
+    "/resolving-errors": "/config/resolving-errors",
+  },
+
   prefetch: {
     prefetchAll: true,
     defaultStrategy: "hover",
@@ -30,16 +40,47 @@ export default defineConfig({
       favicon: "/favicon.svg?v=2",
       customCss: [
         "./src/tailwind.css",
-
         "@fontsource/inter/400.css",
+        "@fontsource/inter/500.css",
         "@fontsource/inter/600.css",
+        "@fontsource/ibm-plex-serif/400.css",
+        "@fontsource/ibm-plex-serif/500.css",
+        "@fontsource/ibm-plex-serif/600.css",
+        "@fontsource/jetbrains-mono/400.css",
+        "@fontsource/jetbrains-mono/500.css",
       ],
+      expressiveCode: {
+        // Shell blocks use terminal frames so we can render a Railway-style
+        // top bar (label left, copy right). Other langs keep auto/code frames.
+        defaultProps: {
+          overridesByLang: {
+            "bash,sh,shell,zsh": {
+              frame: "terminal",
+            },
+          },
+        },
+        styleOverrides: {
+          borderRadius: "0.5rem",
+          // Match railpack.com code metrics
+          codeFontFamily: "var(--font-mono)",
+          codeFontSize: "0.875rem",
+          codeLineHeight: "1.75",
+          codePaddingBlock: "0.75rem",
+          codePaddingInline: "1rem",
+          frames: {
+            shadowColor: "transparent",
+            frameBoxShadowCssValue: "none",
+          },
+        },
+      },
       plugins: [
-        starlightPageActions(),
+        starlightPageActions({
+          position: "table-of-contents",
+        }),
         starlightLlmsTxt({
           projectName: "Railpack",
           description:
-            "Zero-config application builder that automatically analyzes your code and turns it into a container image. Built on BuildKit with support for Node, Python, Go, PHP, and more.",
+            "Zero-config application builder that analyzes code and builds an image. Built on BuildKit with support for Node, Python, Go, PHP, and more.",
           details:
             "Railpack provides a seamless way to build container images from your source code without complex configuration. It automatically detects your project type and generates appropriate build steps.",
           customSets: [
@@ -59,6 +100,12 @@ export default defineConfig({
               label: "Guides",
               description: "Step-by-step guides for common tasks",
               paths: ["guides/**"],
+            },
+            {
+              label: "Platforms",
+              description:
+                "Documentation for integrating Railpack into hosting platforms",
+              paths: ["platforms/**"],
             },
             {
               label: "Configuration",
@@ -102,10 +149,6 @@ export default defineConfig({
           link: "/getting-started",
         },
         {
-          label: "FAQ",
-          link: "/faq",
-        },
-        {
           label: "Installation",
           link: "/installation",
         },
@@ -128,15 +171,12 @@ export default defineConfig({
               label: "Developing Locally",
               link: "/guides/developing-locally",
             },
-            {
-              label: "Running Railpack in Production",
-              link: "/guides/running-railpack-in-production",
-            },
           ],
         },
         {
           label: "Configuration",
           items: [
+            { label: "Configuration Options", link: "/config/options" },
             { label: "Configuration File", link: "/config/file" },
             {
               label: "Environment Variables",
@@ -145,12 +185,15 @@ export default defineConfig({
             { label: "Mise", link: "/config/mise" },
             { label: "Procfile", link: "/config/procfile" },
             { label: "Excluding Files", link: "/config/excluding-files" },
+            { label: "Recommendations", link: "/config/recommendations" },
+            { label: "Resolving Errors", link: "/config/resolving-errors" },
           ],
         },
         {
           label: "Languages",
           items: [
             { label: "Node", link: "/languages/node" },
+            { label: "Bun", link: "/languages/bun" },
             { label: "Python", link: "/languages/python" },
             { label: "Go", link: "/languages/golang" },
             { label: "PHP", link: "/languages/php" },
@@ -177,12 +220,14 @@ export default defineConfig({
           label: "Reference",
           items: [
             { label: "CLI Commands", link: "/reference/cli" },
-            { label: "BuildKit Frontend", link: "/reference/frontend" },
+            { label: "Changelog", link: "/changelog" },
+            { label: "FAQ", link: "/faq" },
           ],
         },
         {
           label: "Architecture",
           items: [
+            { label: "Design Goals", link: "/architecture/design-goals" },
             { label: "High Level Overview", link: "/architecture/overview" },
             {
               label: "Package Resolution",
@@ -192,16 +237,43 @@ export default defineConfig({
               label: "Secrets and Variables",
               link: "/architecture/secrets",
             },
-            { label: "BuildKit Generation", link: "/architecture/buildkit" },
-            { label: "Caching", link: "/architecture/caching" },
-            { label: "User Config", link: "/architecture/user-config" },
           ],
         },
         {
           label: "Contributing",
           link: "/contributing",
         },
+        {
+          label: "Platforms",
+          items: [
+            {
+              label: "Build with Railpack",
+              link: "/platforms/build-with-railpack",
+            },
+            {
+              label: "Running Railpack in Production",
+              link: "/platforms/running-railpack-in-production",
+            },
+            {
+              label: "BuildKit Frontend",
+              link: "/platforms/buildkit-frontend",
+            },
+            {
+              label: "BuildKit Generation",
+              link: "/platforms/buildkit",
+            },
+            { label: "Caching", link: "/platforms/caching" },
+            {
+              label: "Package Version Resolution",
+              link: "/platforms/package-version-resolution",
+            },
+          ],
+        },
       ],
+      components: {
+        MobileTableOfContents: "./src/components/MobileTableOfContents.astro",
+        TableOfContents: "./src/components/TableOfContents.astro",
+      },
     }),
   ],
 

@@ -25,8 +25,8 @@ func (p *NodeProvider) isVitePackage(pkg *WorkspacePackage, ctx *generate.Genera
 
 	hasViteConfig := ctx.App.HasFile(viteConfigJS) || ctx.App.HasFile(viteConfigTS)
 
-	// SvelteKit does not build as a static site by default
-	if p.isSvelteKitPackage(pkg) {
+	// SvelteKit and TanStack Start do not build as static sites by default
+	if p.isSvelteKitPackage(pkg) || p.isTanstackStartPackage(pkg) {
 		return false
 	}
 
@@ -42,19 +42,7 @@ func (p *NodeProvider) isVite(ctx *generate.GenerateContext) bool {
 }
 
 func (p *NodeProvider) getViteOutputDirectory(ctx *generate.GenerateContext) string {
-	configContent := ""
-
-	if ctx.App.HasFile("vite.config.js") {
-		content, err := ctx.App.ReadFile("vite.config.js")
-		if err == nil {
-			configContent = content
-		}
-	} else if ctx.App.HasFile("vite.config.ts") {
-		content, err := ctx.App.ReadFile("vite.config.ts")
-		if err == nil {
-			configContent = content
-		}
-	}
+	_, configContent, _ := ctx.App.ReadFirstFileOf("vite.config.js", "vite.config.ts")
 
 	if configContent != "" {
 		// Look for outDir in config
@@ -77,8 +65,4 @@ func (p *NodeProvider) getViteOutputDirectory(ctx *generate.GenerateContext) str
 	}
 
 	return DefaultViteOutputDirectory
-}
-
-func (p *NodeProvider) isSvelteKitPackage(pkg *WorkspacePackage) bool {
-	return pkg.PackageJson.hasDependency("svelte") && pkg.PackageJson.hasDependency("@sveltejs/kit")
 }

@@ -30,16 +30,17 @@ func Spread[T Spreadable](left []T, right []T) []T {
 	return result
 }
 
-func SpreadStrings(left []string, right []string) []string {
-	if left == nil {
-		return right
+// expands the input/newList by replacing any "..." with the contents of oldList
+func SpreadStrings(newList []string, oldList []string) []string {
+	if newList == nil {
+		return oldList
 	}
 
-	result := make([]string, 0, len(left)+len(right))
+	result := make([]string, 0, len(newList)+len(oldList))
 
-	for _, val := range left {
+	for _, val := range newList {
 		if val == "..." {
-			result = append(result, right...)
+			result = append(result, oldList...)
 		} else {
 			result = append(result, val)
 		}

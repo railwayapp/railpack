@@ -95,7 +95,7 @@ fi
 echo "Upgrading go and mise packages..."
 mise run upgrade
 if [[ -n "$(git status --porcelain go.mod go.sum)" ]]; then
-  git add go.mod go.sum docs/package.json mise.lock docs/bun.lock  
+  git add go.mod go.sum docs/package.json mise.lock docs/bun.lock
   git commit -m "chore: update go, mise, and bun packages"
 fi
 
@@ -118,6 +118,17 @@ mise --cd examples/python-uv-latest-locked upgrade --local
 if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
   git add examples/python-uv-latest-locked
   git commit -m "test: update mise lock with latest version"
+fi
+
+echo "Updating docs changelog from GitHub releases..."
+changelog_file="docs/src/content/docs/changelog.md"
+if mise run docs-generate-changelog; then
+  if [[ -n "$(git status --porcelain -- "$changelog_file")" ]]; then
+    git add -- "$changelog_file"
+    git commit -m "docs: updated changelog"
+  fi
+else
+  echo "Error: failed to generate docs changelog (continuing upgrade)" >&2
 fi
 
 # Push the branch (needed in CI and good practice locally)

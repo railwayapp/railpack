@@ -54,9 +54,11 @@
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
+   "NPM_CONFIG_FETCH_RETRIES": "5",
    "NPM_CONFIG_FUND": "false",
    "NPM_CONFIG_PRODUCTION": "false",
-   "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+   "NPM_CONFIG_UPDATE_NOTIFIER": "false",
+   "RAILPACK_VERSION": "dev"
   }
  },
  "steps": [
@@ -80,7 +82,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.10.3"
     }
    ],
    "name": "packages:mise",
@@ -101,9 +103,6 @@
      "path": "/app/node_modules/.bin"
     },
     {
-     "cmd": "mkdir -p /app/node_modules/.cache"
-    },
-    {
      "dest": "package-lock.json",
      "src": "package-lock.json"
     },
@@ -112,7 +111,8 @@
      "src": "package.json"
     },
     {
-     "cmd": "npm ci"
+     "cmd": "sh -c 'npm ci'",
+     "customName": "npm ci"
     }
    ],
    "inputs": [
@@ -124,6 +124,7 @@
    "variables": {
     "CI": "true",
     "NODE_ENV": "production",
+    "NPM_CONFIG_FETCH_RETRIES": "5",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",
     "NPM_CONFIG_UPDATE_NOTIFIER": "false"
@@ -162,7 +163,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.10.3"
     }
    ],
    "name": "packages:apt:runtime"

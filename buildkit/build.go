@@ -1,3 +1,6 @@
+// called by the build CLI entrypoint and runs the build using the buildkit client
+// also used by the integration tests to run builds in a test environment
+
 package buildkit
 
 import (
@@ -5,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"strings"
@@ -12,15 +16,18 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/containerd/platforms"
+	"github.com/docker/cli/cli/config"
 	"github.com/moby/buildkit/client"
 	_ "github.com/moby/buildkit/client/connhelper/dockercontainer"
 	_ "github.com/moby/buildkit/client/connhelper/nerdctlcontainer"
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/buildkit/session"
+	"github.com/moby/buildkit/session/auth/authprovider"
 	"github.com/moby/buildkit/session/secrets/secretsprovider"
 	"github.com/moby/buildkit/util/appcontext"
 	_ "github.com/moby/buildkit/util/grpcutil/encoding/proto"
 	"github.com/moby/buildkit/util/progress/progressui"
+	"github.com/railwayapp/railpack/core"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/tonistiigi/fsutil"
 )
@@ -39,8 +46,7 @@ Most likely the $BUILDKIT_HOST is not running. Here's an example of how to start
 
 	docker run --rm --privileged -d --name buildkit moby/buildkit
 
-Use 'railpack --verbose' to view more error details.
-		`
+Use 'railpack --verbose' to view more error details`
 )
 
 type BuildWithBuildkitClientOptions struct {
@@ -51,10 +57,11 @@ type BuildWithBuildkitClientOptions struct {
 	SecretsHash  string
 	Secrets      map[string]string
 	Platform     string
-	ImportCache  string
-	ExportCache  string
+	ImportCache  []string
+	ExportCache  []string
 	CacheKey     string
 	GitHubToken  string
+	NoCache      bool
 }
 
 func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWithBuildkitClientOptions) error {
@@ -97,6 +104,7 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		SecretsHash:   opts.SecretsHash,
 		CacheKey:      opts.CacheKey,
 		GitHubToken:   opts.GitHubToken,
+		NoCache:       opts.NoCache,
 	})
 	if err != nil {
 		return fmt.Errorf("error converting plan to LLB: %w", err)
@@ -119,6 +127,8 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		}
 		return nil
 	}
+
+	core.PrettyPrintSectionHeader(os.Stdout, "Starting Docker Build...")
 
 	ch := make(chan *client.SolveStatus)
 
@@ -185,11 +195,20 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 	}
 	secrets := secretsprovider.FromMap(secretsMap)
 
+	dockerConfig := config.LoadDefaultConfigFile(os.Stderr)
+	sessionAttachables := []session.Attachable{
+		secrets,
+		// buildkit does not use the local auth arguments by default, which prevents private repo access when running `railpack build`
+		authprovider.NewDockerAuthProvider(authprovider.DockerAuthProviderConfig{
+			AuthConfigProvider: authprovider.LoadAuthConfig(dockerConfig),
+		}),
+	}
+
 	solveOpts := client.SolveOpt{
 		LocalMounts: map[string]fsutil.FS{
 			"context": appFS,
 		},
-		Session: []session.Attachable{secrets},
+		Session: sessionAttachables,
 		Exports: []client.ExportEntry{
 			{
 				Type: client.ExporterDocker,
@@ -204,21 +223,11 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		},
 	}
 
-	// Add cache import if specified
-	if opts.ImportCache != "" {
-		solveOpts.CacheImports = append(solveOpts.CacheImports, client.CacheOptionsEntry{
-			Type:  "gha",
-			Attrs: parseKeyValue(opts.ImportCache),
-		})
-	}
+	solveOpts.CacheImports = cacheEntriesFromFlags(opts.ImportCache)
+	solveOpts.CacheExports = cacheEntriesFromFlags(opts.ExportCache)
 
-	// Add cache export if specified
-	if opts.ExportCache != "" {
-		solveOpts.CacheExports = append(solveOpts.CacheExports, client.CacheOptionsEntry{
-			Type:  "gha",
-			Attrs: parseKeyValue(opts.ExportCache),
-		})
-	}
+	log.Infof("cache imports: %v", solveOpts.CacheImports)
+	log.Infof("cache exports: %v", solveOpts.CacheExports)
 
 	// Save the resulting filesystem to a directory
 	if opts.OutputDir != "" {
@@ -227,15 +236,10 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 			return fmt.Errorf("error creating output directory: %w", err)
 		}
 
-		solveOpts = client.SolveOpt{
-			LocalMounts: map[string]fsutil.FS{
-				"context": appFS,
-			},
-			Exports: []client.ExportEntry{
-				{
-					Type:      client.ExporterLocal,
-					OutputDir: opts.OutputDir,
-				},
+		solveOpts.Exports = []client.ExportEntry{
+			{
+				Type:      client.ExporterLocal,
+				OutputDir: opts.OutputDir,
 			},
 		}
 	}
@@ -261,37 +265,75 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		}
 	}
 
+	// output nice build output
 	buildDuration := time.Since(startTime)
-	log.Infof("Successfully built image in %.2fs", buildDuration.Seconds())
-
+	buildOutput := fmt.Sprintf("Successfully built image in %.2fs", buildDuration.Seconds())
 	if opts.OutputDir != "" {
-		log.Infof("Saved image filesystem to directory `%s`", opts.OutputDir)
+		buildOutput += fmt.Sprintf("\n\nSaved to:\n%s", core.FormatHighlight(opts.OutputDir))
 	} else {
-		log.Infof("Run with `docker run -it %s`", imageName)
+		command := fmt.Sprintf("docker run -it %s", imageName)
+		buildOutput += fmt.Sprintf("\n\nRun:\n%s", core.FormatHighlight(command))
 	}
+	core.PrettyPrintBox(buildOutput)
 
 	return nil
 }
 
+// determine the image name from the app dir path
 func getImageName(appDir string) string {
 	parts := strings.Split(appDir, string(os.PathSeparator))
 	name := parts[len(parts)-1]
+
+	// TODO how could this happen in practice?
 	if name == "" {
 		name = "railpack-app" // Fallback if path ends in separator
 	}
+
 	// Docker requires image names to be lowercase
 	return strings.ToLower(name)
 }
 
-// Helper function to parse key=value strings into a map
+// Converts docker buildx-style cache flag values (e.g. type=registry,ref=...)
+// into BuildKit CacheOptionsEntry values. Empty strings are skipped.
+//
+// Intentionally hand-rolled instead of using github.com/docker/buildx/util/buildflags
+// (or pulling buildx solely for ParseCacheEntry). BuildKit has no public parser for
+// these strings; buildx does, but the dependency cost outweighs the small amount of
+// logic we need for the type=... form we document.
+func cacheEntriesFromFlags(entries []string) []client.CacheOptionsEntry {
+	var out []client.CacheOptionsEntry
+	for _, entry := range entries {
+		if entry == "" {
+			continue
+		}
+		cacheType, attrs := extractCacheType(parseKeyValue(entry))
+		out = append(out, client.CacheOptionsEntry{
+			Type:  cacheType,
+			Attrs: attrs,
+		})
+	}
+	return out
+}
+
+// parse comma-separated key=value strings into a map, ignoring entries without an "="
 func parseKeyValue(s string) map[string]string {
 	attrs := make(map[string]string)
 	parts := strings.SplitSeq(s, ",")
 	for part := range parts {
-		kv := strings.SplitN(part, "=", 2)
-		if len(kv) == 2 {
-			attrs[kv[0]] = kv[1]
+		key, value, found := strings.Cut(part, "=")
+		if !found {
+			continue
 		}
+		attrs[strings.TrimSpace(key)] = strings.TrimSpace(value)
 	}
 	return attrs
+}
+
+func extractCacheType(attrs map[string]string) (string, map[string]string) {
+	cacheType := attrs["type"]
+
+	cleanedAttrs := maps.Clone(attrs)
+	delete(cleanedAttrs, "type")
+
+	return cacheType, cleanedAttrs
 }

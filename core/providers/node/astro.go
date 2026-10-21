@@ -56,23 +56,11 @@ func (p *NodeProvider) getAstroOutputDirectory(ctx *generate.GenerateContext) st
 }
 
 func (p *NodeProvider) getAstroConfigFileContents(ctx *generate.GenerateContext) string {
-	configFile := ""
-
-	if ctx.App.HasFile("astro.config.mjs") {
-		contents, err := ctx.App.ReadFile("astro.config.mjs")
-		if err == nil {
-			configFile = contents
-		}
-	} else if ctx.App.HasFile("astro.config.ts") {
-		contents, err := ctx.App.ReadFile("astro.config.ts")
-		if err == nil {
-			configFile = contents
-		}
-	}
-
-	return configFile
+	_, contents, _ := ctx.App.ReadFirstFileOf("astro.config.mjs", "astro.config.ts")
+	return contents
 }
 
+// TODO feels like we should be able to specify this in the start command and avoid injecting additional vars into the container?
 func (p *NodeProvider) getAstroEnvVars() map[string]string {
 	envVars := map[string]string{
 		"HOST": "0.0.0.0",

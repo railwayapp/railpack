@@ -26,6 +26,7 @@ type BuildGraph struct {
 	Plan       *plan.BuildPlan
 	Platform   *specs.Platform
 	LocalState *llb.State
+	NoCache    bool
 
 	githubToken     string
 	secretsFile     *llb.State
@@ -37,7 +38,7 @@ type BuildGraphOutput struct {
 	GraphEnv BuildEnvironment
 }
 
-func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *BuildKitCacheStore, secretsHash string, platform *specs.Platform, githubToken string) (*BuildGraph, error) {
+func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *BuildKitCacheStore, secretsHash string, platform *specs.Platform, githubToken string, noCache bool) (*BuildGraph, error) {
 	var secretsFile *llb.State
 	if secretsHash != "" {
 		st := llb.Scratch().File(llb.Mkfile("/secrets-hash", 0644, []byte(secretsHash)), llb.WithCustomName("[railpack] secrets hash"))
@@ -51,6 +52,7 @@ func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *Buil
 		Plan:       plan,
 		Platform:   platform,
 		LocalState: localState,
+		NoCache:    noCache,
 
 		githubToken:     githubToken,
 		secretsFile:     secretsFile,
@@ -254,6 +256,10 @@ func (g *BuildGraph) convertExecCommandToLLB(node *StepNode, cmd plan.ExecComman
 		opts = append(opts, llb.WithCustomName(cmd.CustomName))
 	}
 
+	if g.NoCache {
+		opts = append(opts, llb.IgnoreCache)
+	}
+
 	// These options mount all secrets as environments variables
 	// We want to add all secrets to all commands, even if they are not specified in the step
 	// Note: This does mean that if the number of secrets change, then the cache for every step will be invalidated
@@ -393,21 +399,11 @@ func (g *BuildGraph) getSecretInvalidationMountOptions(node *StepNode, secretOpt
 	return opts
 }
 
-func isCacheDisabled(key string) bool {
-	// TODO: Thread Environment-derived config into BuildGraph instead of reading process envs here.
-	disabled := os.Getenv("RAILPACK_DISABLE_CACHES")
-	return disabled == "*" || slices.Contains(strings.Split(disabled, " "), key)
-}
-
 // returns the llb.RunOption slice for the given cache keys
 func (g *BuildGraph) getCacheMountOptions(cacheKeys []string) ([]llb.RunOption, error) {
 	var opts []llb.RunOption
 
 	for _, cacheKey := range cacheKeys {
-		if isCacheDisabled(cacheKey) {
-			continue
-		}
-
 		if planCache, ok := g.Plan.Caches[cacheKey]; ok {
 			cache := g.CacheStore.GetCache(cacheKey, planCache)
 			cacheType := llb.CacheMountShared

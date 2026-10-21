@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	// https://endoflife.date/ruby
 	DEFAULT_RUBY_VERSION = "3.4"
 )
 
@@ -186,7 +187,7 @@ func (p *RubyProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 	build.Secrets = []string{}
 	build.UseSecretsWithPrefixes([]string{"RAILS", "BUNDLE", "BOOTSNAP", "SPROCKETS", "WEBPACKER", "ASSET", "DISABLE_SPRING"})
 	build.AddEnvVars(p.GetRubyEnvVars(ctx))
-	build.AddInput(ctx.NewLocalLayer())
+	build.AddInput(plan.NewLocalLayer())
 	outputs := []string{"/app"}
 	// Only compile assets if a Rails app have an asset pipeline gem
 	// installed (e.g. sprockets, propshaft). Rails API-only apps [0]
@@ -251,23 +252,26 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	// rdoc (a) slows down builds (b) increases build size and (c) mostly importantly, will cause builds to fail if the locale is not properly set
 	miseStep.Variables["RUBY_CONFIGURE_OPTS"] = "--disable-install-doc"
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("RUBY_VERSION"); envVersion != "" {
-		miseStep.Version(ruby, envVersion, varName)
-	}
-
+	// TODO mise parses simple versions from the Gemfile now, maybe that's all we should do and eliminate our custom parser?
 	if gemfileVersion := parseVersionFromGemfile(ctx); gemfileVersion != "" {
 		miseStep.Version(ruby, gemfileVersion, "Gemfile")
 	}
 
 	miseStep.UseMiseVersions(ctx, []string{"ruby"})
 
+	if envVersion, varName := ctx.Env.GetConfigVariable("RUBY_VERSION"); envVersion != "" {
+		miseStep.Version(ruby, envVersion, varName)
+	}
+
 	miseStep.AddSupportingAptPackage("libyaml-dev")
 	miseStep.AddSupportingAptPackage("libjemalloc-dev")
+
 	// TODO this does not take into account the mise-specified version of ruby, we should pull the resolved version via Mise
 	version := p.getRubyVersion(ctx)
 	version = utils.ExtractSemverVersion(version)
 	semver, err := utils.ParseSemver(version)
 
+	// TODO we should install these only if it's < v3 instead since the matching is not exact
 	// TODO we should install these via mise, not apt
 	// YJIT in Ruby 3.1+ requires rustc to install
 	if err == nil && semver != nil && semver.Major >= 3 && semver.Minor > 1 {

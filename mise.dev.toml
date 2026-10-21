@@ -2,3 +2,4 @@
 "go:github.com/wagoodman/dive" = "latest"
 "go:github.com/go-delve/delve/cmd/dlv" = "latest"
 "github:x-motemen/gore" = "latest"
+jq = "latest"

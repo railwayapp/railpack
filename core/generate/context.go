@@ -57,6 +57,7 @@ type CommandWrapper struct {
 	Command plan.Command
 }
 
+// is a user-provided command entry a "spread" command?
 func (c CommandWrapper) IsSpread() bool {
 	if execCmd, ok := c.Command.(plan.ExecCommand); ok {
 		return execCmd.Cmd == plan.ShellCommandString("...") || execCmd.Cmd == "..."
@@ -77,9 +78,15 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 
 	if dockerignoreCtx.HasFile {
 		logger.LogInfo("Found .dockerignore file, applying filters")
+		log.Debugf("Dockerignore patterns: %v", dockerignoreCtx.Excludes)
+	}
 
-		log.Debugf("Dockerignore exclude patterns: %v", dockerignoreCtx.Excludes)
-		log.Debugf("Dockerignore include patterns: %v", dockerignoreCtx.Includes)
+	// Later patterns win, so an entry in one list can undo a pattern from the other.
+	if len(dockerignoreCtx.Excludes) > 0 && len(config.Exclude) > 0 {
+		logger.LogSuggestion(
+			"Use either `.dockerignore` or `railpack.json` `exclude`. These lists are merged and can negate each other",
+			"/config/recommendations#pick-one-ignore-approach",
+		)
 	}
 
 	ctx := &GenerateContext{
@@ -94,6 +101,11 @@ func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, l
 		Resolver:        resolver,
 		Logger:          logger,
 		dockerignoreCtx: dockerignoreCtx,
+	}
+
+	// Path discovery must not return files that BuildKit will never load.
+	if err := app.SetExcludePatterns(ctx.ExcludePatterns()); err != nil {
+		return nil, err
 	}
 
 	ctx.applyPackagesFromConfig()
@@ -153,8 +165,12 @@ func (c *GenerateContext) Generate() (*plan.BuildPlan, map[string]*resolver.Reso
 		return nil, nil, err
 	}
 
-	// Create the actual build plan
 	buildPlan := plan.NewBuildPlan()
+
+	excludePatterns := c.ExcludePatterns()
+	if len(excludePatterns) > 0 {
+		buildPlan.Exclude = excludePatterns
+	}
 
 	buildStepOptions := &BuildStepOptions{
 		ResolvedPackages: resolvedPackages,
@@ -190,15 +206,20 @@ func (o *BuildStepOptions) NewAptInstallCommand(pkgs []string) plan.Command {
 
 func (c *GenerateContext) applyPackagesFromConfig() {
 	miseStep := c.GetMiseStepBuilder()
+
+	// railpack.json supports defining custom packages, if we find them we seed the mise builder versions with those user-specified values
+	// other more specific version definitions (such as package.json, ENV vars, etc) will take precedence over these
 	for _, pkg := range slices.Sorted(maps.Keys(c.Config.Packages)) {
 		version := c.Config.Packages[pkg]
 		pkgRef := miseStep.Default(pkg, version)
+		// `custom config` and not `railpack.json` is used since the source of the custom config could be a CLI flag or custom config file
 		miseStep.Version(pkgRef, version, "custom config")
 	}
 }
 
 func (c *GenerateContext) applyConfig() {
 	c.applyPackagesFromConfig()
+	c.applyBuildAptPackages()
 
 	// Apply the cache config to the context
 	maps.Copy(c.Caches.Caches, c.Config.Caches)
@@ -214,11 +235,16 @@ func (c *GenerateContext) applyConfig() {
 			c.Deploy.StartCmd = c.Config.Deploy.StartCmd
 		}
 
-		c.Deploy.AptPackages = plan.SpreadStrings(c.Config.Deploy.AptPackages, c.Deploy.AptPackages)
+		c.applyDeployAptPackages()
 		c.Deploy.DeployInputs = plan.Spread(c.Config.Deploy.Inputs, c.Deploy.DeployInputs)
 		c.Deploy.Paths = plan.SpreadStrings(c.Config.Deploy.Paths, c.Deploy.Paths)
 		maps.Copy(c.Deploy.Variables, c.Config.Deploy.Variables)
 	}
+
+	// A spread retains generated deploy composition; any explicit list without one takes full control.
+	replacesGeneratedDeployInputs := c.Config.Deploy != nil &&
+		c.Config.Deploy.Inputs != nil &&
+		!slices.ContainsFunc(c.Config.Deploy.Inputs, plan.Layer.IsSpread)
 
 	// Apply step config to the context
 	for _, name := range slices.Sorted(maps.Keys(c.Config.Steps)) {
@@ -252,35 +278,50 @@ func (c *GenerateContext) applyConfig() {
 		// (e.g. provider already added "." so we don't duplicate it from --build-cmd).
 		outputFilters := []plan.Filter{plan.NewIncludeFilter([]string{"."})}
 		if configStep.DeployOutputs != nil {
+			// if deploy outputs are explicitly set on a step, then always use them, regardless of deploy configuration
+			// TODO I don't like this and find it confusing: deploy.inputs should be able to override step-level deploy outputs
 			outputFilters = configStep.DeployOutputs
+		} else if replacesGeneratedDeployInputs || c.Deploy.HasInputForStep(name) {
+			// if no deployOutput is specified on a step, the user has not specified a "..." in deploy.inputs, and
+			continue
 		}
 		for _, filter := range outputFilters {
-			alreadyCovered := false
-			for _, inc := range filter.Include {
-				if c.Deploy.HasIncludeForStep(name, inc) {
-					alreadyCovered = true
-					break
-				}
+			if slices.ContainsFunc(filter.Include, func(inc string) bool {
+				return c.Deploy.HasIncludeForStep(name, inc)
+			}) {
+				continue
 			}
-			if !alreadyCovered {
-				c.Deploy.AddInputs([]plan.Layer{plan.NewStepLayer(name, filter)})
-			}
+			c.Deploy.AddInputs([]plan.Layer{plan.NewStepLayer(name, filter)})
 		}
 	}
 }
 
-// creates a local layer with dockerignore patterns applied
-func (c *GenerateContext) NewLocalLayer() plan.Layer {
-	layer := plan.NewLocalLayer()
-
-	if len(c.dockerignoreCtx.Includes) > 0 {
-		layer.Include = append(layer.Include, c.dockerignoreCtx.Includes...)
-	}
-	if len(c.dockerignoreCtx.Excludes) > 0 {
-		layer.Exclude = append(layer.Exclude, c.dockerignoreCtx.Excludes...)
+func (c *GenerateContext) applyBuildAptPackages() {
+	configuredPackages := c.Config.BuildAptPackages
+	if configuredPackages == nil {
+		return
 	}
 
-	return layer
+	if !slices.Contains(configuredPackages, "...") {
+		// TODO the names of these configs will probably change in a future release as well...
+		c.Logger.LogDeprecation("`buildAptPackages` without a `...` entry will replace Railpack packages in the future")
+		c.Logger.LogSuggestion("Add `...` to `buildAptPackages` to retain Railpack packages", "/guides/installing-packages")
+
+		// TODO: Remove this implicit spread so lists without "..." replace generated packages.
+		configuredPackages = append([]string{"..."}, configuredPackages...)
+	}
+
+	miseStep := c.GetMiseStepBuilder()
+	miseStep.SupportingAptPackages = plan.SpreadStrings(configuredPackages, miseStep.SupportingAptPackages)
+}
+
+func (c *GenerateContext) applyDeployAptPackages() {
+	configuredPackages := c.Config.Deploy.AptPackages
+	if configuredPackages != nil && !slices.Contains(configuredPackages, "...") {
+		c.Logger.LogSuggestion("Add `...` to `deploy.aptPackages` to retain Railpack packages", "/guides/installing-packages")
+	}
+
+	c.Deploy.AptPackages = plan.SpreadStrings(configuredPackages, c.Deploy.AptPackages)
 }
 
 // in order to get around a circular dependency issue, we need to define discrete getters to interface with
@@ -292,4 +333,10 @@ func (c *GenerateContext) GetAppSource() string {
 
 func (c *GenerateContext) GetLogger() *logger.Logger {
 	return c.Logger
+}
+
+// Dockerignore patterns come first so a later railpack.json `exclude` entry
+// can negate them. The planner and BuildKit both apply this single list.
+func (c *GenerateContext) ExcludePatterns() []string {
+	return slices.Concat(c.dockerignoreCtx.Excludes, c.Config.Exclude)
 }

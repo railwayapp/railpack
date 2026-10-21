@@ -1,0 +1,17 @@
+[
+  {
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 3000
+    }
+  },
+  {
+    "httpCheck": {
+      "path": "/api/hello",
+      "expected": 200,
+      "internalPort": 3000,
+      "expectedOutput": "Hello, from API!"
+    }
+  }
+]

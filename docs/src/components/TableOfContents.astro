@@ -1,0 +1,219 @@
+---
+import PageActionsTableOfContents from "starlight-page-actions/overrides/TableOfContents.astro";
+
+const { toc } = Astro.locals.starlightRoute;
+
+function countTocItems(items: NonNullable<typeof toc>["items"]): number {
+  return items.reduce(
+    (count, item) => count + 1 + countTocItems(item.children),
+    0,
+  );
+}
+
+const hasMultipleHeadings = toc ? countTocItems(toc.items) > 1 : false;
+---
+
+<railpack-toc-progress data-single-heading={hasMultipleHeadings ? undefined : ""}>
+  <PageActionsTableOfContents />
+</railpack-toc-progress>
+
+<script>
+  const svgNamespace = "http://www.w3.org/2000/svg";
+
+  class RailpackTocProgress extends HTMLElement {
+    private mutationObserver?: MutationObserver;
+    private resizeObserver?: ResizeObserver;
+    private progressPath?: SVGPathElement;
+    private activeDot?: SVGCircleElement;
+    private links: HTMLAnchorElement[] = [];
+    private points: Array<{ x: number; y: number }> = [];
+
+    connectedCallback() {
+      this.addActionsHeading();
+      if (this.hasAttribute("data-single-heading")) return;
+      this.buildIndicator();
+    }
+
+    disconnectedCallback() {
+      this.mutationObserver?.disconnect();
+      this.resizeObserver?.disconnect();
+    }
+
+    private addActionsHeading() {
+      const actions = this.querySelector(".toc-actions");
+      if (!actions || actions.querySelector(".railpack-page-actions-heading")) {
+        return;
+      }
+
+      const heading = document.createElement("h2");
+      heading.className = "railpack-page-actions-heading";
+      heading.textContent = "Ask AI about this page";
+      actions.prepend(heading);
+    }
+
+    private buildIndicator() {
+      const nav = this.querySelector("starlight-toc nav");
+      const list = nav?.querySelector(":scope > ul");
+      if (!(nav instanceof HTMLElement) || !(list instanceof HTMLUListElement)) {
+        return;
+      }
+
+      this.links = Array.from(list.querySelectorAll<HTMLAnchorElement>("a"));
+      if (this.links.length === 0) return;
+
+      list.classList.add("railpack-toc-list");
+      this.renderIndicator(list);
+
+      this.mutationObserver = new MutationObserver(() => {
+        this.updateProgress();
+        this.enableProgressAnimation();
+      });
+      this.mutationObserver.observe(nav, {
+        attributeFilter: ["aria-current"],
+        subtree: true,
+      });
+
+      this.resizeObserver = new ResizeObserver(() => {
+        this.renderIndicator(list);
+      });
+      this.resizeObserver.observe(list);
+    }
+
+    private renderIndicator(list: HTMLUListElement) {
+      list.querySelector(".railpack-toc-indicator")?.remove();
+
+      const listRect = list.getBoundingClientRect();
+      this.points = this.links.map((link) => {
+        const linkRect = link.getBoundingClientRect();
+        let depth = 0;
+        let parent = link.parentElement?.parentElement;
+
+        while (parent && parent !== list) {
+          if (parent instanceof HTMLUListElement) depth += 1;
+          parent = parent.parentElement;
+        }
+
+        return {
+          x: 4 + depth * 7,
+          y: linkRect.top - listRect.top + linkRect.height / 2,
+        };
+      });
+
+      const height = Math.max(list.scrollHeight, this.points.at(-1)?.y ?? 0);
+      const pathData = this.createPath(height);
+      const svg = document.createElementNS(svgNamespace, "svg");
+      svg.classList.add("railpack-toc-indicator");
+      svg.setAttribute("aria-hidden", "true");
+      svg.setAttribute("width", "18");
+      svg.setAttribute("height", String(height));
+      svg.setAttribute("viewBox", `0 0 18 ${height}`);
+
+      const track = document.createElementNS(svgNamespace, "path");
+      track.classList.add("railpack-toc-track");
+      track.setAttribute("d", pathData);
+
+      this.progressPath = document.createElementNS(svgNamespace, "path");
+      this.progressPath.classList.add("railpack-toc-progress");
+      this.progressPath.setAttribute("d", pathData);
+
+      const finalPoint = this.points.at(-1);
+      if (finalPoint) {
+        const endDot = document.createElementNS(svgNamespace, "circle");
+        endDot.classList.add("railpack-toc-end-dot");
+        endDot.setAttribute("cx", String(finalPoint.x));
+        endDot.setAttribute("cy", String(height));
+        endDot.setAttribute("r", "3");
+        svg.append(track, this.progressPath, endDot);
+      } else {
+        svg.append(track, this.progressPath);
+      }
+
+      this.activeDot = document.createElementNS(svgNamespace, "circle");
+      this.activeDot.classList.add("railpack-toc-active-dot");
+      this.activeDot.setAttribute("r", "3");
+      svg.append(this.activeDot);
+      this.updateProgress();
+      list.prepend(svg);
+
+      if (this.links.some((link) => link.getAttribute("aria-current") === "true")) {
+        this.enableProgressAnimation();
+      }
+    }
+
+    private createPath(height: number) {
+      const firstPoint = this.points[0];
+      if (!firstPoint) return "";
+
+      let path = `M ${firstPoint.x} 0 L ${firstPoint.x} ${firstPoint.y}`;
+
+      for (let index = 1; index < this.points.length; index += 1) {
+        const previous = this.points[index - 1];
+        const current = this.points[index];
+        if (!previous || !current) continue;
+
+        if (previous.x === current.x) {
+          path += ` L ${current.x} ${current.y}`;
+          continue;
+        }
+
+        const middle = (previous.y + current.y) / 2;
+        path +=
+          ` L ${previous.x} ${middle - 5}` +
+          ` C ${previous.x} ${middle - 2}, ${current.x} ${middle + 2},` +
+          ` ${current.x} ${middle + 5}` +
+          ` L ${current.x} ${current.y}`;
+      }
+
+      const finalPoint = this.points.at(-1);
+      if (finalPoint) path += ` L ${finalPoint.x} ${height}`;
+      return path;
+    }
+
+    private updateProgress() {
+      if (!this.progressPath || !this.activeDot) return;
+
+      const activeIndex = Math.max(
+        0,
+        this.links.findIndex((link) => link.getAttribute("aria-current") === "true"),
+      );
+      const activePoint = this.points[activeIndex];
+      if (!activePoint) return;
+
+      const totalLength = this.progressPath.getTotalLength();
+      let low = 0;
+      let high = totalLength;
+
+      // The path only moves downward, so a binary search maps heading height to
+      // the matching distance along bends without duplicating SVG geometry.
+      for (let iteration = 0; iteration < 16; iteration += 1) {
+        const middle = (low + high) / 2;
+        const point = this.progressPath.getPointAtLength(middle);
+        if (point.y < activePoint.y) {
+          low = middle;
+        } else {
+          high = middle;
+        }
+      }
+
+      const activeLength = (low + high) / 2;
+      this.progressPath.style.strokeDasharray = String(totalLength);
+      this.progressPath.style.strokeDashoffset = String(
+        totalLength - activeLength,
+      );
+      this.activeDot.setAttribute("cx", String(activePoint.x));
+      this.activeDot.setAttribute("cy", String(activePoint.y));
+    }
+
+    private enableProgressAnimation() {
+      if (this.hasAttribute("data-progress-ready")) return;
+
+      requestAnimationFrame(() => {
+        this.setAttribute("data-progress-ready", "");
+      });
+    }
+  }
+
+  if (!customElements.get("railpack-toc-progress")) {
+    customElements.define("railpack-toc-progress", RailpackTocProgress);
+  }
+</script>

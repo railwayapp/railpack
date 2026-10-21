@@ -1,12 +1,12 @@
 # Image used by railpack during the build process, but not as the base image of the final runtime image
 # scm = fat image containing a lot of build tools
-FROM buildpack-deps:bookworm-scm@sha256:c199e8289ea98ac4d183be210044279660b7d9c496a6294cf5ed747938527fbb
+FROM buildpack-deps:trixie-scm@sha256:076aa0dfcdfcb2a920c205e1594e3892f5963fe7ce706b626e62eb1ea83661cf
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# eMudhra fix: ca-certificates >= 20250419~deb12u2, before downloading build tools.
+# eMudhra fix: ca-certificates >= 20250419+deb13u1, before downloading build tools.
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
-    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' ca-certificates)" ge '20250419~deb12u2' \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' ca-certificates)" ge '20250419+deb13u1' \
     && rm -rf /var/lib/apt/lists/*
 
 ARG MISE_VERSION
@@ -30,7 +30,7 @@ ENV MISE_INSTALL_PATH=/usr/local/bin/mise \
 # https://mise.jdx.dev/installing-mise.html
 RUN gpg --keyserver hkps://keys.openpgp.org --recv-keys 24853EC9F655CE80B48E6C3A8B81C9D17413A06D && \
   curl https://mise.jdx.dev/install.sh.sig | gpg --decrypt > install_mise.sh && \
-  MISE_DEBUG=true sh ./install_mise.sh && \
+  MISE_DEBUG=true MISE_INSTALL_MUSL=1 sh ./install_mise.sh && \
   rm install_mise.sh && \
   gpg --batch --yes --delete-keys 24853EC9F655CE80B48E6C3A8B81C9D17413A06D && \
   rm -rf /root/.gnupg/openpgp-revocs.d/*
@@ -63,6 +63,7 @@ RUN apt-get update && apt-get install -y \
     xz-utils \
     tk-dev \
     libxml2-dev \
+    libicu-dev \
     libxmlsec1-dev \
     libffi-dev \
     # Image processing

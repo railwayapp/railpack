@@ -12,8 +12,7 @@
 # test glob on hidden files (.env-specific) with a trailing glob
 .env*
 
-# should ignore all __pycache__ folders, but not any file named __pycache__
-# I've intentionally named a file __pycache__ to test this behavior
+# trailing slashes are stripped, so this excludes files and folders named __pycache__
 __pycache__/
 
 # test root-level folder
@@ -25,7 +24,7 @@ __pycache__/
 # leading glob
 *.log
 
-# non-hidden filename, anywhere
+# non-hidden filename at the root
 Justfile
 
 # root-level file glob (app/TODO should be included)
@@ -43,3 +42,7 @@ negation_test/*
 !negation_test/should_not_exist.txt
 !negation_test/folder_does_not_exist/
 !negation_test/existing_folder/
+
+# test that ** wildcard matches nested directories
+# This should exclude both /node_modules and /web/node_modules
+**/node_modules

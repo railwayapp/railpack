@@ -1,7 +1,7 @@
 {
  "deploy": {
   "base": {
-   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.6.1"
+   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.10.3"
   },
   "inputs": [
    {
@@ -30,14 +30,15 @@
     "step": "build"
    }
   ],
-  "startCommand": "poetry run python main.py",
+  "startCommand": "python main.py",
   "variables": {
    "PIP_DEFAULT_TIMEOUT": "100",
    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
    "PYTHONDONTWRITEBYTECODE": "1",
    "PYTHONFAULTHANDLER": "1",
    "PYTHONHASHSEED": "random",
-   "PYTHONUNBUFFERED": "1"
+   "PYTHONUNBUFFERED": "1",
+   "RAILPACK_VERSION": "dev"
   }
  },
  "steps": [
@@ -56,12 +57,12 @@
     },
     {
      "cmd": "mise install",
-     "customName": "install mise packages: pipx, pipx:poetry, python, uv"
+     "customName": "install mise packages: poetry, python"
     }
    ],
    "inputs": [
     {
-     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.10.3"
     }
    ],
    "name": "packages:mise",

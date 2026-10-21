@@ -1,27 +1,26 @@
 # What is Railpack
 
-Zero-config application builder that automatically analyzes your code and turns
-it into a container image. It's built on BuildKit
-with support for Node, Python, Go, PHP, and more.
+Zero-config application builder that analyzes code and builds an image. It's
+built on BuildKit with support for Node, Python, Go, PHP, and more.
 
 # Architecture
 
-- **Core**: Analyzes apps and generates JSON build plans using language
-  providers
+- **CLI**: Main entry point that coordinates core analysis and BuildKit execution
+- **Core**: Analyzes apps and generates JSON build plans using language providers
 - **BuildKit**: Converts build plans to BuildKit LLB (Low-Level Builder) format
-  for efficient image construction
-- **CLI**: Main entry point that coordinates core analysis and BuildKit
-  execution
+  for image construction.
 - **Providers**: Language-specific modules that detect project types (e.g. Node
-  detects package.json) and generate appropriate build steps
+  detects package.json) and generate appropriate build steps.
 - **Runtime**: The built images are based on @images/debian/runtime/Dockerfile
 
 # Code style
 
+Follow these instructions carefully when writing code:
+
 - When writing a comment describing a function, do not start the comment with the name of the function
 - Assume the person reading this code is an expert software engineer, but is not familiar with the internals of every system. Include concise one-line comments explaining key hooks, API usage, blocks of logic, etc., to help the reader quickly understand the code you've written.
 - Follow Go conventions and existing patterns in the codebase
-- Prefer early returns or early continues to `if` nesting
+- Prefer early `return`s or `continue`s to `if` nesting
 - Use appropriate error handling with proper error wrapping
 - Do not write comments that are obvious from the code itself; focus on
   explaining why something is done, not what it does
@@ -38,15 +37,16 @@ with support for Node, Python, Go, PHP, and more.
 
 # Workflow
 
-- If mise is not available in your environment, install it using the instructions at https://mise.jdx.dev/installing-mise.html.
+- If mise is not available in your environment, [install it](https://mise.jdx.dev/installing-mise.html)
 - Take a careful look at @mise.toml to understand what commands should be run at different points in the project lifecycle
-- Do not worry about docker cache, etc. Never run `docker system prune` or any other similar commands.
+- Do not worry about docker cache, etc. Never run `docker system prune` or other similar commands.
 - Do not run `go` directly. Instead, inspect @mise.toml and use `mise run <task>` to run various dev lifecycle commands. For instance, you should not run `go vet`, `go fmt`, `go test`, etc directly.
-- After making code changes, first run `mise run check`
-- Then, run unit tests and a couple of relevant integration tests to verify your changes
+- After making code changes, run `mise run check`
+- Then, run unit tests (`mise run test`) and a couple of relevant integration tests to verify your changes.
   - Don't run tests manually using `go test` unless instructed to do so
   - If tests are failing that are unrelated to your changes, let me know and stop working.
 - Use the `cli` mise task to test your changes on a specific example project, i.e. `mise run cli -- --verbose build --show-plan examples/node-vite-react-router-spa/`
+- Run before finishing your work `mise run test-update-snapshots` and review the (possibly) updated snapshot files to make sure there are no unexpected changes.
 - Do not run any write operations with `git`
 - Do not use `bin/railpack` instead use `mise run cli` (which is the development build of `railpack`)
   - Therefore do not run `mise build`, we don't need a `railpack` binary for local testing
@@ -59,9 +59,11 @@ with support for Node, Python, Go, PHP, and more.
 
 There are normal unit tests, snapshot tests, and integration tests. The integration tests are most unique to this project:
 
+* They are located in `examples/` directories, and each example has a `test.json` and optionally a `docker-compose.yml` file
 * They represent example projects that would be built using the `railpack` CLI
-* On CI, they are built and run to make sure `railpack` properly builds *and* runs the project
+* CI builds and runs each example project in a distinct job to make sure `railpack` properly builds *and* runs the project
 * `test.json` and `docker-compose.yml` are used to help determine what assertions should be made and what services should be run for the test
+* The `size.json` is auto-generated and should never be manually created or updated.
 
 ## Integration Tests
 
@@ -70,10 +72,28 @@ There are normal unit tests, snapshot tests, and integration tests. The integrat
 * In `test.json` we should avoid using `justBuild` for all but the most simple projects. `justBuild` does not test `expectedOutput` or any other assertions.
 * If the project has a server component, we should use a `httpCheck` test. Read the @docs/src/content/docs/guides/developing-locally.md guide, specifically the `### HTTP Checks` section for more information.
 * `httpCheck` assertions assume that `$PORT` is respected.
-* You can use `"env": { "SECRET": "123"}` to add a required environment variable to a test case.
+* You can use `"envs": { "SECRET": "123"}` to add a required environment variable to a test case.
+
+## Unit tests
+
+* Do not test log output.
+
+# Documentation
+
+- Assume the reader knows the documentation is about Railpack. Avoid
+  redundantly naming Railpack when the subject is clear from context.
 
 # File Conventions
 
-- Markdown files in @docs/src/content/docs/ should be limited to 80 columns
 - Do not fix indentation or formatting manually. This is corrected automatically using `mise run check`
 - NEVER commit language-specific cache or build artifacts (e.g. Python `__pycache__/`, `*.pyc`, `*.pyo` files). If you encounter build artifacts that are not excluded by .gitignore, add appropriate patterns to .gitignore to exclude them
+
+# Mise Functionality
+
+If work requires deep knowledge of mise internals, clone the project into `tmp/mise` and investigate the source code.
+
+https://github.com/jdx/mise
+
+## Pull Requests
+
+When writing a pull request add a "---\nPlease remove this to indicate you've reviewed and deslopped your PR description"

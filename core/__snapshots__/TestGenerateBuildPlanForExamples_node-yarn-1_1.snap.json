@@ -57,9 +57,11 @@
   "variables": {
    "CI": "true",
    "NODE_ENV": "production",
+   "NPM_CONFIG_FETCH_RETRIES": "5",
    "NPM_CONFIG_FUND": "false",
    "NPM_CONFIG_PRODUCTION": "false",
    "NPM_CONFIG_UPDATE_NOTIFIER": "false",
+   "RAILPACK_VERSION": "dev",
    "YARN_PRODUCTION": "false"
   }
  },
@@ -77,7 +79,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.10.3"
     }
    ],
    "name": "packages:apt:build"
@@ -155,6 +157,7 @@
     "CI": "true",
     "COREPACK_HOME": "/opt/corepack",
     "NODE_ENV": "production",
+    "NPM_CONFIG_FETCH_RETRIES": "5",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",
     "NPM_CONFIG_UPDATE_NOTIFIER": "false",
@@ -199,7 +202,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.10.3"
     }
    ],
    "name": "packages:apt:runtime"

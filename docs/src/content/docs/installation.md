@@ -28,7 +28,8 @@ curl -sSL https://railpack.com/install.sh | sh
 You can also customize the version, destination, and other config options:
 
 ```sh
-curl -sSL https://railpack.com/install.sh | RAILPACK_VERSION=0.2.3 sh -s -- --bin-dir ~/.local/bin
+curl -sSL https://railpack.com/install.sh |
+  RAILPACK_VERSION=0.2.3 sh -s -- --bin-dir ~/.local/bin
 ```
 
 ## GitHub Releases
@@ -50,7 +51,21 @@ go build -o railpack ./cmd/...
 
 Linux and MacOS are supported.
 
-Windows builds are generated but not officially supported. That being said, PRs are welcome to fix any Windows-specific bugs.
+Windows builds are generated but not officially supported. That being said, PRs
+are welcome to fix any Windows-specific bugs.
+
+## Agent Skill
+
+The repository includes an [Agent Skill](https://agentskills.io) that teaches
+compatible coding agents how to configure `RAILPACK_*` variables, construct
+`railpack.json`, and run builds locally.
+
+Install it for the current project with the
+[Skills CLI](https://skills.sh/docs/cli):
+
+```sh
+npx skills add railwayapp/railpack --skill railpack
+```
 
 ## Help
 

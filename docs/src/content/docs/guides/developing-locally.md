@@ -3,23 +3,62 @@ title: Developing Locally
 description: Learn how to develop Railpack locally
 ---
 
-Once you've [checked out the repo](https://github.com/railwayapp/railpack), you
-can follow this to start developing locally.
+We love contributions to Railpack! This guide is to help Railpack developers understand the system quickly.
+
+Some pre-requisites:
+
+* [Check out the repo](https://github.com/railwayapp/railpack)
+* [Install Mise](https://mise.jdx.dev/installing-mise.html)
 
 ## Getting Setup
 
-We use [Mise](https://mise.jdx.dev/) for managing language dependencies and
-tasks for building and testing Railpack. You don't have to use Mise, but it's
-recommended.
+[Mise](https://mise.jdx.dev/) is used to manage language dependencies and
+tasks for building and testing Railpack. Checkout `mise.toml` in the root
+repo for more information on various lifecycle tasks.
 
-Install and use all versions of tools needed for Railpack
+Install and use all versions of tools needed for Railpack:
 
 ```bash
-# Assuming you are cd'd into the repo root
+# optional: load dev tools from mise.dev.toml
+echo 'env = ["dev"]' > .miserc.toml
+mise install
 mise run setup
 ```
 
-This command will also start a BuildKit container (check out `mise.toml` in the root directory for more information).
+This command starts a BuildKit container (check out `mise.toml` in the root
+directory for more information).
+
+### Remote Docker host
+
+Integration tests and local builds store images and BuildKit cache on
+the Docker host. Point Docker at another machine to keep tens of
+gigabytes of that data off your laptop if you are actively working on Railpack.
+
+Set this in a `mise.local.toml`:
+
+```toml title="mise.local.toml"
+[env]
+DOCKER_HOST = "ssh://user@host"
+```
+
+Leave `BUILDKIT_HOST` unset unless the remote container is not named
+`buildkit`. Use key/agent SSH auth. The remote host needs a running
+privileged `buildkit` container.
+
+Confirm the engine with `docker info` (`Name` is the hostname):
+
+```bash
+docker info -f '{{.Name}} {{.OperatingSystem}}'
+docker context inspect -f '{{.Endpoints.docker.Host}}'
+```
+
+If you use a remote Docker host with a different CPU architecture, specify
+the target platform explicitly. Without `--platform`, the CLI selects the
+architecture of the machine running Railpack, not the remote Docker host;
+`DOCKER_HOST` only changes where the build executes. Use a flag such as
+`--platform linux/amd64` for CLI builds, or set `"platform": "linux/amd64"`
+in an example's `test.json`, matching a platform supported by the remote
+BuildKit worker.
 
 Use the `cli` task to run the Railpack CLI (this is like `railpack --help`)
 
@@ -36,10 +75,26 @@ mise run build
 export PATH="$PWD/bin:$PATH"
 ```
 
+## Lifecyle of a Change
+
+Most improvements to Railpack look like:
+
+1. There's a motivating problem: a new javascript framework that doesn't work without tinkering, a new language feature we want to support, etc.
+2. Reproduce the failure in a new `example/` project and make sure it fails with `mise run test-integration-cwd`.
+3. Point AI at the failing project and work out a solution.
+4. Deslop edits, tests, etc.
+5. Make sure documentation is updated.
+6. Update snapshots with `mise run test-update-snapshots` and manually review changes to make sure there were weren't any unintended side effects.
+7. Run `mise run test` and `mise run check` to make sure unit tests and all linters are clean.
+8. Submit a PR using this [PR template](.github/PULL_REQUEST_TEMPLATE.md).
+
+Pro-tip: point your agent at this guide.
+
 ## Building directly with BuildKit
 
-**👋 Requirement**: an instance of BuildKit must be running locally.
-Run `mise run setup` to start a BuildKit container.
+**👋 Requirement**: an instance of BuildKit must be reachable from the
+Docker CLI. Run `mise run setup` to start a local BuildKit container, or
+point Docker at a remote host (see [Remote Docker host](#remote-docker-host)).
 
 Railpack will instantiate a BuildKit client and communicate over GRPC in
 order to build the generated LLB.
@@ -55,8 +110,6 @@ cd examples/node-angular/
 mise run cli build $(pwd)
 ```
 
-You need to have a BuildKit instance running (see below).
-
 ## Docker Images
 
 Multiple Docker images are used in Railpack:
@@ -66,16 +119,24 @@ Multiple Docker images are used in Railpack:
   * `images/debian/build` used during the llb build process. These contain common tools, languages, mise, etc that might be used during the build process. Note that all of these utilities are *not* included in the final image in order to reduce the total image size.
   * `images/debian/runtime` a bare bones debian image used at runtime. The tools, build artifacts, etc generated during the railpack build are added to this base image.
 
-## Custom frontend
-
-You can build with a [custom BuildKit frontend](/guides/custom-frontend), but
-this is a bit tedious for local iteration.
-
-The frontend needs to be built into an image and accessible to the BuildKit
-instance. You can build this image locally using standard Docker commands from the root of the repository:
+Build the runtime image for local development with:
 
 ```bash
-docker build -f images/alpine/frontend/Dockerfile -t railpack-frontend:local .
+mise run image-runtime-build
+```
+
+## Custom frontend
+
+You can build with the [BuildKit frontend](/platforms/buildkit-frontend), but
+this is a bit tedious for local iteration.
+
+The frontend needs to be built into an image and accessible to the BuildKit instance:
+
+```bash
+docker build \
+  -f images/alpine/frontend/Dockerfile \
+  -t railpack-frontend:local \
+  .
 ```
 
 Then, generate a build plan for an app:
@@ -87,33 +148,100 @@ mise run cli plan examples/node-bun --out test/railpack-plan.json
 With the image you built previously, you can now run the build:
 
 ```bash
-docker buildx \
+docker buildx build \
   --build-arg BUILDKIT_SYNTAX="railpack-frontend:local" \
   -f test/railpack-plan.json \
   examples/node-bun
 ```
 
-By default, `ghcr.io/railwayapp/railpack:railpack-frontend` is used when running `railpack build`.
+You can also use the `buildctl` command to run BuildKit directly. This is helpful as it's a lower level command which
+exposes helpful debugging flags. However, you can't reference the locally built image without loading it into a registry first.
 
-You can also use the `buildctl` command to run BuildKit directly:
+Start the registry, then build and push the frontend image with
+`image-frontend-build`:
+
+```bash
+mise run image-run-registry
+mise run image-frontend-build
+```
+
+Then, you can run the build with the locally-build frontend:
 
 ```bash
 buildctl build \
+  --frontend=gateway.v0 \
+  --opt source=host.docker.internal:7890/railpack-frontend:local \
   --local context=examples/node-bun \
   --local dockerfile=test \
-  --frontend=gateway.v0 \
-  --opt source=ghcr.io/railwayapp/railpack:railpack-frontend \
   --output type=docker,name=test | docker load
 ```
 
-*Note the `docker load` here to load the image into Docker. However, you can
+The `dockerfile=` param instructs railpack to use that directory to look for the `railpack-plan.json` file. The `context=` param is the path to the app to build. More specifically, `--local` 'uploads' the referenced directories
+to the buildkit daemon.
+
+Note the `docker load` here to load the image into Docker. However, you can
 change the [output](https://github.com/moby/buildkit?tab=readme-ov-file#output)
-or push to a registry instead.*
+or push to a registry instead.
+
+You can also provide additional configuration to buildctl, like registry
+cache import/export (use top-level flags, not `--opt`):
+
+```bash
+buildctl build \
+  --frontend=gateway.v0 \
+  --opt source=host.docker.internal:7890/railpack-frontend:local \
+  --local context=examples/node-bun \
+  --local dockerfile=test \
+  --export-cache type=registry,ref=host.docker.internal:7890/node-bun:cache,mode=max \
+  --import-cache type=registry,ref=host.docker.internal:7890/node-bun:cache
+```
+
+Note that the cache arguments are different than what `docker buildx`. The equivalent `docker buildx` command would be:
+
+
+```bash
+docker buildx build \
+  --build-arg BUILDKIT_SYNTAX="host.docker.internal:7890/railpack-frontend:local" \
+  --cache-to=type=registry,ref=host.docker.internal:7890/node-bun:cache,mode=max \
+  --cache-from=type=registry,ref=host.docker.internal:7890/node-bun:cache \
+  -f test/railpack-plan.json \
+  examples/node-bun
+```
+
+Debugging a buildkit related problem? Enable debug logging:
+
+```bash
+buildctl --debug build \
+  --frontend=gateway.v0 \
+  --opt source=host.docker.internal:7890/railpack-frontend:local \
+  --local context=examples/node-bun \
+  --local dockerfile=test \
+  --progress=plain \
+  --trace=tmp/buildctl-build-trace.log \
+  --debug-json-cache-metrics stdout
+```
+
+Quick note about `buildctl` vs `docker buildx`. These two ways of invoking the railpack frontend handle arguments differently:
+
+* `--build-arg` prefixes the argument with `build-arg:`.
+* `--opt` does not prefix the build arg at all. You must prefix args with `build-arg:` if they are
+  arguments handled by the railpack frontend.
+
+## Unit Tests
+
+Railpack uses [go-snaps](https://github.com/gkampitakis/go-snaps) for snapshot
+testing. This helps prevent regressions to generated build plans. All example plans are snapshot tested in `core_test.go`
+
+If you see a test failure because of a snapshot change, please confirm that the
+change is intentional, and then update the snapshot by running:
+
+```bash
+mise run test-update-snapshots
+```
 
 ## Integration Tests
 
-Integration tests build and run example applications in containers to verify
-end-to-end functionality. Each example with a `test.json` file gets tested
+Integration tests build and run example applications (in `examples/`) in containers to verify end-to-end functionality. Each example with a `test.json` file gets tested
 automatically.
 
 ```bash
@@ -129,13 +257,16 @@ mise run test-integration-cwd
 ```
 
 The `test.json` file contains an array of test cases. Each case builds and runs the same
-image but checks for different expected output strings.
+image but checks for different expected output strings. See [this
+file](https://github.com/railwayapp/railpack/blob/main/integration_tests/run_test.go#L26)
+for the schema.
 
 ### HTTP Checks
 
-In addition to a basic `justBuild: true` check or an output assertion, you can also run an HTTP check that starts the container and asserts that a specific route returns an expected HTTP code:
+In addition to an output assertion, you can run an HTTP check that starts the
+container and asserts that a specific route returns an expected HTTP code:
 
-```json
+```json title="test.json"
 {
   "httpCheck": {
     "path": "/",
@@ -150,7 +281,7 @@ In addition to a basic `justBuild: true` check or an output assertion, you can a
 You can verify that the application outputs specific strings. `expectedOutput` can
 be a single string or an array of strings that all must be present in the output:
 
-```json
+```json title="test.json"
 {
   "expectedOutput": "Server running on port 3000"
 }
@@ -158,7 +289,7 @@ be a single string or an array of strings that all must be present in the output
 
 Or with multiple strings:
 
-```json
+```json title="test.json"
 {
   "expectedOutput": [
     "Elixir version: 1.18",
@@ -173,7 +304,7 @@ You can pass environment variables to the container at runtime using the
 `envs` key. This is useful for testing with different configurations, secrets,
 or Railpack configuration variables:
 
-```json
+```json title="test.json"
 {
   "expectedOutput": "Server running on port 3000",
   "envs": {
@@ -186,7 +317,7 @@ or Railpack configuration variables:
 You can also use `RAILPACK_*` configuration variables in `envs` to test
 different build configurations:
 
-```json
+```json title="test.json"
 {
   "expectedOutput": "hello from Node",
   "envs": {
@@ -215,13 +346,22 @@ docker run -it --network python-django_default --env DATABASE_URL="postgresql://
 
 ## Mise
 
-Mise is absolutely central to this entire project, so you'll have to dig into the details.
+Mise is critical to this project. For any serious change, you'll need to understand how mise works in detail.
 
 * `mise trust` state is located in `~/.local/state/mise/trusted-configs`
 * There are two mise 'environments' to keep in mind: the host environment, which uses a specific version of mise downloaded
   just for Railpack, and the mise binary run during the build process. The mise version will be the same, but the environment
   is different.
 * If `mise tool erlang` reports a `core:` plugin it means this plugin is compiled into the mise binary and its source is available with the mise monorepo. This can be confusing since there are often open source shell-based repos available for a tool as well, but they are unused by default.
+
+### Linux shell (Apple container machine)
+
+On Apple Silicon Macs you can open a Linux environment that uses the
+host Docker daemon and a Linux-native mise install via
+`mise run mise-linux-shell`.
+
+This creates (or reuses) an Alpine-based [container machine](https://github.com/apple/container)
+that connects to the host docker. This is helpful for debugging linux-only issues with the test suite.
 
 ### Mise Commands
 
@@ -252,6 +392,10 @@ mise exec pipx:httpie -- http google.com
 Here's some helpful debugging tricks:
 
 * `URFAVE_CLI_TRACING=on` for debugging CLI argument parsing
+* `RAILPACK_DEBUG=1` for debugging Railpack debug logging
+* `--build-arg verbose=true` for debugging the frontend (or `--opt build-arg:verbose=true` with `buildctl`)
+* `docker logs -f buildkit` to see the BuildKit daemon logs, which includes railpack logs when it's used as a frontend
+* `docker logs -f railpack-registry` to inspect local registry logs. Helpful for debugging cache import/export issues.
 * `mise run cli -- --verbose build --show-plan --progress plain examples/node-bun`
 * `mise run build`, add `./bin/` to your `$PATH`, and then run `railpack` in a separate local directory
 * `docker exec buildkit buildctl prune` to clean the builder cache
@@ -304,6 +448,21 @@ continue
 ```
 
 The commands you probably want: `ls`, `print build.Commands`, `continue`, `next`, `locals`,
+
+## Docker / BuildKit
+
+### Frontend
+
+* When using Railpack as a frontend, all logs go to the buildkit container logs, and are not outputted to the build progress logs.
+* `buildctl` is the lower level interface to BuildKit compared to `docker buildx`. There are more options available for debugging.
+* `builtctl` and `docker buildx` handle arguments differently. `--build-arg` prefixes the argument with `build-arg:`. `--opt` does not prefix the build arg at all. You must prefix args with `build-arg:` if they are arguments handled by the railpack frontend.
+
+### Cache
+
+* Cache export does not require any logic within railpack. This is given "for free" since we are using BuildKit LLB.
+* However, all import cache support must be implemented in Railpack. BuildKit is careful not to be too opinionated about defaults.
+* If you use a registry cache you can tail the logs to inspect what is actually being pulled/pushed when building an image.
+* There's no util methods for parsing the cache kv comma-separated strings in the buildkit module.
 
 ## Node
 

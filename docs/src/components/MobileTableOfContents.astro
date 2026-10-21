@@ -1,0 +1,16 @@
+---
+import DefaultMobileTableOfContents from "@astrojs/starlight/components/MobileTableOfContents.astro";
+
+const { toc } = Astro.locals.starlightRoute;
+
+function countTocItems(items: NonNullable<typeof toc>["items"]): number {
+  return items.reduce(
+    (count, item) => count + 1 + countTocItems(item.children),
+    0,
+  );
+}
+
+const hasMultipleHeadings = toc ? countTocItems(toc.items) > 1 : false;
+---
+
+{hasMultipleHeadings && <DefaultMobileTableOfContents />}

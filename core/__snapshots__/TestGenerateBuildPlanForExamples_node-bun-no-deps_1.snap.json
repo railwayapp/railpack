@@ -1,13 +1,5 @@
 {
  "caches": {
-  "apt": {
-   "directory": "/var/cache/apt",
-   "type": "locked"
-  },
-  "apt-lists": {
-   "directory": "/var/lib/apt/lists",
-   "type": "locked"
-  },
   "bun-install": {
    "directory": "/root/.bun/install/cache",
    "type": "shared"
@@ -19,7 +11,7 @@
  },
  "deploy": {
   "base": {
-   "step": "packages:apt:runtime"
+   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.10.3"
   },
   "inputs": [
    {
@@ -52,11 +44,14 @@
   ],
   "startCommand": "bun run start",
   "variables": {
+   "BUN_INSTALL_GLOBAL_STORE": "0",
    "CI": "true",
    "NODE_ENV": "production",
+   "NPM_CONFIG_FETCH_RETRIES": "5",
    "NPM_CONFIG_FUND": "false",
    "NPM_CONFIG_PRODUCTION": "false",
-   "NPM_CONFIG_UPDATE_NOTIFIER": "false"
+   "NPM_CONFIG_UPDATE_NOTIFIER": "false",
+   "RAILPACK_VERSION": "dev"
   }
  },
  "steps": [
@@ -75,12 +70,12 @@
     },
     {
      "cmd": "mise install",
-     "customName": "install mise packages: bun, node"
+     "customName": "install mise packages: bun"
     }
    ],
    "inputs": [
     {
-     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.10.3"
     }
    ],
    "name": "packages:mise",
@@ -118,8 +113,10 @@
    ],
    "name": "install",
    "variables": {
+    "BUN_INSTALL_GLOBAL_STORE": "0",
     "CI": "true",
     "NODE_ENV": "production",
+    "NPM_CONFIG_FETCH_RETRIES": "5",
     "NPM_CONFIG_FUND": "false",
     "NPM_CONFIG_PRODUCTION": "false",
     "NPM_CONFIG_UPDATE_NOTIFIER": "false"
@@ -144,24 +141,6 @@
    "secrets": [
     "*"
    ]
-  },
-  {
-   "caches": [
-    "apt",
-    "apt-lists"
-   ],
-   "commands": [
-    {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libatomic1'",
-     "customName": "install apt packages: libatomic1"
-    }
-   ],
-   "inputs": [
-    {
-     "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.6.1"
-    }
-   ],
-   "name": "packages:apt:runtime"
   }
  ]
 }

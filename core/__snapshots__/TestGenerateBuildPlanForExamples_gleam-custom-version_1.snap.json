@@ -1,7 +1,7 @@
 {
  "deploy": {
   "base": {
-   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.6.1"
+   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.10.3"
   },
   "inputs": [
    {
@@ -21,7 +21,10 @@
     "step": "build"
    }
   ],
-  "startCommand": "./build/erlang-shipment/entrypoint.sh run"
+  "startCommand": "./build/erlang-shipment/entrypoint.sh run",
+  "variables": {
+   "RAILPACK_VERSION": "dev"
+  }
  },
  "steps": [
   {
@@ -48,7 +51,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.10.3"
     }
    ],
    "name": "packages:mise",
@@ -106,7 +109,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.10.3"
     }
    ],
    "name": "packages:mise:runtime",

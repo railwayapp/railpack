@@ -32,14 +32,21 @@ railpack build [options] DIRECTORY
 
 **Options:**
 
-| Flag          | Description                                           | Default |
-| ------------- | ----------------------------------------------------- | ------- |
-| `--name`      | Name of the image to build                            |         |
-| `--output`    | Output the final filesystem to a local directory      |         |
-| `--platform`  | Platform to build for (e.g. linux/amd64, linux/arm64) |         |
-| `--progress`  | BuildKit progress output mode (auto, plain, tty)      | `auto`  |
-| `--show-plan` | Show the build plan before building                   | `false` |
-| `--cache-key` | Unique id to prefix to cache keys                     |         |
+| Flag           | Description                                                                 | Default |
+| -------------- | --------------------------------------------------------------------------- | ------- |
+| `--name`       | Name of the image to build                                                  |         |
+| `--output`     | Output the final filesystem to a local directory                            |         |
+| `--platform`   | Platform to build for (e.g. linux/amd64, linux/arm64)                       |         |
+| `--progress`   | BuildKit progress output mode (auto, plain, tty)                            | `auto`  |
+| `--show-plan`  | Show the build plan before building                                         | `false` |
+| `--cache-key`  | Unique id to prefix to cache keys                                           |         |
+| `--cache-from` | External cache sources (same as docker buildx). e.g. type=registry,ref=...  |         |
+| `--cache-to`   | Cache export destinations (same as docker buildx). e.g. type=registry,ref=... |       |
+| `--no-cache`   | Do not use cache when building (boolean flag)                               | `false` |
+
+`railpack build` uses credentials from your Docker CLI config
+(`$DOCKER_CONFIG`, default `~/.docker/config.json`) so BuildKit can pull or
+push private registry images. Log in with `docker login` first if needed.
 
 ### prepare
 
@@ -126,21 +133,21 @@ The most reliable way to enable completion is to source it directly in your shel
 **Zsh**
 Add this to your `~/.zshrc`:
 
-```bash
+```bash title="~/.zshrc"
 source <(railpack completion zsh)
 ```
 
 **Bash**
 Add this to your `~/.bashrc`:
 
-```bash
+```bash title="~/.bashrc"
 source <(railpack completion bash)
 ```
 
 **Fish**
 Add this to your `~/.config/fish/config.fish`:
 
-```fish
+```fish title="~/.config/fish/config.fish"
 railpack completion fish | source
 ```
 
@@ -172,3 +179,20 @@ These options can be used with any command:
 | `--help`, `-h`    | Show help information    |
 | `--version`, `-v` | Show version information |
 | `--verbose`       | Enable verbose logging   |
+
+## Exit Codes
+
+| Code | Meaning                                                                       |
+| ---- | ----------------------------------------------------------------------------- |
+| `0`  | Success                                                                       |
+| `1`  | The command failed for a reason that will not change on a retry               |
+| `75` | The command failed for a transient reason and is worth retrying (EX_TEMPFAIL) |
+
+Exit code `75` is only used for failures that say nothing about the app being
+built, such as a network error while downloading Mise. Everything else — no
+provider detected, a missing start command, an invalid config file — exits
+with `1` and will fail the same way on every attempt.
+
+Platforms that run Railpack in a build pipeline should retry on `75` and fail
+the build on `1`. If the process exits without a code at all (the driver never
+ran), that is also worth retrying.

@@ -13,45 +13,57 @@ exists in the root directory.
 
 ## Versions
 
+### Node.js
+
 The Node.js version is determined in the following order of priority:
 
 1. Set via the `RAILPACK_NODE_VERSION` environment variable
-2. Read from the `engines.node` field in `package.json`
-3. Read from the `.nvmrc` file
-4. Read from the `.node-version` file
-5. Read from `mise.toml` or `.tool-versions` files
-6. Defaults to `22`
+2. Read from `devEngines.runtime` in `package.json` through
+   [Mise's idiomatic file parsing](#mise-idiomatic-file-parsing)
+3. Read from the `engines.node` field in `package.json`
+4. Read from the `.nvmrc` file
+5. Read from the `.node-version` file
+6. Read from `mise.toml` or `.tool-versions` files
+7. Defaults to `lts`
 
 This version resolution logic is applied consistently across all scenarios where
 Node is needed, including when Bun is the primary package manager but Node is
 required for native module compilation.
 
 We officially support actively maintained [Node.js LTS
-versions](https://nodejs.org/en/about/previous-releases). Older versions of Node.js will likely still
-work but are not officially supported.
+versions](https://nodejs.org/en/about/previous-releases). Older versions of
+Node.js will likely still work but are not officially supported.
 
-### Bun
+Node.js GPG verification is disabled by default; see the [GPG verification
+recommendation](/config/recommendations#enable-gpg-verification) to enable it in
+your project.
 
-The Bun version is determined in the following order:
+### Package Manager Versions
 
-- Set via the `RAILPACK_BUN_VERSION` environment variable
-- Read from the `.bun-version` file
-- Read from the `engines.bun` field in `package.json`
-- Read from `mise.toml` or `.tool-versions` files
-- Defaults to `latest`
+The detected package manager's version is determined in the following order:
 
-If Bun is used as the package manager, Node.js will still be installed in the
-following cases:
+1. `package.json`, through Mise's idiomatic file parsing described below.
+2. The package manager's `engines` field, such as `engines.pnpm`.
+3. The detected lock file, when its format identifies a compatible version.
+4. The default version for the detected package manager.
 
-- If you define a `packageManager` field in your `package.json` (for Corepack
-  support)
-- If any script in your `package.json` contains `node`
-- If you're using Astro or Vite
-- During installation for native module compilation (node-gyp)
+### Mise Idiomatic File Parsing
 
-When Node.js isn't required in the final image but is needed during installation
-(for native modules), Node.js will be installed via Mise and will respect
-[version specifications](#versions).
+For Node.js, npm, Yarn, pnpm, and Bun, Mise parses `package.json` as an
+[idiomatic version file](https://mise.jdx.dev/configuration.html#idiomatic-version-files).
+For Node.js, Mise reads `devEngines.runtime.version` when
+`devEngines.runtime.name` is `node`.
+
+For package managers, Mise checks these fields in order:
+
+1. `devEngines.packageManager`: Uses `version` when `name` matches the detected
+   package manager. The value may be an object or an array, in which case Mise
+   reads the first entry.
+2. `packageManager`: Parses `<package-manager>@<version>` and removes an optional
+   `+hash` suffix.
+
+Railpack parses additional package manager version sources as described in
+[Versions](#package-manager-versions).
 
 ## Runtime Variables
 
@@ -62,6 +74,7 @@ NODE_ENV=production
 NPM_CONFIG_PRODUCTION=false
 NPM_CONFIG_UPDATE_NOTIFIER=false
 NPM_CONFIG_FUND=false
+NPM_CONFIG_FETCH_RETRIES=5
 YARN_PRODUCTION=false
 CI=true
 ```
@@ -87,52 +100,72 @@ Railpack determines the start command in the following order:
 | Variable                         | Description                             | Example                                 |
 | -------------------------------- | --------------------------------------- | --------------------------------------- |
 | `RAILPACK_NODE_VERSION`          | Override the Node.js version            | `22`                                    |
-| `RAILPACK_BUN_VERSION`           | Override the Bun version                | `1.2`                                   |
 | `RAILPACK_NO_SPA`                | Disable SPA mode                        | `true`                                  |
 | `RAILPACK_SPA_OUTPUT_DIR`        | Directory containing built static files | `dist`                                  |
 | `RAILPACK_PRUNE_DEPS`            | Remove development dependencies         | `true`                                  |
+| `RAILPACK_NODE_NPM_INSTALL`      | Custom npm install command              | `npm ci`                                |
 | `RAILPACK_NODE_PRUNE_CMD`        | Custom command to prune dependencies    | `npm prune --omit=dev --ignore-scripts` |
 | `RAILPACK_NODE_INSTALL_PATTERNS` | Custom patterns to install dependencies | `prisma`                                |
 | `RAILPACK_ANGULAR_PROJECT`       | Name of the Angular project to build    | `my-app`                                |
+| `RAILPACK_NX_APP`                | Nx app to build and start (project name, package name, or path) | `web` or `@org/web` |
+| `RAILPACK_NODE_PLAYWRIGHT_INSTALL` | Install Playwright browsers | `1` |
+
+### Playwright
+
+When Playwright is a production dependency, Railpack suggests setting
+`RAILPACK_NODE_PLAYWRIGHT_INSTALL=1`. Browser installation is opt-in because
+it increases image size and is not required by every application that includes
+Playwright.
+
+When enabled, Railpack runs Playwright through the detected package manager to
+install its browser binaries and adds the required runtime system packages.
+Ensure Playwright is included in your production dependencies so its CLI is
+available during the build.
 
 ### Package Managers
 
 Railpack detects your package manager in the following order:
 
 1. **packageManager field**: Reads the `packageManager` field from
-   `package.json` (uses Corepack to install the specified version)
-2. **Lock files**: Falls back to detecting based on lock files:
+   `package.json`
+2. **Mise idiomatic version files**: If Mise resolves exactly one of
+   pnpm, Yarn, Bun, or npm from `package.json` (`devEngines.packageManager`
+   or `packageManager`), that manager is used. A tool listed only in
+   `mise.toml` or `.tool-versions` does not select the package manager.
+3. **Lock files**: Falls back to detecting based on lock files:
    - `pnpm-lock.yaml` for pnpm
    - `bun.lockb` or `bun.lock` for Bun
    - `.yarnrc.yml` or `.yarnrc.yaml` for Yarn Berry (2+)
    - `yarn.lock` for Yarn 1
-3. **engines field**: As a fallback, checks the `engines` field in
+4. **engines field**: As a fallback, checks the `engines` field in
    `package.json` for package manager versions:
    - `engines.pnpm` for pnpm version
    - `engines.bun` for Bun version
    - `engines.yarn` for Yarn version
    - Defaults to npm if no package manager is detected
 
-When the `packageManager` field is present, Railpack will use Corepack to
-install the specified package manager version. When a package manager is
-detected via the `engines` field, the specified version constraint will be
-used.
+When the `packageManager` field selects npm or Yarn, Corepack installs its
+specified version.
+
+Railpack supports building native modules and automatically configures `node-gyp`.
 
 ### Monorepo Support
 
 Railpack automatically supports monorepo (workspaces) configurations with all major
-package managers. No special configuration is required. 
+package managers. No special configuration is required.
 
 **Supported Approaches:**
 
 - **npm, bun, yarn**: Uses the `workspaces` field in `package.json`
 - **pnpm**: Uses `pnpm-workspace.yaml` configuration
+- **Nx**: Detects `nx.json` and builds Next.js apps even when targets are
+  inferred (no root `build`/`start` scripts)
 
 See the [examples
 folder](https://github.com/railwayapp/railpack/tree/main/examples) in the
 repository for workspace examples across different package managers (e.g.,
 `node-pnpm-workspaces`, `node-npm-workspaces`, `node-yarn-workspaces`,
-`node-bun-workspaces`).
+`node-bun-workspaces`, `node-nx-next`).
 
 When building a monorepo, Railpack will:
 
@@ -142,8 +175,33 @@ When building a monorepo, Railpack will:
 - Cache workspace node_modules appropriately
 
 If your monorepo requires building a specific workspace package, ensure
-your build and start scripts are defined in the root `package.json` or use
-a [config file](/architecture/user-config) to specify custom commands.
+your build and start scripts are defined in the root `package.json`, set
+`RAILPACK_NX_APP` for multi-app Nx workspaces, or use a
+[configuration file](/config/file) to specify custom commands.
+
+#### Nx
+
+Stock Nx workspaces often rely on [inferred
+tasks](https://nx.dev/docs/concepts/inferred-tasks) instead of `package.json`
+scripts. When Railpack detects Nx and the root has no `build`/`start` scripts:
+
+- **Build**: `nx build <project>` (uses the package name, e.g.
+  `@org/web`)
+- **Start** (Next.js): `cd apps/web && next start` so runtime does not depend
+  on the `nx` CLI
+
+With a single Next.js app, selection is automatic. With multiple apps, set
+`RAILPACK_NX_APP` to the project name, package name, or package path (e.g.
+`web`, `@org/web`, or `apps/web`).
+
+#### TanStack Start
+
+TanStack Start is detected via `@tanstack/react-start` and is not treated as a
+Vite SPA. If there is no `start` script, Railpack installs `srvx` globally and
+starts with `srvx --prod -s ../client dist/server/server.js`. For production
+Node deploys, set up Nitro per the
+[TanStack hosting docs](https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro).
+Railpack caches `node_modules/.vite`.
 
 ### Install
 
@@ -172,6 +230,10 @@ These frameworks are supported:
   build script contains `vite build`
 - **Astro**: Detected if `astro.config.js` exists and the output is not type
   `"server"`
+- **Next.js**: Detected if `next` is in dependencies and `next.config.js`,
+  `next.config.mjs`, or `next.config.ts` sets `output: 'export'` (or
+  `output: "export"`). The default `next start` start script does not
+  disable SPA mode.
 - **CRA**: Detected if `react-scripts` is in dependencies and build script
   contains `react-scripts build`
 - **Angular**: Detected if `angular.json` exists
@@ -179,16 +241,31 @@ These frameworks are supported:
   `react-router.config.ts` exists, or if the build script contains
   `react-router build`. To enable SPA mode, set `ssr: false` in your React
   Router config.
+- **Expo Web**: Detected if `expo` and `react-native-web` are in
+  dependencies and `app.json` sets `expo.web.output` to `static` or `single`
 
 For all frameworks, Railpack will try to detect the output directory and will
-default to `dist` (or `build/client/` for React Router). Set the
+default to `dist` (or `build/client/` for React Router, or `out` for Next.js
+static exports). Next.js reads `distDir` from your config when set. Set the
 `RAILPACK_SPA_OUTPUT_DIR` environment variable to specify a custom output
-directory.
+directory. Railpack uses your app's `build` script to produce the static
+output.
+
+Note that if a SPA framework is *not* detected automatically, can you force SPA mode
+by specifying a `RAILPACK_SPA_OUTPUT_DIR` environment variable. This will enable SPA
+mode and serve the specified directory as a static site. Some of the SPA detection
+uses regexes on framework configuration files, which will fail if the default framework
+configuration files are customized.
 
 Static sites are served using the [Caddy](https://caddyserver.com/) web server
 and a [default
 Caddyfile](https://github.com/railwayapp/railpack/blob/main/core/providers/node/Caddyfile.template).
 You can overwrite this file with your own Caddyfile at the root of your project.
+
+Node SPA deploys honor the `index_fallback` key in a `Staticfile` at the
+project root when set. SPA routing behavior is unchanged unless you set
+`index_fallback: false` (for example on multi-page Astro static sites) so
+unknown paths return 404 and serve `404.html` when present.
 
 ## Framework Support
 
@@ -198,7 +275,6 @@ Including:
 - Next.js: Caches `.next/cache` for each Next.js app in the workspace
 - Remix: Caches `.cache`
 - Vite: Caches `node_modules/.vite`
-- Tanstack Start: Caches `node_modules/.vite`
 - Astro: Caches `node_modules/.astro`
 - React Router: Caches `.react-router`
 - Nuxt:
@@ -228,7 +304,7 @@ commands used.
 
 ### System Dependencies
 
-Railpack automatically installs system dependencies for certain packages:
+Railpack automatically installs system dependencies for Puppeteer:
 
 - **Puppeteer**: When detected in workspace dependencies, Railpack installs
   all necessary system packages for running headless Chrome, including
@@ -236,7 +312,5 @@ Railpack automatically installs system dependencies for certain packages:
   Puppeteer's bundled Chromium [does not support
   ARM64](https://github.com/puppeteer/puppeteer/issues/7740); if you need
   to run on ARM hardware, consider switching to
-  [Playwright](#system-dependencies) or implementing a custom workaround
+  [Playwright](#playwright) or implementing a custom workaround
   (e.g. installing a system Chromium and pointing `executablePath` at it).
-- **Playwright**: When detected in workspace dependencies, Railpack installs
-  the necessary system packages and the headless shell version of Chromium

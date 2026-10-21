@@ -17,6 +17,8 @@ func TestVite(t *testing.T) {
 		isCRA         bool
 		isAngular     bool
 		isReactRouter bool
+		isRRSPA       bool
+		isExpo        bool
 		outputDir     string
 	}{
 		{
@@ -32,6 +34,24 @@ func TestVite(t *testing.T) {
 			isSPA:     true,
 			isVite:    true,
 			outputDir: "theoutput",
+		},
+		{
+			name:   "svelte-kit",
+			path:   "../../../examples/node-svelte-kit",
+			isSPA:  false,
+			isVite: false,
+		},
+		{
+			name:   "tanstack-latest",
+			path:   "../../../examples/tanstack-latest",
+			isSPA:  false,
+			isVite: false,
+		},
+		{
+			name:   "tanstack-start-with-start-script",
+			path:   "../../../examples/node-tanstack-start",
+			isSPA:  false,
+			isVite: false,
 		},
 		{
 			name:      "cra",
@@ -79,7 +99,23 @@ func TestVite(t *testing.T) {
 			isSPA:         true,
 			isVite:        true,
 			isReactRouter: true,
+			isRRSPA:       true,
 			outputDir:     "build/client/",
+		},
+		{
+			name:          "react-router-ssr",
+			path:          "../../../examples/node-vite-react-router-ssr",
+			isSPA:         false,
+			isVite:        true,
+			isReactRouter: true,
+			isRRSPA:       false,
+		},
+		{
+			name:      "expo-spa",
+			path:      "../../../examples/expo-spa",
+			isSPA:     true,
+			isExpo:    true,
+			outputDir: "dist",
 		},
 	}
 
@@ -107,6 +143,12 @@ func TestVite(t *testing.T) {
 
 			isReactRouter := provider.isReactRouter(ctx)
 			require.Equal(t, tt.isReactRouter, isReactRouter)
+
+			isReactRouterSPA := provider.isReactRouterSPA(ctx)
+			require.Equal(t, tt.isRRSPA, isReactRouterSPA)
+
+			isExpo := provider.isExpoSPA(ctx)
+			require.Equal(t, tt.isExpo, isExpo)
 
 			if tt.isSPA {
 				require.Equal(t, tt.outputDir, provider.getOutputDirectory(ctx))
@@ -145,6 +187,21 @@ func TestHasCustomStartCommand(t *testing.T) {
 			name: "npm",
 			path: "../../../examples/node-npm",
 			want: true,
+		},
+		{
+			name: "expo-spa",
+			path: "../../../examples/expo-spa",
+			want: false,
+		},
+		{
+			name: "react router spa default",
+			path: "../../../examples/node-vite-react-router-spa",
+			want: false,
+		},
+		{
+			name: "react router ssr default",
+			path: "../../../examples/node-vite-react-router-ssr",
+			want: false,
 		},
 	}
 

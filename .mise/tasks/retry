@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#MISE description="Retry a command with exponential backoff"
+#USAGE flag "--attempts <attempts>" help="Number of attempts" default="3"
+#USAGE arg "<command>" var=#true help="Command to run" double_dash="automatic"
+
+set -euo pipefail
+
+attempts="${usage_attempts?}"
+delay=1
+
+eval "cmd=($usage_command)"
+
+if [[ ${#cmd[@]} -eq 0 ]]; then
+  echo "Error: command required" >&2
+  exit 1
+fi
+
+for ((i = 1; i <= attempts; i++)); do
+  if "${cmd[@]}"; then
+    exit 0
+  fi
+
+  if [[ $i -lt $attempts ]]; then
+    echo "failed, retrying..." >&2
+    sleep "$delay"
+    delay=$((delay * 2))
+  fi
+done
+
+echo "continued to fail after ${attempts} attempts" >&2
+exit 1

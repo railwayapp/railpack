@@ -24,6 +24,24 @@ const (
 	PNPM_STORE_DIR       = PNPM_HOME + "/store"
 )
 
+func (p *PackageJson) hasProductionDependency(dependency string) bool {
+	if p.Dependencies == nil {
+		return false
+	}
+
+	_, ok := p.Dependencies[dependency]
+	return ok
+}
+
+func (p *PackageJson) hasDevDependency(dependency string) bool {
+	if p.DevDependencies == nil {
+		return false
+	}
+
+	_, ok := p.DevDependencies[dependency]
+	return ok
+}
+
 func (p PackageManager) Name() string {
 	switch p {
 	case PackageManagerNpm:
@@ -71,6 +89,17 @@ func (p PackageManager) misePackageName() string {
 	}
 }
 
+func (p PackageManager) ExecCommand(cmd string) string {
+	switch p {
+	case PackageManagerPnpm:
+		return fmt.Sprintf("pnpm exec %s", cmd)
+	case PackageManagerBun:
+		return fmt.Sprintf("bunx %s", cmd)
+	default:
+		return fmt.Sprintf("npx %s", cmd)
+	}
+}
+
 func (p PackageManager) installDependencies(ctx *generate.GenerateContext, workspace *Workspace, install *generate.CommandStepBuilder, usingCorepack bool) {
 	packageJsons := workspace.AllPackageJson()
 
@@ -89,7 +118,7 @@ func (p PackageManager) installDependencies(ctx *generate.GenerateContext, works
 	// If there are any pre/post install scripts, we need the entire app to be copied
 	// This is to handle things like patch-package
 	if hasPreInstall || hasPostInstall || hasPrepare || usesLocalFile {
-		install.AddInput(ctx.NewLocalLayer())
+		install.AddInput(plan.NewLocalLayer())
 
 		// Use all secrets for the install step if there are any pre/post install scripts
 		install.UseSecrets([]string{"*"})
@@ -128,12 +157,17 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 
 	switch p {
 	case PackageManagerNpm:
-		hasLockfile := ctx.App.HasFile("package-lock.json")
-		if hasLockfile {
-			install.AddCommand(plan.NewExecCommand("npm ci"))
-		} else {
-			install.AddCommand(plan.NewExecCommand("npm install"))
+		if !ctx.App.HasFile("package-lock.json") {
+			ctx.Logger.LogSuggestion("Add a `package-lock.json` for more deterministic installs", "/architecture/recommendations")
 		}
+
+		// ideally, `npm ci` should be used instead of `npm install`, but we default to npm install to avoid build failures
+		// https://github.com/railwayapp/railpack/pull/643
+		installCmd := "npm install"
+		if customInstallCmd, _ := ctx.Env.GetConfigVariable("NODE_NPM_INSTALL"); customInstallCmd != "" {
+			installCmd = customInstallCmd
+		}
+		install.AddCommand(plan.NewExecCommand(installCmd))
 	case PackageManagerPnpm:
 		install.AddEnvVars(map[string]string{
 			"PNPM_HOME":      PNPM_HOME,
@@ -148,11 +182,12 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 
 			// pnpm 11+ installs global bins under PNPM_HOME/bin.
 			//
-			// We compare against the mise-resolved version rather than the requested one solely to handle
-			// the Node ecosystem's "x-range" engines notation (e.g. `engines.pnpm: "11.5.x"`), which is not
-			// valid semver and so cannot be parsed directly. Mise resolves it to a concrete version
-			// (e.g. "11.5.1") that we can compare. For any other source (exact version, mise.toml, etc.)
-			// resolving vs. using the requested string would yield the same result.
+			// Compare against the mise-resolved version rather than the requested one. The Node ecosystem
+			// permits x-ranges such as `engines.pnpm: "11.5.x"`, which are not valid semver and cannot be
+			// compared directly. Mise resolves them to a concrete version (e.g. "11.5.1"). Mise's idiomatic
+			// package.json parsing may also override Railpack's requested engines or lockfile fallback via
+			// `devEngines.packageManager` or `packageManager` (including values with a hash suffix), so the
+			// resolved version is the authoritative version that will actually be installed.
 			if usesPnpmBinSubdir(resolvePnpmVersion(ctx)) {
 				pnpmBinPath = PNPM_HOME + "/bin"
 			}
@@ -162,10 +197,10 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 			install.AddCommand(plan.NewExecCommand("pnpm add -g node-gyp"))
 		}
 
-		hasLockfile := ctx.App.HasFile("pnpm-lock.yaml")
-		if hasLockfile {
+		if ctx.App.HasFile("pnpm-lock.yaml") {
 			install.AddCommand(plan.NewExecCommand("pnpm install --frozen-lockfile --prefer-offline"))
 		} else {
+			ctx.Logger.LogSuggestion("Add a `pnpm-lock.yaml` for more deterministic installs", "/architecture/recommendations")
 			install.AddCommand(plan.NewExecCommand("pnpm install"))
 		}
 	case PackageManagerBun:
@@ -184,6 +219,7 @@ func usesPnpmBinSubdir(version string) bool {
 		return false
 	}
 
+	// `latest` is definitely >= 11
 	if version == "latest" {
 		return true
 	}
@@ -243,18 +279,13 @@ func (p PackageManager) PruneDeps(ctx *generate.GenerateContext, prune *generate
 }
 
 func (p PackageManager) prunePnpm(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
-	if packageJson, err := p.getPackageJsonFromContext(ctx); err == nil {
-		_, pnpmVersion := packageJson.GetPackageManagerInfo()
-		if pnpmVersion != "" {
-			pnpmVersion, err := semver.NewVersion(pnpmVersion)
+	pnpmVersion, err := semver.NewVersion(resolvePnpmVersion(ctx))
 
-			// pnpm 8.15.6 added the --ignore-scripts flag to the prune command
-			// https://github.com/pnpm/pnpm/releases/tag/v8.15.6
-			if err == nil && pnpmVersion.Compare(semver.MustParse("8.15.6")) == -1 {
-				prune.AddCommand(plan.NewExecCommand("pnpm prune --prod"))
-				return
-			}
-		}
+	// pnpm 8.15.6 added the --ignore-scripts flag to the prune command
+	// https://github.com/pnpm/pnpm/releases/tag/v8.15.6
+	if err == nil && pnpmVersion.Compare(semver.MustParse("8.15.6")) == -1 {
+		prune.AddCommand(plan.NewExecCommand("pnpm prune --prod"))
+		return
 	}
 
 	prune.AddCommand(plan.NewExecCommand("pnpm prune --prod --ignore-scripts"))
@@ -370,13 +401,6 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 			packages.Version(pnpm, packageJson.Engines["pnpm"], "package.json > engines > pnpm")
 		}
 
-		if pmName == "pnpm" && pmVersion != "" {
-			packages.Version(pnpm, pmVersion, "package.json > packageManager")
-
-			// skip installing via Mise and install with corepack instead
-			// https://github.com/railwayapp/railpack/issues/201
-			packages.SkipMiseInstall(pnpm)
-		}
 	}
 
 	// Yarn

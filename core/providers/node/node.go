@@ -17,14 +17,47 @@ import (
 type PackageManager string
 
 const (
-	DEFAULT_NODE_VERSION = "22"
+	DEFAULT_NODE_VERSION = "lts"
 	DEFAULT_BUN_VERSION  = "latest"
 
-	COREPACK_HOME = "/opt/corepack"
-
 	// not used by npm, but many other tools: next, jest, webpack, etc
-	NODE_MODULES_CACHE = "/app/node_modules/.cache"
+	NODE_MODULES_CACHE     = "/app/node_modules/.cache"
+	COREPACK_HOME          = "/opt/corepack"
+	PLAYWRIGHT_CACHE_DIR   = "/root/.cache/ms-playwright"
+	PLAYWRIGHT_INSTALL_VAR = "NODE_PLAYWRIGHT_INSTALL"
 )
+
+var nodeRuntimeDepRequirements = map[string][]string{
+	// To find the latest list: run `npx puppeteer@latest install --help` and inspect docs.
+	"puppeteer": {"xvfb", "libasound2", "libatk1.0-0", "libc6", "libcairo2", "libcups2", "libdbus-1-3", "libexpat1", "libfontconfig1", "libgbm1", "libgcc1", "libgdk-pixbuf-2.0-0", "libglib2.0-0", "libgtk-3-0", "libnspr4", "libpango-1.0-0", "libpangocairo-1.0-0", "libstdc++6", "libx11-6", "libx11-xcb1", "libxcb1", "libxcomposite1", "libxcursor1", "libxdamage1", "libxext6", "libxfixes3", "libxi6", "libxrandr2", "libxrender1", "libxss1", "libxtst6", "ca-certificates", "fonts-liberation", "libnss3", "lsb-release", "xdg-utils", "wget"},
+}
+
+// Keep this aligned with Playwright's Chromium deps in nativeDeps.ts:
+// https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/registry/nativeDeps.ts
+// Keep these explicit because --with-deps installs them in the builder, not the runtime image.
+var nodePlaywrightRuntimeDependencies = []string{
+	"libasound2",
+	"libatk-bridge2.0-0",
+	"libatk1.0-0",
+	"libatspi2.0-0",
+	"libcairo2",
+	"libcups2",
+	"libdbus-1-3",
+	"libdrm2",
+	"libgbm1",
+	"libglib2.0-0",
+	"libnspr4",
+	"libnss3",
+	"libpango-1.0-0",
+	"libx11-6",
+	"libxcb1",
+	"libxcomposite1",
+	"libxdamage1",
+	"libxext6",
+	"libxfixes3",
+	"libxkbcommon0",
+	"libxrandr2",
+}
 
 var (
 	// bunCommandRegex matches "bun" or "bunx" as a command (not part of another word)
@@ -33,8 +66,6 @@ var (
 	// PackageManifestFiles is the precedence order Railpack searches for a Node
 	// package manifest. package.json wins if both are present; package.json5 is
 	// supported because pnpm reads it natively (https://pnpm.io/package_json).
-	// Railpack's App.ReadJSON pipes through hujson, which accepts comments and
-	// trailing commas — the common subset of JSON5 used in real manifests.
 	PackageManifestFiles = []string{"package.json", "package.json5"}
 )
 
@@ -66,7 +97,7 @@ func (p *NodeProvider) Initialize(ctx *generate.GenerateContext) error {
 	}
 	p.packageJson = packageJson
 
-	p.packageManager = p.getPackageManager(ctx.App)
+	p.packageManager = p.getPackageManager(ctx)
 
 	workspace, err := NewWorkspace(ctx.App)
 	if err != nil {
@@ -95,6 +126,11 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	}
 
 	isSPA := p.isSPA(ctx)
+	if !isSPA && !ctx.Env.IsConfigVariableTruthy("NO_SPA") && p.hasCustomStartCommand(ctx) {
+		// it's easy for a user to trip over this wire and not understand that it would impact SPA deployment since using the start script
+		// is somewhat if a railpack-convention, so let's make it clear to them.
+		ctx.Logger.LogInfo("Custom start command detected, skipping Caddy start")
+	}
 
 	miseStep := ctx.GetMiseStepBuilder()
 	p.InstallMisePackages(ctx, miseStep)
@@ -114,6 +150,23 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	build.AddInput(plan.NewStepLayer(install.Name()))
 	p.Build(ctx, build)
 
+	// note the best place for it, but it avoids having to worry about side effects in the framework helper functions
+	if p.usesTanstackStartFallback() {
+		if p.usesTanstackNitro(ctx) {
+			ctx.Logger.LogInfo("No start script found; using the Nitro server at .output/server/index.mjs")
+			ctx.Logger.LogSuggestion(
+				"Add a start script to make the server command explicit",
+				"https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro",
+			)
+		} else {
+			ctx.Logger.LogInfo("No start script found; using srvx as production server")
+			ctx.Logger.LogSuggestion(
+				"Set up Nitro for production Node deploys",
+				"https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro",
+			)
+		}
+	}
+
 	// Deploy
 	ctx.Deploy.StartCmd = p.GetStartCommand(ctx)
 	maps.Copy(ctx.Deploy.Variables, p.GetNodeEnvVars(ctx))
@@ -123,6 +176,8 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 		err := p.DeploySPA(ctx, build)
 		return err
 	}
+
+	p.configureSvelteKit(ctx, build)
 
 	// All the files we need to include in the deploy
 	buildIncludeDirs := []string{"/root/.cache", "."}
@@ -138,9 +193,29 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 	}
 
 	runtimeAptPackages := []string{}
+
 	if p.usesPuppeteer() {
-		ctx.Logger.LogInfo("Installing puppeteer dependencies")
-		runtimeAptPackages = append(runtimeAptPackages, "xvfb", "gconf-service", "libasound2", "libatk1.0-0", "libc6", "libcairo2", "libcups2", "libdbus-1-3", "libexpat1", "libfontconfig1", "libgbm1", "libgcc1", "libgconf-2-4", "libgdk-pixbuf2.0-0", "libglib2.0-0", "libgtk-3-0", "libnspr4", "libpango-1.0-0", "libpangocairo-1.0-0", "libstdc++6", "libx11-6", "libx11-xcb1", "libxcb1", "libxcomposite1", "libxcursor1", "libxdamage1", "libxext6", "libxfixes3", "libxi6", "libxrandr2", "libxrender1", "libxss1", "libxtst6", "ca-certificates", "fonts-liberation", "libappindicator1", "libnss3", "lsb-release", "xdg-utils", "wget")
+		ctx.Logger.LogInfo("Installing puppeteer packages")
+		runtimeAptPackages = append(runtimeAptPackages, nodeRuntimeDepRequirements["puppeteer"]...)
+	}
+
+	usesPlaywright := p.usesProductionPlaywright()
+	installPlaywright := ctx.Env.IsConfigVariableTruthy(PLAYWRIGHT_INSTALL_VAR)
+
+	// Automatic browser installation caused issues for an existing user, so keep this opt-in.
+	if usesPlaywright && !installPlaywright {
+		ctx.Logger.LogSuggestion(
+			"Set `RAILPACK_NODE_PLAYWRIGHT_INSTALL=1` to install Playwright browsers",
+			"/languages/node#playwright",
+		)
+	}
+
+	if installPlaywright {
+		ctx.Logger.LogInfo("Installing playwright packages and headless browser")
+		runtimeAptPackages = append(runtimeAptPackages, nodePlaywrightRuntimeDependencies...)
+		// --only-shell installs the smaller Chromium headless shell, which is
+		// more appropriate for server environments than full Chromium.
+		install.AddCommand(plan.NewExecCommand(p.packageManager.ExecCommand("playwright install --only-shell")))
 	}
 
 	nodeModulesLayer := plan.NewStepLayer(build.Name(), plan.Filter{
@@ -177,8 +252,11 @@ func (p *NodeProvider) StartCommandHelp() string {
 		"2. A \"main\" field in your package.json pointing to your entry file:\n" +
 		"   \"main\": \"src/server.js\"\n\n" +
 		"3. An index.js or index.ts file in your project root\n\n" +
+		"4. An Nx workspace with a Next.js app (nx.json + next)\n\n" +
 		"If you have a static site, you can set the RAILPACK_SPA_OUTPUT_DIR environment variable\n" +
-		"containing the directory of your built static files."
+		"containing the directory of your built static files.\n\n" +
+		"For multi-app Nx workspaces, set RAILPACK_NX_APP to select which app to deploy.\n\n" +
+		"For more information, see the Node.js production deployment guide: https://railway.app/docs/deploy/node"
 }
 
 func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
@@ -191,23 +269,41 @@ func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	} else if p.isNuxt() {
 		// Default Nuxt start command
 		return "node .output/server/index.mjs"
+	} else if start := p.getTanstackStartCommand(ctx); start != "" {
+		return start
+	} else if start := p.getSvelteKitStartCommand(); start != "" {
+		return start
+	} else if pkg, _, ok := p.resolveNxDeployPackage(ctx); ok {
+		// Prefer next start from the app dir so prune does not require the nx CLI at runtime
+		if p.isNextAppPackage(pkg, ctx) {
+			return nxNextStartCommand(pkg)
+		}
 	}
 
 	return ""
 }
 
 func (p *NodeProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
-	build.AddInput(ctx.NewLocalLayer())
+	build.AddInput(plan.NewLocalLayer())
 
-	_, ok := p.packageJson.Scripts["build"]
-	if ok {
+	if p.packageJson.HasScript("build") {
 		build.AddCommands([]plan.Command{
 			plan.NewExecCommand(p.packageManager.RunCmd("build")),
 		})
 
 		if p.isNext() {
+			// TODO I don't love how we are adding runtime config vars in `build`
 			build.AddVariables(map[string]string{"NEXT_TELEMETRY_DISABLED": "1"})
 		}
+	} else if _, projectName, ok := p.resolveNxDeployPackage(ctx); ok {
+		// TODO this `resolveNxDeployPackage` logic feels messy, we should refactor this a bit
+		ctx.Logger.LogInfo("Using Nx app %s", projectName)
+
+		// Nx infers targets from plugins; root package.json often has no build script
+		build.AddCommands([]plan.Command{
+			plan.NewExecCommand(nxBuildCommand(projectName)),
+		})
+		build.AddVariables(map[string]string{"NEXT_TELEMETRY_DISABLED": "1"})
 	}
 
 	p.addCachesToBuildStep(ctx, build)
@@ -237,10 +333,12 @@ func (p *NodeProvider) addCachesToBuildStep(ctx *generate.GenerateContext, build
 	build.AddCache(ctx.Caches.AddCache("node-modules", NODE_MODULES_CACHE))
 
 	p.addFrameworkCaches(ctx, build, "next", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
-		if pkg.PackageJson.HasScript("build") {
-			return strings.Contains(pkg.PackageJson.Scripts["build"], "next build")
+		// Script-based Next apps (including monorepo packages with explicit next build)
+		if pkg.PackageJson.BuildScriptContains("next build") {
+			return true
 		}
-		return false
+		// Nx and similar toolchains infer targets; detect via next dep / next.config
+		return p.isNextAppPackage(pkg, ctx)
 	}, ".next/cache")
 
 	p.addFrameworkCaches(ctx, build, "remix", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
@@ -249,6 +347,10 @@ func (p *NodeProvider) addCachesToBuildStep(ctx *generate.GenerateContext, build
 
 	p.addFrameworkCaches(ctx, build, "vite", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
 		return p.isVitePackage(pkg, ctx)
+	}, "node_modules/.vite")
+
+	p.addFrameworkCaches(ctx, build, "tanstack-start", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+		return p.isTanstackStartPackage(pkg)
 	}, "node_modules/.vite")
 
 	p.addFrameworkCaches(ctx, build, "astro", func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
@@ -267,6 +369,10 @@ func (p *NodeProvider) shouldPrune(ctx *generate.GenerateContext) bool {
 func (p *NodeProvider) PruneNodeDeps(ctx *generate.GenerateContext, prune *generate.CommandStepBuilder) {
 	ctx.Logger.LogInfo("Pruning node dependencies")
 	prune.Variables["NPM_CONFIG_PRODUCTION"] = "true"
+	if p.packageManager == PackageManagerBun {
+		// Keep symlinks project-local in node_modules across container build layers
+		prune.Variables["BUN_INSTALL_GLOBAL_STORE"] = "0"
+	}
 	prune.Secrets = []string{}
 	p.packageManager.PruneDeps(ctx, prune)
 }
@@ -309,31 +415,35 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 	p.packageManager.installDependencies(ctx, p.workspace, install, p.usesCorepack())
 }
 
-// resolve node version selection which is used both for node runtime *and* when bun is used but node is required for
-// build or runtime.
+// resolve node version from package.json or ENV (takes precedence over mise or railpack defaults)
 func (p *NodeProvider) applyNodeVersionResolution(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder, nodeToolRef resolver.PackageRef) {
-	if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
-		miseStep.Version(nodeToolRef, envVersion, varName)
-	}
+	// the order here is very important: we want to the package.json-defined node version to win out in most cases
+	// however, ENV-level config should always win which is why we check that ENV right after this block
 
 	if p.packageJson != nil && p.packageJson.Engines != nil && p.packageJson.Engines["node"] != "" {
 		miseStep.Version(nodeToolRef, p.packageJson.Engines["node"], "package.json > engines > node")
 	}
+
+	if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
+		miseStep.Version(nodeToolRef, envVersion, varName)
+	}
+}
+
+// assumes that bun is the primary runtime and determines if node is needed as well
+func (p *NodeProvider) needsNodeForBunInstall() bool {
+	// Many packages assume that Node is available. There's not a great way to detect if a package expects Node to be
+	// available so we just check if any packages exist in a package JSON and then install Node in that scenario
+	// TODO this is an extremely limited case, but we create the harness for it here so we can improve it in the future
+	if p.packageJson == nil {
+		return true
+	}
+
+	return len(p.packageJson.Dependencies) > 0 || len(p.packageJson.DevDependencies) > 0 || p.packageJson.hasLocalDependency()
 }
 
 func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	requiresNode := p.requiresNode(ctx)
 	misePackages := []string{}
-
-	if requiresNode {
-		node := miseStep.Default("node", DEFAULT_NODE_VERSION)
-		misePackages = append(misePackages, "node")
-
-		// libatomic1 is required for Node.js v25+
-		ctx.Deploy.AddAptPackages([]string{"libatomic1"})
-
-		p.applyNodeVersionResolution(ctx, miseStep, node)
-	}
 
 	if p.requiresBun(ctx) {
 		// there isn't a bun provider, it's mixed into the node provider
@@ -348,23 +458,21 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			miseStep.Version(bun, envVersion, varName)
 		}
 
-		// .bun-version is a community convention for specifying the Bun version.
-		// It is not officially supported by Bun itself, but is recognized by version managers like mise.
-		if bunVersionFile, err := ctx.App.ReadFile(".bun-version"); err == nil {
-			miseStep.Version(bun, string(bunVersionFile), ".bun-version")
+		// Bun projects without declared dependencies don't need node-gyp during install, so we can omit Node entirely.
+		if !requiresNode && p.needsNodeForBunInstall() {
+			requiresNode = true
 		}
+	}
 
-		// If we don't need node in the final image, we still want to include it for the install steps
-		// since many packages need node-gyp to install native modules
-		if !requiresNode && ctx.Config.Packages["node"] == "" {
-			node := miseStep.Default("node", DEFAULT_NODE_VERSION)
-			misePackages = append(misePackages, "node")
+	// most, but not all, node project configurations result in node being installed
+	// for instance, if bun is used without any package.json, node is not installed
+	if requiresNode {
+		node := miseStep.Default("node", DEFAULT_NODE_VERSION)
+		misePackages = append(misePackages, "node")
+		p.applyNodeVersionResolution(ctx, miseStep, node)
 
-			p.applyNodeVersionResolution(ctx, miseStep, node)
-
-			// libatomic1 is required for Node.js v25+
-			ctx.Deploy.AddAptPackages([]string{"libatomic1"})
-		}
+		// libatomic1 is required for Node.js v25+, but it's easier and harmless to install it anytime node is required
+		ctx.Deploy.AddAptPackages([]string{"libatomic1"})
 	}
 
 	p.packageManager.GetPackageManagerPackages(ctx, p.packageJson, miseStep)
@@ -381,6 +489,7 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		miseStep.AddMiseSetting("node.corepack", true)
 	}
 
+	// IMPORTANT because of mise support for idiomatic version files, this can easily override ENV-specified node versions
 	if len(misePackages) > 0 {
 		miseStep.UseMiseVersions(ctx, misePackages)
 	}
@@ -392,13 +501,21 @@ func (p *NodeProvider) GetNodeEnvVars(ctx *generate.GenerateContext) map[string]
 		"NPM_CONFIG_PRODUCTION":      "false",
 		"NPM_CONFIG_UPDATE_NOTIFIER": "false",
 		"NPM_CONFIG_FUND":            "false",
-		"CI":                         "true",
+		// https://docs.npmjs.com/cli/using-npm/config#fetch-retries
+		"NPM_CONFIG_FETCH_RETRIES": "5",
+		"CI":                       "true",
 	}
 
 	if p.packageManager == PackageManagerYarn1 {
 		envVars["YARN_PRODUCTION"] = "false"
 	}
 
+	if p.packageManager == PackageManagerBun {
+		// Keep symlinks project-local in node_modules across container build layers
+		envVars["BUN_INSTALL_GLOBAL_STORE"] = "0"
+	}
+
+	// TODO why are we special-casing astro here? Smells like a misunderstanding of how astro works...
 	if p.isAstro(ctx) && !p.isAstroSPA(ctx) {
 		maps.Copy(envVars, p.getAstroEnvVars())
 	}
@@ -410,13 +527,52 @@ func (p *NodeProvider) hasDependency(dependency string) bool {
 	return p.packageJson.hasDependency(dependency)
 }
 
-// if 'packageManager' field exists in package.json, then assume corepack unless using bun
+// Use Corepack for package managers that are not installed directly through mise.
 func (p *NodeProvider) usesCorepack() bool {
-	return p.packageJson != nil && p.packageJson.PackageManager != nil && p.packageManager != PackageManagerBun
+	return p.packageJson != nil &&
+		p.packageJson.PackageManager != nil &&
+		p.packageManager != PackageManagerBun &&
+		p.packageManager != PackageManagerPnpm
 }
 
 func (p *NodeProvider) usesPuppeteer() bool {
 	return p.workspace.HasDependency("puppeteer")
+}
+
+func (p *NodeProvider) usesProductionPlaywright() bool {
+	return p.workspace.HasProductionDependency("playwright")
+}
+
+// Mise already parsed package.json (devEngines / packageManager). Use that when it names exactly one manager.
+func packageManagerFromIdiomaticMise(ctx *generate.GenerateContext) (PackageManager, bool) {
+	versions, err := ctx.GetMiseStepBuilder().GetMisePackageVersions(ctx)
+	if err != nil {
+		ctx.Logger.LogWarn("Failed to get package versions from mise: %s", err.Error())
+		return "", false
+	}
+
+	var found []string
+	for _, name := range []string{"pnpm", "yarn", "bun", "npm"} {
+		if pkg := versions[name]; pkg != nil && pkg.Source == "idiomatic-version-file" {
+			found = append(found, name)
+		}
+	}
+	if len(found) != 1 {
+		return "", false
+	}
+
+	switch found[0] {
+	case "pnpm":
+		return PackageManagerPnpm, true
+	case "npm":
+		return PackageManagerNpm, true
+	case "bun":
+		return PackageManagerBun, true
+	case "yarn":
+		return parseYarnPackageManager(versions["yarn"].Version), true
+	default:
+		return "", false
+	}
 }
 
 // determine the major version of yarn from a version string. These major versions are installed and managed quite
@@ -430,7 +586,9 @@ func parseYarnPackageManager(pmVersion string) PackageManager {
 	return PackageManagerYarnBerry
 }
 
-func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
+func (p *NodeProvider) getPackageManager(ctx *generate.GenerateContext) PackageManager {
+	app := ctx.App
+
 	// Check packageManager field first
 	if packageJson, err := p.GetPackageJson(app); err == nil && packageJson.PackageManager != nil {
 		pmName, pmVersion := packageJson.GetPackageManagerInfo()
@@ -448,6 +606,10 @@ func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
 		} else {
 			log.Warnf("Unknown package manager `%s` specified in package.json, defaulting to npm", pmName)
 		}
+	}
+
+	if pm, ok := packageManagerFromIdiomaticMise(ctx); ok {
+		return pm
 	}
 
 	// Fall back to file-based detection
@@ -475,7 +637,15 @@ func (p *NodeProvider) getPackageManager(app *app.App) PackageManager {
 		}
 	}
 
-	log.Info("No package manager inferred, using npm default")
+	if app.HasFile("package-lock.json") {
+		ctx.Logger.LogWarn("package-lock.json detected, assuming npm")
+	} else {
+		ctx.Logger.LogWarn("No node package manager detected, using npm")
+	}
+	ctx.Logger.LogSuggestion(
+		"Specify the package manager and version explicitly",
+		"/config/recommendations#specify-the-node-package-manager-version",
+	)
 
 	return PackageManagerNpm
 }
@@ -506,11 +676,7 @@ func (p *NodeProvider) getScripts(packageJson *PackageJson, name string) string 
 }
 
 func (p *NodeProvider) SetNodeMetadata(ctx *generate.GenerateContext) {
-	runtime := p.getRuntime(ctx)
-	spaFramework := p.getSPAFramework(ctx)
-
-	ctx.Metadata.Set("nodeRuntime", runtime)
-	ctx.Metadata.Set("nodeSPAFramework", spaFramework)
+	ctx.Metadata.Set("nodeRuntime", p.getRuntime(ctx))
 	ctx.Metadata.Set("nodePackageManager", string(p.packageManager))
 	ctx.Metadata.SetBool("nodeIsSPA", p.isSPA(ctx))
 	ctx.Metadata.SetBool("nodeUsesCorepack", p.usesCorepack())
@@ -537,16 +703,19 @@ func (p *NodeProvider) getPackagesWithFramework(ctx *generate.GenerateContext, f
 }
 
 func (p *NodeProvider) requiresNode(ctx *generate.GenerateContext) bool {
+	// TODO why does package.json == nil trigger node?
 	if p.packageManager != PackageManagerBun || p.packageJson == nil || p.packageJson.PackageManager != nil {
 		return true
 	}
 
+	// TODO this check is incredibly naive
 	for _, script := range p.packageJson.Scripts {
 		if strings.Contains(script, "node") {
 			return true
 		}
 	}
 
+	// TODO why are these frameworks special cases?
 	return p.isAstro(ctx) || p.isVite(ctx)
 }
 
@@ -584,18 +753,12 @@ func (p *NodeProvider) requiresBun(ctx *generate.GenerateContext) bool {
 
 func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 	if p.isSPA(ctx) {
-		if p.isAstro(ctx) {
-			return "astro"
-		} else if p.isVite(ctx) {
-			return "vite"
-		} else if p.isCRA(ctx) {
-			return "cra"
-		} else if p.isAngular(ctx) {
-			return "angular"
-		} else if p.isReactRouter(ctx) {
-			return "react-router"
+		// note that some of the frameworks can be both SPA and traditional node, and they are checked in the same way
+		if name := p.getSPAName(ctx); name != "" {
+			return name
 		}
 
+		// this can occur if a user forces SPA mode via config
 		return "static"
 	} else if p.isNext() {
 		return "next"
@@ -609,6 +772,8 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 		return "vite"
 	} else if p.isReactRouter(ctx) {
 		return "react-router"
+	} else if p.isAstro(ctx) {
+		return "astro"
 	} else if p.packageManager == PackageManagerBun {
 		return "bun"
 	}
@@ -626,8 +791,4 @@ func (p *NodeProvider) isNuxt() bool {
 
 func (p *NodeProvider) isRemix() bool {
 	return p.hasDependency("@remix-run/node")
-}
-
-func (p *NodeProvider) isTanstackStart() bool {
-	return p.hasDependency("@tanstack/react-start")
 }

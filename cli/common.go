@@ -8,12 +8,31 @@ import (
 	"github.com/railwayapp/railpack/core"
 	a "github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/config"
+	"github.com/railwayapp/railpack/core/mise"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/internal/utils"
 	"github.com/urfave/cli/v3"
 )
 
 var Version string // This will be set by main
+
+const (
+	// the command failed for a reason that will not change on a retry
+	ExitCodeFailure = 1
+
+	// EX_TEMPFAIL: the command failed for a transient reason (e.g. a network error
+	// downloading mise) and is worth retrying. Platforms that run Railpack in a
+	// build pipeline key their retry logic on this.
+	ExitCodeTransient = 75
+)
+
+func exitCodeForError(err error) int {
+	if mise.IsTemporary(err) {
+		return ExitCodeTransient
+	}
+
+	return ExitCodeFailure
+}
 
 func commonPlanFlags() []cli.Flag {
 	return []cli.Flag{
@@ -49,7 +68,7 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 	directory := cmd.Args().First()
 
 	if directory == "" {
-		return nil, nil, nil, cli.Exit("directory argument is required", 1)
+		return nil, nil, nil, cli.Exit("directory argument is required", ExitCodeFailure)
 	}
 
 	app, err := a.NewApp(directory)
@@ -83,7 +102,10 @@ func GenerateBuildResultForCommand(cmd *cli.Command) (*core.BuildResult, *a.App,
 		ErrorMissingStartCommand: cmd.Bool("error-missing-start"),
 	}
 
-	buildResult := core.GenerateBuildPlan(app, env, generateOptions)
+	buildResult, err := core.GenerateBuildPlan(app, env, generateOptions)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
 	return buildResult, app, env, nil
 }

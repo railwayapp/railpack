@@ -1,0 +1,15 @@
+{
+	auto_https off
+}
+
+:{$PORT:80} {
+	handle /custom-caddy-response {
+		respond "hello-from-custom-caddyfile"
+	}
+
+	handle {
+		root * {{.DIST_DIR}}
+		file_server
+		try_files {path} {path}.html {path}/index.html{{if .IndexFallback}} /index.html{{end}}
+	}
+}

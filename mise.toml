@@ -12,19 +12,29 @@ bun = "1.3"
 [settings]
 experimental = true
 # without this, navigating into various examples/ will output an annoying warning
-idiomatic_version_file_enable_tools = ["python", "node", "ruby"]
+idiomatic_version_file_enable_tools = ["python", "node", "ruby", "bun"]
 # ensures homebrew go, etc doesn't take precedence
 activate_aggressive = true
 env_shell_expand = true
+locked = true
 
 [tasks.setup]
 run = [
   "mise install",
-  "mise run run-buildkit-container || true",
+  "mise run run-buildkit-container",
 ]
 
 [tasks.run-buildkit-container]
-run = "docker run --rm --privileged -d --name buildkit -e BUILDKIT_DEBUG=1 moby/buildkit:latest"
+# Mount buildkitd.toml so host.docker.internal:7890 (local registry) is reachable over HTTP
+# `.template` ensures it isn't picked up by the mise task management
+run = '''
+docker rm -f buildkit 2>/dev/null || true
+docker run --rm --privileged -d --name buildkit \
+  -e BUILDKIT_DEBUG=1 \
+  -v "$PWD/.mise/tasks/buildkitd.toml.template:/etc/buildkit/buildkitd.toml:ro" \
+  moby/buildkit:latest \
+  --config /etc/buildkit/buildkitd.toml
+'''
 
 [tasks.cli]
 run = "go run cmd/cli/main.go"
@@ -45,14 +55,25 @@ run = [
   "docker exec buildkit buildctl prune",
   "rm -f *.test",
   # stop all railpack containers
-  "docker stop $(docker ps -q --filter name=railpack)",
+  "docker ps -q --filter name=railpack | xargs -r docker stop",
   # remove all images created by the integration test suite
   "docker images 'railpack-test-*' -q | xargs -r docker rmi -f",
   # remove images created by manually running `railpack build` against a project example
   "find examples -name test.json -exec dirname {} \\; | xargs -n 1 basename | xargs -r -I {} docker rmi -f {}",
+  # remove railpack builder/frontend base images (ghcr + local tags)
+  "docker images 'ghcr.io/railwayapp/railpack-builder' -q | xargs -r docker rmi -f",
+  "docker images 'ghcr.io/railwayapp/railpack-frontend' -q | xargs -r docker rmi -f",
+  "docker images 'railpack-builder' -q | xargs -r docker rmi -f",
+  "docker images 'railpack-frontend' -q | xargs -r docker rmi -f",
+  # tear down Apple container machine + host Docker TCP proxy used by mise-linux-shell
+  "mise run mise-linux-shell --stop",
   "go clean -testcache",
   "mise cache clear",
   "rm -rf /tmp/railpack",
+  # delete all top-level node_modules in examples/, this can cause state issues which cause snapshots to generate incorrectly
+  "find examples -maxdepth 2 -type d -name node_modules -exec rm -rf {} +",
+  # same goes for python .venv folders
+  "find examples -maxdepth 2 -type d -name .venv -exec rm -rf {} +",
 ]
 
 # if a example folder does not have a test.json file, it will be skipped
@@ -70,7 +91,9 @@ run = "go test -short ./..."
 run = "go test -v ./integration_tests"
 
 # run integration test for the example directory you're currently in
+# optionally filter to a single test.json case: `mise run test-integration-cwd -- 1`
 [tasks.test-integration-cwd]
+usage = 'arg "[case]" help="Optional 0-based test.json case index (e.g. 1 for the second case)"'
 run = """
 if [[ ! "$MISE_ORIGINAL_CWD" =~ /examples/ ]]; then
   echo "Error: must be run from within an examples/ directory"
@@ -78,8 +101,14 @@ if [[ ! "$MISE_ORIGINAL_CWD" =~ /examples/ ]]; then
 fi
 
 example_name=$(basename "$MISE_ORIGINAL_CWD")
-echo "Running integration test for: $example_name"
-go test -v ./integration_tests -run "TestExamplesIntegration/$example_name"
+run_filter="TestExamplesIntegration/$example_name"
+if [[ -n "${usage_case:-}" ]]; then
+  run_filter="$run_filter/case-${usage_case}$"
+  echo "Running integration test for: $example_name (case $usage_case)"
+else
+  echo "Running integration test for: $example_name"
+fi
+go test -v ./integration_tests -run "$run_filter"
 """
 
 [tasks.run-example-cwd]
@@ -98,7 +127,7 @@ echo "Running example: 'docker run $example_name'"
 [tasks.test-update-snapshots]
 run = [
   "UPDATE_SNAPS=true go test -short ./...",
-  "find . -type d -name '__snapshots__' -exec git add -- {} +",
+  "find . -path ./tmp -prune -o -type d -name '__snapshots__' -exec git add -- {} +",
   "echo 'test: update snapshots' > $(git rev-parse --git-dir)/COMMIT_EDITMSG",
 ]
 
@@ -140,21 +169,3 @@ run = ["bun install --frozen-lockfile", "bun run build"]
 dir = "docs"
 run = ["bun install", "bun run dev"]
 
-[tasks.image-builder-build]
-run = "docker build --build-arg MISE_VERSION=$RAILPACK_MISE_VERSION -f images/debian/build/Dockerfile -t railpack-builder:local ."
-
-[tasks.mise-builder-shell]
-description = "Shell into the railpack-builder image"
-usage = 'flag "--local" help="Build and use railpack-builder:local instead of the ghcr image"'
-run = '''
-if [ "${usage_local:-false}" = "true" ]; then
-  mise run image-builder-build
-  image="railpack-builder:local"
-else
-  image="ghcr.io/unkeyed/railpack-builder:mise-$RAILPACK_MISE_VERSION"
-fi
-exec docker run -it --rm "$image" bash
-'''
-
-[tasks.image-runtime-build]
-run = "docker build -f images/debian/runtime/Dockerfile -t railpack-runtime:local ."

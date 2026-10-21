@@ -4,5 +4,14 @@
     // Puppeteer's bundled Chromium does not ship ARM64 binaries; skip on ARM runners
     // See https://github.com/puppeteer/puppeteer/issues/7740
     "skipArch": ["arm64"]
+  },
+  {
+    "expectedOutput": "Hello from puppeteer",
+    "platform": "linux/amd64",
+    // Custom packages must retain Railpack's required Puppeteer dependencies.
+    // Skip on ARM: GHA arm runners emulate amd64 via QEMU, and Chrome never
+    // finishes launching within the container timeout. Covered on native amd64 CI.
+    "skipArch": ["arm64"],
+    "configFile": "railpack.custom-apt-packages.json"
   }
 ]

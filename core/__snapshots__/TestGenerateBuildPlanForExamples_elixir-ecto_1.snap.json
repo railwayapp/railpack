@@ -1,7 +1,7 @@
 {
  "deploy": {
   "base": {
-   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.6.1"
+   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.10.3"
   },
   "inputs": [
    {
@@ -19,7 +19,8 @@
    "LC_ALL": "en_US.UTF-8",
    "MIX_ARCHIVES": "/root/.mix/archives",
    "MIX_ENV": "prod",
-   "MIX_HOME": "/root/.mix"
+   "MIX_HOME": "/root/.mix",
+   "RAILPACK_VERSION": "dev"
   }
  },
  "steps": [
@@ -43,7 +44,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.10.3"
     }
    ],
    "name": "packages:mise",

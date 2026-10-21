@@ -32,7 +32,7 @@ The provider determines the root directory in this order:
 You can configure static file serving with a `Staticfile` in your project
 root:
 
-```yaml
+```yaml title="Staticfile"
 # root directory to serve
 root: dist
 

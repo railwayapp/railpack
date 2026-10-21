@@ -1,0 +1,2 @@
+# keep node_modules to test the inversion rules
+!node_modules

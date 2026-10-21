@@ -1,0 +1,10 @@
+[
+  {
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 80,
+      "expectedOutput": "Next.js static export"
+    }
+  }
+]

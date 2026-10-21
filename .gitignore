@@ -52,3 +52,9 @@ examples/*/size.json
 examples/**/.claude
 .gemini/
 .antigravitycli/
+
+### Mise ###
+# Local mise env selector (enables mise.dev.toml tools when present)
+.miserc.toml
+# Local env overrides (DOCKER_HOST, etc.)
+mise.local.toml

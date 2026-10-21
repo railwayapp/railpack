@@ -18,7 +18,7 @@ Environment variables can be set in two ways:
 
 1. Through step variables:
 
-```json
+```json title="railpack.json"
 {
   "steps": {
     "install": {
@@ -32,7 +32,7 @@ Environment variables can be set in two ways:
 
 2. Through the deploy section for runtime variables:
 
-```json
+```json title="railpack.json"
 {
   "deploy": {
     "variables": {
@@ -41,6 +41,21 @@ Environment variables can be set in two ways:
   }
 }
 ```
+
+## Runtime Railpack Variables
+
+The final image includes runtime metadata that is not available to build
+commands:
+
+| Name                | Description                              |
+| :------------------ | :--------------------------------------- |
+| `RAILPACK_VERSION`  | Version used to produce the image        |
+| `RAILPACK_BUILT_AT` | Build time as Unix epoch seconds (UTC)   |
+
+Runtime metadata is added after generating the build graph, so it does not
+invalidate application layer caches. The `RAILPACK_` namespace in the final
+image is reserved for generated runtime metadata, which takes precedence over
+deploy variables with the same name.
 
 ## Secrets
 
@@ -60,7 +75,7 @@ You can explicitly specify which secrets a step should have access to using the
 `secrets` array. An empty array indicates that no secrets should be available to
 that step.
 
-```json
+```json title="railpack.json"
 {
   "secrets": ["DATABASE_URL", "API_KEY", "STRIPE_LIVE_KEY"],
   "steps": {
@@ -74,7 +89,7 @@ that step.
 You can also use `"*"` in a step's secrets array to indicate that it should have
 access to all secrets defined in the build plan:
 
-```json
+```json title="railpack.json"
 {
   "secrets": ["DATABASE_URL", "API_KEY", "STRIPE_LIVE_KEY"],
   "steps": {
@@ -92,8 +107,8 @@ flag. The names of these variables will be added to the build plan as secrets.
 
 #### CLI Build
 
-If building with [the CLI](/guides/building-with-cli), Railpack will check that
-all the secrets defined in the build plan have variables.
+If building with [the CLI](/reference/cli/#build), Railpack will check that all
+the secrets defined in the build plan have variables.
 
 ```bash
 railpack build --env STRIPE_LIVE_KEY=sk_live_asdf
@@ -101,7 +116,7 @@ railpack build --env STRIPE_LIVE_KEY=sk_live_asdf
 
 #### Custom Frontend
 
-If building with a [custom frontend](/guides/building-with-custom-frontends),
+If building with the [BuildKit frontend](/platforms/buildkit-frontend),
 you should still provide the secrets when generating the plan with `--env`. This
 adds the secrets to the build plan. You then need to pass the secrets to Docker
 or BuildKit with the `--secret` flag.
@@ -120,7 +135,7 @@ STRIPE_LIVE_KEY=asdf123456789 docker build \
 ```
 
 For more information about running Railpack in production, see the [Running
-Railpack in Production](/guides/running-railpack-in-production) guide.
+Railpack in Production](/platforms/running-railpack-in-production) guide.
 
 ### Layer Invalidation
 

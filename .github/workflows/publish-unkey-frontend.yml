@@ -1,0 +1,106 @@
+# Publishes the Unkey build of the Railpack BuildKit frontend image. Run it
+# manually from the Actions tab. It does not push git tags, so release.yml
+# (which publishes railwayapp images on v* tags) is never triggered.
+name: Publish Unkey frontend image
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to build (branch, tag, or commit SHA)
+        required: true
+        default: main
+      tag:
+        description: Image tag, for example v0.40.1-unkey.1
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  MISE_ENV: ci
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/railpack-frontend
+
+jobs:
+  publish-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-unkey\.[0-9]+$ ]]; then
+            echo "::error::tag must look like v0.40.1-unkey.1, got '$TAG'"
+            exit 1
+          fi
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      - uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1
+        with:
+          version: ${{ env.DOCKER_VERSION }}
+      - uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3
+      - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5
+      - uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Unkey pins this image by tag and expects plans to match the frontend
+      # version, so a published tag must never change.
+      - name: Refuse to overwrite an existing tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          if docker buildx imagetools inspect "$IMAGE_NAME:$TAG" > /dev/null 2>&1; then
+            echo "::error::$IMAGE_NAME:$TAG already exists"
+            exit 1
+          fi
+
+      - name: Build binaries
+        id: build
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          version="${TAG#v}"
+          commit="$(git rev-parse HEAD)"
+          date="$(git log -1 --format=%cI)"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          for arch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build \
+              -ldflags "-s -w -X main.version=$version -X main.commit=$commit -X main.date=$date" \
+              -o "dist/linux_$arch/railpack" ./cmd/cli
+          done
+
+          # Same layout as images/alpine/frontend/goreleaser.Dockerfile. Unkey
+          # copies /railpack out of this image to run `railpack prepare`.
+          cat > dist/Dockerfile <<'EOF'
+          FROM alpine
+          ARG TARGETARCH
+          COPY linux_${TARGETARCH}/railpack /railpack
+          ENTRYPOINT ["/railpack", "frontend"]
+          EOF
+
+      - name: Build and push image
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf
+        with:
+          context: dist
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:${{ inputs.tag }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ steps.build.outputs.commit }}
+            org.opencontainers.image.version=${{ inputs.tag }}
+
+      - name: Verify published image
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          docker buildx imagetools inspect "$IMAGE_NAME:$TAG"
+          docker run --rm --entrypoint /railpack "$IMAGE_NAME:$TAG" --version | tee version.txt
+          grep -q "${TAG#v}" version.txt

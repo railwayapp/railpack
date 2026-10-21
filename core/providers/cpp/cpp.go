@@ -43,7 +43,7 @@ func (p *CppProvider) Plan(ctx *generate.GenerateContext) error {
 
 	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewStepLayer(packages.Name()))
-	build.AddInput(ctx.NewLocalLayer())
+	build.AddInput(plan.NewLocalLayer())
 	build.AddCommand(plan.NewExecCommand("mkdir /build"))
 	buildsystem.Build(build)
 

@@ -3,16 +3,10 @@
 {
  "deploy": {
   "base": {
-   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.6.1"
+   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.10.3"
   },
   "inputs": [
    {
-    "step": "build"
-   },
-   {
-    "include": [
-     "."
-    ],
     "step": "build"
    }
   ],
@@ -28,7 +22,7 @@
  "steps": [
   {
    "assets": {
-    "generated-mise-toml": "[tools]\n  go = \"1.23.5\"\n  node = \"20.18.2\"\n  python = \"3.13.1\"\n\n[settings]\n  idiomatic_version_file_enable_tools = [\"python\", \"node\", \"ruby\", \"elixir\", \"go\", \"java\", \"yarn\"]\n  minimum_release_age = \"14d\"\n  paranoid = true\n  trusted_config_paths = [\"/app\"]\n  [settings.node]\n    verify = false\n"
+    "generated-mise-toml": "[tools]\n  go = \"1.23.5\"\n  node = \"20.18.2\"\n  python = \"3.13.1\"\n\n[settings]\n  idiomatic_version_file_enable_tools = [\"python\", \"node\", \"ruby\", \"elixir\", \"go\", \"java\", \"yarn\", \"pnpm\", \"bun\", \"deno\", \"dotnet\", \"rust\"]\n  minimum_release_age = \"14d\"\n  paranoid = true\n  trusted_config_paths = [\"/app\"]\n  [settings.node]\n    verify = false\n"
    },
    "commands": [
     {
@@ -46,7 +40,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.10.3"
     }
    ],
    "name": "packages:mise",

@@ -1,0 +1,8 @@
+[
+  {
+    "envs": {
+      "RAILPACK_PYTHON_PLAYWRIGHT_INSTALL": "1"
+    },
+    "expectedOutput": "Hello from playwright"
+  }
+]

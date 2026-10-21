@@ -15,7 +15,7 @@
  },
  "deploy": {
   "base": {
-   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.6.1"
+   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.10.3"
   },
   "inputs": [
    {
@@ -30,6 +30,7 @@
   ],
   "startCommand": "./bin/rocket",
   "variables": {
+   "RAILPACK_VERSION": "dev",
    "ROCKET_ADDRESS": "0.0.0.0"
   }
  },
@@ -58,7 +59,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.10.3"
     }
    ],
    "name": "packages:mise",

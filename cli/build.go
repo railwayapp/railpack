@@ -51,6 +51,19 @@ var BuildCommand = &cli.Command{
 			Name:  "cache-key",
 			Usage: "Unique id to prefix to cache keys",
 		},
+		&cli.StringSliceFlag{
+			Name:  "cache-from",
+			Usage: "External cache sources",
+		},
+		&cli.StringSliceFlag{
+			Name:  "cache-to",
+			Usage: "Cache export destinations",
+		},
+		&cli.BoolFlag{
+			Name:  "no-cache",
+			Usage: "Do not use cache when building",
+			Value: false,
+		},
 		&cli.BoolFlag{
 			Name:   "dump-llb",
 			Hidden: true,
@@ -60,7 +73,7 @@ var BuildCommand = &cli.Command{
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		buildResult, app, env, err := GenerateBuildResultForCommand(cmd)
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(err, exitCodeForError(err))
 		}
 
 		if !cmd.Bool("dump-llb") {
@@ -68,26 +81,28 @@ var BuildCommand = &cli.Command{
 		}
 
 		if !buildResult.Success {
-			os.Exit(1)
+			os.Exit(ExitCodeFailure)
 			return nil
 		}
 
 		if cmd.Bool("show-plan") && !cmd.Bool("dump-llb") {
 			planMap, err := addSchemaToPlanMap(buildResult.Plan)
 			if err != nil {
-				return cli.Exit(err, 1)
+				return cli.Exit(err, ExitCodeFailure)
 			}
 
 			serializedPlan, err := json.MarshalIndent(planMap, "", "  ")
 			if err != nil {
-				return cli.Exit(err, 1)
+				return cli.Exit(err, ExitCodeFailure)
 			}
-			fmt.Println(string(serializedPlan))
+
+			core.PrettyPrintSectionHeader(os.Stdout, "Generated railpack-plan.json")
+			core.PrettyPrintJSON(os.Stdout, serializedPlan)
 		}
 
 		err = validateSecrets(buildResult.Plan, env)
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(err, ExitCodeFailure)
 		}
 
 		secretsHash := getSecretsHash(env)
@@ -99,23 +114,28 @@ var BuildCommand = &cli.Command{
 			OutputDir:    cmd.String("output"),
 			ProgressMode: cmd.String("progress"),
 			CacheKey:     cmd.String("cache-key"),
-			SecretsHash:  secretsHash,
-			Secrets:      env.Variables,
-			Platform:     platformStr,
-			GitHubToken:  os.Getenv("GITHUB_TOKEN"),
+			// StringSlice to support multiple cache-from / cache-to entries, same shape as docker buildx
+			ImportCache: cmd.StringSlice("cache-from"),
+			ExportCache: cmd.StringSlice("cache-to"),
+			SecretsHash: secretsHash,
+			Secrets:     env.Variables,
+			Platform:    platformStr,
+			GitHubToken: os.Getenv("GITHUB_TOKEN"),
+			NoCache:     cmd.Bool("no-cache"),
 		})
 		if err != nil {
-			return cli.Exit(err, 1)
+			return cli.Exit(err, ExitCodeFailure)
 		}
 
 		return nil
 	},
 }
 
+// make sure all secrets referenced in the build plan are present in the environment
 func validateSecrets(plan *plan.BuildPlan, env *app.Environment) error {
 	for _, secret := range plan.Secrets {
 		if _, ok := env.Variables[secret]; !ok {
-			return fmt.Errorf("missing environment variable: %s. Please set the envvar with --env %s=%s", secret, secret, "...")
+			return fmt.Errorf("missing environment variable: %s. Please set using --env %s=%s", secret, secret, "...")
 		}
 	}
 	return nil

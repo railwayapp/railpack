@@ -33,9 +33,9 @@ jobs:
           echo "examples=$examples" >> "$GITHUB_OUTPUT"
 
   # integration tests plan, build, and run example projects. Running the example projects requires both the builder and runtime
-  # images. If the mise version changes, we want to ensure there are no breakages, which means we need to use fresh images
-  # that contain the pinned mise version. The code below builds these requires images, and pushes them to a production
-  # registry so they can be used properly in the matrix jobs (which all run in an isolated runner, so they must reference a remote registry).
+  # images. If the mise version in version.txt is newer than origin/main, we build fresh images containing the pinned mise version.
+  # The code below builds these required images, and pushes them to a production registry so they can be used properly in the
+  # matrix jobs (which all run in an isolated runner, so they must reference a remote registry).
   # These images are *not* tagged with `latest` or other more generic tags used in the release workflow. Additionally,
   # since railpack uses a image tag from the mise version compiled into the binary, pushes to the registry should not cause
   # any production impacts.
@@ -48,9 +48,12 @@ jobs:
       # duplicated on the release.yml job, keep these in sync
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          # we need the full history to determine if the mise version has changed
+          # we need the full history to compare the mise version against origin/main
           fetch-depth: 0
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      - uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1
+        with:
+          version: ${{ env.DOCKER_VERSION }}
       - uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3
       - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5
       - uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee
@@ -60,19 +63,19 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # since railpack binary is pinned to a specific image version, we only want to build and push the images if the mise version
-      # has changed. This isn't *exactly* true, as there could be a world where we want to build a new image with a changed
-      # dockerfile, but this should be extremely rare and could be a breaking change since it would mutate the state in an existing image.
+      # in version.txt is newer than what is on origin/main. We intentionally only trigger on upgrades to avoid mutating images
+      # that may already be referenced by released railpack binaries or production usage.
       # Mise versions are updated frequently, which means we'll pick up any updates to the `FROM` images regularly, so we shouldn't need
-      # to update these images outside of a mise version update. Updating images in the test workflow when a mise version has
-      # NOT changes is dangerous: it could cause changes in an image that is used by existing production code.
+      # to update these images outside of a mise version update.
       - name: Check for image input changes
         id: mise_version
         run: |
-          if ! git diff --quiet origin/main HEAD -- core/mise/version.txt; then
+          if mise run mise-version-newer-than-main; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
+
 
       - name: Build Builder Image
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf
@@ -99,6 +102,61 @@ jobs:
           cache-from: type=registry,ref=${{ env.PRODUCTION_BUILDER_IMAGE_REF }}
           cache-to: type=inline
 
+  frontend-e2e:
+    name: Frontend E2E
+    needs: [build-images, find-examples]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+
+      # GitHub's preinstalled Docker 28 uses the classic image store, which disables
+      # Railpack's merge operations. Fresh Docker 29+ daemons use containerd by default.
+      - uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1
+        with:
+          version: ${{ env.DOCKER_VERSION }}
+
+      - name: Build Frontend Image
+        run: |
+          docker build \
+            -f images/alpine/frontend/Dockerfile \
+            -t railpack-frontend:local \
+            .
+
+      - name: Select Random Example
+        id: example
+        env:
+          EXAMPLES: ${{ needs.find-examples.outputs.examples }}
+        run: |
+          example=$(jq -r '.[]' <<< "$EXAMPLES" | shuf -n 1)
+          echo "Selected $example"
+          echo "name=$example" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Build Plan
+        env:
+          EXAMPLE: ${{ steps.example.outputs.name }}
+        run: |
+          mkdir -p tmp/frontend-plan
+          mise run cli plan "examples/$EXAMPLE" --out tmp/frontend-plan/railpack-plan.json
+
+      - name: Build Example With Frontend Image
+        env:
+          EXAMPLE: ${{ steps.example.outputs.name }}
+        run: |
+          # This smoke test does not load test.json, so provide non-sensitive values
+          # for every plan-declared secret through BuildKit's secret mount interface.
+          secret_args=()
+          while IFS= read -r secret; do
+            export "$secret=frontend-e2e"
+            secret_args+=(--secret "id=$secret,env=$secret")
+          done < <(jq -r '.secrets[]?' tmp/frontend-plan/railpack-plan.json)
+
+          docker buildx build \
+            --build-arg BUILDKIT_SYNTAX="railpack-frontend:local" \
+            "${secret_args[@]}" \
+            -f tmp/frontend-plan/railpack-plan.json \
+            "examples/$EXAMPLE"
+
   test:
     needs: [build-images, find-examples]
     runs-on: ubuntu-latest
@@ -111,6 +169,9 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      - uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1
+        with:
+          version: ${{ env.DOCKER_VERSION }}
 
       - name: Cache Go modules and build artifacts
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
@@ -131,9 +192,10 @@ jobs:
           registry: ${{ env.PRODUCTION_CONTAINER_REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
+      
+      # intermittent docker pull failures kept failing the entire pipeline, which is why we are retrying
       - name: Start BuildKit
-        run: mise run run-buildkit-container
+        run: mise run retry --attempts 5 -- mise run run-buildkit-container
 
       # required for integration tests that use multiple platforms
       - name: Set up QEMU
@@ -174,6 +236,9 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151
+      - uses: docker/setup-docker-action@77e84dbf09b47d1e29270283c22f16145aa85ca1
+        with:
+          version: ${{ env.DOCKER_VERSION }}
 
       - name: Cache Go modules and build artifacts
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae

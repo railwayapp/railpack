@@ -2,8 +2,8 @@
   {
     "expectedOutput": [
       "Node v: v22.2.0",
-      "PNPM version (from user agent): v9.",
-      "PNPM version (from CLI): v9.",
+      "PNPM version (from user agent): v10.4.1",
+      "PNPM version (from CLI): v10.4.1",
       "Hello from pnpm workspaces",
       "pkg-a loaded",
       "pkg-b loaded",

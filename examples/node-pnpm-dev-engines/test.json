@@ -1,0 +1,11 @@
+[
+  {
+    // No packageManager field or lockfile: the package manager is declared
+    // only in object-form devEngines.packageManager (#678 / #616).
+    "expectedOutput": [
+      "Node.js version: v22.11.0",
+      "PNPM version (from user agent): v10.4.1",
+      "PNPM version (from CLI): v10.4.1"
+    ]
+  }
+]

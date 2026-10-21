@@ -1,7 +1,7 @@
 {
  "deploy": {
   "base": {
-   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.6.1"
+   "image": "ghcr.io/unkeyed/railpack-runtime:mise-2026.10.3"
   },
   "inputs": [
    {
@@ -22,7 +22,10 @@
     "step": "build"
    }
   ],
-  "startCommand": "deno run --allow-all main.ts"
+  "startCommand": "deno run --allow-all main.ts",
+  "variables": {
+   "RAILPACK_VERSION": "dev"
+  }
  },
  "steps": [
   {
@@ -32,6 +35,10 @@
    "commands": [
     {
      "path": "/mise/shims"
+    },
+    {
+     "dest": ".deno-version",
+     "src": ".deno-version"
     },
     {
      "customName": "create mise config",
@@ -45,7 +52,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.6.1"
+     "image": "ghcr.io/unkeyed/railpack-builder:mise-2026.10.3"
     }
    ],
    "name": "packages:mise",

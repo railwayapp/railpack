@@ -2,10 +2,11 @@ package node
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
+	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
+	"github.com/railwayapp/railpack/core/plan"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -18,6 +19,8 @@ func TestNode(t *testing.T) {
 		packageManager PackageManager
 		nodeVersion    string
 		pnpmVersion    string
+		pnpmSource     string
+		envVars        map[string]string
 	}{
 		{
 			name:           "npm",
@@ -39,6 +42,7 @@ func TestNode(t *testing.T) {
 			packageManager: PackageManagerPnpm,
 			nodeVersion:    "20",
 			pnpmVersion:    "10.4.1",
+			pnpmSource:     "idiomatic-version-file",
 		},
 		{
 			name:           "pnpm",
@@ -46,6 +50,8 @@ func TestNode(t *testing.T) {
 			detected:       true,
 			packageManager: PackageManagerPnpm,
 			nodeVersion:    "22.2.0",
+			pnpmVersion:    "10.4.1",
+			pnpmSource:     "idiomatic-version-file",
 		},
 		{
 			name:           "pnpm from mise.toml",
@@ -62,6 +68,23 @@ func TestNode(t *testing.T) {
 			packageManager: PackageManagerNpm,
 		},
 		{
+			name:           "railpack node version overrides engines",
+			path:           "../../../examples/node-version-precedence",
+			detected:       true,
+			packageManager: PackageManagerNpm,
+			nodeVersion:    "22",
+			envVars:        map[string]string{"RAILPACK_NODE_VERSION": "22"},
+		},
+		{
+			name:           "pnpm from devEngines via mise idiomatic files",
+			path:           "../../../examples/node-pnpm-dev-engines",
+			detected:       true,
+			packageManager: PackageManagerPnpm,
+			nodeVersion:    "22.11.0",
+			pnpmVersion:    "10.4.1",
+			pnpmSource:     "idiomatic-version-file",
+		},
+		{
 			name:     "golang",
 			path:     "../../../examples/go-mod",
 			detected: false,
@@ -71,6 +94,10 @@ func TestNode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := testingUtils.CreateGenerateContext(t, tt.path)
+			if tt.envVars != nil {
+				envVars := tt.envVars
+				ctx.Env = app.NewEnvironment(&envVars)
+			}
 			provider := NodeProvider{}
 			detected, err := provider.Detect(ctx)
 			require.NoError(t, err)
@@ -80,8 +107,7 @@ func TestNode(t *testing.T) {
 				err = provider.Initialize(ctx)
 				require.NoError(t, err)
 
-				packageManager := provider.getPackageManager(ctx.App)
-				require.Equal(t, tt.packageManager, packageManager)
+				require.Equal(t, tt.packageManager, provider.packageManager)
 
 				err = provider.Plan(ctx)
 				require.NoError(t, err)
@@ -104,6 +130,9 @@ func TestNode(t *testing.T) {
 					} else {
 						require.Equal(t, tt.pnpmVersion, pnpmVersion.Version)
 					}
+					if tt.pnpmSource != "" {
+						require.Equal(t, tt.pnpmSource, pnpmVersion.Source)
+					}
 				}
 			}
 		})
@@ -117,8 +146,13 @@ func TestNodeCorepack(t *testing.T) {
 		wantCorepack bool
 	}{
 		{
-			name:         "corepack project",
+			name:         "pnpm project",
 			path:         "../../../examples/node-corepack",
+			wantCorepack: false,
+		},
+		{
+			name:         "yarn project",
+			path:         "../../../examples/node-yarn-3",
 			wantCorepack: true,
 		},
 		{
@@ -162,6 +196,11 @@ func TestGetNextApps(t *testing.T) {
 			path: "../../../examples/node-turborepo",
 			want: []string{"apps/web"},
 		},
+		{
+			name: "nx next workspace",
+			path: "../../../examples/node-nx-next",
+			want: []string{"apps/web"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -172,10 +211,10 @@ func TestGetNextApps(t *testing.T) {
 			require.NoError(t, err)
 
 			nextPackages, err := provider.getPackagesWithFramework(ctx, func(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
-				if pkg.PackageJson.HasScript("build") {
-					return strings.Contains(pkg.PackageJson.Scripts["build"], "next build")
+				if pkg.PackageJson.BuildScriptContains("next build") {
+					return true
 				}
-				return false
+				return provider.isNextAppPackage(pkg, ctx)
 			})
 			require.NoError(t, err)
 
@@ -297,4 +336,60 @@ func TestUsesPnpmBinSubdir(t *testing.T) {
 			require.Equal(t, tt.want, usesPnpmBinSubdir(tt.version))
 		})
 	}
+}
+
+func TestPlaywrightInstallationIsOptIn(t *testing.T) {
+	t.Run("does not install by default", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-playwright")
+		provider := NodeProvider{}
+
+		require.NoError(t, provider.Initialize(ctx))
+		require.NoError(t, provider.Plan(ctx))
+		require.False(t, nodeStepHasExecCommand(
+			ctx,
+			"install",
+			"pnpm exec playwright install --only-shell",
+		))
+		require.NotContains(t, ctx.Deploy.AptPackages, "libnss3")
+	})
+
+	t.Run("installs when enabled", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-playwright")
+		ctx.Env.Variables["RAILPACK_NODE_PLAYWRIGHT_INSTALL"] = "1"
+		provider := NodeProvider{}
+
+		require.NoError(t, provider.Initialize(ctx))
+		require.NoError(t, provider.Plan(ctx))
+		require.True(t, nodeStepHasExecCommand(
+			ctx,
+			"install",
+			"pnpm exec playwright install --only-shell",
+		))
+		require.Contains(t, ctx.Deploy.AptPackages, "libnss3")
+	})
+}
+
+func nodeStepHasExecCommand(
+	ctx *generate.GenerateContext,
+	stepName string,
+	command string,
+) bool {
+	step := ctx.GetStepByName(stepName)
+	if step == nil {
+		return false
+	}
+
+	commandStep, ok := (*step).(*generate.CommandStepBuilder)
+	if !ok {
+		return false
+	}
+
+	for _, candidate := range commandStep.Commands {
+		execCommand, ok := candidate.(plan.ExecCommand)
+		if ok && execCommand.Cmd == command {
+			return true
+		}
+	}
+
+	return false
 }

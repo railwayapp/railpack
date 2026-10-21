@@ -99,7 +99,7 @@ func (p *DotnetProvider) Install(ctx *generate.GenerateContext, install *generat
 
 func (p *DotnetProvider) Build(ctx *generate.GenerateContext, build *generate.CommandStepBuilder) {
 	maps.Copy(build.Variables, p.GetEnvVars(ctx))
-	build.AddInput(ctx.NewLocalLayer())
+	build.AddInput(plan.NewLocalLayer())
 	build.AddCommands([]plan.Command{
 		plan.NewExecCommand("dotnet publish --no-restore -c Release -o out"),
 	})

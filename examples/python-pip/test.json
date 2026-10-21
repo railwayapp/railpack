@@ -1,5 +1,6 @@
 [
   {
+    // fastapi-ipware is a git+https dep so this example exercises git-based installs
     "expectedOutput": [
       "Python version: 3.11.11",
       "Hello from pip"

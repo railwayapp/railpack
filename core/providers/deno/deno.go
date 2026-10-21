@@ -3,6 +3,7 @@ package deno
 import (
 	"fmt"
 
+	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 )
@@ -11,10 +12,6 @@ const (
 	DEFAULT_DENO_VERSION = "2"
 	ROOT_CACHE           = "/root/.cache"
 )
-
-type DenoJson struct {
-	Tasks map[string]string `json:"tasks"`
-}
 
 type DenoProvider struct {
 	mainFile string
@@ -30,7 +27,7 @@ func (p *DenoProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 }
 
 func (p *DenoProvider) Initialize(ctx *generate.GenerateContext) error {
-	p.mainFile = p.findMainFile(ctx)
+	p.mainFile = findMainFile(ctx.App)
 	return nil
 }
 
@@ -75,7 +72,7 @@ func (p *DenoProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 		return
 	}
 
-	build.AddInput(ctx.NewLocalLayer())
+	build.AddInput(plan.NewLocalLayer())
 	build.AddCommands([]plan.Command{
 		plan.NewExecCommand(fmt.Sprintf("deno cache %s", p.mainFile)),
 	})
@@ -84,29 +81,23 @@ func (p *DenoProvider) Build(ctx *generate.GenerateContext, build *generate.Comm
 func (p *DenoProvider) InstallMisePackages(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder) {
 	deno := miseStep.Default("deno", DEFAULT_DENO_VERSION)
 
+	miseStep.UseMiseVersions(ctx, []string{"deno"})
+
 	if envVersion, varName := ctx.Env.GetConfigVariable("DENO_VERSION"); envVersion != "" {
 		miseStep.Version(deno, envVersion, varName)
 	}
-
-	miseStep.UseMiseVersions(ctx, []string{"deno"})
 }
 
-func (p *DenoProvider) findMainFile(ctx *generate.GenerateContext) string {
-	files := []string{"main.ts", "main.js", "main.mjs", "main.mts"}
-	for _, file := range files {
-		if ctx.App.HasFile(file) {
-			return file
-		}
+// selects the entrypoint for a Deno app. It prefers an explicit main.* file in the
+// project root, falling back to the first .ts/.js/.mjs/.mts file found anywhere in the tree.
+func findMainFile(app *app.App) string {
+	if name, _, _ := app.ReadFirstFileOf("main.ts", "main.js", "main.mjs", "main.mts"); name != "" {
+		return name
 	}
 
-	files, err := ctx.App.FindFiles("**/*.{ts,js,mjs,mts}")
-	if err != nil {
+	matches, err := app.FindFiles("**/*.{ts,js,mjs,mts}")
+	if err != nil || len(matches) == 0 {
 		return ""
 	}
-
-	if len(files) == 0 {
-		return ""
-	}
-
-	return files[0]
+	return matches[0]
 }

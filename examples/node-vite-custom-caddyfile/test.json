@@ -1,0 +1,21 @@
+[
+  {
+    "expectedOutput": "using config from file"
+  },
+  {
+    "httpCheck": {
+      "internalPort": 80,
+      "path": "/",
+      "expected": 200,
+      "expectedOutput": "Railpack Node SPA"
+    }
+  },
+  {
+    "httpCheck": {
+      "internalPort": 80,
+      "path": "/custom-caddy-response",
+      "expected": 200,
+      "expectedOutput": "hello-from-custom-caddyfile"
+    }
+  }
+]
