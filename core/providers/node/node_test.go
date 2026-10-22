@@ -1,10 +1,12 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
@@ -137,6 +139,20 @@ func TestNode(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNodeConfigOverridesEnvironment(t *testing.T) {
+	ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-pnpm-dev-engines")
+	ctx.Env.SetVariable("RAILPACK_NODE_VERSION", "22")
+	fileConfig := config.EmptyConfig()
+	require.NoError(t, json.Unmarshal([]byte(`{"node":{"version":"24","packageManager":"bun"}}`), fileConfig))
+	ctx.Config = config.Merge(ctx.Config, fileConfig)
+
+	provider := NodeProvider{}
+	require.NoError(t, provider.Initialize(ctx))
+	require.Equal(t, PackageManagerBun, provider.packageManager)
+	require.NoError(t, provider.Plan(ctx))
+	require.Equal(t, "24", ctx.Resolver.Get("node").Version)
 }
 
 func TestNodeCorepack(t *testing.T) {

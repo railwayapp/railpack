@@ -86,6 +86,7 @@ type NodeProvider struct {
 	packageJson    *PackageJson
 	packageManager PackageManager
 	workspace      *Workspace
+	config         NodeConfig
 }
 
 func (p *NodeProvider) Name() string {
@@ -93,6 +94,15 @@ func (p *NodeProvider) Name() string {
 }
 
 func (p *NodeProvider) Initialize(ctx *generate.GenerateContext) error {
+	if err := ctx.Config.ProviderConfig(p.Name(), &p.config); err != nil {
+		return fmt.Errorf("invalid node provider config: %w", err)
+	}
+	switch p.config.PackageManager {
+	case "", "npm", "pnpm", "yarn", "bun":
+	default:
+		return fmt.Errorf("invalid node packageManager %q", p.config.PackageManager)
+	}
+
 	packageJson, err := p.GetPackageJson(ctx.App)
 	if err != nil {
 		return err
@@ -496,6 +506,9 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	if len(misePackages) > 0 {
 		miseStep.UseMiseVersions(ctx, misePackages)
 	}
+	if p.config.Version != "" && requiresNode {
+		miseStep.Version(resolver.PackageRef{Name: "node"}, p.config.Version, "railpack.json > node > version")
+	}
 }
 
 func (p *NodeProvider) GetNodeEnvVars(ctx *generate.GenerateContext) map[string]string {
@@ -591,6 +604,25 @@ func parseYarnPackageManager(pmVersion string) PackageManager {
 
 func (p *NodeProvider) getPackageManager(ctx *generate.GenerateContext) PackageManager {
 	app := ctx.App
+
+	if p.config.PackageManager != "" {
+		switch p.config.PackageManager {
+		case "npm":
+			return PackageManagerNpm
+		case "pnpm":
+			return PackageManagerPnpm
+		case "bun":
+			return PackageManagerBun
+		case "yarn":
+			if p.packageJson != nil && p.packageJson.PackageManager != nil {
+				_, version := p.packageJson.GetPackageManagerInfo()
+				if version != "" {
+					return parseYarnPackageManager(version)
+				}
+			}
+			return PackageManagerYarnBerry
+		}
+	}
 
 	// Check packageManager field first
 	if packageJson, err := p.GetPackageJson(app); err == nil && packageJson.PackageManager != nil {
