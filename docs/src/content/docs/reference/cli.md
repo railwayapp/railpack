@@ -44,6 +44,10 @@ railpack build [options] DIRECTORY
 | `--cache-to`   | Cache export destinations (same as docker buildx). e.g. type=registry,ref=...  |         |
 | `--no-cache`   | Do not use cache when building (boolean flag)                                  | `false` |
 
+When `--platform` is omitted, the build uses `DOCKER_DEFAULT_PLATFORM` if that
+variable is set, then a Linux platform for the CPU of the machine running the
+command (`linux/amd64` or `linux/arm64`).
+
 `railpack build` uses credentials from your Docker CLI config
 (`$DOCKER_CONFIG`, default `~/.docker/config.json`) so BuildKit can pull or
 push private registry images. Log in with `docker login` first if needed.

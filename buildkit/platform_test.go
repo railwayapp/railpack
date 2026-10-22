@@ -143,3 +143,14 @@ func TestValidatePlatformWithMultiplePlatforms(t *testing.T) {
 		})
 	}
 }
+
+func TestParsePlatformWithDefaults_RespectsDockerDefaultPlatform(t *testing.T) {
+	t.Setenv("DOCKER_DEFAULT_PLATFORM", "linux/amd64")
+	got, err := ParsePlatformWithDefaults("")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.OS != "linux" || got.Architecture != "amd64" {
+		t.Errorf("got %v, want linux/amd64", got)
+	}
+}
