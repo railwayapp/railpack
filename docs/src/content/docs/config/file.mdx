@@ -29,6 +29,32 @@ A config file looks something like this:
 }
 ```
 
+## Provider Configuration
+
+Provider-specific options can be set in an object named after the provider. For
+example, Node.js projects can select the runtime version and package manager:
+
+```json title="railpack.json"
+{
+  "node": {
+    "version": "24",
+    "packageManager": "bun"
+  },
+  "python": {
+    "version": "3.13"
+  },
+  "java": {
+    "version": "21",
+    "gradleVersion": "8"
+  }
+}
+```
+
+Provider options take precedence over their corresponding `RAILPACK_*`
+environment variables. The config schema provides autocomplete for supported
+provider options. The `node`, `python`, and `java` options shown above are
+currently supported.
+
 ## Layers
 
 Layers define where a step gets its filesystem from. They can be:
