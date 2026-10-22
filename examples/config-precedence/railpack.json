@@ -1,0 +1,7 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "provider": "shell",
+  "deploy": {
+    "startCommand": "echo from-file"
+  }
+}
