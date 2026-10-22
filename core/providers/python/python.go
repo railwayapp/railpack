@@ -50,13 +50,18 @@ var pythonPlaywrightRuntimeDependencies = []string{
 
 var pythonDefaultExcludePatterns = []string{".venv", "venv"}
 
-type PythonProvider struct{}
+type PythonProvider struct {
+	config PythonConfig
+}
 
 func (p *PythonProvider) Name() string {
 	return "python"
 }
 
 func (p *PythonProvider) Initialize(ctx *generate.GenerateContext) error {
+	if err := ctx.Config.ProviderConfig(p.Name(), &p.config); err != nil {
+		return fmt.Errorf("invalid python provider config: %w", err)
+	}
 	return nil
 }
 
@@ -418,6 +423,9 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 
 	if envVersion, varName := ctx.Env.GetConfigVariable("PYTHON_VERSION"); envVersion != "" {
 		miseStep.Version(python, envVersion, varName)
+	}
+	if p.config.Version != "" {
+		miseStep.Version(python, p.config.Version, "railpack.json > python > version")
 	}
 
 	// Disable Python compilation to avoid incompatibility issues with some packages

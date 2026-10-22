@@ -1,14 +1,30 @@
 package python
 
 import (
+	"encoding/json"
 	"testing"
 
+	"github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/stretchr/testify/require"
 
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 )
+
+func TestPythonConfigOverridesEnvironment(t *testing.T) {
+	ctx := testingUtils.CreateGenerateContext(t, "../../../examples/python-uv")
+	ctx.Env = app.NewEnvironment(&map[string]string{"RAILPACK_PYTHON_VERSION": "3.12"})
+	fileConfig := config.EmptyConfig()
+	require.NoError(t, json.Unmarshal([]byte(`{"python":{"version":"3.13"}}`), fileConfig))
+	ctx.Config = config.Merge(ctx.Config, fileConfig)
+
+	provider := PythonProvider{}
+	require.NoError(t, provider.Initialize(ctx))
+	require.NoError(t, provider.Plan(ctx))
+	require.Equal(t, "3.13", ctx.Resolver.Get("python").Version)
+}
 
 func TestDetect(t *testing.T) {
 	tests := []struct {
