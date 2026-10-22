@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/invopop/jsonschema"
 	"github.com/stretchr/testify/require"
 )
 
@@ -112,7 +113,6 @@ func TestMergeConfigSmall(t *testing.T) {
 	if diff := cmp.Diff(expected, *result); diff != "" {
 		t.Errorf("configs mismatch (-want +got):\n%s", diff)
 	}
-
 }
 
 func TestMergeConfig(t *testing.T) {
@@ -305,7 +305,7 @@ func TestMergeConfigStart(t *testing.T) {
 }
 
 func TestGetJsonSchema(t *testing.T) {
-	schema := GetJsonSchema()
+	schema := GetJsonSchema(nil)
 	require.NotEmpty(t, schema)
 
 	require.NotContains(t, schema.Required, "provider")
@@ -331,6 +331,43 @@ func TestGetJsonSchema(t *testing.T) {
 	schemaJson, err := json.MarshalIndent(schema, "", "  ")
 	require.NoError(t, err)
 	require.NotEmpty(t, schemaJson)
+}
+
+func TestProviderConfigRoundTripAndMerge(t *testing.T) {
+	var first, second Config
+	require.NoError(t, json.Unmarshal([]byte(`{
+	"node":{"version":"24",
+	"packageManager":"bun"}
+	
+	}`), &first))
+	require.NoError(t, json.Unmarshal([]byte(`{"node":{"version":"22"}}`), &second))
+
+	merged := Merge(&first, &second)
+	var providerConfig struct {
+		Version        string `json:"version"`
+		PackageManager string `json:"packageManager"`
+	}
+	require.NoError(t, merged.ProviderConfig("node", &providerConfig))
+	require.Equal(t, "22", providerConfig.Version)
+	require.Equal(t, "bun", providerConfig.PackageManager)
+
+	data, err := json.Marshal(merged)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"node":{"version":"22","packageManager":"bun"},"deploy":{}}`, string(data))
+}
+
+func TestGetJsonSchemaIncludesProviderSchemas(t *testing.T) {
+	providerSchema := &jsonschema.Schema{Type: "object", Properties: jsonschema.NewProperties()}
+	providerSchema.Properties.Set("version", &jsonschema.Schema{Type: "string"})
+	schema := GetJsonSchema(map[string]*jsonschema.Schema{
+		"node": providerSchema,
+	})
+
+	providerSchema, ok := schema.Properties.Get("node")
+	require.True(t, ok)
+	versionSchema, ok := providerSchema.Properties.Get("version")
+	require.True(t, ok)
+	require.Equal(t, "string", versionSchema.Type)
 }
 
 func TestConfigExcludeInclude(t *testing.T) {
