@@ -22,6 +22,7 @@ Follow these instructions carefully when writing code:
 - Follow Go conventions and existing patterns in the codebase
 - Prefer early `return`s or `continue`s to `if` nesting
 - Use appropriate error handling with proper error wrapping
+- Document non-obvious literal values and magic strings in code and tests: explain why the value is used and whether it is significant or just a placeholder. Use a named constant when the value carries shared meaning.
 - Do not write comments that are obvious from the code itself; focus on
   explaining why something is done, not what it does
 - Seriously, do not write comments that are obvious from the code itself.

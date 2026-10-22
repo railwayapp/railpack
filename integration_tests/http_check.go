@@ -113,7 +113,7 @@ type HTTPCheck struct {
 // runContainerWithHTTPCheck starts a container from the given image,
 // maps the internalPort to a random host port, and checks the given path returns the expected status code.
 // If networkName is provided, the container will be connected to that network.
-func runContainerWithHTTPCheck(t *testing.T, imageName string, envs map[string]string, hc *HTTPCheck, networkName string) error {
+func runContainerWithHTTPCheck(t *testing.T, imageName string, envs map[string]string, hc *HTTPCheck, networkName string, checkHealth bool) error {
 	if networkName != "" {
 		t.Logf("Using network: %s", networkName)
 	}
@@ -173,6 +173,9 @@ func runContainerWithHTTPCheck(t *testing.T, imageName string, envs map[string]s
 	}
 
 	t.Logf("HTTP check passed (%s => %d)", hc.Path, hc.Expected)
+	if checkHealth {
+		return waitForContainerHealth(containerName)
+	}
 	return nil
 }
 
@@ -229,3 +232,24 @@ func fetchContainerLogs(name string) string {
 }
 
 func stopContainer(name string) { _ = exec.Command("docker", "rm", "-f", name).Run() }
+
+// Exercise the image's own probe as well as the host-side HTTP assertion.
+func waitForContainerHealth(containerName string) error {
+	deadline := time.Now().Add(httpCheckTimeout)
+	for time.Now().Before(deadline) {
+		output, err := exec.Command("docker", "inspect", "--format", "{{if .State.Health}}{{.State.Health.Status}}{{end}}", containerName).CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("inspect container health: %w: %s", err, output)
+		}
+		status := strings.TrimSpace(string(output))
+		if status == "healthy" {
+			return nil
+		}
+		if status == "" {
+			return fmt.Errorf("container %s is missing its configured image healthcheck", containerName)
+		}
+		time.Sleep(httpCheckInterval)
+	}
+	output, _ := exec.Command("docker", "inspect", "--format", "{{json .State.Health}}", containerName).CombinedOutput()
+	return fmt.Errorf("container healthcheck did not become healthy: %s", output)
+}

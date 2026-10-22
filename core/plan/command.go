@@ -152,6 +152,7 @@ func UnmarshalJsonCommand(data []byte) (Command, error) {
 }
 
 func UnmarshalStringCommand(data []byte) (Command, error) {
+	// Config stores the shorthand as a JSON string. Direct callers pass the raw shorthand.
 	var str string
 	if err := json.Unmarshal(data, &str); err != nil {
 		str = strings.Trim(string(data), "\"")

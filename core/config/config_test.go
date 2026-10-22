@@ -304,6 +304,52 @@ func TestMergeConfigStart(t *testing.T) {
 	}
 }
 
+func TestDeployEntrypointAndStartCommand(t *testing.T) {
+	var cfg Config
+	require.NoError(t, json.Unmarshal([]byte(`{"deploy":{"entrypoint":["./entrypoint.sh"],"startCommand":"echo hello-from-cmd"}}`), &cfg))
+	require.Equal(t, []string{"./entrypoint.sh"}, cfg.Deploy.Entrypoint)
+	require.Equal(t, "echo hello-from-cmd", cfg.Deploy.StartCmd)
+}
+
+func TestDeployHealthcheck(t *testing.T) {
+	var cfg Config
+	require.NoError(t, json.Unmarshal([]byte(`{"deploy":{"healthcheck":{"command":"true","interval":"10s"}}}`), &cfg))
+	require.Equal(t, "true", cfg.Deploy.Healthcheck.Command)
+	require.Equal(t, "10s", cfg.Deploy.Healthcheck.Interval)
+	require.Empty(t, cfg.Deploy.Healthcheck.Timeout)
+	require.Zero(t, cfg.Deploy.Healthcheck.Retries)
+}
+
+// Only file config supplies healthchecks today; this covers partial objects passed to the public Merge helper.
+func TestMergeHealthcheckKeepsEarlierRetries(t *testing.T) {
+	config1JSON := `{
+		"deploy": {
+			"healthcheck": {
+				"command": "true",
+				"interval": "10s",
+				"retries": 5
+			}
+		}
+	}`
+	config2JSON := `{
+		"deploy": {
+			"healthcheck": {
+				"timeout": "5s"
+			}
+		}
+	}`
+
+	var config1, config2 Config
+	require.NoError(t, json.Unmarshal([]byte(config1JSON), &config1))
+	require.NoError(t, json.Unmarshal([]byte(config2JSON), &config2))
+
+	result := Merge(&config1, &config2)
+	require.Equal(t, "true", result.Deploy.Healthcheck.Command)
+	require.Equal(t, "10s", result.Deploy.Healthcheck.Interval)
+	require.Equal(t, "5s", result.Deploy.Healthcheck.Timeout)
+	require.Equal(t, 5, result.Deploy.Healthcheck.Retries)
+}
+
 func TestGetJsonSchema(t *testing.T) {
 	schema := GetJsonSchema()
 	require.NotEmpty(t, schema)
@@ -376,4 +422,25 @@ func TestMergeConfigExcludeInclude(t *testing.T) {
 	if diff := cmp.Diff(expected, *result); diff != "" {
 		t.Errorf("configs mismatch (-want +got):\n%s", diff)
 	}
+}
+
+func TestDeployHealthcheckURL(t *testing.T) {
+	var cfg Config
+	require.NoError(t, json.Unmarshal([]byte(`{"deploy":{"healthcheck":{"url":"http://localhost:${PORT}/status","timeout":"3s"}}}`), &cfg))
+	require.Equal(t, "http://localhost:${PORT}/status", cfg.Deploy.Healthcheck.URL)
+	require.Equal(t, "3s", cfg.Deploy.Healthcheck.Timeout)
+	require.Empty(t, cfg.Deploy.Healthcheck.Command)
+	require.Error(t, json.Unmarshal([]byte(`{"deploy":{"healthcheck":"http://localhost/status"}}`), &cfg))
+}
+
+func TestHealthcheckSchemaRequiresExactlyOneProbe(t *testing.T) {
+	schema := GetJsonSchema()
+	deploy, ok := schema.Properties.Get("deploy")
+	require.True(t, ok)
+	healthcheck, ok := deploy.Properties.Get("healthcheck")
+	require.True(t, ok)
+	require.Len(t, healthcheck.OneOf, 2)
+	require.Equal(t, []string{"command"}, healthcheck.OneOf[0].Required)
+	require.Equal(t, []string{"url"}, healthcheck.OneOf[1].Required)
+	require.Equal(t, "object", healthcheck.Type)
 }

@@ -110,6 +110,56 @@ func TestValidateStartCommand(t *testing.T) {
 	})
 }
 
+func TestValidateEntrypoint(t *testing.T) {
+	logger := logger.NewLogger()
+	testApp, err := app.NewApp(".")
+	require.NoError(t, err)
+	options := &ValidatePlanOptions{ErrorMissingStartCommand: true}
+
+	t.Run("entrypoint without a start command", func(t *testing.T) {
+		buildPlan := planWithDeploy(plan.Deploy{Entrypoint: []string{"./server"}})
+		require.True(t, ValidatePlan(buildPlan, testApp, logger, options))
+	})
+
+	t.Run("empty entrypoint", func(t *testing.T) {
+		buildPlan := planWithDeploy(plan.Deploy{Entrypoint: []string{}, StartCmd: "npm start"})
+		require.False(t, ValidatePlan(buildPlan, testApp, logger, options))
+	})
+
+	t.Run("blank entrypoint argument", func(t *testing.T) {
+		buildPlan := planWithDeploy(plan.Deploy{Entrypoint: []string{""}, StartCmd: "npm start"})
+		require.False(t, ValidatePlan(buildPlan, testApp, logger, options))
+	})
+
+}
+
+func TestValidateHealthcheck(t *testing.T) {
+	logger := logger.NewLogger()
+	testApp, err := app.NewApp(".")
+	require.NoError(t, err)
+	options := &ValidatePlanOptions{ErrorMissingStartCommand: true}
+
+	t.Run("healthcheck with an empty command", func(t *testing.T) {
+		buildPlan := planWithDeploy(plan.Deploy{StartCmd: "npm start", Healthcheck: &plan.Healthcheck{}})
+		require.False(t, ValidatePlan(buildPlan, testApp, logger, options))
+	})
+
+	t.Run("healthcheck duration below 1ms", func(t *testing.T) {
+		buildPlan := planWithDeploy(plan.Deploy{StartCmd: "npm start", Healthcheck: &plan.Healthcheck{Command: "true", Interval: "1us"}})
+		require.False(t, ValidatePlan(buildPlan, testApp, logger, options))
+	})
+
+	t.Run("unparseable healthcheck duration", func(t *testing.T) {
+		buildPlan := planWithDeploy(plan.Deploy{StartCmd: "npm start", Healthcheck: &plan.Healthcheck{Command: "true", Timeout: "nope"}})
+		require.False(t, ValidatePlan(buildPlan, testApp, logger, options))
+	})
+
+	t.Run("negative healthcheck retries", func(t *testing.T) {
+		buildPlan := planWithDeploy(plan.Deploy{StartCmd: "npm start", Healthcheck: &plan.Healthcheck{Command: "true", Retries: -1}})
+		require.False(t, ValidatePlan(buildPlan, testApp, logger, options))
+	})
+}
+
 func TestValidateInputs(t *testing.T) {
 	logger := logger.NewLogger()
 
@@ -139,4 +189,18 @@ func TestValidateInputs(t *testing.T) {
 		}
 		require.False(t, validateInputs(inputs, "test", logger))
 	})
+}
+
+// The Node image and build command are structural placeholders; validation never builds or executes them.
+// The build layer with "." supplies a valid deploy input so tests isolate deploy-field validation.
+func planWithDeploy(deploy plan.Deploy) *plan.BuildPlan {
+	buildPlan := plan.NewBuildPlan()
+	buildStep := plan.NewStep("build")
+	buildStep.Commands = []plan.Command{plan.NewExecShellCommand("npm build")}
+	buildStep.Inputs = []plan.Layer{plan.NewImageLayer("node:18")}
+	buildPlan.Steps = append(buildPlan.Steps, *buildStep)
+	deploy.Base = plan.NewImageLayer("node:18")
+	deploy.Inputs = []plan.Layer{plan.NewStepLayer("build", plan.Filter{Include: []string{"."}})}
+	buildPlan.Deploy = deploy
+	return buildPlan
 }

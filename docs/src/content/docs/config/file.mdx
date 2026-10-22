@@ -273,8 +273,8 @@ Executes a shell command during the build (e.g. 'go build' or 'npm install').
 | `cmd`        | The shell command to execute                     |
 | `customName` | Optional custom name to display for this command |
 
-If the command is a string, it is assumed to be an exec command in the format
-`sh -c '<cmd>'`.
+If the command is a string without a prefix, it is assumed to be an exec command in the format
+`sh -c '<cmd>'`. Alternatively, use the `RUN:` prefix (see [String format](#string-format)).
 
 ### Path command
 
@@ -284,6 +284,8 @@ available to all subsequent commands in the build.
 | Field  | Description                                                   |
 | :----- | :------------------------------------------------------------ |
 | `path` | Directory path to add to the global PATH environment variable |
+
+Can also be specified using the `PATH:<path>` shorthand format (see [String format](#string-format)).
 
 ### Copy command
 
@@ -296,6 +298,8 @@ local context.
 | `src`   | Source path to copy from (file or directory)            |
 | `dest`  | Destination path to copy to (will be created if needed) |
 
+Can also be specified using the `COPY:<src> <dest>` shorthand format (see [String format](#string-format)). Copying from another image requires object notation.
+
 ### File command
 
 Creates or modifies a file during the build with optional Unix file permissions.
@@ -307,13 +311,37 @@ Creates or modifies a file during the build with optional Unix file permissions.
 | `mode`       | Optional Unix file permissions mode (e.g. 0644)         |
 | `customName` | Optional custom name to display for this file operation |
 
+Can also be specified using the `FILE:<path> <name>` shorthand format (see [String format](#string-format)). Setting custom file permissions `mode` requires object notation.
+
 ### String format
 
-Commands can also be specified using a string format:
+Commands can also be specified using string shorthand formats instead of object definitions:
 
-- `npm install` - Executes the command
-- `PATH:/usr/local/bin` - Adds to PATH
-- `COPY:src dest` - Copies files
+- `<cmd>` - Executes shell command via `sh -c '<cmd>'` (e.g. `"npm install"`)
+- `RUN:<cmd>` - Executes shell command (e.g. `"RUN:npm run build"`)
+- `PATH:<path>` - Adds directory to the global `PATH` (e.g. `"PATH:/usr/local/bin"`)
+- `COPY:<src> <dest>` - Copies files or directories (e.g. `"COPY:src.txt dst.txt"`)
+- `FILE:<path> <name>` - Creates a file from step assets with the target path and asset name (e.g. `"FILE:/etc/conf config.yaml"`)
+
+:::note
+Shorthand commands with multiple arguments (`COPY` and `FILE`) use whitespace separation. If paths contain spaces, if `COPY` needs to copy from an external `image`, or if `FILE` requires custom file permissions `mode`, use object notation.
+:::
+
+For example:
+
+```json title="railpack.json"
+{
+  "steps": {
+    "build": {
+      "commands": [
+        "COPY:src.txt dst.txt",
+        "PATH:/usr/local/bin",
+        "npm run build"
+      ]
+    }
+  }
+}
+```
 
 ## Deploy
 
@@ -323,10 +351,109 @@ The deploy section configures how the container runs:
 | :------------- | :---------------------------------------------------------------------- |
 | `base`         | The base layer for the deploy step (typically a runtime image)          |
 | `startCommand` | The command to run when the container starts                            |
+| `entrypoint`   | Exec-form container entrypoint. Replaces the default `/bin/bash -c`     |
+| `healthcheck`  | Docker image healthcheck. Set `url` or `command`                    |
 | `variables`    | Environment variables available to the start command                    |
 | `paths`        | Paths to prepend to the $PATH environment variable                      |
 | `inputs`       | List of layers for the deploy step (from steps, images, or local files) |
 | `aptPackages`  | List of Apt packages to install in the final image                      |
+
+### Entrypoint
+
+`entrypoint` is an array of strings. It replaces the default
+`["/bin/bash", "-c"]`. `startCommand`, when set, is still one argument.
+
+`mise exec --` runs the program with tools and `[env]` from `mise.toml`.
+Put the program in `entrypoint` and pass its argument as `startCommand`.
+The final image includes `mise` when the build installs Mise packages or the
+project has a `mise.toml`.
+
+```json title="railpack.json"
+"deploy": {
+  "entrypoint": ["mise", "exec", "--", "node"],
+  "startCommand": "dist/index.js"
+}
+```
+
+To run the inferred start command with tools and environment variables from
+`mise.toml`, use `bash -c` to execute the command string:
+
+```json title="railpack.json"
+"deploy": {
+  "entrypoint": ["mise", "exec", "--", "bash", "-c"]
+}
+```
+
+For example, an inferred start command of `python main.py` runs as
+`mise exec -- bash -c "python main.py"`. Each entrypoint argument must be a
+separate array element. Without `bash -c`, `mise exec --` would treat
+`python main.py` as a single executable name.
+
+When no start command is inferred or configured, put a binary and its arguments
+in `entrypoint` to run it directly:
+
+```json title="railpack.json"
+"deploy": {
+  "entrypoint": ["./server", "--port", "8080"]
+}
+```
+
+`"..."` does not extend this array. An empty array is invalid. A relative path
+is resolved from `/app` and must be executable. The entrypoint process is PID
+1, so a wrapper should `exec` the start command when the app needs signals.
+
+A non-empty entrypoint is enough to start the container. A missing
+`startCommand` is not reported in that case.
+
+### Healthcheck
+
+`healthcheck` is the Docker image healthcheck. The container runtime runs it.
+A hosting platform's HTTP healthcheck path, such as Railway's `healthcheckPath`,
+is configured on the service.
+
+Set exactly one of `url` or `command`. The healthcheck must be an object.
+
+Use `url` for an HTTP or HTTPS GET probe. Only 2xx responses are healthy;
+redirects, connection errors, and certificate errors fail the check. HTTPS
+verifies the server certificate. `${PORT}` expands when the container runs;
+it must be set when used. Templated URLs are validated by curl after runtime
+expansion. Other shell expressions in the URL are treated literally. If you omit the port,
+HTTP uses port 80 and HTTPS uses port 443.
+
+```json title="railpack.json"
+"deploy": {
+  "healthcheck": {
+    "url": "http://localhost:${PORT}/status"
+  }
+}
+```
+
+Curl is installed automatically for URL probes in the generated runtime. A custom
+`deploy.base` must supply curl and bash. The configured `timeout` limits the probe;
+responses are discarded and requests bypass proxy environment variables.
+
+Unset timing fields use the same defaults as a Dockerfile `HEALTHCHECK`:
+
+| Field           | Default |
+| :-------------- | :------ |
+| `interval`      | `30s`   |
+| `timeout`       | `30s`   |
+| `startPeriod`   | `0s`    |
+| `startInterval` | `5s`    |
+| `retries`       | `3`     |
+
+`command` is one shell string. Exit code 0 is healthy. The runtime runs it with
+`/bin/bash -c` because `/bin/sh` on the runtime image is dash. A custom
+`deploy.base` must include bash. Durations are Go duration strings such as
+`30s` or `1m`. A non-zero duration must be at least `1ms`.
+
+```json title="railpack.json"
+"deploy": {
+  "healthcheck": {
+    "command": "curl -f http://127.0.0.1:${PORT}/health || exit 1"
+  }
+}
+```
 
 ### Locale
 
