@@ -1,12 +1,14 @@
 package buildkit
 
 import (
+	"os"
+
 	"github.com/containerd/platforms"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 // ParsePlatformWithDefaults parses a platform string and returns the corresponding specs.Platform.
-// If the input is empty, it defaults to a Linux platform that matches the host architecture.
+// If the input is empty, it uses DOCKER_DEFAULT_PLATFORM when set, then a Linux platform that matches the host architecture.
 //
 // This function handles the common case where we need to map host platforms to container platforms.
 // We cannot use platforms.DefaultSpec() directly because it returns the host platform
@@ -15,11 +17,14 @@ import (
 // to provide optimal performance while ensuring compatibility with container runtimes.
 //
 // Examples:
-//   - "" -> linux/amd64 (on Intel hosts) or linux/arm64/v8 (on ARM hosts)
+//   - "" -> $DOCKER_DEFAULT_PLATFORM, or linux/amd64 (on Intel hosts) or linux/arm64/v8 (on ARM hosts)
 //   - "linux/amd64" -> linux/amd64
 //   - "linux/arm64" -> linux/arm64
 //   - "linux/arm64/v8" -> linux/arm64/v8
 func ParsePlatformWithDefaults(platformStr string) (specs.Platform, error) {
+	if platformStr == "" {
+		platformStr = os.Getenv("DOCKER_DEFAULT_PLATFORM")
+	}
 	if platformStr == "" {
 		// Default to Linux platform for container builds
 		// We cannot use platforms.DefaultSpec() directly because it returns the host platform
