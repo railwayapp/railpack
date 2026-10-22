@@ -23,6 +23,10 @@ func (p *JavaProvider) setGradleVersion(ctx *generate.GenerateContext) {
 	if envVersion, envName := ctx.Env.GetConfigVariable("GRADLE_VERSION"); envVersion != "" {
 		miseStep.Version(gradle, envVersion, envName)
 	}
+	if p.config.GradleVersion != "" {
+		miseStep.Version(gradle, p.config.GradleVersion, "railpack.json > java > gradleVersion")
+		return
+	}
 
 	if !ctx.App.HasFile("gradle/wrapper/gradle-wrapper.properties") {
 		return

@@ -20,4 +20,7 @@ func (p *JavaProvider) setJDKVersion(ctx *generate.GenerateContext, miseStep *ge
 			miseStep.Version(jdk, "8", "Gradle <= 5")
 		}
 	}
+	if p.config.Version != "" {
+		miseStep.Version(jdk, p.config.Version, "railpack.json > java > version")
+	}
 }
