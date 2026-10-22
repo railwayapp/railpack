@@ -2,8 +2,10 @@ package app
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -96,7 +98,7 @@ func (e *Environment) IsConfigVariableTruthy(name string) bool {
 // GetSecretsWithPrefix returns all secrets that have the given prefix
 func (e *Environment) GetSecretsWithPrefix(prefix string) []string {
 	secrets := []string{}
-	for secretName := range e.Variables {
+	for _, secretName := range slices.Sorted(maps.Keys(e.Variables)) {
 		if strings.HasPrefix(secretName, prefix) {
 			secrets = append(secrets, secretName)
 		}

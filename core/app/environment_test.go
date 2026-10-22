@@ -187,9 +187,11 @@ func TestGetSecretsWithPrefix(t *testing.T) {
 	}
 	env := NewEnvironment(&envVars)
 
-	require.ElementsMatch(t, []string{
-		"SECRET_",
-		"SECRET_ONE",
-		"SECRET_TWO",
-	}, env.GetSecretsWithPrefix("SECRET_"))
+	for range 20 {
+		require.Equal(t, []string{
+			"SECRET_",
+			"SECRET_ONE",
+			"SECRET_TWO",
+		}, env.GetSecretsWithPrefix("SECRET_"))
+	}
 }
