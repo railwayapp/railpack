@@ -27,7 +27,7 @@
    ],
    "inputs": [
     {
-     "image": "dunglas/frankenphp:php8.4.26-trixie"
+     "image": "dunglas/frankenphp:php8.4.27-trixie"
     }
    ],
    "name": "packages:image"
