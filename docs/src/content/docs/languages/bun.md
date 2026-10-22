@@ -32,7 +32,6 @@ These variables are available at runtime and build time:
 
 ```sh
 NODE_ENV=production
-NPM_CONFIG_PRODUCTION=false
 NPM_CONFIG_UPDATE_NOTIFIER=false
 NPM_CONFIG_FUND=false
 NPM_CONFIG_FETCH_RETRIES=5
