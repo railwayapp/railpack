@@ -152,7 +152,13 @@ func (b *MiseStepBuilder) GetMisePackageVersions(ctx *GenerateContext) (map[stri
 		return nil, err
 	}
 
-	appDir := ctx.GetAppSource()
+	appDir, err := filepath.EvalSymlinks(ctx.GetAppSource())
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve app directory: %w", err)
+	}
+	// mise resolves symlinks in --cd, so macOS temp paths under /var come back as
+	// /private/var. Passing the resolved dir keeps trusted config paths, ignored
+	// paths, and the source path filter below aligned with what mise reports.
 	output, err := miseInstance.GetCurrentList(appDir, b.absoluteIgnoredMiseConfigPaths(appDir))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get package versions: %w", err)

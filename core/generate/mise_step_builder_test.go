@@ -91,6 +91,41 @@ func TestGetPackageVersionsWithNoToolVersions(t *testing.T) {
 	require.Empty(t, packages)
 }
 
+func TestGetPackageVersionsFromSymlinkedAppDir(t *testing.T) {
+	parentDir := t.TempDir()
+	appDir := filepath.Join(parentDir, "app")
+	require.NoError(t, os.Mkdir(appDir, 0755))
+	require.NoError(t, os.WriteFile(
+		filepath.Join(appDir, "mise.toml"),
+		[]byte("[tools]\nnode = \"20.19.0\"\n"),
+		0644,
+	))
+
+	// macOS exposes temp dirs through /var, a symlink to /private/var, so mise
+	// resolves the app directory to a different absolute path than the one we pass in.
+	linkDir := filepath.Join(parentDir, "link")
+	if err := os.Symlink(appDir, linkDir); err != nil {
+		t.Skipf("cannot create symlink on this platform: %v", err)
+	}
+
+	ctx := CreateTestContext(t, linkDir)
+
+	resolver, err := resolver.NewResolver(t.TempDir())
+	require.NoError(t, err)
+
+	builder := &MiseStepBuilder{
+		Resolver: resolver,
+		app:      ctx.App,
+		env:      ctx.Env,
+	}
+
+	packages, err := builder.GetMisePackageVersions(ctx)
+	require.NoError(t, err)
+
+	require.Contains(t, packages, "node")
+	require.Equal(t, "20.19.0", packages["node"].Version)
+}
+
 func TestGetSupportingMiseConfigFiles(t *testing.T) {
 	dir := t.TempDir()
 
