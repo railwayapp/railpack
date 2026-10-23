@@ -2,6 +2,9 @@ package golang
 
 import (
 	"fmt"
+	"go/build/constraint"
+	"go/parser"
+	"go/token"
 	"path/filepath"
 	"strings"
 
@@ -73,27 +76,26 @@ func (p *GoProvider) Build(ctx *generate.GenerateContext, build *generate.Comman
 		// Use the provided env var path to build the specified command
 		ctx.Logger.LogInfo("Building bin: %s", binName)
 		buildCmd = fmt.Sprintf("%s ./cmd/%s", baseBuildCmd, binName)
-	} else if p.isGoMod(ctx) && p.hasRootGoFiles(ctx) {
+	} else if p.isGoMod(ctx) && p.hasMainPackage(ctx, ".") {
 		// Use the default build command if there are root go files
 		buildCmd = baseBuildCmd
-	} else if dirs, err := ctx.App.FindDirectories("cmd/*"); err == nil && len(dirs) > 0 {
+	} else if cmdName := p.findCmdPackage(ctx); cmdName != "" {
 		// Try to find a command in the cmd directory if no other build command is specified
-		cmdName := filepath.Base(dirs[0])
 		ctx.Logger.LogInfo("Building command: %s", cmdName)
 		buildCmd = fmt.Sprintf("%s ./cmd/%s", baseBuildCmd, cmdName)
-	} else if p.isGoMod(ctx) {
-		// Use the default build command if there are no root go files
-		buildCmd = baseBuildCmd
 	} else if p.isGoWorkspace(ctx) {
 		// For workspaces without explicit module selection, try to find a module with main package
 		packages := p.GoWorkspacePackages(ctx)
 		for _, pkg := range packages {
-			if ctx.App.HasFile(filepath.Join(pkg, "main.go")) {
+			if p.hasMainPackage(ctx, pkg) {
 				ctx.Logger.LogInfo("Building workspace module: %s", pkg)
 				buildCmd = fmt.Sprintf("%s ./%s", baseBuildCmd, pkg)
 				break
 			}
 		}
+	} else if p.isGoMod(ctx) {
+		// Use the default build command if there are no root go files
+		buildCmd = baseBuildCmd
 	} else if ctx.App.HasFile("main.go") {
 		// Fallback to building the main package if no other build command is specified
 		buildCmd = fmt.Sprintf("%s main.go", baseBuildCmd)
@@ -200,7 +202,7 @@ func (p *GoProvider) GetBuilder(ctx *generate.GenerateContext) *generate.MiseSte
 func (p *GoProvider) addMetadata(ctx *generate.GenerateContext) {
 	ctx.Metadata.SetBool("goMod", p.isGoMod(ctx))
 	ctx.Metadata.SetBool("goWorkspace", p.isGoWorkspace(ctx))
-	ctx.Metadata.SetBool("goRootFile", p.hasRootGoFiles(ctx))
+	ctx.Metadata.SetBool("goRootFile", p.hasMainPackage(ctx, "."))
 	ctx.Metadata.SetBool("goGin", p.isGin(ctx))
 	ctx.Metadata.SetBool("goCGO", p.hasCGOEnabled(ctx))
 }
@@ -209,15 +211,79 @@ func (p *GoProvider) goBuildCache(ctx *generate.GenerateContext) string {
 	return ctx.Caches.AddCache(GO_BUILD_CACHE_KEY, "/root/.cache/go-build")
 }
 
-func (p *GoProvider) hasRootGoFiles(ctx *generate.GenerateContext) bool {
-	if files, err := ctx.App.FindFiles("*.go"); err == nil {
-		for _, file := range files {
-			if filepath.Dir(file) == "." {
-				return true
-			}
+func (p *GoProvider) findCmdPackage(ctx *generate.GenerateContext) string {
+	dirs, err := ctx.App.FindDirectories("cmd/*")
+	if err != nil {
+		return ""
+	}
+
+	for _, dir := range dirs {
+		if p.hasMainPackage(ctx, dir) {
+			return filepath.Base(dir)
+		}
+	}
+
+	return ""
+}
+
+// only a package named main produces a binary; library packages must not be selected as build targets
+func (p *GoProvider) hasMainPackage(ctx *generate.GenerateContext, dir string) bool {
+	pattern := "*.go"
+	if dir != "." && dir != "" {
+		pattern = filepath.ToSlash(filepath.Join(dir, "*.go"))
+	}
+
+	files, err := ctx.App.FindFiles(pattern)
+	if err != nil {
+		return false
+	}
+
+	for _, file := range files {
+		if strings.HasSuffix(file, "_test.go") {
+			continue
+		}
+
+		if contents, err := ctx.App.ReadFile(file); err == nil && isBuildableMainFile(contents) {
+			return true
 		}
 	}
 	return false
+}
+
+// parse only the file header and package clause via stdlib go/parser so comments and build tags are handled accurately
+func isBuildableMainFile(contents string) bool {
+	f, err := parser.ParseFile(token.NewFileSet(), "", contents, parser.PackageClauseOnly|parser.ParseComments)
+	if err != nil || f.Name.Name != "main" {
+		return false
+	}
+
+	for _, group := range f.Comments {
+		for _, comment := range group.List {
+			if comment.Pos() > f.Package {
+				continue
+			}
+
+			// parse `//go:build` and `// +build` directives; ordinary comments return ErrNotConstraint
+			expr, err := constraint.Parse(comment.Text)
+			if err != nil {
+				continue
+			}
+
+			// skip helper scripts excluded from normal builds (e.g. `//go:build ignore` or `//go:build tools`)
+			if !expr.Eval(func(tag string) bool {
+				switch tag {
+				case "linux", "unix", "amd64", "arm64", "cgo":
+					return true
+				default:
+					return strings.HasPrefix(tag, "go1.")
+				}
+			}) {
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 func (p *GoProvider) isGin(ctx *generate.GenerateContext) bool {

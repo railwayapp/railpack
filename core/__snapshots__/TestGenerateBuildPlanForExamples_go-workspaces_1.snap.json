@@ -76,6 +76,10 @@
      "src": "shared/go.mod"
     },
     {
+     "dest": "worker/go.mod",
+     "src": "worker/go.mod"
+    },
+    {
      "cmd": "go mod download"
     }
    ],

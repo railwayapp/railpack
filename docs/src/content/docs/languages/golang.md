@@ -36,9 +36,9 @@ Railpack determines the main package to build in the following order:
 
 1. The module specified by the `RAILPACK_GO_WORKSPACE_MODULE` environment variable (for workspaces)
 2. The package specified by the `RAILPACK_GO_BIN` environment variable
-3. The root directory if it contains Go files
-4. The first subdirectory in the `cmd/` directory
-5. For workspaces: the first module containing a `main.go` file
+3. The root directory if it contains a `main` package
+4. The first subdirectory in the `cmd/` directory containing a `main` package
+5. For workspaces: the first module containing a `main` package
 6. The `main.go` file in the root directory
 
 ### Config Variables
