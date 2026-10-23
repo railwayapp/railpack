@@ -2,6 +2,8 @@
 package procfile
 
 import (
+	"bufio"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -14,13 +16,20 @@ func (p *ProcfileProvider) Name() string {
 	return "procfile"
 }
 
-// process type names are limited to letters, digits, underscores and dashes; everything after the colon is the command
-var procfileLineRegex = regexp.MustCompile(`^([A-Za-z0-9_-]+):\s*(.+)$`)
-
-type procfileEntry struct {
-	processType string
-	command     string
+// ProcfileEntry represents a process type and command extracted from a Procfile.
+type ProcfileEntry struct {
+	Name    string
+	Command string
 }
+
+var (
+	// Matches process names with letters, digits, underscores, and dashes, followed by colon.
+	procfileLineRegex = regexp.MustCompile(`^([A-Za-z0-9_-]+)\s*:\s*(.+)$`)
+
+	// Matches inline comments preceded by whitespace.
+	commentRegex             = regexp.MustCompile(`^(.*)\s#.+$`)
+	forwardslashCommentRegex = regexp.MustCompile(`^(.*)\s//.+$`)
+)
 
 func (p *ProcfileProvider) Plan(ctx *generate.GenerateContext) (bool, error) {
 	contents, err := ctx.App.ReadFile("Procfile")
@@ -28,8 +37,10 @@ func (p *ProcfileProvider) Plan(ctx *generate.GenerateContext) (bool, error) {
 		return false, nil
 	}
 
-	// A Procfile is not YAML: commands can contain ": " or start with a quote, so parse it line by line
-	entries := parseProcfile(contents)
+	entries, err := ParseProcfile(contents)
+	if err != nil {
+		return false, err
+	}
 	if len(entries) == 0 {
 		return false, nil
 	}
@@ -37,11 +48,11 @@ func (p *ProcfileProvider) Plan(ctx *generate.GenerateContext) (bool, error) {
 	webCommand := ""
 	workerCommand := ""
 	for _, entry := range entries {
-		switch entry.processType {
+		switch entry.Name {
 		case "web":
-			webCommand = entry.command
+			webCommand = entry.Command
 		case "worker":
-			workerCommand = entry.command
+			workerCommand = entry.Command
 		}
 	}
 
@@ -58,30 +69,68 @@ func (p *ProcfileProvider) Plan(ctx *generate.GenerateContext) (bool, error) {
 	}
 
 	// use the first process in file order so the result is deterministic
-	ctx.Logger.LogInfo("Found %s command in Procfile", entries[0].processType)
-	ctx.Deploy.StartCmd = entries[0].command
+	ctx.Logger.LogInfo("Found %s command in Procfile", entries[0].Name)
+	ctx.Deploy.StartCmd = entries[0].Command
 
 	return false, nil
 }
 
-// Returns a slice rather than a map to preserve file order for deterministic
-// fallback process selection (Go map iteration order is randomized).
-func parseProcfile(contents string) []procfileEntry {
-	entries := []procfileEntry{}
+// Parses a Procfile using Dokku's procfile-util parser algorithm.
+func ParseProcfile(text string) ([]ProcfileEntry, error) {
+	var entries []ProcfileEntry
+	names := make(map[string]bool)
+	scanner := bufio.NewScanner(strings.NewReader(text))
+	lineNumber := 0
 
-	for line := range strings.SplitSeq(contents, "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
+	for scanner.Scan() {
+		lineNumber++
+		line := strings.TrimSpace(scanner.Text())
+		if len(line) == 0 {
 			continue
 		}
 
-		matches := procfileLineRegex.FindStringSubmatch(line)
-		if matches == nil {
+		if strings.HasPrefix(line, "#") || strings.HasPrefix(line, "//") {
 			continue
 		}
 
-		entries = append(entries, procfileEntry{processType: matches[1], command: matches[2]})
+		params := procfileLineRegex.FindStringSubmatch(line)
+		if len(params) != 3 {
+			return nil, fmt.Errorf("invalid line in Procfile, line %d", lineNumber)
+		}
+
+		name := params[1]
+		cmd := params[2]
+
+		if len(name) > 63 {
+			return nil, fmt.Errorf("process name over 63 characters, line %d", lineNumber)
+		}
+
+		if names[name] {
+			return nil, fmt.Errorf("process names must be unique, line %d", lineNumber)
+		}
+		names[name] = true
+
+		if commentParams := commentRegex.FindStringSubmatch(cmd); len(commentParams) == 2 {
+			cmd = commentParams[1]
+		} else if forwardslashParams := forwardslashCommentRegex.FindStringSubmatch(cmd); len(forwardslashParams) == 2 {
+			cmd = forwardslashParams[1]
+		}
+
+		cmd = strings.TrimSpace(cmd)
+		if strings.HasPrefix(cmd, "#") || strings.HasPrefix(cmd, "//") {
+			return nil, fmt.Errorf("comment specified in place of command, line %d", lineNumber)
+		}
+
+		if len(cmd) == 0 {
+			return nil, fmt.Errorf("no command specified, line %d", lineNumber)
+		}
+
+		entries = append(entries, ProcfileEntry{Name: name, Command: cmd})
 	}
 
-	return entries
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading Procfile: %w", err)
+	}
+
+	return entries, nil
 }
