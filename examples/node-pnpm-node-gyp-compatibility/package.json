@@ -1,0 +1,16 @@
+{
+  "name": "node-pnpm-node-gyp-compatibility",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Selects a compatible node-gyp for older Node versions when pnpm builds native dependencies",
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "12.11.1"
+  }
+}

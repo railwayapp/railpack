@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,6 +11,64 @@ import (
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
+
+func TestNodeGypPackageMatchesNodeCompatibility(t *testing.T) {
+	tests := []struct {
+		nodeVersion string
+		want        string
+	}{
+		{"12.22.12", "node-gyp@9"},
+		{"14.21.3", "node-gyp@9"},
+		{"16.13.0", "node-gyp@9"},
+		{"16.14.0", "node-gyp@10"},
+		{"18.16.0", "node-gyp@10"},
+		{"18.17.0", "node-gyp@11"},
+		{"20.4.0", "node-gyp@10"},
+		{"20.5.0", "node-gyp@11"},
+		{"20.16.0", "node-gyp@11"},
+		{"20.17.0", "node-gyp@12"},
+		{"20.20.2", "node-gyp@12"},
+		{"22.8.0", "node-gyp@11"},
+		{"22.9.0", "node-gyp@12"},
+		{"22.22.1", "node-gyp@12"},
+		{"22.22.2", "node-gyp"},
+		{"23.11.1", "node-gyp@12"},
+		{"24.14.1", "node-gyp@12"},
+		{"24.15.0", "node-gyp"},
+		{"25.9.0", "node-gyp@12"},
+		{"26.0.0", "node-gyp"},
+		{"28.0.0", "node-gyp"},
+		{"", "node-gyp"},
+		{"lts", "node-gyp"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.nodeVersion, func(t *testing.T) {
+			require.Equal(t, tt.want, nodeGypPackage(tt.nodeVersion))
+		})
+	}
+}
+
+func TestPnpmNodeGypSelectionUsesResolvedNodeVersion(t *testing.T) {
+	for _, nodeVersion := range []string{"20", "20.x"} {
+		t.Run(nodeVersion, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			manifest := fmt.Sprintf(`{
+				"packageManager": "pnpm@9.0.0",
+				"engines": {"node": %q},
+				"scripts": {"start": "node index.js"}
+			}`, nodeVersion)
+			require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte(manifest), 0o644))
+			ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+			provider := NodeProvider{}
+
+			require.NoError(t, provider.Initialize(ctx))
+			require.NoError(t, provider.Plan(ctx))
+			require.True(t, nodeStepHasExecCommand(ctx, "install", "pnpm add -g node-gyp@12"))
+			require.False(t, nodeStepHasExecCommand(ctx, "install", "pnpm add -g node-gyp"))
+		})
+	}
+}
 
 func TestInstallDeps_NpmInstallOverride(t *testing.T) {
 	tmpDir := t.TempDir()
