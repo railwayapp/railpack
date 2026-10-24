@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	// default elixir and erlang versions should be receiving security updates
+	// MAINTENANCE should match the oldest Elixir and Erlang versions continuing to receive security updates
 	// https://hexdocs.pm/elixir/compatibility-and-deprecations.html
 	DEFAULT_ERLANG_VERSION = "27.3"
 	DEFAULT_ELIXIR_VERSION = "1.18"
@@ -279,6 +279,7 @@ func (p *ElixirProvider) findBinName(ctx *generate.GenerateContext) string {
 	return ""
 }
 
+// MAINTENANCE this function needs to be kept up to date with the latest Elixir and Erlang versions
 // See: https://hexdocs.pm/elixir/1.18.3/compatibility-and-deprecations.html#between-elixir-and-erlang-otp
 func getCompatibleErlangVersion(elixirVersion string) string {
 	switch elixirVersion {
