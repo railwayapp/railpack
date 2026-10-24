@@ -67,8 +67,8 @@
    ],
    "commands": [
     {
-     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libcairo2-dev'",
-     "customName": "install apt packages: libcairo2-dev"
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y libcairo2-dev pkg-config'",
+     "customName": "install apt packages: libcairo2-dev pkg-config"
     }
    ],
    "inputs": [

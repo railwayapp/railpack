@@ -31,26 +31,29 @@ const (
 
 var nodeRuntimeDepRequirements = map[string][]string{
 	// To find the latest list: run `npx puppeteer@latest install --help` and inspect docs.
-	"puppeteer": {"xvfb", "libasound2", "libatk1.0-0", "libc6", "libcairo2", "libcups2", "libdbus-1-3", "libexpat1", "libfontconfig1", "libgbm1", "libgcc1", "libgdk-pixbuf-2.0-0", "libglib2.0-0", "libgtk-3-0", "libnspr4", "libpango-1.0-0", "libpangocairo-1.0-0", "libstdc++6", "libx11-6", "libx11-xcb1", "libxcb1", "libxcomposite1", "libxcursor1", "libxdamage1", "libxext6", "libxfixes3", "libxi6", "libxrandr2", "libxrender1", "libxss1", "libxtst6", "ca-certificates", "fonts-liberation", "libnss3", "lsb-release", "xdg-utils", "wget"},
+	// https://pptr.dev/troubleshooting
+	// Debian 13 renamed some of these libraries to t64 packages. Puppeteer's list also includes libatk-bridge.
+	"puppeteer": {"xvfb", "libasound2t64", "libatk-bridge2.0-0t64", "libatk1.0-0t64", "libc6", "libcairo2", "libcups2t64", "libdbus-1-3", "libexpat1", "libfontconfig1", "libgbm1", "libgcc1", "libgdk-pixbuf-2.0-0", "libglib2.0-0t64", "libgtk-3-0t64", "libnspr4", "libpango-1.0-0", "libpangocairo-1.0-0", "libstdc++6", "libx11-6", "libx11-xcb1", "libxcb1", "libxcomposite1", "libxcursor1", "libxdamage1", "libxext6", "libxfixes3", "libxi6", "libxrandr2", "libxrender1", "libxss1", "libxtst6", "ca-certificates", "fonts-liberation", "libnss3", "lsb-release", "xdg-utils", "wget"},
 }
 
 var nodeDefaultExcludePatterns = []string{"node_modules"}
 
 // TODO why do we have a separate map for this? Can't we just merge into nodeRuntimeDepRequirements?
-// Keep this aligned with Playwright's Chromium deps in nativeDeps.ts:
+// Keep this aligned with Playwright's Chromium deps in nativeDeps.ts.
+// This copy is the debian13 chromium list because the runtime image is Debian 13.
 // https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/registry/nativeDeps.ts
 // Keep these explicit because --with-deps installs them in the builder, not the runtime image.
 var nodePlaywrightRuntimeDependencies = []string{
-	"libasound2",
-	"libatk-bridge2.0-0",
-	"libatk1.0-0",
-	"libatspi2.0-0",
+	"libasound2t64",
+	"libatk-bridge2.0-0t64",
+	"libatk1.0-0t64",
+	"libatspi2.0-0t64",
 	"libcairo2",
-	"libcups2",
+	"libcups2t64",
 	"libdbus-1-3",
 	"libdrm2",
 	"libgbm1",
-	"libglib2.0-0",
+	"libglib2.0-0t64",
 	"libnspr4",
 	"libnss3",
 	"libpango-1.0-0",
