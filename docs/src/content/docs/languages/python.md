@@ -123,7 +123,7 @@ dependencies so its CLI is available during the build.
 
 Railpack installs system dependencies for common Python packages:
 
-- **pycairo**: Installs `libcairo2-dev` (build time) and `libcairo2` (runtime)
+- **pycairo**: Installs `libcairo2-dev` and `pkg-config` (build time) and `libcairo2` (runtime)
 - **pdf2image**: Installs `poppler-utils`
 - **pydub**: Installs `ffmpeg`
 - **pymovie**: Installs `ffmpeg`, `qt5-qmake`, and related Qt packages

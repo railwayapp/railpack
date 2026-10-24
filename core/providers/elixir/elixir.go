@@ -280,7 +280,7 @@ func (p *ElixirProvider) findBinName(ctx *generate.GenerateContext) string {
 }
 
 // MAINTENANCE this function needs to be kept up to date with the latest Elixir and Erlang versions
-// See: https://hexdocs.pm/elixir/1.18.3/compatibility-and-deprecations.html#between-elixir-and-erlang-otp
+// https://hexdocs.pm/elixir/compatibility-and-deprecations.html#between-elixir-and-erlang-otp
 func getCompatibleErlangVersion(elixirVersion string) string {
 	switch elixirVersion {
 	case "1.0", "1.1":

@@ -24,19 +24,20 @@ const (
 	PLAYWRIGHT_INSTALL_VAR = "PYTHON_PLAYWRIGHT_INSTALL"
 )
 
-// MAINTENANCE keep this aligned with Playwright's Chromium deps in nativeDeps.ts:
+// MAINTENANCE keep this aligned with Playwright's Chromium deps in nativeDeps.ts.
+// This copy is the debian13 chromium list because the runtime image is Debian 13.
 // https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/registry/nativeDeps.ts
 var pythonPlaywrightRuntimeDependencies = []string{
-	"libasound2",
-	"libatk-bridge2.0-0",
-	"libatk1.0-0",
-	"libatspi2.0-0",
+	"libasound2t64",
+	"libatk-bridge2.0-0t64",
+	"libatk1.0-0t64",
+	"libatspi2.0-0t64",
 	"libcairo2",
-	"libcups2",
+	"libcups2t64",
 	"libdbus-1-3",
 	"libdrm2",
 	"libgbm1",
-	"libglib2.0-0",
+	"libglib2.0-0t64",
 	"libnspr4",
 	"libnss3",
 	"libpango-1.0-0",
@@ -622,12 +623,14 @@ func (p *PythonProvider) getRuntime(ctx *generate.GenerateContext) string {
 // MAINTENANCE keep this aligned with the latest Python package requirements
 
 var pythonBuildDepRequirements = map[string][]string{
-	"pycairo": {"libcairo2-dev"},
+	// pkg-config is how pycairo finds cairo at build time.
+	// https://pycairo.readthedocs.io/en/latest/getting_started.html
+	"pycairo": {"libcairo2-dev", "pkg-config"},
 }
 
 var pythonRuntimeDepRequirements = map[string][]string{
 	"pycairo":   {"libcairo2"},
 	"pdf2image": {"poppler-utils"},
 	"pydub":     {"ffmpeg"},
-	"pymovie":   {"ffmpeg", "qt5-qmake", "qtbase5-dev", "qtbase5-dev-tools", "qttools5-dev-tools", "libqt5core5a", "python3-pyqt5"},
+	"pymovie":   {"ffmpeg", "qt5-qmake", "qtbase5-dev", "qtbase5-dev-tools", "qttools5-dev-tools", "libqt5core5t64", "python3-pyqt5"},
 }
