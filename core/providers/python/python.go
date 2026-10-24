@@ -13,7 +13,9 @@ import (
 )
 
 const (
+	// MAINTENANCE should match the oldest Python version continuing to receive security updates
 	DEFAULT_PYTHON_VERSION = "3.13"
+
 	UV_CACHE_DIR           = "/opt/uv-cache"
 	PIP_CACHE_DIR          = "/opt/pip-cache"
 	VENV_PATH              = "/app/.venv"
@@ -22,7 +24,7 @@ const (
 	PLAYWRIGHT_INSTALL_VAR = "PYTHON_PLAYWRIGHT_INSTALL"
 )
 
-// Keep this aligned with Playwright's Chromium deps in nativeDeps.ts:
+// MAINTENANCE keep this aligned with Playwright's Chromium deps in nativeDeps.ts:
 // https://github.com/microsoft/playwright/blob/main/packages/playwright-core/src/server/registry/nativeDeps.ts
 var pythonPlaywrightRuntimeDependencies = []string{
 	"libasound2",
@@ -617,7 +619,7 @@ func (p *PythonProvider) getRuntime(ctx *generate.GenerateContext) string {
 	return "python"
 }
 
-// Mapping of python dependencies to required apt packages
+// MAINTENANCE keep this aligned with the latest Python package requirements
 
 var pythonBuildDepRequirements = map[string][]string{
 	"pycairo": {"libcairo2-dev"},

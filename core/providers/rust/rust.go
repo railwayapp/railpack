@@ -13,7 +13,9 @@ import (
 )
 
 const (
+	// MAINTENANCE should match the oldest Rust version continuing to receive security updates
 	DEFAULT_RUST_VERSION = "1.89"
+
 	CARGO_REGISTRY_CACHE = "/root/.cargo/registry"
 	CARGO_GIT_CACHE      = "/root/.cargo/git"
 	CARGO_TARGET_CACHE   = "target"

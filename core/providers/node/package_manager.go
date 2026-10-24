@@ -19,9 +19,12 @@ const (
 	PackageManagerYarn1     PackageManager = "yarn1"
 	PackageManagerYarnBerry PackageManager = "yarnberry"
 
+	// MAINTENANCE keep this aligned with the latest pnpm version continuing to receive security updates
+	// https://github.com/pnpm/pnpm/security/policy
 	DEFAULT_PNPM_VERSION = "9"
-	PNPM_HOME            = "/opt/pnpm"
-	PNPM_STORE_DIR       = PNPM_HOME + "/store"
+
+	PNPM_HOME      = "/opt/pnpm"
+	PNPM_STORE_DIR = PNPM_HOME + "/store"
 )
 
 func (p *PackageJson) hasProductionDependency(dependency string) bool {
@@ -383,6 +386,7 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 	if p == PackageManagerPnpm {
 		pnpm := packages.Default("pnpm", DEFAULT_PNPM_VERSION)
 
+		// MAINTENANCE add additional lockfile versions => pnpm version mappings
 		lockfile, err := ctx.App.ReadFile("pnpm-lock.yaml")
 		if err == nil {
 			switch {

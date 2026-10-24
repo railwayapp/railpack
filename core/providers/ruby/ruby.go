@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	// MAINTENANCE should match the oldest Ruby version continuing to receive security updates
 	// https://endoflife.date/ruby
 	DEFAULT_RUBY_VERSION = "3.4"
 )

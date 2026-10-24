@@ -10,7 +10,9 @@ import (
 )
 
 const (
+	// MAINTENANCE should match the oldest Go version continuing to receive security updates
 	DEFAULT_GO_VERSION = "1.25"
+
 	GO_BUILD_CACHE_KEY = "go-build"
 	GO_BINARY_NAME     = "out"
 	GO_PATH            = "/go"
