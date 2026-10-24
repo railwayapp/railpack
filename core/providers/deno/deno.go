@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	// MAINTENANCE should match the oldest Deno version continuing to receive security updates
 	DEFAULT_DENO_VERSION = "2"
 	ROOT_CACHE           = "/root/.cache"
 )

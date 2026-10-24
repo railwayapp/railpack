@@ -20,7 +20,7 @@ The Rust version is determined in the following order:
 - Read from the `.rust-version` or `rust-version.txt` file
 - Set via the `RAILPACK_RUST_VERSION` environment variable
 - Set via the `package.edition` field in the `Cargo.toml` file
-- Defaults to `1.89`
+- Defaults to `1.98`
 
 Mise treats `rust-toolchain.toml` as an idiomatic version file. Its
 `toolchain.channel` field selects the Rust version, while `profile`,

@@ -21,7 +21,7 @@ The Go version is determined in the following order:
 - Any mise-supported version file (`mise.toml`, `.tool-versions`, etc)
 - Read from the `go.mod` file
 - Set via the `RAILPACK_GO_VERSION` environment variable
-- Defaults to `1.23`
+- Defaults to `1.26`
 
 ## Configuration
 

@@ -13,7 +13,12 @@ import (
 )
 
 const (
-	DEFAULT_RUST_VERSION = "1.89"
+	// MAINTENANCE should match the oldest Rust version continuing to receive security updates
+	// https://endoflife.date/rust
+	// Rust publishes security fixes only for the latest stable release.
+	// 1.98 is the newest release this mise catalog can install.
+	DEFAULT_RUST_VERSION = "1.98"
+
 	CARGO_REGISTRY_CACHE = "/root/.cargo/registry"
 	CARGO_GIT_CACHE      = "/root/.cargo/git"
 	CARGO_TARGET_CACHE   = "target"
