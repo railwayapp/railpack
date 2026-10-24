@@ -1,10 +1,12 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
@@ -392,4 +394,95 @@ func nodeStepHasExecCommand(
 	}
 
 	return false
+}
+
+func TestNodeConfigOverridesEnvironment(t *testing.T) {
+	tests := []struct {
+		name            string
+		configJSON      string
+		env             map[string]string
+		wantManager     PackageManager
+		wantNodeVersion string
+	}{
+		{
+			name:       "JSON overrides conflicting environment values",
+			configJSON: `{"node":{"version":"24","packageManager":"bun"}}`,
+			env: map[string]string{
+				"RAILPACK_NODE_VERSION":         "22",
+				"RAILPACK_NODE_PACKAGE_MANAGER": "npm",
+			},
+			wantManager:     PackageManagerBun,
+			wantNodeVersion: "24",
+		},
+		{
+			name:       "environment fills fields missing from JSON",
+			configJSON: `{"node":{"version":"24"}}`,
+			env: map[string]string{
+				"RAILPACK_NODE_PACKAGE_MANAGER": "bun",
+			},
+			wantManager:     PackageManagerBun,
+			wantNodeVersion: "24",
+		},
+		{
+			name: "environment overrides project defaults without JSON",
+			env: map[string]string{
+				"RAILPACK_NODE_VERSION":         "22",
+				"RAILPACK_NODE_PACKAGE_MANAGER": "npm",
+			},
+			wantManager:     PackageManagerNpm,
+			wantNodeVersion: "22",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-pnpm-dev-engines")
+			for name, value := range tt.env {
+				ctx.Env.SetVariable(name, value)
+			}
+			if tt.configJSON != "" {
+				fileConfig := config.EmptyConfig()
+				require.NoError(t, json.Unmarshal([]byte(tt.configJSON), fileConfig))
+				ctx.Config = config.Merge(ctx.Config, fileConfig)
+			}
+
+			provider := NodeProvider{}
+			require.NoError(t, provider.Initialize(ctx))
+			require.Equal(t, tt.wantManager, provider.packageManager)
+			require.NoError(t, provider.Plan(ctx))
+			require.Equal(t, tt.wantNodeVersion, ctx.Resolver.Get("node").Version)
+		})
+	}
+}
+
+func TestNodeConfigRejectsInvalidPackageManager(t *testing.T) {
+	tests := []struct {
+		name       string
+		configJSON string
+		env        map[string]string
+	}{
+		{
+			name:       "JSON config",
+			configJSON: `{"node":{"packageManager":"yarnberry"}}`,
+		},
+		{
+			name: "environment variable",
+			env: map[string]string{
+				"RAILPACK_NODE_PACKAGE_MANAGER": "yarnberry",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fileConfig := config.EmptyConfig()
+			if tt.configJSON != "" {
+				require.NoError(t, json.Unmarshal([]byte(tt.configJSON), fileConfig))
+			}
+
+			var nodeConfig NodeConfig
+			err := fileConfig.ProviderConfigWithEnv("node", tt.env, &nodeConfig)
+			require.ErrorContains(t, err, `invalid node packageManager "yarnberry"`)
+		})
+	}
 }

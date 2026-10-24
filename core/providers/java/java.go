@@ -7,7 +7,9 @@ import (
 	"github.com/railwayapp/railpack/core/plan"
 )
 
-type JavaProvider struct{}
+type JavaProvider struct {
+	config JavaConfig
+}
 
 func (p *JavaProvider) Name() string {
 	return "java"
@@ -18,6 +20,9 @@ func (p *JavaProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 }
 
 func (p *JavaProvider) Initialize(ctx *generate.GenerateContext) error {
+	if err := ctx.Config.ProviderConfigWithEnv(p.Name(), ctx.Env.Variables, &p.config); err != nil {
+		return fmt.Errorf("invalid java provider config: %w", err)
+	}
 	return nil
 }
 
@@ -89,7 +94,6 @@ func (p *JavaProvider) getStartCmd(ctx *generate.GenerateContext) string {
 	} else {
 		return "java $JAVA_OPTS -jar target/*jar"
 	}
-
 }
 
 func (p *JavaProvider) addMetadata(ctx *generate.GenerateContext) {

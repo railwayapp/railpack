@@ -86,6 +86,7 @@ type NodeProvider struct {
 	packageJson    *PackageJson
 	packageManager PackageManager
 	workspace      *Workspace
+	config         NodeConfig
 }
 
 func (p *NodeProvider) Name() string {
@@ -93,6 +94,10 @@ func (p *NodeProvider) Name() string {
 }
 
 func (p *NodeProvider) Initialize(ctx *generate.GenerateContext) error {
+	if err := ctx.Config.ProviderConfigWithEnv(p.Name(), ctx.Env.Variables, &p.config); err != nil {
+		return fmt.Errorf("invalid node provider config: %w", err)
+	}
+
 	packageJson, err := p.GetPackageJson(ctx.App)
 	if err != nil {
 		return err
@@ -418,17 +423,10 @@ func (p *NodeProvider) InstallNodeDeps(ctx *generate.GenerateContext, install *g
 	p.packageManager.installDependencies(ctx, p.workspace, install, p.usesCorepack())
 }
 
-// resolve node version from package.json or ENV (takes precedence over mise or railpack defaults)
+// Resolve the project-declared Node version before provider config is applied.
 func (p *NodeProvider) applyNodeVersionResolution(ctx *generate.GenerateContext, miseStep *generate.MiseStepBuilder, nodeToolRef resolver.PackageRef) {
-	// the order here is very important: we want to the package.json-defined node version to win out in most cases
-	// however, ENV-level config should always win which is why we check that ENV right after this block
-
 	if p.packageJson != nil && p.packageJson.Engines != nil && p.packageJson.Engines["node"] != "" {
 		miseStep.Version(nodeToolRef, p.packageJson.Engines["node"], "package.json > engines > node")
-	}
-
-	if envVersion, varName := ctx.Env.GetConfigVariable("NODE_VERSION"); envVersion != "" {
-		miseStep.Version(nodeToolRef, envVersion, varName)
 	}
 }
 
@@ -492,9 +490,12 @@ func (p *NodeProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 		miseStep.AddMiseSetting("node.corepack", true)
 	}
 
-	// IMPORTANT because of mise support for idiomatic version files, this can easily override ENV-specified node versions
+	// Provider config must follow mise because idiomatic version files can otherwise override it.
 	if len(misePackages) > 0 {
 		miseStep.UseMiseVersions(ctx, misePackages)
+	}
+	if p.config.Version != "" && requiresNode {
+		miseStep.Version(resolver.PackageRef{Name: "node"}, p.config.Version, "railpack config > node > version")
 	}
 }
 
@@ -591,6 +592,25 @@ func parseYarnPackageManager(pmVersion string) PackageManager {
 
 func (p *NodeProvider) getPackageManager(ctx *generate.GenerateContext) PackageManager {
 	app := ctx.App
+
+	if p.config.PackageManager != "" {
+		switch p.config.PackageManager {
+		case "npm":
+			return PackageManagerNpm
+		case "pnpm":
+			return PackageManagerPnpm
+		case "bun":
+			return PackageManagerBun
+		case "yarn":
+			if p.packageJson != nil && p.packageJson.PackageManager != nil {
+				_, version := p.packageJson.GetPackageManagerInfo()
+				if version != "" {
+					return parseYarnPackageManager(version)
+				}
+			}
+			return PackageManagerYarnBerry
+		}
+	}
 
 	// Check packageManager field first
 	if packageJson, err := p.GetPackageJson(app); err == nil && packageJson.PackageManager != nil {
