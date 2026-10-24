@@ -26,12 +26,6 @@ use it to set the container start command.
 The `Procfile` uses a line-based format where each line defines a process type
 and its associated command:
 
-<Aside type="note" title="Parser notice">
-  Railpack uses a Procfile parser based on Dokku's `procfile-util`. It supports
-  comments (`#` and `//`), inline comments, spaces around the colon delimiter,
-  and commands with quotes or colons.
-</Aside>
-
 ```yaml title="Procfile"
 web: gunicorn --bind 0.0.0.0:3333 main:app
 worker: celery worker -A myapp.celery
