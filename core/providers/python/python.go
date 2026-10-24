@@ -59,7 +59,7 @@ func (p *PythonProvider) Name() string {
 }
 
 func (p *PythonProvider) Initialize(ctx *generate.GenerateContext) error {
-	if err := ctx.Config.ProviderConfig(p.Name(), &p.config); err != nil {
+	if err := ctx.Config.ProviderConfigWithEnv(p.Name(), ctx.Env.Variables, &p.config); err != nil {
 		return fmt.Errorf("invalid python provider config: %w", err)
 	}
 	return nil
@@ -421,11 +421,8 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 
 	miseStep.UseMiseVersions(ctx, packages)
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("PYTHON_VERSION"); envVersion != "" {
-		miseStep.Version(python, envVersion, varName)
-	}
 	if p.config.Version != "" {
-		miseStep.Version(python, p.config.Version, "railpack.json > python > version")
+		miseStep.Version(python, p.config.Version, "railpack config > python > version")
 	}
 
 	// Disable Python compilation to avoid incompatibility issues with some packages

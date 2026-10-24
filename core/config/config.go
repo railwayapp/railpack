@@ -2,8 +2,12 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
+	"reflect"
+	"strings"
 
 	"github.com/invopop/jsonschema"
+	"github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/internal/utils"
 )
@@ -197,4 +201,70 @@ func GetJsonSchema(providerSchemas map[string]*jsonschema.Schema) *jsonschema.Sc
 		schema.Properties.Set(name, providerSchema)
 	}
 	return schema
+}
+
+func (c *Config) ProviderConfigWithEnv(name string, envVariables map[string]string, target any) error {
+	if err := unmarshalProviderConfigEnv(name, envVariables, target); err != nil {
+		return err
+	}
+	return c.ProviderConfig(name, target)
+}
+
+func unmarshalProviderConfigEnv(name string, envVariables map[string]string, target any) error {
+	environment := app.NewEnvironment(&envVariables)
+	targetValue := reflect.ValueOf(target)
+	if targetValue.Kind() != reflect.Pointer || targetValue.IsNil() || targetValue.Elem().Kind() != reflect.Struct {
+		return fmt.Errorf("provider config target must be a non-nil pointer to a struct")
+	}
+
+	configValue := targetValue.Elem()
+	configType := configValue.Type()
+	for i := 0; i < configType.NumField(); i++ {
+		field := configType.Field(i)
+		if field.PkgPath != "" {
+			continue
+		}
+
+		jsonName := strings.Split(field.Tag.Get("json"), ",")[0]
+		if jsonName == "-" {
+			continue
+		}
+		if jsonName == "" {
+			jsonName = field.Name
+		}
+
+		envValue, envName := environment.GetConfigVariable(strings.ToUpper(name) + "_" + configFieldEnvName(jsonName))
+		if envName == "" {
+			continue
+		}
+
+		configField := configValue.Field(i)
+		encodedValue := []byte(envValue)
+		if configField.Kind() == reflect.String {
+			var err error
+			encodedValue, err = json.Marshal(envValue)
+			if err != nil {
+				return fmt.Errorf("invalid provider config environment variable %s: %w", envName, err)
+			}
+		}
+		if err := json.Unmarshal(encodedValue, configField.Addr().Interface()); err != nil {
+			return fmt.Errorf("invalid provider config environment variable %s: %w", envName, err)
+		}
+	}
+	return nil
+}
+
+func configFieldEnvName(name string) string {
+	var envName strings.Builder
+	for i, char := range name {
+		if char == '-' || char == '_' {
+			envName.WriteByte('_')
+			continue
+		}
+		if char >= 'A' && char <= 'Z' && i > 0 {
+			envName.WriteByte('_')
+		}
+		envName.WriteRune(char)
+	}
+	return strings.ToUpper(envName.String())
 }

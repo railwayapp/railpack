@@ -414,3 +414,57 @@ func TestMergeConfigExcludeInclude(t *testing.T) {
 		t.Errorf("configs mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestProviderConfigLoadsEnvironmentAndPrefersJSON(t *testing.T) {
+	tests := []struct {
+		name        string
+		configJSON  string
+		env         map[string]string
+		wantVersion string
+		wantManager string
+	}{
+		{
+			name:       "JSON overrides environment and environment fills missing fields",
+			configJSON: `{"node":{"version":"20"}}`,
+			env: map[string]string{
+				"RAILPACK_NODE_VERSION":         "22",
+				"RAILPACK_NODE_PACKAGE_MANAGER": "pnpm",
+			},
+			wantVersion: "20",
+			wantManager: "pnpm",
+		},
+		{
+			name: "environment values are used without provider JSON",
+			env: map[string]string{
+				"RAILPACK_NODE_VERSION":         "22",
+				"RAILPACK_NODE_PACKAGE_MANAGER": "pnpm",
+			},
+			wantVersion: "22",
+			wantManager: "pnpm",
+		},
+		{
+			name:        "provider JSON is used without environment values",
+			configJSON:  `{"node":{"version":"20","packageManager":"npm"}}`,
+			wantVersion: "20",
+			wantManager: "npm",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			providerConfig := struct {
+				Version        string `json:"version,omitempty"`
+				PackageManager string `json:"packageManager,omitempty"`
+			}{}
+			fileConfig := EmptyConfig()
+			if test.configJSON != "" {
+				require.NoError(t, json.Unmarshal([]byte(test.configJSON), fileConfig))
+			}
+
+			err := fileConfig.ProviderConfigWithEnv("node", test.env, &providerConfig)
+			require.NoError(t, err)
+			require.Equal(t, test.wantVersion, providerConfig.Version)
+			require.Equal(t, test.wantManager, providerConfig.PackageManager)
+		})
+	}
+}

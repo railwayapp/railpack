@@ -50,10 +50,11 @@ example, Node.js projects can select the runtime version and package manager:
 }
 ```
 
-Provider options take precedence over their corresponding `RAILPACK_*`
-environment variables. The config schema provides autocomplete for supported
-provider options. The `node`, `python`, and `java` options shown above are
-currently supported.
+Provider options are also available as environment variables, derived from the
+provider name and the option's JSON field name in uppercase snake case. For
+example, `node.packageManager` maps to `RAILPACK_NODE_PACKAGE_MANAGER`.
+Environment values override project-detected settings, while values in
+`railpack.json` take precedence over their corresponding environment variables.
 
 ## Layers
 
