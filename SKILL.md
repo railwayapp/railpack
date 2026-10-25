@@ -126,7 +126,7 @@ path, prefer `--config-file path/to/config.json`; when using
 
 Always include the schema:
 
-```json
+```json5
 {
   "$schema": "https://schema.railpack.com"
 }
@@ -137,7 +137,7 @@ entire generated plan into the config file. Use `"..."` at the desired position
 in a configurable array to retain generated values; omitting it replaces that
 array.
 
-```json
+```json5
 {
   "$schema": "https://schema.railpack.com",
   "packages": {

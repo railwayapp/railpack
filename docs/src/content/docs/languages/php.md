@@ -101,7 +101,7 @@ Packages added for Composer (`git`, `zip`, `unzip`, and `ca-certificates`) stay 
 
 For example:
 
-```json title="railpack.json"
+```json5 title="railpack.json"
 {
   "$schema": "https://schema.railpack.com",
   "buildAptPackages": ["libpng-dev"],

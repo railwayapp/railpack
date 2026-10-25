@@ -30,7 +30,7 @@ Given a `.dockerignore` file:
 
 When you run `railpack build --show-plan`, you'll see this gets converted to:
 
-```json title="railpack.json"
+```json5 title="railpack.json"
 {
   "exclude": [
     "**/node_modules",
@@ -50,7 +50,7 @@ configuration file instead of using `.dockerignore`. Pick one of those
 approaches. Negation patterns (starting with `!`) can be included in the
 `exclude` array:
 
-```json title="railpack.json"
+```json5 title="railpack.json"
 {
   "exclude": [
     "**/node_modules",
