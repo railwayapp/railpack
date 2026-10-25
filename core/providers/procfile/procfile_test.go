@@ -43,9 +43,27 @@ func TestProcfileCommandStartingWithQuote(t *testing.T) {
 }
 
 func TestProcfileIgnoresCommentsAndBlankLines(t *testing.T) {
-	startCmd, err := planProcfile(t, "# processes\n\nempty:\nweb: node server.js\nweb:   \n")
+	startCmd, err := planProcfile(t, "# processes\n\nweb: node server.js\n// trailing comment\n")
 	require.NoError(t, err)
 	require.Equal(t, "node server.js", startCmd)
+}
+
+func TestProcfileInlineComments(t *testing.T) {
+	startCmd, err := planProcfile(t, "web: node server.js # start web server\nworker: python worker.py // background worker\n")
+	require.NoError(t, err)
+	require.Equal(t, "node server.js", startCmd)
+}
+
+func TestProcfileWhitespaceAroundDelimiter(t *testing.T) {
+	startCmd, err := planProcfile(t, "web   :   node server.js\n")
+	require.NoError(t, err)
+	require.Equal(t, "node server.js", startCmd)
+}
+
+func TestProcfilePreservesUrlWithoutSpace(t *testing.T) {
+	startCmd, err := planProcfile(t, "web: curl -fsSL https://example.com/health // healthcheck\n")
+	require.NoError(t, err)
+	require.Equal(t, "curl -fsSL https://example.com/health", startCmd)
 }
 
 func TestProcfileFallbackUsesFirstProcess(t *testing.T) {
@@ -71,7 +89,7 @@ func TestProcfileWorkerPrecedence(t *testing.T) {
 
 func TestProcfileEmptyPreservesExistingStartCmd(t *testing.T) {
 	dir := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "Procfile"), []byte("# comment only\n\nempty:\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "Procfile"), []byte("# comment only\n\n// another comment\n"), 0o644))
 
 	ctx := testingUtils.CreateGenerateContext(t, dir)
 	ctx.Deploy.StartCmd = "npm start"
@@ -85,4 +103,29 @@ func TestProcfileProcessNameCharacters(t *testing.T) {
 	startCmd, err := planProcfile(t, "background-job_1: ./job.sh\n")
 	require.NoError(t, err)
 	require.Equal(t, "./job.sh", startCmd)
+}
+
+func TestProcfileDuplicateProcessNameError(t *testing.T) {
+	_, err := planProcfile(t, "web: node a.js\nweb: node b.js\n")
+	require.Error(t, err)
+	require.ErrorContains(t, err, "process names must be unique, line 2")
+}
+
+func TestProcfileProcessNameLengthError(t *testing.T) {
+	longName := "this_is_an_extremely_long_process_name_that_exceeds_sixty_three_characters_in_length"
+	_, err := planProcfile(t, longName+": ./run.sh\n")
+	require.Error(t, err)
+	require.ErrorContains(t, err, "process name over 63 characters, line 1")
+}
+
+func TestProcfileInvalidLineError(t *testing.T) {
+	_, err := planProcfile(t, "web node server.js\n")
+	require.Error(t, err)
+	require.ErrorContains(t, err, "invalid line in Procfile, line 1")
+}
+
+func TestProcfileCommentInPlaceOfCommandError(t *testing.T) {
+	_, err := planProcfile(t, "web: # just a comment\n")
+	require.Error(t, err)
+	require.ErrorContains(t, err, "comment specified in place of command, line 1")
 }
