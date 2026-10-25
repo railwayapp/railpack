@@ -34,11 +34,12 @@ var PlanCommand = &cli.Command{
 		if err != nil {
 			return cli.Exit(err, ExitCodeFailure)
 		}
-		serializedPlan, err := json.MarshalIndent(planMap, "", "  ")
+
+		// serialize the plan to a string to dump to the plan file
+		buildResultString, err := json.MarshalIndent(planMap, "", "  ")
 		if err != nil {
 			return cli.Exit(err, ExitCodeFailure)
 		}
-		buildResultString := serializedPlan
 
 		output := cmd.String("out")
 		if output == "" {
