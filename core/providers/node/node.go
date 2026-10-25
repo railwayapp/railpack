@@ -772,7 +772,6 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 	} else if p.isTanstackStart() {
 		return "tanstack-start"
 	} else if p.isSvelteKit() {
-		// SvelteKit ships a vite.config, so it has to be checked before Vite to be reported as itself
 		return "sveltekit"
 	} else if p.isVite(ctx) {
 		return "vite"
