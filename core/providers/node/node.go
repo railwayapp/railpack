@@ -771,12 +771,17 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 		return "remix"
 	} else if p.isTanstackStart() {
 		return "tanstack-start"
+	} else if p.isSvelteKit() {
+		// SvelteKit ships a vite.config, so it has to be checked before Vite to be reported as itself
+		return "sveltekit"
 	} else if p.isVite(ctx) {
 		return "vite"
 	} else if p.isReactRouter(ctx) {
 		return "react-router"
 	} else if p.isAstro(ctx) {
 		return "astro"
+	} else if p.hasDependency("@nestjs/core") {
+		return "nest"
 	} else if p.packageManager == PackageManagerBun {
 		return "bun"
 	}
