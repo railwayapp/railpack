@@ -28,6 +28,10 @@ default is `21`.
 | `RAILPACK_JAVA_VERSION`           | Override the JDK version    | `17`    |
 | `RAILPACK_JAVA_GRADLE_VERSION`    | Override the Gradle version | `8.5`   |
 
+`RAILPACK_JDK_VERSION` and `RAILPACK_GRADLE_VERSION` are deprecated but remain
+supported for backwards compatibility. Use `RAILPACK_JAVA_VERSION` and
+`RAILPACK_JAVA_GRADLE_VERSION` instead.
+
 ## BuildKit Caching
 
 The Java provider will cache build artifacts &mdash; for Gradle, `~/.gradle` under the key `gradle`, and, for Maven, `.m2/repository` under `maven`.
