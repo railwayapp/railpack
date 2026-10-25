@@ -1,6 +1,8 @@
 package generate
 
 import (
+	"maps"
+
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/resolver"
 )
@@ -63,6 +65,9 @@ func (b *ImageStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) e
 			options.NewAptInstallCommand(b.AptPackages),
 		}
 	}
+
+	// Add user variables to this step
+	maps.Copy(step.Variables, options.UserVariables)
 
 	p.Steps = append(p.Steps, *step)
 
