@@ -94,6 +94,16 @@ _Note: `deployOutputs` is syntactic sugar for adding this layer to the
 Setting the `deployOutputs` to an empty array will mean that no files from the
 step are included in the final image and therefore no commands will be executed.
 
+Each string is shorthand for an include filter. You can mix strings with objects
+when you need multiple include paths or exclusions:
+
+```jsonc
+"deployOutputs": [
+  "dist", // Equivalent to { "include": ["dist"] }
+  { "include": ["public"], "exclude": ["public/**/*.map"] }
+]
+```
+
 ## Running commands that affect the runtime image
 
 This is possible, but not recommended. It is instead recommended to use
