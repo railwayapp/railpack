@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/railwayapp/railpack/core/generate"
+	"github.com/railwayapp/railpack/core/logger"
 )
 
 type ProcfileProvider struct{}
@@ -23,6 +24,10 @@ type procfileEntry struct {
 }
 
 func (p *ProcfileProvider) Plan(ctx *generate.GenerateContext) (bool, error) {
+	if ctx.Config.Deploy != nil && ctx.Config.Deploy.StartCmd != "" {
+		return false, nil
+	}
+
 	contents, err := ctx.App.ReadFile("Procfile")
 	if err != nil {
 		return false, nil
@@ -33,6 +38,8 @@ func (p *ProcfileProvider) Plan(ctx *generate.GenerateContext) (bool, error) {
 	if len(entries) == 0 {
 		return false, nil
 	}
+
+	ctx.Logger.LogWarn("Procfile parsing has changed. See %s", logger.DocsURL("/config/procfile#format"))
 
 	webCommand := ""
 	workerCommand := ""
