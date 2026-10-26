@@ -5,10 +5,16 @@ description: Configure application start commands using a Procfile
 
 import { Aside } from '@astrojs/starlight/components';
 
-Railpack automatically detects and uses `Procfile` configuration files to
-determine how your application should start. This is compatible with
-Heroku-style Procfiles and provides a simple way to specify different process
-types for your application.
+Railpack detects a `Procfile` in the project root and uses it to set the
+container start command. The file follows the
+[Heroku Procfile](https://devcenter.heroku.com/articles/procfile#procfile-format)
+format: one process type and command per line.
+
+<Aside type="caution">
+  Quotes in a command are kept and passed to the shell. A command that wraps
+  the whole line in quotes, such as `web: 'python main.py'`, fails to start.
+  See [Format](#format).
+</Aside>
 
 <Aside>
   Procfiles are deprecated and natively setting the start command with
@@ -23,14 +29,36 @@ use it to set the container start command.
 
 ## Format
 
-The `Procfile` uses a YAML-style format where each line defines a process type
-and its associated command:
+Each process is one line. The name before the first colon is the process type.
+The rest of the line, after the colon and any following whitespace, is the
+command. Quotes, colons, and `$PORT` stay in the command text.
 
-```yaml title="Procfile"
+```text title="Procfile"
 web: gunicorn --bind 0.0.0.0:3333 main:app
 worker: celery worker -A myapp.celery
 scheduler: celery beat -A myapp.celery
 ```
+
+Process type names may contain letters, digits, underscores, and dashes
+(`web`, `background-job_1`). Blank lines and lines that start with `#` are
+ignored. A line that does not match this pattern is skipped. When `web` or
+`worker` is listed more than once, the last line of that type is used.
+
+The start command runs as `/bin/bash -c`. Shell quoting inside the command
+works. A colon in the command is fine, and quotes around a single argument
+are shell syntax:
+
+```text title="Procfile"
+web: python -c "print('listening: 8080')"
+```
+
+```text title="Procfile"
+web: "./bin/server" --port $PORT
+```
+
+Quoting the entire command makes the shell look up one program whose name
+includes the spaces. `web: 'python main.py'` exits 127. Write
+`web: python main.py`.
 
 ## Process Type Priority
 
@@ -39,7 +67,7 @@ Railpack prioritizes process types in the following order:
 1. **web** - Highest priority, typically used for HTTP servers
 2. **worker** - Second priority, typically used for background job processors
 3. **Any other process type** - If neither `web` nor `worker` are defined,
-   Railpack will use the first available process type
+   Railpack uses the first process in the file
 
 This priority system ensures that web servers are preferred for containerized
 deployments, while still supporting applications that only define worker
@@ -49,19 +77,19 @@ processes or custom process types like `scheduler`, `urgentWorker`, or `api`.
 
 ### Web Application
 
-```yaml title="Procfile"
+```text title="Procfile"
 web: node server.js
 ```
 
 ### Background Worker
 
-```yaml title="Procfile"
+```text title="Procfile"
 worker: python worker.py
 ```
 
 ### Multiple Process Types
 
-```yaml title="Procfile"
+```text title="Procfile"
 web: gunicorn app:application
 worker: celery worker -A app.celery
 scheduler: celery beat -A app.celery
@@ -72,13 +100,13 @@ command.
 
 ### Custom Process Types
 
-```yaml title="Procfile"
+```text title="Procfile"
 api: ./bin/api-server
 urgentWorker: python urgent_tasks.py
 ```
 
-If no `web` or `worker` process types are defined, Railpack will use the first
-available process type (in this case, `api`).
+If no `web` or `worker` process types are defined, Railpack uses the first
+process in the file (in this case, `api`).
 
 ## Integration with Other Configuration
 
