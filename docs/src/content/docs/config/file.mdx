@@ -32,13 +32,12 @@ A config file looks something like this:
 ## Provider Configuration
 
 Provider-specific options can be set in an object named after the provider. For
-example, Node.js projects can select the runtime version and package manager:
+example, Node.js projects can select the runtime version:
 
 ```json title="railpack.json"
 {
   "node": {
-    "version": "24",
-    "packageManager": "bun"
+    "version": "24"
   },
   "python": {
     "version": "3.13"
@@ -52,8 +51,7 @@ example, Node.js projects can select the runtime version and package manager:
 
 Provider options are also available as environment variables, derived from the
 provider name and the option's JSON field name in uppercase snake case. For
-example, `node.packageManager` maps to `RAILPACK_NODE_PACKAGE_MANAGER`.
-Environment values override project-detected settings, while values in
+example, `node.version` maps to `RAILPACK_NODE_VERSION`. Values in
 `railpack.json` take precedence over their corresponding environment variables.
 
 ## Layers

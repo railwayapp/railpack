@@ -396,41 +396,21 @@ func nodeStepHasExecCommand(
 	return false
 }
 
-func TestNodeConfigOverridesEnvironment(t *testing.T) {
+func TestNodePackageManagerIsDetectedFromProject(t *testing.T) {
 	tests := []struct {
-		name            string
-		configJSON      string
-		env             map[string]string
-		wantManager     PackageManager
-		wantNodeVersion string
+		name       string
+		configJSON string
+		env        map[string]string
 	}{
 		{
-			name:       "JSON overrides conflicting environment values",
-			configJSON: `{"node":{"version":"24","packageManager":"bun"}}`,
-			env: map[string]string{
-				"RAILPACK_NODE_VERSION":         "22",
-				"RAILPACK_NODE_PACKAGE_MANAGER": "npm",
-			},
-			wantManager:     PackageManagerBun,
-			wantNodeVersion: "24",
+			name:       "JSON config does not override detection",
+			configJSON: `{"node":{"packageManager":"bun"}}`,
 		},
 		{
-			name:       "environment fills fields missing from JSON",
-			configJSON: `{"node":{"version":"24"}}`,
+			name: "environment does not override detection",
 			env: map[string]string{
 				"RAILPACK_NODE_PACKAGE_MANAGER": "bun",
 			},
-			wantManager:     PackageManagerBun,
-			wantNodeVersion: "24",
-		},
-		{
-			name: "environment overrides project defaults without JSON",
-			env: map[string]string{
-				"RAILPACK_NODE_VERSION":         "22",
-				"RAILPACK_NODE_PACKAGE_MANAGER": "npm",
-			},
-			wantManager:     PackageManagerNpm,
-			wantNodeVersion: "22",
 		},
 	}
 
@@ -448,41 +428,40 @@ func TestNodeConfigOverridesEnvironment(t *testing.T) {
 
 			provider := NodeProvider{}
 			require.NoError(t, provider.Initialize(ctx))
-			require.Equal(t, tt.wantManager, provider.packageManager)
-			require.NoError(t, provider.Plan(ctx))
-			require.Equal(t, tt.wantNodeVersion, ctx.Resolver.Get("node").Version)
+			require.Equal(t, PackageManagerPnpm, provider.packageManager)
 		})
 	}
 }
 
-func TestNodeConfigRejectsInvalidPackageManager(t *testing.T) {
+func TestNodeProviderConfigSchema(t *testing.T) {
+	schema := (&NodeProvider{}).ConfigSchema()
+	require.Equal(t, "object", schema.Type)
+
 	tests := []struct {
-		name       string
-		configJSON string
-		env        map[string]string
+		name        string
+		property    string
+		wantPresent bool
+		wantType    string
 	}{
 		{
-			name:       "JSON config",
-			configJSON: `{"node":{"packageManager":"yarnberry"}}`,
+			name:        "version is available",
+			property:    "version",
+			wantPresent: true,
+			wantType:    "string",
 		},
 		{
-			name: "environment variable",
-			env: map[string]string{
-				"RAILPACK_NODE_PACKAGE_MANAGER": "yarnberry",
-			},
+			name:     "package manager is not configurable",
+			property: "packageManager",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fileConfig := config.EmptyConfig()
-			if tt.configJSON != "" {
-				require.NoError(t, json.Unmarshal([]byte(tt.configJSON), fileConfig))
+			propertySchema, ok := schema.Properties.Get(tt.property)
+			require.Equal(t, tt.wantPresent, ok)
+			if tt.wantPresent {
+				require.Equal(t, tt.wantType, propertySchema.Type)
 			}
-
-			var nodeConfig NodeConfig
-			err := fileConfig.ProviderConfigWithEnv("node", tt.env, &nodeConfig)
-			require.ErrorContains(t, err, `invalid node packageManager "yarnberry"`)
 		})
 	}
 }

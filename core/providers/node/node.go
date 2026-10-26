@@ -593,25 +593,6 @@ func parseYarnPackageManager(pmVersion string) PackageManager {
 func (p *NodeProvider) getPackageManager(ctx *generate.GenerateContext) PackageManager {
 	app := ctx.App
 
-	if p.config.PackageManager != "" {
-		switch p.config.PackageManager {
-		case "npm":
-			return PackageManagerNpm
-		case "pnpm":
-			return PackageManagerPnpm
-		case "bun":
-			return PackageManagerBun
-		case "yarn":
-			if p.packageJson != nil && p.packageJson.PackageManager != nil {
-				_, version := p.packageJson.GetPackageManagerInfo()
-				if version != "" {
-					return parseYarnPackageManager(version)
-				}
-			}
-			return PackageManagerYarnBerry
-		}
-	}
-
 	// Check packageManager field first
 	if packageJson, err := p.GetPackageJson(app); err == nil && packageJson.PackageManager != nil {
 		pmName, pmVersion := packageJson.GetPackageManagerInfo()
