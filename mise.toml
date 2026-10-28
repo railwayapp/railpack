@@ -35,6 +35,11 @@ run = [
 # without this every run mints a leaked 64-hex anonymous volume.
 # host-gateway is required on Linux (including GHA) so host.docker.internal resolves to the host, allowing BuildKit to access the local image registry (:7890)
 run = '''
+if [ -n "${DOCKER_HOST:-}" ]; then
+  echo "If DOCKER_HOST is set, manually run the buildkit builder on the host" >&2
+  exit 1
+fi
+
 docker rm -f buildkit 2>/dev/null || true
 docker run --rm --privileged -d --name buildkit \
   --add-host=host.docker.internal:host-gateway \
