@@ -15,7 +15,8 @@ type PackageManager string
 
 const (
 	// no supported manager was detected; Python is still installed without a dependency install step
-	PackageManagerNone   PackageManager = ""
+	PackageManagerNone PackageManager = ""
+
 	PackageManagerPip    PackageManager = "pip"
 	PackageManagerUv     PackageManager = "uv"
 	PackageManagerPoetry PackageManager = "poetry"
@@ -72,6 +73,8 @@ func (p *PythonProvider) getPackageManagerTools(ctx *generate.GenerateContext, m
 	}
 
 	if p.hasPdm(ctx) {
+		// Keep the pipx: alias so existing mise.toml version overrides still match this tool.
+		// TODO(breaking): Migrate PDM and Pipenv to pypi: and update version override handling.
 		miseStep.Default("pipx:pdm", "latest")
 		addTool("pipx:pdm")
 	}
@@ -82,6 +85,7 @@ func (p *PythonProvider) getPackageManagerTools(ctx *generate.GenerateContext, m
 	}
 
 	if p.hasPipfile(ctx) {
+		// Like pypi:, this backend uses uv when available and falls back to pipx.
 		miseStep.Default("pipx:pipenv", "latest")
 		addTool("pipx:pipenv")
 	}
@@ -103,6 +107,7 @@ func (pm PackageManager) Install(p *PythonProvider, ctx *generate.GenerateContex
 	case PackageManagerPipenv:
 		return p.InstallPipenv(ctx, install)
 	default:
+		// Plain Python scripts can run without a detected package manager or installed dependencies.
 		return []string{}
 	}
 }
@@ -249,7 +254,7 @@ func (p *PythonProvider) copyInstallFiles(ctx *generate.GenerateContext, install
 		return
 	}
 
-	patterns := []string{
+	files := []string{
 		"requirements.txt",
 		"pyproject.toml",
 		"Pipfile",
@@ -258,35 +263,34 @@ func (p *PythonProvider) copyInstallFiles(ctx *generate.GenerateContext, install
 		"pdm.lock",
 	}
 
-	for _, pattern := range patterns {
-		if files, err := ctx.App.FindFiles(pattern); err == nil {
-			for _, file := range files {
-				install.AddCommand(plan.NewCopyCommand(file))
-			}
+	for _, file := range files {
+		if ctx.App.HasFile(file) {
+			install.AddCommand(plan.NewCopyCommand(file))
 		}
 	}
 }
 
+// Detect local dependencies in requirements.txt and pyproject.toml so installs receive application source.
 var (
-	// shared by requirements.txt and pyproject.toml to detect dependencies that need application files
-	// Lockers (uv pip compile, pip-compile) emit relative `file:` URLs such as
-	// `pkg @ file:_vendor/pkg.whl` because `file://` with a relative path is invalid URL syntax.
-	// VCS-prefixed file URLs also need the local repository copied into the install layer.
+	// Match local file URLs, e.g. `pkg @ file:_vendor/pkg.whl` or `git+file:///app/lib`.
 	localFileSchemeRegex = regexp.MustCompile(`(?:^|[\s@='"])(?:(?:git|svn|hg|bzr)\+)?file:`)
 
-	// requirements.txt accepts pip options and bare paths that pyproject.toml dependency tables do not
+	// Editable requirements such as `-e ./lib` need source available during installation.
 	editableRequirementRegex = regexp.MustCompile(`^(?:-e(?:\s*|=)?|--editable(?:\s+|=))(\S*)`)
 
+	// Capture the wheel source in `-f _vendor` or `--find-links=https://example.com/wheels`.
 	findLinksOptionRegex = regexp.MustCompile(`^(?:-f(?:\s*|=)?|--find-links(?:\s+|=))(\S+)`)
 
+	// Match direct local references such as `pkg @ ./lib` and `pkg @ /app/lib`.
 	pep508LocalPathRegex = regexp.MustCompile(`@\s*(?:\.\.?/|/)`)
 
+	// Recognize wheel and source archive paths such as `_vendor/pkg.tar.gz`.
 	localArchiveExtensionRegex = regexp.MustCompile(`\.(?:whl|tar\.gz|tgz|zip)(?:$|\s|;|#)`)
 
+	// Exclude downloadable archives and find-links URLs from local-file detection.
 	remoteRequirementSchemeRegex = regexp.MustCompile(`(?i)(?:https?|ssh)://|(?:git|svn|hg|bzr)\+`)
 
-	// pyproject.toml path keys identify local dependencies, unlike its readme and license file keys
-	// Match TOML `path = ...` keys without false-positiving on `pythonpath =` or `include-path =`.
+	// Match `path = "./lib"` and `pkg.path = "./lib"`, excluding `pythonpath = "src"`.
 	pyprojectLocalPathKeyRegex = regexp.MustCompile(`(?:^|[{\s,.])path\s*=`)
 )
 
@@ -304,17 +308,17 @@ func (p *PythonProvider) installNeedsAllFiles(ctx *generate.GenerateContext) boo
 		}
 	}
 
-	// TODO just having a `uv.tool.workspace` key doesn't necessarily mean you are listing a workspace item as a dependency
-	// parse TOML using existing helper to check for tool.uv.workspace key
-	var pyproject map[string]any
+	// Conservatively copy workspace sources even when no member is an explicit dependency.
+	// A pointer distinguishes an absent tool.uv.workspace key from an empty workspace table.
+	var pyproject struct {
+		Tool struct {
+			Uv struct {
+				Workspace *struct{} `toml:"workspace"`
+			} `toml:"uv"`
+		} `toml:"tool"`
+	}
 	if err := ctx.App.ReadTOML("pyproject.toml", &pyproject); err == nil {
-		if tool, ok := pyproject["tool"].(map[string]any); ok {
-			if uv, ok := tool["uv"].(map[string]any); ok {
-				if _, exists := uv["workspace"]; exists {
-					return true
-				}
-			}
-		}
+		return pyproject.Tool.Uv.Workspace != nil
 	} else {
 		log.Infof("Failed to read pyproject.toml: %v", err)
 	}
@@ -326,22 +330,26 @@ func (p *PythonProvider) installNeedsAllFiles(ctx *generate.GenerateContext) boo
 func requirementsNeedLocalFiles(content string) bool {
 	for rawLine := range strings.Lines(content) {
 		line := strings.TrimSpace(rawLine)
+		// Comments may mention local paths without adding a dependency.
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
 
+		// File URLs, editable installs, and direct paths require the application's source.
 		if localFileSchemeRegex.MatchString(line) ||
 			editableRequirementRegex.MatchString(line) ||
 			pep508LocalPathRegex.MatchString(line) {
 			return true
 		}
 
+		// A local wheel directory must be copied; a remote find-links index needs no source.
 		if matches := findLinksOptionRegex.FindStringSubmatch(line); len(matches) > 1 {
 			if !remoteRequirementSchemeRegex.MatchString(matches[1]) {
 				return true
 			}
 		}
 
+		// Bare archive paths need source, whereas remote archive URLs can be downloaded.
 		if localArchiveExtensionRegex.MatchString(line) && !remoteRequirementSchemeRegex.MatchString(line) {
 			return true
 		}
