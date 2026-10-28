@@ -219,6 +219,16 @@ func TestInstallNeedsAllFiles(t *testing.T) {
 			want         bool
 		}{
 			{
+				name:      "empty uv workspace table still requires source",
+				pyproject: "[tool.uv.workspace]\n",
+				want:      true,
+			},
+			{
+				name:      "uv settings without workspace need no source",
+				pyproject: "[tool.uv]\npackage = false\n",
+				want:      false,
+			},
+			{
 				name:         "requirements.txt with relative file wheel",
 				requirements: "dummy @ file:_vendor/dummy-1.0.0-py3-none-any.whl\n",
 				want:         true,
