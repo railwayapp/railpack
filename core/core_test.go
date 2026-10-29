@@ -35,14 +35,16 @@ func TestGenerateBuildPlanForExamples(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, entry := range entries {
-		if !entry.IsDir() {
+		examplePath := filepath.Join(examplesDir, entry.Name())
+		// Follow directory symlinks for discovery while passing the symlink path to the planner.
+		info, err := os.Stat(examplePath)
+		require.NoError(t, err)
+		if !info.IsDir() {
 			continue
 		}
 
 		// For each example, generate a build plan that we can snapshot test
 		t.Run(entry.Name(), func(t *testing.T) {
-			examplePath := filepath.Join(examplesDir, entry.Name())
-
 			userApp, err := app.NewApp(examplePath)
 			require.NoError(t, err)
 
