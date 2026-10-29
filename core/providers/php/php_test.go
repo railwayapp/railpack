@@ -147,11 +147,11 @@ func TestPhpConfigSchema(t *testing.T) {
 
 func TestPhpConfigVersion(t *testing.T) {
 	tests := []struct {
-		name          string
-		path          string
-		configJSON    string
-		envVersion    string
-		wantVersion   string
+		name           string
+		path           string
+		configJSON     string
+		envVersion     string
+		wantVersion    string
 		wantVersionSrc string
 	}{
 		{
