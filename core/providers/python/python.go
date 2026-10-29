@@ -50,13 +50,31 @@ var pythonPlaywrightRuntimeDependencies = []string{
 
 var pythonDefaultExcludePatterns = []string{".venv", "venv"}
 
-type PythonProvider struct{}
+type PythonProvider struct {
+	config        PythonConfig
+	versionSource string
+}
 
 func (p *PythonProvider) Name() string {
 	return "python"
 }
 
 func (p *PythonProvider) Initialize(ctx *generate.GenerateContext) error {
+	if err := ctx.Config.ProviderConfigWithEnv(p.Name(), ctx.Env.Variables, &p.config); err != nil {
+		return fmt.Errorf("invalid python provider config: %w", err)
+	}
+
+	p.versionSource = "railpack config > python > version"
+	var fileConfig PythonConfig
+	if err := ctx.Config.ProviderConfig(p.Name(), &fileConfig); err != nil {
+		return fmt.Errorf("invalid python provider config: %w", err)
+	}
+	if fileConfig.Version == "" {
+		if _, envName := ctx.Env.GetConfigVariable("PYTHON_VERSION"); envName != "" {
+			p.versionSource = envName + " environment variable"
+		}
+	}
+
 	return nil
 }
 
@@ -416,8 +434,9 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 
 	miseStep.UseMiseVersions(ctx, packages)
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("PYTHON_VERSION"); envVersion != "" {
-		miseStep.Version(python, envVersion, varName)
+	if p.config.Version != "" {
+		ctx.Logger.LogInfo("Using Python version %s from %s", p.config.Version, p.versionSource)
+		miseStep.Version(python, p.config.Version, p.versionSource)
 	}
 
 	// Disable Python compilation to avoid incompatibility issues with some packages
@@ -547,8 +566,10 @@ func (p *PythonProvider) usesDep(ctx *generate.GenerateContext, dep string) bool
 	return false
 }
 
-var pipfileFullVersionRegex = regexp.MustCompile(`python_full_version\s*=\s*['"]([0-9.]*)"?`)
-var pipfileShortVersionRegex = regexp.MustCompile(`python_version\s*=\s*['"]([0-9.]*)"?`)
+var (
+	pipfileFullVersionRegex  = regexp.MustCompile(`python_full_version\s*=\s*['"]([0-9.]*)"?`)
+	pipfileShortVersionRegex = regexp.MustCompile(`python_version\s*=\s*['"]([0-9.]*)"?`)
+)
 
 func parseVersionFromPipfile(ctx *generate.GenerateContext) (string, string) {
 	pipfile, err := ctx.App.ReadFile("Pipfile")

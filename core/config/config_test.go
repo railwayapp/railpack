@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/invopop/jsonschema"
 	"github.com/stretchr/testify/require"
 )
 
@@ -112,7 +113,6 @@ func TestMergeConfigSmall(t *testing.T) {
 	if diff := cmp.Diff(expected, *result); diff != "" {
 		t.Errorf("configs mismatch (-want +got):\n%s", diff)
 	}
-
 }
 
 func TestMergeConfig(t *testing.T) {
@@ -305,7 +305,7 @@ func TestMergeConfigStart(t *testing.T) {
 }
 
 func TestGetJsonSchema(t *testing.T) {
-	schema := GetJsonSchema()
+	schema := GetJsonSchema(nil)
 	require.NotEmpty(t, schema)
 
 	require.NotContains(t, schema.Required, "provider")
@@ -331,6 +331,43 @@ func TestGetJsonSchema(t *testing.T) {
 	schemaJson, err := json.MarshalIndent(schema, "", "  ")
 	require.NoError(t, err)
 	require.NotEmpty(t, schemaJson)
+}
+
+func TestProviderConfigRoundTripAndMerge(t *testing.T) {
+	var first, second Config
+	require.NoError(t, json.Unmarshal([]byte(`{
+	"node":{"version":"24",
+	"packageManager":"bun"}
+	
+	}`), &first))
+	require.NoError(t, json.Unmarshal([]byte(`{"node":{"version":"22"}}`), &second))
+
+	merged := Merge(&first, &second)
+	var providerConfig struct {
+		Version        string `json:"version"`
+		PackageManager string `json:"packageManager"`
+	}
+	require.NoError(t, merged.ProviderConfig("node", &providerConfig))
+	require.Equal(t, "22", providerConfig.Version)
+	require.Equal(t, "bun", providerConfig.PackageManager)
+
+	data, err := json.Marshal(merged)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"node":{"version":"22","packageManager":"bun"},"deploy":{}}`, string(data))
+}
+
+func TestGetJsonSchemaIncludesProviderSchemas(t *testing.T) {
+	providerSchema := &jsonschema.Schema{Type: "object", Properties: jsonschema.NewProperties()}
+	providerSchema.Properties.Set("version", &jsonschema.Schema{Type: "string"})
+	schema := GetJsonSchema(map[string]*jsonschema.Schema{
+		"node": providerSchema,
+	})
+
+	providerSchema, ok := schema.Properties.Get("node")
+	require.True(t, ok)
+	versionSchema, ok := providerSchema.Properties.Get("version")
+	require.True(t, ok)
+	require.Equal(t, "string", versionSchema.Type)
 }
 
 func TestConfigExcludeInclude(t *testing.T) {
@@ -375,5 +412,51 @@ func TestMergeConfigExcludeInclude(t *testing.T) {
 
 	if diff := cmp.Diff(expected, *result); diff != "" {
 		t.Errorf("configs mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestProviderConfigLoadsEnvironmentAndPrefersJSON(t *testing.T) {
+	tests := []struct {
+		name        string
+		configJSON  string
+		env         map[string]string
+		wantVersion string
+	}{
+		{
+			name:       "JSON overrides environment and environment fills missing fields",
+			configJSON: `{"node":{"version":"20"}}`,
+			env: map[string]string{
+				"RAILPACK_NODE_VERSION": "22",
+			},
+			wantVersion: "20",
+		},
+		{
+			name: "environment values are used without provider JSON",
+			env: map[string]string{
+				"RAILPACK_NODE_VERSION": "22",
+			},
+			wantVersion: "22",
+		},
+		{
+			name:        "provider JSON is used without environment values",
+			configJSON:  `{"node":{"version":"20"}}`,
+			wantVersion: "20",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			providerConfig := struct {
+				Version string `json:"version,omitempty"`
+			}{}
+			fileConfig := EmptyConfig()
+			if test.configJSON != "" {
+				require.NoError(t, json.Unmarshal([]byte(test.configJSON), fileConfig))
+			}
+
+			err := fileConfig.ProviderConfigWithEnv("node", test.env, &providerConfig)
+			require.NoError(t, err)
+			require.Equal(t, test.wantVersion, providerConfig.Version)
+		})
 	}
 }

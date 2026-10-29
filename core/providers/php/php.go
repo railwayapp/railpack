@@ -49,7 +49,10 @@ var startContainerSymfonyScript string
 //go:embed php.ini
 var phpIniTemplate string
 
-type PhpProvider struct{}
+type PhpProvider struct {
+	config        PhpConfig
+	versionSource string
+}
 
 func (p *PhpProvider) Name() string {
 	return "php"
@@ -61,6 +64,21 @@ func (p *PhpProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 }
 
 func (p *PhpProvider) Initialize(ctx *generate.GenerateContext) error {
+	if err := ctx.Config.ProviderConfigWithEnv(p.Name(), ctx.Env.Variables, &p.config); err != nil {
+		return fmt.Errorf("invalid php provider config: %w", err)
+	}
+
+	p.versionSource = "railpack config > php > version"
+	var fileConfig PhpConfig
+	if err := ctx.Config.ProviderConfig(p.Name(), &fileConfig); err != nil {
+		return fmt.Errorf("invalid php provider config: %w", err)
+	}
+	if fileConfig.Version == "" {
+		if _, envName := ctx.Env.GetConfigVariable("PHP_VERSION"); envName != "" {
+			p.versionSource = envName + " environment variable"
+		}
+	}
+
 	return nil
 }
 
@@ -457,11 +475,12 @@ type ConfigFiles struct {
 
 func (p *PhpProvider) getConfigFiles(ctx *generate.GenerateContext) (*ConfigFiles, error) {
 	framework := p.getFramework(ctx)
-	phpRootDir := "/app"
-	if variable := ctx.Env.GetVariable("RAILPACK_PHP_ROOT_DIR"); variable != "" {
-		phpRootDir = variable
-	} else if framework == "laravel" || framework == "symfony" {
-		phpRootDir = "/app/public"
+	phpRootDir := p.config.RootDir
+	if phpRootDir == "" {
+		phpRootDir = "/app"
+		if framework == "laravel" || framework == "symfony" {
+			phpRootDir = "/app/public"
+		}
 	}
 
 	data := map[string]any{
@@ -506,8 +525,10 @@ func (p *PhpProvider) phpImagePackage(ctx *generate.GenerateContext) (*generate.
 
 	php := imageStep.Default("php", DEFAULT_PHP_VERSION)
 
-	// Read composer.json to get the PHP version
-	if composerJson, err := p.readComposerJson(ctx); err == nil {
+	if p.config.Version != "" {
+		imageStep.Version(php, p.config.Version, p.versionSource)
+	} else if composerJson, err := p.readComposerJson(ctx); err == nil {
+		// Read composer.json to get the PHP version
 		phpVersion := objx.New(composerJson).Get("require.php")
 		if phpVersion.IsStr() {
 			if after, ok := strings.CutPrefix(phpVersion.Str(), "^"); ok {

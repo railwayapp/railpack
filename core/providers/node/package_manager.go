@@ -1,6 +1,7 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -18,11 +19,28 @@ const (
 	PackageManagerBun       PackageManager = "bun"
 	PackageManagerYarn1     PackageManager = "yarn1"
 	PackageManagerYarnBerry PackageManager = "yarnberry"
+	PackageManagerYarn      PackageManager = "yarn"
 
 	DEFAULT_PNPM_VERSION = "9"
 	PNPM_HOME            = "/opt/pnpm"
 	PNPM_STORE_DIR       = PNPM_HOME + "/store"
 )
+
+func (p *PackageManager) UnmarshalJSON(data []byte) error {
+	var name string
+	if err := json.Unmarshal(data, &name); err != nil {
+		return err
+	}
+
+	packageManager := PackageManager(name)
+	switch packageManager {
+	case "", PackageManagerNpm, PackageManagerPnpm, PackageManagerYarn, PackageManagerBun:
+		*p = packageManager
+		return nil
+	default:
+		return fmt.Errorf("invalid node packageManager %q", name)
+	}
+}
 
 func (p *PackageJson) hasProductionDependency(dependency string) bool {
 	if p.Dependencies == nil {

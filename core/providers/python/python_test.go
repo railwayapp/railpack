@@ -1,14 +1,57 @@
 package python
 
 import (
+	"encoding/json"
 	"testing"
 
+	"github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/stretchr/testify/require"
 
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 )
+
+func TestPythonConfigVersionSource(t *testing.T) {
+	tests := []struct {
+		name           string
+		fileConfig     string
+		wantVersion    string
+		wantVersionSrc string
+	}{
+		{
+			name:           "environment variable",
+			wantVersion:    "3.12",
+			wantVersionSrc: "RAILPACK_PYTHON_VERSION environment variable",
+		},
+		{
+			name:           "railpack config overrides environment variable",
+			fileConfig:     `{"python":{"version":"3.13"}}`,
+			wantVersion:    "3.13",
+			wantVersionSrc: "railpack config > python > version",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := testingUtils.CreateGenerateContext(t, "../../../examples/python-uv")
+			ctx.Env = app.NewEnvironment(&map[string]string{"RAILPACK_PYTHON_VERSION": "3.12"})
+
+			fileConfig := config.EmptyConfig()
+			if tt.fileConfig != "" {
+				require.NoError(t, json.Unmarshal([]byte(tt.fileConfig), fileConfig))
+			}
+			ctx.Config = config.Merge(ctx.Config, fileConfig)
+
+			provider := PythonProvider{}
+			require.NoError(t, provider.Initialize(ctx))
+			require.Equal(t, tt.wantVersionSrc, provider.versionSource)
+			require.NoError(t, provider.Plan(ctx))
+			require.Equal(t, tt.wantVersion, ctx.Resolver.Get("python").Version)
+		})
+	}
+}
 
 func TestDetect(t *testing.T) {
 	tests := []struct {

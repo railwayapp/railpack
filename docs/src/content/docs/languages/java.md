@@ -15,18 +15,22 @@ met:
 
 ## Versions
 
-The Java version is determined in the following order:
-
-- Set via the `RAILPACK_JDK_VERSION` environment variable
-- If the project uses Gradle <= 5, Java 8 is used
-- Defaults to `21`
+The Java version can be set through the `java.version` option in
+[`railpack.json`](/config/file#provider-configuration) or the
+`RAILPACK_JAVA_VERSION` environment variable. The JSON option takes precedence.
+If neither is set, Gradle projects using Gradle <= 5 use Java 8; otherwise the
+default is `21`.
 
 ### Config Variables
 
-| Variable                  | Description                 | Example |
-| ------------------------- | --------------------------- | ------- |
-| `RAILPACK_JDK_VERSION`    | Override the JDK version    | `17`    |
-| `RAILPACK_GRADLE_VERSION` | Override the Gradle version | `8.5`   |
+| Variable                          | Description                 | Example |
+| --------------------------------- | --------------------------- | ------- |
+| `RAILPACK_JAVA_VERSION`           | Override the JDK version    | `17`    |
+| `RAILPACK_JAVA_GRADLE_VERSION`    | Override the Gradle version | `8.5`   |
+
+`RAILPACK_JDK_VERSION` and `RAILPACK_GRADLE_VERSION` are deprecated but remain
+supported for backwards compatibility. Use `RAILPACK_JAVA_VERSION` and
+`RAILPACK_JAVA_GRADLE_VERSION` instead.
 
 ## BuildKit Caching
 
