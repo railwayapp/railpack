@@ -25,6 +25,8 @@ locked = true
 run = [
   'mkdir -p "$TMP_DIR"',
   "mise install",
+  # Exercise version detection through a symlink as well as the physical example directory.
+  "ln -sfn node-pnpm-symlink-source examples/node-pnpm-symlink",
   "mise run run-buildkit-container",
 ]
 

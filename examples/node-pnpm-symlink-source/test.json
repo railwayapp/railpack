@@ -1,0 +1,12 @@
+[
+  {
+    // setup also exposes this project through a symlink (#775).
+    // Losing the pnpm pin plans pnpm 9's PATH, which makes pnpm 11's global node-gyp install fail.
+    "expectedOutput": [
+      "Node.js version: v20.19.0",
+      "PNPM version: 11.5.1"
+    ],
+    // pnpm run echoes the script command to stderr before executing it: "$ node main.js".
+    "stderrAllowed": true
+  }
+]

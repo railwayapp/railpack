@@ -101,12 +101,9 @@ func TestGetPackageVersionsFromSymlinkedAppDir(t *testing.T) {
 		0644,
 	))
 
-	// macOS exposes temp dirs through /var, a symlink to /private/var, so mise
-	// resolves the app directory to a different absolute path than the one we pass in.
+	// Mise reports physical config paths, so an unresolved app symlink would filter out its own configs.
 	linkDir := filepath.Join(parentDir, "link")
-	if err := os.Symlink(appDir, linkDir); err != nil {
-		t.Skipf("cannot create symlink on this platform: %v", err)
-	}
+	require.NoError(t, os.Symlink(appDir, linkDir))
 
 	ctx := CreateTestContext(t, linkDir)
 
