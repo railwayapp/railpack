@@ -72,7 +72,11 @@ func TestExamplesIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, entry := range entries {
-		if !entry.IsDir() {
+		examplePath := filepath.Join(examplesDir, entry.Name())
+		// Stat follows directory symlinks, but keep the original path to exercise symlinked build contexts.
+		info, err := os.Stat(examplePath)
+		require.NoError(t, err)
+		if !info.IsDir() {
 			continue
 		}
 
@@ -103,8 +107,6 @@ func TestExamplesIntegration(t *testing.T) {
 				t.Fatalf("%s case-%d: cannot have both httpCheck and expectedOutput in the same test case", entry.Name(), i)
 			}
 		}
-
-		examplePath := filepath.Join(examplesDir, entry.Name())
 
 		// each entry in the tests.json array is an individual test case which runs it's own container
 		for i, testCase := range testCases {

@@ -1,0 +1,8 @@
+{
+  "name": "node-pnpm-symlink-source",
+  "private": true,
+  "packageManager": "pnpm@11.5.1",
+  "scripts": {
+    "start": "node main.js"
+  }
+}
