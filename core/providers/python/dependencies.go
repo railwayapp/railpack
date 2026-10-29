@@ -18,7 +18,8 @@ var (
 
 type pyprojectManifest struct {
 	Project struct {
-		Dependencies []string `toml:"dependencies"`
+		Dependencies   []string `toml:"dependencies"`
+		RequiresPython string   `toml:"requires-python"`
 	} `toml:"project"`
 	Tool struct {
 		Poetry struct {

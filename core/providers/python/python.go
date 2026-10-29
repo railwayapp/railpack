@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	"github.com/railwayapp/railpack/core/resolver"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -423,6 +424,27 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	// Disable Python compilation to avoid incompatibility issues with some packages
 	// https://mise.jdx.dev/lang/python.html#python.compile
 	miseStep.AddMiseSetting("python.compile", false)
+
+	// Mise intentionally does not select Python from requires-python compatibility ranges.
+	// https://github.com/jdx/mise/discussions/4258
+	// We avoid maintaining separate PEP 440 resolution for combined bounds, compatible releases (~=),
+	// and exclusions (!=). Suggest an explicit version only when the interpreter still uses the default.
+	if pkg := miseStep.Resolver.Get("python"); pkg == nil || pkg.Source != resolver.DefaultSource {
+		return
+	}
+
+	var manifest pyprojectManifest
+	if err := ctx.App.ReadTOML("pyproject.toml", &manifest); err != nil {
+		return
+	}
+	if strings.TrimSpace(manifest.Project.RequiresPython) == "" {
+		return
+	}
+
+	ctx.Logger.LogSuggestion(
+		"`requires-python` in `pyproject.toml` does not select the Python version. Set `.python-version` or `RAILPACK_PYTHON_VERSION` to a compatible version",
+		"/config/resolving-errors#python-version-mismatch",
+	)
 }
 
 func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[string]string {
