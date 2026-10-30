@@ -32,3 +32,24 @@ jobs:
 
       - name: Test Unit
         run: mise run test
+
+  test-windows:
+    name: Check and Test (Windows)
+    runs-on: windows-latest
+    env:
+      # mise tasks are bash scripts, but mise defaults to cmd on Windows
+      MISE_WINDOWS_DEFAULT_INLINE_SHELL_ARGS: '"C:/Program Files/Git/bin/bash.exe" -c -o errexit'
+      MISE_WINDOWS_DEFAULT_FILE_SHELL_ARGS: '"C:/Program Files/Git/bin/bash.exe"'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+
+      - name: Go Checks
+        run: mise run check
+
+      - name: Test Unit
+        run: mise run test
+
+      # Windows runners cannot run Linux containers, so stop at the generated plan
+      - name: Generate Plan
+        run: mise run cli -- plan examples/go-workspaces
