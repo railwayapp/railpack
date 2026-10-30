@@ -317,6 +317,11 @@ func createAtomicWriter(targetPath string) (writeAndMove func(write func(tempFil
 		}
 
 		if err := os.Rename(tempPath, targetPath); err != nil {
+			// Windows cannot replace a running executable, so a concurrent install that won
+			// the race already left a complete binary here. validateInstallation still checks it.
+			if _, statErr := os.Stat(targetPath); statErr == nil {
+				return nil
+			}
 			return fmt.Errorf("failed to move temp file to target: %w", err)
 		}
 
