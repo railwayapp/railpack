@@ -176,8 +176,8 @@ func versionQueryCandidates(version string) []string {
 //
 // ignoredConfigPaths are files in appDir that will not be in the build context.
 // mise reads the directory itself, so a dockerignored mise.local.toml would
-// otherwise override the committed toolchain. Paths are colon-separated, which
-// is how mise parses MISE_IGNORED_CONFIG_PATHS.
+// otherwise override the committed toolchain. mise parses
+// MISE_IGNORED_CONFIG_PATHS with the OS path list separator (; on Windows).
 func (m *Mise) GetCurrentList(appDir string, ignoredConfigPaths []string) (string, error) {
 	// MISE_TRUSTED_CONFIG_PATHS allows mise to use configs in the app directory without a trust warning
 	trustedConfigEnv := fmt.Sprintf("MISE_TRUSTED_CONFIG_PATHS=%s", appDir)
@@ -204,7 +204,7 @@ func (m *Mise) GetCurrentList(appDir string, ignoredConfigPaths []string) (strin
 	}
 	if len(ignoredConfigPaths) > 0 {
 		// Also skips idiomatic version files such as .nvmrc and .node-version.
-		env = append(env, "MISE_IGNORED_CONFIG_PATHS="+strings.Join(ignoredConfigPaths, ":"))
+		env = append(env, "MISE_IGNORED_CONFIG_PATHS="+strings.Join(ignoredConfigPaths, string(os.PathListSeparator)))
 	}
 
 	return m.runCmdWithEnv(env, "--cd", appDir, "list", "--current", "--json")
