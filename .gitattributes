@@ -1,0 +1,3 @@
+# Keep LF on every platform: go:embed captures working-tree bytes, so CRLF would
+# end up in embedded scripts and templates, and in generated snapshots.
+* text=auto eol=lf
