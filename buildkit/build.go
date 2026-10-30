@@ -11,6 +11,7 @@ import (
 	"maps"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -291,7 +292,7 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 
 // determine the image name from the app dir path
 func getImageName(appDir string) string {
-	parts := strings.Split(appDir, string(os.PathSeparator))
+	parts := strings.Split(filepath.ToSlash(appDir), "/")
 	name := parts[len(parts)-1]
 
 	// TODO how could this happen in practice?

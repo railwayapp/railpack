@@ -2,7 +2,7 @@ package node
 
 import (
 	"fmt"
-	"path/filepath"
+	"path"
 
 	"github.com/railwayapp/railpack/core/app"
 )
@@ -72,7 +72,7 @@ func (w *Workspace) findWorkspacePackages(app *app.App) error {
 				continue
 			}
 
-			dir := filepath.Dir(match)
+			dir := path.Dir(match)
 			w.Packages = append(w.Packages, &WorkspacePackage{
 				Path:        dir,
 				PackageJson: packageJson,
@@ -99,7 +99,7 @@ func convertWorkspacePattern(pattern string) string {
 	}
 
 	// Direct path or other pattern, just append package.json
-	return filepath.Join(pattern, "package.json")
+	return path.Join(pattern, "package.json")
 }
 
 // readPackageJson reads a package.json file from the given path
