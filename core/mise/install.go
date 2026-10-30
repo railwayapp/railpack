@@ -248,36 +248,25 @@ func extractZip(archivePath, binaryPath string) error {
 	}
 	defer cleanup()
 
-	// On Windows the release archive contains `mise/bin/mise.exe` (unversioned), while
-	// getBinaryName() returns the versioned output filename used on disk. Match either
-	// the versioned output name or the plain archive name so both layouts are handled.
-	var archiveNames []string
-	if runtime.GOOS == "windows" {
-		archiveNames = []string{getBinaryName(), "mise.exe"}
-	} else {
-		archiveNames = []string{getBinaryName()}
-	}
-
+	binaryPathInArchive := "mise/bin/mise.exe"
 	for _, f := range r.File {
-		for _, archiveName := range archiveNames {
-			if strings.HasSuffix(f.Name, archiveName) {
-				rc, err := f.Open()
-				if err != nil {
-					return err
-				}
-
-				err = writeAndMove(func(tempFile *os.File) error {
-					_, err := io.Copy(tempFile, rc)
-					_ = rc.Close()
-					return err
-				})
-
+		if f.Name == binaryPathInArchive {
+			rc, err := f.Open()
+			if err != nil {
 				return err
 			}
+
+			err = writeAndMove(func(tempFile *os.File) error {
+				_, err := io.Copy(tempFile, rc)
+				_ = rc.Close()
+				return err
+			})
+
+			return err
 		}
 	}
 
-	return fmt.Errorf("binary not found in archive")
+	return fmt.Errorf("binary not found in archive at %s", binaryPathInArchive)
 }
 
 func validateInstallation(cacheDir string) error {

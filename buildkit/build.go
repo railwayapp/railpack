@@ -44,7 +44,7 @@ Use 'railpack --verbose' to view more error details`
 )
 
 // returns platform-specific instructions for starting BuildKit and setting BUILDKIT_HOST.
-// PowerShell uses $env:VAR and ; separators, while bash/zsh use export and newlines.
+// PowerShell sets variables with $env:VAR, while bash/zsh use export.
 func buildkitHostNotSetError() string {
 	setEnvLine := "export BUILDKIT_HOST='docker-container://buildkit'"
 	if runtime.GOOS == "windows" {
