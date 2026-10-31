@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.railpack.com",
+  // GitHub CLI publishes a binary key and Docker an armored one, so both formats are exercised.
+  "buildAptSources": [
+    {
+      "uri": "https://cli.github.com/packages",
+      "suite": "stable",
+      "components": ["main"],
+      "signingKeyUrl": "https://cli.github.com/packages/githubcli-archive-keyring.gpg"
+    }
+  ],
+  "buildAptPackages": ["...", "gh"],
+  "steps": {
+    "build": {
+      // Debian trixie also ships gh, and its build labels itself in the version output.
+      // Rejecting that label fails the build unless gh came from the build source.
+      "commands": ["gh --version > build-gh-version.txt && ! grep -q Debian build-gh-version.txt"]
+    }
+  },
+  "deploy": {
+    "aptSources": [
+      {
+        "uri": "https://download.docker.com/linux/debian",
+        "suite": "trixie",
+        "components": ["stable"],
+        "signingKeyUrl": "https://download.docker.com/linux/debian/gpg"
+      }
+    ],
+    "aptPackages": ["...", "docker-ce-cli"]
+  }
+}

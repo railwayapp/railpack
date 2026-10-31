@@ -59,3 +59,38 @@ To intentionally replace Railpack's runtime packages, omit `...`:
   }
 }
 ```
+
+### Third-party repositories
+
+Use `buildAptSources` and `deploy.aptSources` to install packages from
+repositories Debian does not include. As with packages, each list applies only
+to its own image, so a build source is not available in the final image.
+
+```json title="railpack.json"
+{
+  "$schema": "https://schema.railpack.com",
+  "buildAptSources": [
+    {
+      "uri": "https://cli.github.com/packages",
+      "suite": "stable",
+      "components": ["main"],
+      "signingKeyUrl": "https://cli.github.com/packages/githubcli-archive-keyring.gpg"
+    }
+  ],
+  "buildAptPackages": ["...", "gh"]
+}
+```
+
+| Field           | Description                                                                         |
+| :-------------- | :---------------------------------------------------------------------------------- |
+| `uri`           | Base URL of the repository (`http` or `https`)                                      |
+| `suite`         | Repository suite, such as `stable`. A value ending in `/` selects a flat repository |
+| `components`    | Repository components, such as `main`. Omit for a flat repository                   |
+| `signingKeyUrl` | `https` URL of the public key that signs the repository                             |
+
+A signing key is required, and it applies only to its own repository. Keys
+published with a `.gpg` extension are treated as binary and all others as
+ASCII-armored.
+
+Sources are configured in `railpack.json` only. There is no environment variable
+equivalent.

@@ -1,0 +1,5 @@
+[
+  {
+    "expectedOutput": ["build: gh version", "deploy: Docker version", "gh absent at runtime"]
+  }
+]
