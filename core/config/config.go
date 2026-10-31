@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/invopop/jsonschema"
 	"github.com/railwayapp/railpack/core/plan"
@@ -14,6 +15,7 @@ const (
 
 type DeployConfig struct {
 	AptPackages []string          `json:"aptPackages,omitempty" jsonschema:"description=List of apt packages to include at runtime"`
+	AptSources  []AptSource       `json:"aptSources,omitempty" jsonschema:"description=List of third-party apt repositories to add at runtime"`
 	Base        *plan.Layer       `json:"base,omitempty" jsonschema:"description=The base image to use for the deploy step"`
 	Inputs      []plan.Layer      `json:"inputs,omitempty" jsonschema:"description=The inputs for the deploy step"`
 	StartCmd    string            `json:"startCommand,omitempty" jsonschema:"description=The command to run in the container"`
@@ -29,6 +31,7 @@ type StepConfig struct {
 type Config struct {
 	Provider         *string                `json:"provider,omitempty" jsonschema:"enum=php,enum=golang,enum=java,enum=rust,enum=ruby,enum=elixir,enum=python,enum=deno,enum=dotnet,enum=node,enum=gleam,enum=cpp,enum=staticfile,enum=shell,description=The provider to use"`
 	BuildAptPackages []string               `json:"buildAptPackages,omitempty" jsonschema:"description=List of apt packages to install during the build step"`
+	BuildAptSources  []AptSource            `json:"buildAptSources,omitempty" jsonschema:"description=List of third-party apt repositories to add during the build step"`
 	Steps            map[string]*StepConfig `json:"steps,omitempty" jsonschema:"description=Map of step names to step definitions"`
 	Deploy           *DeployConfig          `json:"deploy,omitempty" jsonschema:"description=Deploy configuration"`
 	Packages         map[string]string      `json:"packages,omitempty" jsonschema:"description=Map of package name to package version"`
@@ -75,6 +78,27 @@ func Merge(configs ...*Config) *Config {
 	}
 
 	return result
+}
+
+// Validate reports config values that cannot produce a working build plan.
+func (c *Config) Validate() error {
+	for i, source := range c.BuildAptSources {
+		if err := source.validate(); err != nil {
+			return fmt.Errorf("buildAptSources[%d]: %w", i, err)
+		}
+	}
+
+	if c.Deploy == nil {
+		return nil
+	}
+
+	for i, source := range c.Deploy.AptSources {
+		if err := source.validate(); err != nil {
+			return fmt.Errorf("deploy.aptSources[%d]: %w", i, err)
+		}
+	}
+
+	return nil
 }
 
 func (s *StepConfig) UnmarshalJSON(data []byte) error {
