@@ -1,5 +1,6 @@
 [
   {
+    // Starting server.py directly exits without serving; the provider must launch uvicorn for fastapi[standard].
     "httpCheck": {
       "path": "/",
       "expected": 200,
