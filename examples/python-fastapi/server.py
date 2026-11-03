@@ -1,4 +1,4 @@
-# Intentionally named server.py to verify startup uses the detected module instead of main.
+# intentionally named server.py to catch startup commands that hardcode the main module
 from fastapi import FastAPI
 
 app = FastAPI()
