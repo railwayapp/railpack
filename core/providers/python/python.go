@@ -155,17 +155,19 @@ func (p *PythonProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 
 	mainPythonFile := p.getMainPythonFile(ctx)
 	hasMainPythonFile := mainPythonFile != ""
+	mainModule := strings.TrimSuffix(mainPythonFile, ".py")
 
 	if p.isFasthtml(ctx) && hasMainPythonFile && p.usesDep(ctx, "uvicorn") {
-		startCommand = "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
+		startCommand = fmt.Sprintf("uvicorn %s:app --host 0.0.0.0 --port ${PORT:-8000}", mainModule)
 	}
 
-	if p.isFastapi(ctx) && hasMainPythonFile && p.usesDep(ctx, "uvicorn") {
-		startCommand = "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
+	// fastapi's standard extra installs uvicorn without a direct server dependency
+	if p.isFastapi(ctx) && hasMainPythonFile && (p.usesProductionDep(ctx, "uvicorn") || p.usesProductionDep(ctx, "fastapi[standard]")) {
+		startCommand = fmt.Sprintf("uvicorn %s:app --host 0.0.0.0 --port ${PORT:-8000}", mainModule)
 	}
 
 	if p.isFlask(ctx) && hasMainPythonFile && p.usesDep(ctx, "gunicorn") {
-		startCommand = "gunicorn --bind 0.0.0.0:${PORT:-8000} main:app"
+		startCommand = fmt.Sprintf("gunicorn --bind 0.0.0.0:${PORT:-8000} %s:app", mainModule)
 	}
 
 	if startCommand == "" && hasMainPythonFile {
@@ -425,11 +427,17 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	// https://mise.jdx.dev/lang/python.html#python.compile
 	miseStep.AddMiseSetting("python.compile", false)
 
-	// Mise intentionally does not select Python from requires-python compatibility ranges.
-	// https://github.com/jdx/mise/discussions/4258
-	// We avoid maintaining separate PEP 440 resolution for combined bounds, compatible releases (~=),
-	// and exclusions (!=). Suggest an explicit version only when the interpreter still uses the default.
-	if pkg := miseStep.Resolver.Get("python"); pkg == nil || pkg.Source != resolver.DefaultSource {
+	p.suggestExplicitPythonVersion(ctx)
+}
+
+// suggests an explicit interpreter when requires-python is present and the default is still selected
+//
+// - mise deliberately does not select interpreters from compatibility ranges
+// - resolving combined bounds, compatible releases (~=), and exclusions (!=) here would need a separate pep 440 resolver
+//
+// https://github.com/jdx/mise/discussions/4258
+func (p *PythonProvider) suggestExplicitPythonVersion(ctx *generate.GenerateContext) {
+	if pkg := ctx.Resolver.Get("python"); pkg == nil || pkg.Source != resolver.DefaultSource {
 		return
 	}
 
@@ -622,7 +630,7 @@ func (p *PythonProvider) isFlask(ctx *generate.GenerateContext) bool {
 }
 
 func (p *PythonProvider) isFastapi(ctx *generate.GenerateContext) bool {
-	return p.usesDep(ctx, "fastapi")
+	return p.usesProductionDep(ctx, "fastapi")
 }
 
 func (p *PythonProvider) getRuntime(ctx *generate.GenerateContext) string {
