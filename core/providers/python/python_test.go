@@ -210,10 +210,10 @@ func TestPlaywrightInstallationIsOptIn(t *testing.T) {
 	})
 }
 
-func TestDependencySpecMatches(t *testing.T) {
-	require.True(t, dependencySpecMatches("Playwright[chromium]>=1.49", "playwright"))
-	require.True(t, dependencySpecMatches("playwright @ https://example.com/playwright.whl", "playwright"))
-	require.False(t, dependencySpecMatches("pytest-playwright>=0.7", "playwright"))
+func TestDependencyStringMatchesRequestedPackage(t *testing.T) {
+	require.True(t, dependencyStringDeclaresPackageAndExtras("Playwright[chromium]>=1.49", "playwright"))
+	require.True(t, dependencyStringDeclaresPackageAndExtras("playwright @ https://example.com/playwright.whl", "playwright"))
+	require.False(t, dependencyStringDeclaresPackageAndExtras("pytest-playwright>=0.7", "playwright"))
 }
 
 func stepHasExecCommand(ctx *generate.GenerateContext, stepName string, command string) bool {

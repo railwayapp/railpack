@@ -1,5 +1,6 @@
 [
   {
+    // importing the app alone exits without serving; this check requires an actual server
     "httpCheck": {
       "path": "/",
       "expected": 200,
