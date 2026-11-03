@@ -128,6 +128,23 @@ func TestGetPackageManagerPackages_PnpmVersionPrecedence(t *testing.T) {
 		require.Equal(t, "package.json > engines > pnpm", pnpm.Source)
 	})
 
+	t.Run("custom config overrides engines", func(t *testing.T) {
+		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
+		miseStep := ctx.NewMiseStepBuilder("test")
+		pnpmRef := miseStep.Default("pnpm", "11")
+		miseStep.Version(pnpmRef, "11", "custom config")
+
+		packageJson := NewPackageJson()
+		packageJson.Engines["pnpm"] = "10"
+
+		PackageManagerPnpm.GetPackageManagerPackages(ctx, packageJson, miseStep)
+
+		pnpm := ctx.Resolver.Get("pnpm")
+		require.NotNil(t, pnpm)
+		require.Equal(t, "11", pnpm.Version)
+		require.Equal(t, "custom config", pnpm.Source)
+	})
+
 	t.Run("packageManager is not parsed before mise resolution", func(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
 		miseStep := ctx.NewMiseStepBuilder("test")

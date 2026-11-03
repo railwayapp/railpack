@@ -383,31 +383,32 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 	if p == PackageManagerPnpm {
 		pnpm := packages.Default("pnpm", DEFAULT_PNPM_VERSION)
 
-		lockfile, err := ctx.App.ReadFile("pnpm-lock.yaml")
-		if err == nil {
-			switch {
-			case strings.HasPrefix(lockfile, "lockfileVersion: 5.3"):
-				packages.Version(pnpm, "6", "pnpm-lock.yaml")
-			case strings.HasPrefix(lockfile, "lockfileVersion: 5.4"):
-				packages.Version(pnpm, "7", "pnpm-lock.yaml")
-			case strings.HasPrefix(lockfile, "lockfileVersion: '6.0'") || strings.HasPrefix(lockfile, "lockfileVersion: 6.0"):
-				packages.Version(pnpm, "8", "pnpm-lock.yaml")
-			case strings.HasPrefix(lockfile, "lockfileVersion: '6.1'"):
-				packages.Version(pnpm, "8", "pnpm-lock.yaml")
-			case strings.HasPrefix(lockfile, "lockfileVersion: '9.0'") || strings.HasPrefix(lockfile, "lockfileVersion: 9.0"):
-				// pnpm 9 introduced lockfileVersion 9.0.
-				// pnpm 10 and 11 continue using the same 9.0 format (no bump).
-				packages.Version(pnpm, "9", "pnpm-lock.yaml")
-			default:
-				log.Warnf("could not detect pnpm lockfile version")
+		if existing := ctx.Resolver.Get("pnpm"); existing == nil || existing.Source != "custom config" {
+			lockfile, err := ctx.App.ReadFile("pnpm-lock.yaml")
+			if err == nil {
+				switch {
+				case strings.HasPrefix(lockfile, "lockfileVersion: 5.3"):
+					packages.Version(pnpm, "6", "pnpm-lock.yaml")
+				case strings.HasPrefix(lockfile, "lockfileVersion: 5.4"):
+					packages.Version(pnpm, "7", "pnpm-lock.yaml")
+				case strings.HasPrefix(lockfile, "lockfileVersion: '6.0'") || strings.HasPrefix(lockfile, "lockfileVersion: 6.0"):
+					packages.Version(pnpm, "8", "pnpm-lock.yaml")
+				case strings.HasPrefix(lockfile, "lockfileVersion: '6.1'"):
+					packages.Version(pnpm, "8", "pnpm-lock.yaml")
+				case strings.HasPrefix(lockfile, "lockfileVersion: '9.0'") || strings.HasPrefix(lockfile, "lockfileVersion: 9.0"):
+					// pnpm 9 introduced lockfileVersion 9.0.
+					// pnpm 10 and 11 continue using the same 9.0 format (no bump).
+					packages.Version(pnpm, "9", "pnpm-lock.yaml")
+				default:
+					log.Warnf("could not detect pnpm lockfile version")
+				}
+			}
+
+			// engines.pnpm overrides lockfile inference because lockfileVersion is ambiguous across majors
+			if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["pnpm"] != "" {
+				packages.Version(pnpm, packageJson.Engines["pnpm"], "package.json > engines > pnpm")
 			}
 		}
-
-		// engines.pnpm overrides lockfile inference because lockfileVersion is ambiguous across majors
-		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["pnpm"] != "" {
-			packages.Version(pnpm, packageJson.Engines["pnpm"], "package.json > engines > pnpm")
-		}
-
 	}
 
 	// Yarn
@@ -424,18 +425,22 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 
 		// Prefer explicit version from package.json engines over defaults
 		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["yarn"] != "" {
-			packages.Version(yarn, packageJson.Engines["yarn"], "package.json > engines > yarn")
+			if existing := ctx.Resolver.Get("yarn"); existing == nil || existing.Source != "custom config" {
+				packages.Version(yarn, packageJson.Engines["yarn"], "package.json > engines > yarn")
+			}
 		}
 
 		// TODO we should use SemVer at this point
 		if pmName == "yarn" && pmVersion != "" {
-			majorVersion := strings.Split(pmVersion, ".")[0]
-			yarn := packages.Default("yarn", majorVersion)
-			packages.Version(yarn, pmVersion, "package.json > packageManager")
+			if existing := ctx.Resolver.Get("yarn"); existing == nil || existing.Source != "custom config" {
+				majorVersion := strings.Split(pmVersion, ".")[0]
+				yarn := packages.Default("yarn", majorVersion)
+				packages.Version(yarn, pmVersion, "package.json > packageManager")
 
-			// skip installing via Mise and install with corepack instead
-			// https://github.com/railwayapp/railpack/issues/201
-			packages.SkipMiseInstall(yarn)
+				// skip installing via Mise and install with corepack instead
+				// https://github.com/railwayapp/railpack/issues/201
+				packages.SkipMiseInstall(yarn)
+			}
 		}
 	}
 
@@ -445,11 +450,15 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 
 		// Prefer explicit version from package.json engines over defaults
 		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["bun"] != "" {
-			packages.Version(bun, packageJson.Engines["bun"], "package.json > engines > bun")
+			if existing := ctx.Resolver.Get("bun"); existing == nil || existing.Source != "custom config" {
+				packages.Version(bun, packageJson.Engines["bun"], "package.json > engines > bun")
+			}
 		}
 
 		if pmName == "bun" && pmVersion != "" {
-			packages.Version(bun, pmVersion, "package.json > packageManager")
+			if existing := ctx.Resolver.Get("bun"); existing == nil || existing.Source != "custom config" {
+				packages.Version(bun, pmVersion, "package.json > packageManager")
+			}
 		}
 	}
 }
