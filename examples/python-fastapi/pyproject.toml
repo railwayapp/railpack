@@ -5,6 +5,6 @@ description = "FastAPI example with uv"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    # The standard extra supplies the server transitively; keep it out of the direct dependency list.
+    # rely on the standard extra to exercise server detection without a direct server dependency
     "fastapi[standard]>=0.115.5",
 ]

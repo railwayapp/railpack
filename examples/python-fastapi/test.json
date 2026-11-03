@@ -1,6 +1,6 @@
 [
   {
-    // Starting server.py directly exits without serving; the provider must launch uvicorn for fastapi[standard].
+    // importing the app alone exits without serving; this check requires an actual server
     "httpCheck": {
       "path": "/",
       "expected": 200,

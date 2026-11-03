@@ -1,4 +1,4 @@
-# Intentionally named app.py to verify startup uses the detected module instead of main.
+# intentionally named app.py to catch startup commands that hardcode the main module
 import os
 from flask import Flask
 
