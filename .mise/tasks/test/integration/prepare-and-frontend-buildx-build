@@ -4,8 +4,8 @@
 
 set -euo pipefail
 
-# shellcheck source=.mise/tasks/test/integration/helpers/assert-no-cache
-source "$MISE_TASK_DIR/helpers/assert-no-cache"
+# shellcheck source=.mise/tasks/test/integration/helpers/assert-execution-cache
+source "$MISE_TASK_DIR/helpers/assert-execution-cache"
 
 example_dir="examples/$EXAMPLE_PROJECT_NAME"
 
@@ -32,8 +32,8 @@ github_token_args=()
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then
   github_token_args+=(--build-arg "github-token=$GITHUB_TOKEN")
 fi
-# warm the cache first, then repeat with --no-cache to verify execution steps rerun
-for pass in warm no-cache; do
+# populate the cache, verify an ordinary build reuses it, then verify --no-cache reruns commands
+for pass in warm cached no-cache; do
   cache_args=()
   if [[ "$pass" == no-cache ]]; then
     cache_args+=(--no-cache)
@@ -48,6 +48,9 @@ for pass in warm no-cache; do
       exit 1
     }
   cat "$plan_dir/$pass.jsonl"
+  if [[ "$pass" == cached ]]; then
+    assert_execution_cache "$plan_dir/railpack-plan.json" "$plan_dir/$pass.jsonl" true
+  elif [[ "$pass" == no-cache ]]; then
+    assert_execution_cache "$plan_dir/railpack-plan.json" "$plan_dir/$pass.jsonl" false
+  fi
 done
-
-assert_no_cache "$plan_dir/railpack-plan.json" "$plan_dir/no-cache.jsonl"
