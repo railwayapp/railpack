@@ -58,6 +58,8 @@ func Build(ctx context.Context, c client.Client) (*client.Result, error) {
 	cacheKey := buildArgs[cacheKey]
 	secretsHash := buildArgs[secretsHash]
 	githubToken := buildArgs[githubToken]
+	// buildx and buildctl enable no-cache by sending the option with an empty value
+	_, noCache := opts["no-cache"]
 
 	// TODO: Support building for multiple platforms
 	buildPlatform, err := validatePlatform(opts)
@@ -81,6 +83,7 @@ func Build(ctx context.Context, c client.Client) (*client.Result, error) {
 		CacheKey:      cacheKey,
 		SessionID:     c.BuildOpts().SessionID,
 		GitHubToken:   githubToken,
+		NoCache:       noCache,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error converting plan to LLB: %w", err)
