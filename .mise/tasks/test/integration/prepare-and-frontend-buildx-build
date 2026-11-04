@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+# shellcheck source=.mise/tasks/test/integration/helpers/assert-no-cache
+source "$MISE_TASK_DIR/helpers/assert-no-cache"
+
 example_dir="examples/$EXAMPLE_PROJECT_NAME"
 
 echo "Testing prepare-and-frontend-buildx-build with: $example_dir"
@@ -25,15 +28,26 @@ while IFS= read -r secret; do
   secret_args+=(--secret "id=$secret,src=$plan_dir/secret-value")
 done < "$plan_dir/secrets.txt"
 
-# Use the active context's daemon builder so it can see the local frontend image.
-# CI creates a named Docker context, where selecting `--builder default` fails.
 github_token_args=()
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then
   github_token_args+=(--build-arg "github-token=$GITHUB_TOKEN")
 fi
-docker buildx build --builder "$(docker context show)" \
-  "${github_token_args[@]}" \
-  --build-arg BUILDKIT_SYNTAX="railpack-frontend:local" \
-  "${secret_args[@]}" \
-  -f "$plan_dir/railpack-plan.json" \
-  "$example_dir"
+# warm the cache first, then repeat with --no-cache to verify execution steps rerun
+for pass in warm no-cache; do
+  cache_args=()
+  if [[ "$pass" == no-cache ]]; then
+    cache_args+=(--no-cache)
+  fi
+  docker buildx build \
+    "${github_token_args[@]}" \
+    --build-arg BUILDKIT_SYNTAX="railpack-frontend:local" \
+    "${secret_args[@]}" "${cache_args[@]}" \
+    --progress rawjson -f "$plan_dir/railpack-plan.json" \
+    "$example_dir" 2> "$plan_dir/$pass.jsonl" || {
+      cat "$plan_dir/$pass.jsonl" >&2
+      exit 1
+    }
+  cat "$plan_dir/$pass.jsonl"
+done
+
+assert_no_cache "$plan_dir/railpack-plan.json" "$plan_dir/no-cache.jsonl"
