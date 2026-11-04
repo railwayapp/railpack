@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	DefaultSource = "railpack default"
+	DefaultSource      = "railpack default"
+	CustomConfigSource = "custom config"
 )
 
 type Resolver struct {
@@ -126,6 +127,16 @@ func (r *Resolver) ResolvePackages() (map[string]*ResolvedPackage, error) {
 
 func (r *Resolver) Get(name string) *RequestedPackage {
 	return r.packages[name]
+}
+
+// HasCustomConfig returns true if the package was configured via custom user configuration
+// (e.g. railpack.json or CLI options), which takes precedence over automatic version detection.
+func (r *Resolver) HasCustomConfig(name string) bool {
+	if r == nil {
+		return false
+	}
+	pkg := r.Get(name)
+	return pkg != nil && pkg.Source == CustomConfigSource
 }
 
 func (r *Resolver) Default(name, defaultVersion string) PackageRef {

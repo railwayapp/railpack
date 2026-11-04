@@ -132,7 +132,7 @@ func TestGetPackageManagerPackages_PnpmVersionPrecedence(t *testing.T) {
 		ctx := testingUtils.CreateGenerateContext(t, tmpDir)
 		miseStep := ctx.NewMiseStepBuilder("test")
 		pnpmRef := miseStep.Default("pnpm", "11")
-		miseStep.Version(pnpmRef, "11", "custom config")
+		miseStep.Version(pnpmRef, "11", resolver.CustomConfigSource)
 
 		packageJson := NewPackageJson()
 		packageJson.Engines["pnpm"] = "10"
@@ -142,7 +142,8 @@ func TestGetPackageManagerPackages_PnpmVersionPrecedence(t *testing.T) {
 		pnpm := ctx.Resolver.Get("pnpm")
 		require.NotNil(t, pnpm)
 		require.Equal(t, "11", pnpm.Version)
-		require.Equal(t, "custom config", pnpm.Source)
+		require.Equal(t, resolver.CustomConfigSource, pnpm.Source)
+		require.True(t, ctx.Resolver.HasCustomConfig("pnpm"))
 	})
 
 	t.Run("packageManager is not parsed before mise resolution", func(t *testing.T) {

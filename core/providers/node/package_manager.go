@@ -383,7 +383,7 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 	if p == PackageManagerPnpm {
 		pnpm := packages.Default("pnpm", DEFAULT_PNPM_VERSION)
 
-		if existing := ctx.Resolver.Get("pnpm"); existing == nil || existing.Source != "custom config" {
+		if !ctx.Resolver.HasCustomConfig("pnpm") {
 			lockfile, err := ctx.App.ReadFile("pnpm-lock.yaml")
 			if err == nil {
 				switch {
@@ -425,14 +425,14 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 
 		// Prefer explicit version from package.json engines over defaults
 		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["yarn"] != "" {
-			if existing := ctx.Resolver.Get("yarn"); existing == nil || existing.Source != "custom config" {
+			if !ctx.Resolver.HasCustomConfig("yarn") {
 				packages.Version(yarn, packageJson.Engines["yarn"], "package.json > engines > yarn")
 			}
 		}
 
 		// TODO we should use SemVer at this point
 		if pmName == "yarn" && pmVersion != "" {
-			if existing := ctx.Resolver.Get("yarn"); existing == nil || existing.Source != "custom config" {
+			if !ctx.Resolver.HasCustomConfig("yarn") {
 				majorVersion := strings.Split(pmVersion, ".")[0]
 				yarn := packages.Default("yarn", majorVersion)
 				packages.Version(yarn, pmVersion, "package.json > packageManager")
@@ -450,13 +450,13 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 
 		// Prefer explicit version from package.json engines over defaults
 		if packageJson != nil && packageJson.Engines != nil && packageJson.Engines["bun"] != "" {
-			if existing := ctx.Resolver.Get("bun"); existing == nil || existing.Source != "custom config" {
+			if !ctx.Resolver.HasCustomConfig("bun") {
 				packages.Version(bun, packageJson.Engines["bun"], "package.json > engines > bun")
 			}
 		}
 
 		if pmName == "bun" && pmVersion != "" {
-			if existing := ctx.Resolver.Get("bun"); existing == nil || existing.Source != "custom config" {
+			if !ctx.Resolver.HasCustomConfig("bun") {
 				packages.Version(bun, pmVersion, "package.json > packageManager")
 			}
 		}

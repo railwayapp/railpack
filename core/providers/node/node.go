@@ -424,7 +424,7 @@ func (p *NodeProvider) applyNodeVersionResolution(ctx *generate.GenerateContext,
 	// however, ENV-level config should always win which is why we check that ENV right after this block
 
 	if p.packageJson != nil && p.packageJson.Engines != nil && p.packageJson.Engines["node"] != "" {
-		if existing := ctx.Resolver.Get("node"); existing == nil || existing.Source != "custom config" {
+		if !ctx.Resolver.HasCustomConfig("node") {
 			miseStep.Version(nodeToolRef, p.packageJson.Engines["node"], "package.json > engines > node")
 		}
 	}

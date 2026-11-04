@@ -116,3 +116,20 @@ func TestResolvingPackagesNotAvailable(t *testing.T) {
 	_, err = resolver.ResolvePackages()
 	require.Error(t, err)
 }
+
+func TestResolverHasCustomConfig(t *testing.T) {
+	resolver, err := NewResolver(mise.TestInstallDir)
+	require.NoError(t, err)
+
+	assert.False(t, resolver.HasCustomConfig("pnpm"))
+
+	node := resolver.Default("node", "18")
+	assert.False(t, resolver.HasCustomConfig("node"))
+
+	resolver.Version(node, "22", "package.json engines")
+	assert.False(t, resolver.HasCustomConfig("node"))
+
+	pnpm := resolver.Default("pnpm", "10")
+	resolver.Version(pnpm, "11", CustomConfigSource)
+	assert.True(t, resolver.HasCustomConfig("pnpm"))
+}
