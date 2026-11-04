@@ -3,6 +3,9 @@
 
 set -euo pipefail
 
+# shellcheck source=.mise/tasks/test/integration/helpers/assert-no-cache
+source "$MISE_TASK_DIR/helpers/assert-no-cache"
+
 # Fix the example so we can assert that --previous and --start-cmd survive the
 # prepare -> frontend build -> container run path. node-bun leaves Node unpinned
 # and normally runs Bun, so `node -v` verifies both overrides in one short-lived run.
@@ -54,15 +57,29 @@ fi
 
 # buildctl runs inside the BuildKit container, so it cannot see the host tag railpack-frontend:local.
 # It pulls the frontend from the local registry. The buildx task uses that host tag directly.
-buildctl build \
-  --frontend=gateway.v0 \
-  --opt source=host.docker.internal:7890/railpack-frontend:local \
-  "${github_token_args[@]}" \
-  --local "context=$example_dir" \
-  --local "dockerfile=$plan_dir" \
-  --progress=plain \
-  "${secret_args[@]}" \
-  --output "type=docker,name=$image_name" | docker load
+# warm the cache first, then repeat with --no-cache to verify execution steps rerun
+for pass in warm no-cache; do
+  cache_args=()
+  if [[ "$pass" == no-cache ]]; then
+    cache_args+=(--no-cache)
+  fi
+  # progress must stay separate from the binary image stream consumed by docker load
+  buildctl build \
+    --frontend=gateway.v0 \
+    --opt source=host.docker.internal:7890/railpack-frontend:local \
+    "${github_token_args[@]}" "${cache_args[@]}" \
+    --local "context=$example_dir" \
+    --local "dockerfile=$plan_dir" \
+    --progress=rawjson \
+    "${secret_args[@]}" \
+    --output "type=docker,name=$image_name" 2> "$plan_dir/$pass.jsonl" | docker load || {
+      cat "$plan_dir/$pass.jsonl" >&2
+      exit 1
+    }
+  cat "$plan_dir/$pass.jsonl"
+done
+
+assert_no_cache "$plan_dir/railpack-plan.json" "$plan_dir/no-cache.jsonl"
 
 # v22.22.0 means --previous survived the frontend build. "hello from Bun" would mean
 # the start command was still `bun index.ts`.
