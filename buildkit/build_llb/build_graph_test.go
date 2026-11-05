@@ -44,3 +44,45 @@ func TestBuildGraphNoCache(t *testing.T) {
 		require.Len(t, opts, 1)
 	})
 }
+
+func TestNewBuildGraphRejectsCyclicPlan(t *testing.T) {
+	p := &plan.BuildPlan{
+		Steps: []plan.Step{
+			{Name: "A", Inputs: []plan.Layer{plan.NewStepLayer("B"), plan.NewStepLayer("C")}},
+			{Name: "B", Inputs: []plan.Layer{plan.NewStepLayer("A")}},
+			{Name: "C", Inputs: []plan.Layer{plan.NewStepLayer("A")}},
+		},
+	}
+	localState := llb.Scratch()
+	platform := specs.Platform{OS: "linux", Architecture: "amd64"}
+
+	// Shared cycles can disappear if reduction runs before validation.
+	g, err := NewBuildGraph(p, &localState, NewBuildKitCacheStore(""), "", &platform, "", false)
+	require.ErrorContains(t, err, "cycle detected")
+	require.Nil(t, g)
+}
+
+func TestBuildGraphPreservesDescendantEnvironmentOverrides(t *testing.T) {
+	p := &plan.BuildPlan{
+		Steps: []plan.Step{
+			{Name: "A", Variables: map[string]string{"MODE": "base"}},
+			{Name: "B", Inputs: []plan.Layer{plan.NewStepLayer("A")}, Variables: map[string]string{"MODE": "derived"}},
+			{Name: "C", Inputs: []plan.Layer{plan.NewStepLayer("B"), plan.NewStepLayer("A")}},
+		},
+		Deploy: plan.Deploy{Base: plan.NewStepLayer("C")},
+	}
+	localState := llb.Scratch()
+	platform := specs.Platform{OS: "linux", Architecture: "amd64"}
+	g, err := NewBuildGraph(p, &localState, NewBuildKitCacheStore(""), "", &platform, "", false)
+	require.NoError(t, err)
+
+	nodeC, exists := g.graph.GetNode("C")
+	require.True(t, exists)
+	require.Len(t, nodeC.GetParents(), 1)
+	require.Equal(t, "B", nodeC.GetParents()[0].GetName())
+
+	_, err = g.GenerateLLB()
+	require.NoError(t, err)
+	// The redundant A input must not overwrite B's more specific environment.
+	require.Equal(t, "derived", nodeC.(*StepNode).InputEnv.EnvVars["MODE"])
+}

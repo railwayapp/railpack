@@ -160,7 +160,9 @@ func TestTransitiveDependencies(t *testing.T) {
 	nodeC.SetChildren([]Node{nodeD, nodeE})
 
 	// Remove redundant edges
-	g.ComputeTransitiveDependencies()
+	if err := g.ComputeTransitiveDependencies(); err != nil {
+		t.Fatalf("Failed to reduce dependencies: %v", err)
+	}
 
 	// Verify D's parents (should only have B and C as parents)
 	dParents := nodeD.GetParents()

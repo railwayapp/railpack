@@ -91,8 +91,12 @@ func (g *Graph) ComputeProcessingOrder() ([]Node, error) {
 	return order, nil
 }
 
-// ComputeTransitiveDependencies removes redundant edges from the graph
-func (g *Graph) ComputeTransitiveDependencies() {
+// Removes redundant edges, rejecting cycles before modifying the graph.
+func (g *Graph) ComputeTransitiveDependencies() error {
+	if _, err := g.ComputeProcessingOrder(); err != nil {
+		return err
+	}
+
 	for _, node := range g.nodes {
 		var newParents []Node
 		for _, parent := range node.GetParents() {
@@ -133,6 +137,7 @@ func (g *Graph) ComputeTransitiveDependencies() {
 		}
 		node.SetParents(newParents)
 	}
+	return nil
 }
 
 // removeNodeFromSlice removes a node from a slice of nodes
