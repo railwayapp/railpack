@@ -65,7 +65,17 @@ func TestBuildGraphConnectsStepInputs(t *testing.T) {
 	c, exists := g.graph.nodes["C"]
 	require.True(t, exists)
 
-	// Removing A -> C must update both directions while preserving A -> B -> C.
+	// Construction preserves declared edges until cycle validation precedes reduction.
+	require.Empty(t, a.parents)
+	require.Equal(t, []*StepNode{a}, b.parents)
+	require.Equal(t, []*StepNode{a, b}, c.parents)
+	require.ElementsMatch(t, []*StepNode{b, c}, a.children)
+	require.Equal(t, []*StepNode{c}, b.children)
+	require.Empty(t, c.children)
+
+	computeTransitiveDependencies(g.graph.nodes)
+
+	// Removing A -> C must preserve A -> B -> C in both directions.
 	require.Empty(t, a.parents)
 	require.Equal(t, []*StepNode{a}, b.parents)
 	require.Equal(t, []*StepNode{b}, c.parents)

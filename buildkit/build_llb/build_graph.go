@@ -499,42 +499,37 @@ func computeProcessingOrder(nodes map[string]*StepNode) ([]*StepNode, error) {
 // Removes direct dependencies already reachable through another parent.
 func computeTransitiveDependencies(nodes map[string]*StepNode) {
 	for _, node := range nodes {
+		if len(node.parents) < 2 {
+			continue
+		}
+
+		ancestors := make(map[string]bool)
+		var traverse func(*StepNode)
+		traverse = func(current *StepNode) {
+			name := current.Step.Name
+			if ancestors[name] {
+				return
+			}
+			ancestors[name] = true
+			for _, parent := range current.parents {
+				traverse(parent)
+			}
+		}
+
+		// Start beyond direct parents so only paths of at least two edges make an edge redundant.
+		for _, parent := range node.parents {
+			for _, ancestor := range parent.parents {
+				traverse(ancestor)
+			}
+		}
+
 		var newParents []*StepNode
 		for _, parent := range node.parents {
-			isRedundant := false
-			for _, otherParent := range node.parents {
-				if otherParent == parent {
-					continue
-				}
-
-				visited := make(map[string]bool)
-				var traverse func(*StepNode)
-				traverse = func(n *StepNode) {
-					if n == parent {
-						isRedundant = true
-						return
-					}
-					for _, p := range n.parents {
-						if !visited[p.Step.Name] {
-							visited[p.Step.Name] = true
-							traverse(p)
-						}
-					}
-				}
-				traverse(otherParent)
-
-				if isRedundant {
-					break
-				}
+			if ancestors[parent.Step.Name] {
+				parent.children = removeNodeFromSlice(parent.children, node)
+				continue
 			}
-
-			if !isRedundant {
-				newParents = append(newParents, parent)
-			} else {
-				// Remove child relationship from parent
-				parentChildren := removeNodeFromSlice(parent.children, node)
-				parent.children = parentChildren
-			}
+			newParents = append(newParents, parent)
 		}
 		node.parents = newParents
 	}
