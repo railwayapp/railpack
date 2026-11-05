@@ -25,6 +25,7 @@ const (
 )
 
 type ElixirProvider struct {
+	config ElixirConfig
 }
 
 func (p *ElixirProvider) Name() string {
@@ -37,6 +38,9 @@ func (p *ElixirProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 }
 
 func (p *ElixirProvider) Initialize(ctx *generate.GenerateContext) error {
+	if err := ctx.Config.ProviderConfig("elixir", &p.config); err != nil {
+		return fmt.Errorf("invalid elixir provider config: %w", err)
+	}
 	return nil
 }
 
@@ -240,8 +244,13 @@ func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	if envVersion, varName := ctx.Env.GetConfigVariable("ERLANG_VERSION"); envVersion != "" {
 		miseStep.Version(erlang, envVersion, varName)
 	}
-
 	miseStep.UseMiseVersions(ctx, []string{"elixir", "erlang"})
+	if p.config.Version != "" {
+		miseStep.Version(elixir, p.config.Version, "railpack config > elixir > version")
+	}
+	if p.config.ErlangVersion != "" {
+		miseStep.Version(erlang, p.config.ErlangVersion, "railpack config > elixir > erlangVersion")
+	}
 }
 
 func (p *ElixirProvider) GetEnvVars(ctx *generate.GenerateContext) map[string]string {
