@@ -3,6 +3,7 @@ package providers
 import (
 	"strings"
 
+	"github.com/invopop/jsonschema"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/providers/cpp"
@@ -29,6 +30,10 @@ type Provider interface {
 	Plan(ctx *generate.GenerateContext) error
 	CleansePlan(buildPlan *plan.BuildPlan)
 	StartCommandHelp() string
+}
+
+type ConfigSchemaProvider interface {
+	ConfigSchema() *jsonschema.Schema
 }
 
 func GetLanguageProviders() []Provider {
@@ -60,4 +65,16 @@ func GetProvider(name string) Provider {
 	}
 
 	return nil
+}
+
+func GetProviderConfigSchemas() map[string]*jsonschema.Schema {
+	schemas := make(map[string]*jsonschema.Schema)
+	for _, provider := range GetLanguageProviders() {
+		configProvider, ok := provider.(ConfigSchemaProvider)
+		if !ok {
+			continue
+		}
+		schemas[provider.Name()] = configProvider.ConfigSchema()
+	}
+	return schemas
 }

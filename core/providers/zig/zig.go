@@ -28,7 +28,9 @@ var zonNameToken = regexp.MustCompile(
 		`(?:\.([A-Za-z_][A-Za-z0-9_]*)|"([^"]+)")|"(?:\\.|[^"\\])*"|//.*|^[ \t]*\\\\.*`,
 )
 
-type ZigProvider struct{}
+type ZigProvider struct {
+	config ZigConfig
+}
 
 func (p *ZigProvider) Name() string {
 	return "zig"
@@ -39,6 +41,9 @@ func (p *ZigProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 }
 
 func (p *ZigProvider) Initialize(ctx *generate.GenerateContext) error {
+	if err := ctx.Config.ProviderConfig(p.Name(), &p.config); err != nil {
+		return fmt.Errorf("invalid zig provider config: %w", err)
+	}
 	return nil
 }
 
@@ -53,6 +58,10 @@ func (p *ZigProvider) Plan(ctx *generate.GenerateContext) error {
 	packages := ctx.GetMiseStepBuilder()
 	packages.Default("zig", "latest")
 	packages.UseMiseVersions(ctx, []string{"zig"})
+	if p.config.Version != "" {
+		zig := packages.Default("zig", "latest")
+		packages.Version(zig, p.config.Version, "railpack config > zig > version")
+	}
 
 	build := ctx.NewCommandStep("build")
 	build.AddInput(plan.NewStepLayer(packages.Name()))

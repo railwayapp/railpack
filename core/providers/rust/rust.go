@@ -20,7 +20,9 @@ const (
 	DUMMY_RS_SOURCE      = "fn main() { }"
 )
 
-type RustProvider struct{}
+type RustProvider struct {
+	config RustConfig
+}
 
 func (p *RustProvider) Name() string {
 	return "rust"
@@ -32,6 +34,9 @@ func (p *RustProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 }
 
 func (p *RustProvider) Initialize(ctx *generate.GenerateContext) error {
+	if err := ctx.Config.ProviderConfig(p.Name(), &p.config); err != nil {
+		return fmt.Errorf("invalid rust provider config: %w", err)
+	}
 	return nil
 }
 
@@ -107,6 +112,16 @@ func (p *RustProvider) getStartBin(ctx *generate.GenerateContext) string {
 
 	if len(bins) == 1 {
 		bin = bins[0]
+	} else if binName := p.config.Bin; binName != "" {
+		for _, b := range bins {
+			if b == binName {
+				bin = b
+				break
+			}
+		}
+		if bin == "" {
+			ctx.Logger.LogWarn("Rust config bin '%s' does not match a binary in Cargo.toml", binName)
+		}
 	} else if envBinName, _ := ctx.Env.GetConfigVariable("RUST_BIN"); envBinName != "" {
 		for _, b := range bins {
 			if b == envBinName {
@@ -370,6 +385,9 @@ func (p *RustProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 	}
 
 	miseStep.UseMiseVersions(ctx, []string{"rust"})
+	if p.config.Version != "" {
+		miseStep.Version(rust, p.config.Version, "railpack config > rust > version")
+	}
 }
 
 var wasmRegex = regexp.MustCompile(`target\s*=\s*"wasm32-wasi"`)
@@ -380,6 +398,10 @@ func (p *RustProvider) shouldMakeWasm32Wasi(ctx *generate.GenerateContext) bool 
 }
 
 func (p *RustProvider) resolveCargoWorkspace(ctx *generate.GenerateContext) string {
+	if p.config.CargoWorkspace != "" {
+		return p.config.CargoWorkspace
+	}
+
 	// First check for environment variable override
 	if name, _ := ctx.Env.GetConfigVariable("CARGO_WORKSPACE"); name != "" {
 		return name

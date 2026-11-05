@@ -21,6 +21,7 @@ const (
 )
 
 type DotnetProvider struct {
+	config DotnetConfig
 }
 
 func (p *DotnetProvider) Name() string {
@@ -32,6 +33,9 @@ func (p *DotnetProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 }
 
 func (p *DotnetProvider) Initialize(ctx *generate.GenerateContext) error {
+	if err := ctx.Config.ProviderConfig("dotnet", &p.config); err != nil {
+		return fmt.Errorf("invalid dotnet provider config: %w", err)
+	}
 	return nil
 }
 
@@ -224,6 +228,9 @@ func (p *DotnetProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 
 	if envVersion, varName := ctx.Env.GetConfigVariable("DOTNET_VERSION"); envVersion != "" {
 		miseStep.Version(dotnet, envVersion, varName)
+	}
+	if p.config.Version != "" {
+		miseStep.Version(dotnet, p.config.Version, "railpack config > dotnet > version")
 	}
 }
 

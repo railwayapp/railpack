@@ -1,10 +1,12 @@
 package dotnet
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/railwayapp/railpack/core/config"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
@@ -115,6 +117,7 @@ func TestDotnetVersionResolution(t *testing.T) {
 		csproj          string
 		globalJSON      string
 		envVersion      string
+		fileConfig      string
 		expectedVersion string
 	}{
 		{
@@ -140,6 +143,14 @@ func TestDotnetVersionResolution(t *testing.T) {
 			envVersion:      "9.0",
 			expectedVersion: "9.0",
 		},
+		{
+			name:            "config file overrides environment, global.json, and csproj",
+			csproj:          "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net6.0</TargetFramework></PropertyGroup></Project>",
+			globalJSON:      `{"sdk":{"version":"8.0.404"}}`,
+			envVersion:      "9.0",
+			fileConfig:      `{"dotnet":{"version":"10.0"}}`,
+			expectedVersion: "10.0",
+		},
 	}
 
 	for _, tt := range tests {
@@ -152,17 +163,42 @@ func TestDotnetVersionResolution(t *testing.T) {
 			}
 
 			ctx := testingUtils.CreateGenerateContext(t, dir)
+			if tt.fileConfig != "" {
+				fileConfig := config.EmptyConfig()
+				require.NoError(t, json.Unmarshal([]byte(tt.fileConfig), fileConfig))
+				ctx.Config = config.Merge(ctx.Config, fileConfig)
+			}
 			if tt.envVersion != "" {
 				ctx.Env.SetVariable("RAILPACK_DOTNET_VERSION", tt.envVersion)
 			}
 
 			provider := DotnetProvider{}
+			require.NoError(t, provider.Initialize(ctx))
 			miseStep := ctx.GetMiseStepBuilder()
 			provider.InstallMisePackages(ctx, miseStep)
 
 			pkg := miseStep.Resolver.Get("dotnet")
 			require.NotNil(t, pkg)
 			require.Equal(t, tt.expectedVersion, pkg.Version)
+		})
+	}
+}
+
+func TestDotnetProviderConfigSchema(t *testing.T) {
+	tests := []struct {
+		property string
+		wantType string
+	}{
+		{property: "version", wantType: "string"},
+	}
+
+	schema := (&DotnetProvider{}).ConfigSchema()
+	require.Equal(t, "object", schema.Type)
+	for _, tt := range tests {
+		t.Run(tt.property, func(t *testing.T) {
+			propertySchema, ok := schema.Properties.Get(tt.property)
+			require.True(t, ok)
+			require.Equal(t, tt.wantType, propertySchema.Type)
 		})
 	}
 }

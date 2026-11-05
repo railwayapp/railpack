@@ -1,8 +1,10 @@
 package zig
 
 import (
+	"encoding/json"
 	"testing"
 
+	"github.com/railwayapp/railpack/core/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -137,4 +139,40 @@ func TestZigDetectionAndStartCommand(t *testing.T) {
 			assert.Equal(t, tt.startCmd, ctx.Deploy.StartCmd)
 		})
 	}
+}
+
+func TestZigConfigVersion(t *testing.T) {
+	tests := []struct {
+		name       string
+		fileConfig string
+		want       string
+	}{
+		{
+			name:       "config version",
+			fileConfig: `{"zig":{"version":"0.13.0"}}`,
+			want:       "0.13.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := testingUtils.CreateGenerateContext(t, "../../../examples/zig")
+			fileConfig := config.EmptyConfig()
+			require.NoError(t, json.Unmarshal([]byte(tt.fileConfig), fileConfig))
+			ctx.Config = config.Merge(ctx.Config, fileConfig)
+
+			provider := ZigProvider{}
+			require.NoError(t, provider.Initialize(ctx))
+			require.NoError(t, provider.Plan(ctx))
+			require.Equal(t, tt.want, ctx.Resolver.Get("zig").Version)
+		})
+	}
+}
+
+func TestZigProviderConfigSchema(t *testing.T) {
+	schema := (&ZigProvider{}).ConfigSchema()
+	require.Equal(t, "object", schema.Type)
+	propertySchema, ok := schema.Properties.Get("version")
+	require.True(t, ok)
+	require.Equal(t, "string", propertySchema.Type)
 }

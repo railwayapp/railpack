@@ -16,7 +16,9 @@ const (
 var denoDefaultExcludePatterns = []string{"node_modules"}
 
 type DenoProvider struct {
-	mainFile string
+	config        DenoConfig
+	mainFile      string
+	versionSource string
 }
 
 func (p *DenoProvider) Name() string {
@@ -29,6 +31,21 @@ func (p *DenoProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 }
 
 func (p *DenoProvider) Initialize(ctx *generate.GenerateContext) error {
+	if err := ctx.Config.ProviderConfigWithEnv(p.Name(), ctx.Env.Variables, &p.config); err != nil {
+		return fmt.Errorf("invalid deno provider config: %w", err)
+	}
+
+	p.versionSource = "railpack config > deno > version"
+	var fileConfig DenoConfig
+	if err := ctx.Config.ProviderConfig(p.Name(), &fileConfig); err != nil {
+		return fmt.Errorf("invalid deno provider config: %w", err)
+	}
+	if fileConfig.Version == "" {
+		if _, envName := ctx.Env.GetConfigVariable("DENO_VERSION"); envName != "" {
+			p.versionSource = envName + " environment variable"
+		}
+	}
+
 	p.mainFile = findMainFile(ctx.App)
 	return nil
 }
@@ -87,8 +104,8 @@ func (p *DenoProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 
 	miseStep.UseMiseVersions(ctx, []string{"deno"})
 
-	if envVersion, varName := ctx.Env.GetConfigVariable("DENO_VERSION"); envVersion != "" {
-		miseStep.Version(deno, envVersion, varName)
+	if p.config.Version != "" {
+		miseStep.Version(deno, p.config.Version, p.versionSource)
 	}
 }
 

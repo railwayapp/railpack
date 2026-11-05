@@ -16,7 +16,9 @@ const (
 	GO_PATH            = "/go"
 )
 
-type GoProvider struct{}
+type GoProvider struct {
+	config GoConfig
+}
 
 func (p *GoProvider) Name() string {
 	return "golang"
@@ -27,6 +29,10 @@ func (p *GoProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 }
 
 func (p *GoProvider) Initialize(ctx *generate.GenerateContext) error {
+	if err := ctx.Config.ProviderConfigWithEnv(p.Name(), ctx.Env.Variables, &p.config); err != nil {
+		return fmt.Errorf("invalid go provider config: %w", err)
+	}
+
 	return nil
 }
 
@@ -178,6 +184,10 @@ func (p *GoProvider) InstallGoPackages(ctx *generate.GenerateContext, miseStep *
 
 	if goVersion := p.extractGoVersionFromMod(ctx); goVersion != "" {
 		miseStep.Version(goPkg, goVersion, "go.mod")
+	}
+
+	if p.config.Version != "" {
+		miseStep.Version(goPkg, p.config.Version, "railpack config > golang > version")
 	}
 
 	if envVersion, varName := ctx.Env.GetConfigVariable("GO_VERSION"); envVersion != "" {

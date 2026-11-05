@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/railwayapp/railpack/core/config"
+	"github.com/railwayapp/railpack/core/providers"
 	"github.com/urfave/cli/v3"
 )
 
@@ -15,7 +16,7 @@ var SchemaCommand = &cli.Command{
 	EnableShellCompletion: true,
 	Flags:                 []cli.Flag{},
 	Action: func(ctx context.Context, cmd *cli.Command) error {
-		schema := config.GetJsonSchema()
+		schema := config.GetJsonSchema(providers.GetProviderConfigSchemas())
 
 		schemaJson, err := json.MarshalIndent(schema, "", "  ")
 		if err != nil {
