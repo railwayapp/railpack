@@ -12,3 +12,12 @@ func TestGetProviderIsCaseInsensitive(t *testing.T) {
 	require.NotNil(t, GetProvider("dotnet"))
 	require.NotNil(t, GetProvider("Dotnet"))
 }
+
+func TestGetProviderConfigSchemasUsesLowercaseNames(t *testing.T) {
+	schemas := GetProviderConfigSchemas()
+	for _, name := range []string{"cpp", "elixir", "dotnet", "procfile", "rust", "zig"} {
+		require.Contains(t, schemas, name)
+	}
+	require.NotContains(t, schemas, "Elixir")
+	require.NotContains(t, schemas, "Dotnet")
+}
