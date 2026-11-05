@@ -79,14 +79,11 @@ func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *Buil
 			}
 
 			if depNode, exists := g.graph.nodes[input.Step]; exists {
-				// Keep both directions for topological traversal and environment inheritance.
 				node.parents = append(node.parents, depNode)
 				depNode.children = append(depNode.children, node)
 			}
 		}
 	}
-
-	g.graph.ComputeTransitiveDependencies()
 
 	return g, nil
 }
@@ -94,12 +91,15 @@ func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *Buil
 // generate the LLB state for the build graph
 func (g *BuildGraph) GenerateLLB() (*BuildGraphOutput, error) {
 	// Get processing order using topological sort
-	order, err := ComputeProcessingOrder(g.graph.nodes)
+	order, err := computeProcessingOrder(g.graph.nodes)
 	if err != nil {
 		return nil, err
 	}
 
-	// Process all nodes in order
+	// This function does not have cycle detection, so it's critical that we call this function
+	// after computeProcessingOrder to ensure that we have a valid graph.
+	computeTransitiveDependencies(g.graph.nodes)
+
 	for _, node := range order {
 		if err := g.processNode(node); err != nil {
 			return nil, err
@@ -450,7 +450,7 @@ func NewGraph() *Graph {
 }
 
 // Orders dependencies before their consumers and rejects cycles.
-func ComputeProcessingOrder(nodes map[string]*StepNode) ([]*StepNode, error) {
+func computeProcessingOrder(nodes map[string]*StepNode) ([]*StepNode, error) {
 	type visitState uint8
 	const (
 		unvisited visitState = iota
@@ -497,8 +497,8 @@ func ComputeProcessingOrder(nodes map[string]*StepNode) ([]*StepNode, error) {
 }
 
 // Removes direct dependencies already reachable through another parent.
-func (g *Graph) ComputeTransitiveDependencies() {
-	for _, node := range g.nodes {
+func computeTransitiveDependencies(nodes map[string]*StepNode) {
+	for _, node := range nodes {
 		var newParents []*StepNode
 		for _, parent := range node.parents {
 			isRedundant := false

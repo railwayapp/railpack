@@ -136,7 +136,7 @@ func TestGraphProcessingOrder(t *testing.T) {
 				nodes[edge[0]].children = append(nodes[edge[0]].children, nodes[edge[1]])
 			}
 
-			order, err := ComputeProcessingOrder(nodes)
+			order, err := computeProcessingOrder(nodes)
 			require.NoError(t, err)
 			require.Len(t, order, len(nodes))
 
@@ -184,7 +184,7 @@ func TestGraphCycleDetection(t *testing.T) {
 				nodes[edge[0]].children = append(nodes[edge[0]].children, nodes[edge[1]])
 			}
 
-			order, err := ComputeProcessingOrder(nodes)
+			order, err := computeProcessingOrder(nodes)
 			require.Error(t, err)
 			require.Nil(t, order)
 		})
@@ -192,40 +192,34 @@ func TestGraphCycleDetection(t *testing.T) {
 }
 
 func TestTransitiveDependencies(t *testing.T) {
-	g := NewGraph()
-
 	// Create a graph with redundant edges:
 	//   A
-	//  / \
-	// B   C
-	//  \ / \
-	//   D   E
-	nodeA := newTestStepNode("A")
-	nodeB := newTestStepNode("B")
-	nodeC := newTestStepNode("C")
-	nodeD := newTestStepNode("D")
-	nodeE := newTestStepNode("E")
+	//  /| \
+	// B |  C
+	//  \| / \
+	//   D    E
+	nodes := map[string]*StepNode{
+		"A": newTestStepNode("A"),
+		"B": newTestStepNode("B"),
+		"C": newTestStepNode("C"),
+		"D": newTestStepNode("D"),
+		"E": newTestStepNode("E"),
+	}
 
-	g.nodes[nodeA.Step.Name] = nodeA
-	g.nodes[nodeB.Step.Name] = nodeB
-	g.nodes[nodeC.Step.Name] = nodeC
-	g.nodes[nodeD.Step.Name] = nodeD
-	g.nodes[nodeE.Step.Name] = nodeE
+	nodes["B"].parents = []*StepNode{nodes["A"]}
+	nodes["C"].parents = []*StepNode{nodes["A"]}
+	nodes["D"].parents = []*StepNode{nodes["A"], nodes["B"], nodes["C"]} // A is redundant
+	nodes["E"].parents = []*StepNode{nodes["C"]}
 
-	nodeB.parents = []*StepNode{nodeA}
-	nodeC.parents = []*StepNode{nodeA}
-	nodeD.parents = []*StepNode{nodeA, nodeB, nodeC} // A is redundant
-	nodeE.parents = []*StepNode{nodeC}
-
-	nodeA.children = []*StepNode{nodeB, nodeC, nodeD}
-	nodeB.children = []*StepNode{nodeD}
-	nodeC.children = []*StepNode{nodeD, nodeE}
+	nodes["A"].children = []*StepNode{nodes["B"], nodes["C"], nodes["D"]}
+	nodes["B"].children = []*StepNode{nodes["D"]}
+	nodes["C"].children = []*StepNode{nodes["D"], nodes["E"]}
 
 	// Remove redundant edges
-	g.ComputeTransitiveDependencies()
+	computeTransitiveDependencies(nodes)
 
 	// Verify D's parents (should only have B and C as parents)
-	dParents := nodeD.parents
+	dParents := nodes["D"].parents
 	if len(dParents) != 2 {
 		t.Errorf("Expected 2 parents for D after transitive reduction, got %d", len(dParents))
 	}
@@ -238,9 +232,78 @@ func TestTransitiveDependencies(t *testing.T) {
 	}
 }
 
-func TestTransitiveDependenciesWithDistinctPointersToIdenticalNodes(t *testing.T) {
-	g := NewGraph()
+func TestTransitiveDependenciesRemovesRedundantEdges(t *testing.T) {
+	tests := []struct {
+		name      string
+		nodes     []string
+		edges     [][2]string
+		wantEdges [][2]string
+	}{
+		{
+			/*
+				┌───────►B──────►C
+				│        │       │
+				A        │       │
+				|        ▼       │
+				└──────► D ◄─────┘
+			*/
+			name:      "chain with shortcuts to D",
+			nodes:     []string{"A", "B", "C", "D"},
+			edges:     [][2]string{{"A", "B"}, {"B", "C"}, {"C", "D"}, {"B", "D"}, {"A", "D"}},
+			wantEdges: [][2]string{{"A", "B"}, {"B", "C"}, {"C", "D"}},
+		},
+		{
+			/*
+				A ──► B ──► C
+				│     │╲    │
+				│     │ ╲   │
+				│     │  ╲  │
+				│     │   ╲ │
+				│     ▼    ↘▼
+				│     D ──► E
+				│           ▲
+				└───────────┘
+			*/
+			name:      "diamond with shortcuts to E",
+			nodes:     []string{"A", "B", "C", "D", "E"},
+			edges:     [][2]string{{"A", "B"}, {"B", "C"}, {"B", "D"}, {"B", "E"}, {"C", "E"}, {"D", "E"}, {"A", "E"}},
+			wantEdges: [][2]string{{"A", "B"}, {"B", "C"}, {"B", "D"}, {"C", "E"}, {"D", "E"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nodes := make(map[string]*StepNode, len(tt.nodes))
+			for _, name := range tt.nodes {
+				nodes[name] = newTestStepNode(name)
+			}
+			for _, edge := range tt.edges {
+				parent, child := nodes[edge[0]], nodes[edge[1]]
+				child.parents = append(child.parents, parent)
+				parent.children = append(parent.children, child)
+			}
 
+			computeTransitiveDependencies(nodes)
+
+			require.Len(t, nodes, len(tt.nodes))
+			// Check both directions so removed dependencies cannot leave stale child edges.
+			var parentEdges, childEdges [][2]string
+			for _, name := range tt.nodes {
+				node, exists := nodes[name]
+				require.True(t, exists, "node %s must be preserved", name)
+				for _, parent := range node.parents {
+					parentEdges = append(parentEdges, [2]string{parent.Step.Name, name})
+				}
+				for _, child := range node.children {
+					childEdges = append(childEdges, [2]string{name, child.Step.Name})
+				}
+			}
+			require.ElementsMatch(t, tt.wantEdges, parentEdges, "parent edges")
+			require.ElementsMatch(t, tt.wantEdges, childEdges, "child edges")
+		})
+	}
+}
+
+func TestTransitiveDependenciesWithDistinctPointersToIdenticalNodes(t *testing.T) {
 	nodeA := newTestStepNode("A")
 	nodeB := newTestStepNode("B")
 	nodeC := newTestStepNode("C")
@@ -260,11 +323,13 @@ func TestTransitiveDependenciesWithDistinctPointersToIdenticalNodes(t *testing.T
 	nodeB.parents = []*StepNode{indirectParent}
 	nodeC.parents = []*StepNode{directParent, nodeB}
 
-	g.nodes[nodeA.Step.Name] = nodeA
-	g.nodes[nodeB.Step.Name] = nodeB
-	g.nodes[nodeC.Step.Name] = nodeC
+	nodes := map[string]*StepNode{
+		nodeA.Step.Name: nodeA,
+		nodeB.Step.Name: nodeB,
+		nodeC.Step.Name: nodeC,
+	}
 
-	g.ComputeTransitiveDependencies()
+	computeTransitiveDependencies(nodes)
 
 	cParents := nodeC.parents
 	if len(cParents) != 1 || cParents[0].Step.Name != "B" {
