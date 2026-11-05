@@ -21,7 +21,7 @@ func (g *BuildGraph) GetStateForLayer(layer plan.Layer) llb.State {
 	} else if layer.Local {
 		state = *g.LocalState
 	} else if layer.Step != "" {
-		if node, exists := g.graph.GetNode(layer.Step); exists {
+		if node, exists := g.graph.nodes[layer.Step]; exists {
 			nodeState := node.State
 			if nodeState == nil {
 				return llb.Scratch()

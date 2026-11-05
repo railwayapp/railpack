@@ -67,18 +67,18 @@ func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *Buil
 			OutputEnv: NewGraphEnvironment(),
 		}
 
-		g.graph.AddNode(node)
+		g.graph.nodes[step.Name] = node
 	}
 
 	// Add dependencies to each node
-	for _, node := range g.graph.GetNodes() {
+	for _, node := range g.graph.nodes {
 		for _, input := range node.Step.Inputs {
 			// This input does not reference another step
 			if input.Step == "" {
 				continue
 			}
 
-			if depNode, exists := g.graph.GetNode(input.Step); exists {
+			if depNode, exists := g.graph.nodes[input.Step]; exists {
 				// Keep both directions so traversal can follow dependencies and find leaves.
 				node.parents = append(node.parents, depNode)
 				depNode.children = append(depNode.children, node)
@@ -112,7 +112,7 @@ func (g *BuildGraph) GenerateLLB() (*BuildGraphOutput, error) {
 
 	graphEnv := NewGraphEnvironment()
 	for _, input := range g.Plan.Deploy.Inputs {
-		if node, exists := g.graph.GetNode(input.Step); exists {
+		if node, exists := g.graph.nodes[input.Step]; exists {
 			graphEnv.Merge(node.OutputEnv)
 		}
 	}
@@ -447,19 +447,6 @@ func NewGraph() *Graph {
 	return &Graph{
 		nodes: make(map[string]*StepNode),
 	}
-}
-
-func (g *Graph) AddNode(node *StepNode) {
-	g.nodes[node.Step.Name] = node
-}
-
-func (g *Graph) GetNode(name string) (*StepNode, bool) {
-	node, exists := g.nodes[name]
-	return node, exists
-}
-
-func (g *Graph) GetNodes() map[string]*StepNode {
-	return g.nodes
 }
 
 // Orders dependencies before their consumers and rejects cycles.

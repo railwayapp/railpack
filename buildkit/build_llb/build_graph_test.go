@@ -58,11 +58,11 @@ func TestBuildGraphConnectsStepInputs(t *testing.T) {
 	g, err := NewBuildGraph(p, &localState, NewBuildKitCacheStore(""), "", &platform, "", false)
 	require.NoError(t, err)
 
-	a, exists := g.graph.GetNode("A")
+	a, exists := g.graph.nodes["A"]
 	require.True(t, exists)
-	b, exists := g.graph.GetNode("B")
+	b, exists := g.graph.nodes["B"]
 	require.True(t, exists)
-	c, exists := g.graph.GetNode("C")
+	c, exists := g.graph.nodes["C"]
 	require.True(t, exists)
 
 	// Removing A -> C must update both directions while preserving A -> B -> C.
@@ -84,18 +84,18 @@ func TestGraphBasicOperations(t *testing.T) {
 	nodeA := newTestStepNode("A")
 	nodeB := newTestStepNode("B")
 
-	g.AddNode(nodeA)
-	g.AddNode(nodeB)
+	g.nodes[nodeA.Step.Name] = nodeA
+	g.nodes[nodeB.Step.Name] = nodeB
 
-	if len(g.GetNodes()) != 2 {
-		t.Errorf("Expected 2 nodes, got %d", len(g.GetNodes()))
+	if len(g.nodes) != 2 {
+		t.Errorf("Expected 2 nodes, got %d", len(g.nodes))
 	}
 
-	if node, exists := g.GetNode("A"); !exists || node != nodeA {
+	if node, exists := g.nodes["A"]; !exists || node != nodeA {
 		t.Error("Failed to retrieve node A")
 	}
 
-	if _, exists := g.GetNode("C"); exists {
+	if _, exists := g.nodes["C"]; exists {
 		t.Error("Retrieved non-existent node")
 	}
 }
@@ -114,10 +114,10 @@ func TestGraphProcessingOrder(t *testing.T) {
 	nodeC := newTestStepNode("C")
 	nodeD := newTestStepNode("D")
 
-	g.AddNode(nodeA)
-	g.AddNode(nodeB)
-	g.AddNode(nodeC)
-	g.AddNode(nodeD)
+	g.nodes[nodeA.Step.Name] = nodeA
+	g.nodes[nodeB.Step.Name] = nodeB
+	g.nodes[nodeC.Step.Name] = nodeC
+	g.nodes[nodeD.Step.Name] = nodeD
 
 	nodeB.parents = []*StepNode{nodeA}
 	nodeC.parents = []*StepNode{nodeA}
@@ -163,9 +163,9 @@ func TestGraphCycleDetection(t *testing.T) {
 	nodeB := newTestStepNode("B")
 	nodeC := newTestStepNode("C")
 
-	g.AddNode(nodeA)
-	g.AddNode(nodeB)
-	g.AddNode(nodeC)
+	g.nodes[nodeA.Step.Name] = nodeA
+	g.nodes[nodeB.Step.Name] = nodeB
+	g.nodes[nodeC.Step.Name] = nodeC
 
 	nodeB.parents = []*StepNode{nodeA}
 	nodeC.parents = []*StepNode{nodeB}
@@ -197,11 +197,11 @@ func TestTransitiveDependencies(t *testing.T) {
 	nodeD := newTestStepNode("D")
 	nodeE := newTestStepNode("E")
 
-	g.AddNode(nodeA)
-	g.AddNode(nodeB)
-	g.AddNode(nodeC)
-	g.AddNode(nodeD)
-	g.AddNode(nodeE)
+	g.nodes[nodeA.Step.Name] = nodeA
+	g.nodes[nodeB.Step.Name] = nodeB
+	g.nodes[nodeC.Step.Name] = nodeC
+	g.nodes[nodeD.Step.Name] = nodeD
+	g.nodes[nodeE.Step.Name] = nodeE
 
 	nodeB.parents = []*StepNode{nodeA}
 	nodeC.parents = []*StepNode{nodeA}
@@ -251,9 +251,9 @@ func TestTransitiveDependenciesWithDistinctPointersToIdenticalNodes(t *testing.T
 	nodeB.parents = []*StepNode{indirectParent}
 	nodeC.parents = []*StepNode{directParent, nodeB}
 
-	g.AddNode(nodeA)
-	g.AddNode(nodeB)
-	g.AddNode(nodeC)
+	g.nodes[nodeA.Step.Name] = nodeA
+	g.nodes[nodeB.Step.Name] = nodeB
+	g.nodes[nodeC.Step.Name] = nodeC
 
 	g.ComputeTransitiveDependencies()
 
