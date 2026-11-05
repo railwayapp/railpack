@@ -79,7 +79,7 @@ func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *Buil
 			}
 
 			if depNode, exists := g.graph.nodes[input.Step]; exists {
-				// Keep both directions so traversal can follow dependencies and find leaves.
+				// Keep both directions for topological traversal and environment inheritance.
 				node.parents = append(node.parents, depNode)
 				depNode.children = append(depNode.children, node)
 			}
@@ -94,7 +94,7 @@ func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *Buil
 // generate the LLB state for the build graph
 func (g *BuildGraph) GenerateLLB() (*BuildGraphOutput, error) {
 	// Get processing order using topological sort
-	order, err := g.graph.ComputeProcessingOrder()
+	order, err := ComputeProcessingOrder(g.graph.nodes)
 	if err != nil {
 		return nil, err
 	}
@@ -450,52 +450,49 @@ func NewGraph() *Graph {
 }
 
 // Orders dependencies before their consumers and rejects cycles.
-func (g *Graph) ComputeProcessingOrder() ([]*StepNode, error) {
-	order := make([]*StepNode, 0, len(g.nodes))
-	visited := make(map[string]bool)
-	temp := make(map[string]bool)
+func ComputeProcessingOrder(nodes map[string]*StepNode) ([]*StepNode, error) {
+	type visitState uint8
+	const (
+		unvisited visitState = iota
+		visiting
+		visited
+	)
 
-	var visit func(node *StepNode) error
-	visit = func(node *StepNode) error {
-		if temp[node.Step.Name] {
-			return fmt.Errorf("cycle detected: %s", node.Step.Name)
-		}
-		if visited[node.Step.Name] {
-			return nil
-		}
-		temp[node.Step.Name] = true
+	order := make([]*StepNode, 0, len(nodes))
+	states := make(map[string]visitState, len(nodes))
 
-		// Visit parents first to ensure they are processed before this node
-		for _, parent := range node.parents {
-			if err := visit(parent); err != nil {
-				return err
+	var traverse func(node *StepNode) error
+	traverse = func(node *StepNode) error {
+		name := node.Step.Name
+		states[name] = visiting
+
+		for _, child := range node.children {
+			switch states[child.Step.Name] {
+			case visiting:
+				return fmt.Errorf("cycle detected: %s", child.Step.Name)
+			case unvisited:
+				if err := traverse(child); err != nil {
+					return err
+				}
 			}
 		}
 
-		delete(temp, node.Step.Name)
-		visited[node.Step.Name] = true
+		states[name] = visited
 		order = append(order, node)
 		return nil
 	}
 
-	// Start with leaf nodes (nodes with no children)
-	for _, node := range g.nodes {
-		if len(node.children) == 0 {
-			if err := visit(node); err != nil {
-				return nil, err
-			}
+	for _, node := range nodes {
+		if states[node.Step.Name] != unvisited {
+			continue
+		}
+		if err := traverse(node); err != nil {
+			return nil, err
 		}
 	}
 
-	// Process any remaining nodes
-	for _, node := range g.nodes {
-		if !visited[node.Step.Name] {
-			if err := visit(node); err != nil {
-				return nil, err
-			}
-		}
-	}
-
+	// DFS finishes dependents first, so reverse postorder to put prerequisites first.
+	slices.Reverse(order)
 	return order, nil
 }
 

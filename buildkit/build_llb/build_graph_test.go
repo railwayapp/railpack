@@ -101,84 +101,93 @@ func TestGraphBasicOperations(t *testing.T) {
 }
 
 func TestGraphProcessingOrder(t *testing.T) {
-	g := NewGraph()
-
-	// Create a simple graph:
-	//   A
-	//  / \
-	// B   C
-	//  \ /
-	//   D
-	nodeA := newTestStepNode("A")
-	nodeB := newTestStepNode("B")
-	nodeC := newTestStepNode("C")
-	nodeD := newTestStepNode("D")
-
-	g.nodes[nodeA.Step.Name] = nodeA
-	g.nodes[nodeB.Step.Name] = nodeB
-	g.nodes[nodeC.Step.Name] = nodeC
-	g.nodes[nodeD.Step.Name] = nodeD
-
-	nodeB.parents = []*StepNode{nodeA}
-	nodeC.parents = []*StepNode{nodeA}
-	nodeD.parents = []*StepNode{nodeB, nodeC}
-
-	nodeA.children = []*StepNode{nodeB, nodeC}
-	nodeB.children = []*StepNode{nodeD}
-	nodeC.children = []*StepNode{nodeD}
-
-	order, err := g.ComputeProcessingOrder()
-	if err != nil {
-		t.Fatalf("Failed to compute processing order: %v", err)
+	tests := []struct {
+		name  string
+		nodes []string
+		edges [][2]string
+	}{
+		{name: "empty"},
+		{name: "single node", nodes: []string{"A"}},
+		{name: "chain", nodes: []string{"A", "B", "C"}, edges: [][2]string{{"A", "B"}, {"B", "C"}}},
+		{
+			name:  "diamond",
+			nodes: []string{"A", "B", "C", "D"},
+			edges: [][2]string{{"A", "B"}, {"A", "C"}, {"B", "D"}, {"C", "D"}},
+		},
+		{
+			name:  "shared descendant",
+			nodes: []string{"A", "B", "C"},
+			edges: [][2]string{{"A", "B"}, {"A", "C"}, {"B", "C"}},
+		},
+		{
+			name:  "disconnected components and isolated node",
+			nodes: []string{"A", "B", "C", "D", "E"},
+			edges: [][2]string{{"A", "B"}, {"C", "D"}},
+		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nodes := make(map[string]*StepNode, len(tt.nodes))
+			for _, name := range tt.nodes {
+				nodes[name] = newTestStepNode(name)
+			}
+			// Outgoing edges are sufficient to describe the graph for topological sorting.
+			for _, edge := range tt.edges {
+				nodes[edge[0]].children = append(nodes[edge[0]].children, nodes[edge[1]])
+			}
 
-	names := make([]string, len(order))
-	for i, node := range order {
-		names[i] = node.Step.Name
-	}
-	t.Logf("Order: %v", names)
+			order, err := ComputeProcessingOrder(nodes)
+			require.NoError(t, err)
+			require.Len(t, order, len(nodes))
 
-	// Verify order (should be A before B and C, and B and C before D)
-	if len(order) != 4 {
-		t.Fatalf("Expected 4 nodes in order, got %d", len(order))
-	}
-
-	// A should be first
-	if order[0].Step.Name != "A" {
-		t.Errorf("Expected A to be first, got %s", order[0].Step.Name)
-	}
-
-	// D should be last
-	if order[3].Step.Name != "D" {
-		t.Errorf("Expected D to be last, got %s", order[3].Step.Name)
+			positions := make(map[string]int, len(order))
+			for i, node := range order {
+				require.NotContains(t, positions, node.Step.Name)
+				require.Same(t, nodes[node.Step.Name], node)
+				positions[node.Step.Name] = i
+			}
+			// Independent nodes may have different valid orders because nodes is a map.
+			for _, edge := range tt.edges {
+				require.Less(t, positions[edge[0]], positions[edge[1]], "dependency %s must precede %s", edge[0], edge[1])
+			}
+		})
 	}
 }
 
 func TestGraphCycleDetection(t *testing.T) {
-	g := NewGraph()
+	tests := []struct {
+		name  string
+		nodes []string
+		edges [][2]string
+	}{
+		{name: "self loop", nodes: []string{"A"}, edges: [][2]string{{"A", "A"}}},
+		{name: "two node cycle", nodes: []string{"A", "B"}, edges: [][2]string{{"A", "B"}, {"B", "A"}}},
+		{
+			name:  "three node cycle without leaves",
+			nodes: []string{"A", "B", "C"},
+			edges: [][2]string{{"A", "B"}, {"B", "C"}, {"C", "A"}},
+		},
+		{
+			name:  "cycle disconnected from acyclic component",
+			nodes: []string{"A", "B", "C", "D", "E"},
+			edges: [][2]string{{"A", "B"}, {"C", "D"}, {"D", "E"}, {"E", "C"}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nodes := make(map[string]*StepNode, len(tt.nodes))
+			for _, name := range tt.nodes {
+				nodes[name] = newTestStepNode(name)
+			}
+			// A cycle has no leaf to use as a traversal entry point.
+			for _, edge := range tt.edges {
+				nodes[edge[0]].children = append(nodes[edge[0]].children, nodes[edge[1]])
+			}
 
-	// Create a cyclic graph:
-	// A -> B -> C -> A
-	nodeA := newTestStepNode("A")
-	nodeB := newTestStepNode("B")
-	nodeC := newTestStepNode("C")
-
-	g.nodes[nodeA.Step.Name] = nodeA
-	g.nodes[nodeB.Step.Name] = nodeB
-	g.nodes[nodeC.Step.Name] = nodeC
-
-	nodeB.parents = []*StepNode{nodeA}
-	nodeC.parents = []*StepNode{nodeB}
-	nodeA.parents = []*StepNode{nodeC}
-
-	nodeA.children = []*StepNode{nodeB}
-	nodeB.children = []*StepNode{nodeC}
-	nodeC.children = []*StepNode{nodeA}
-
-	// Test cycle detection
-	_, err := g.ComputeProcessingOrder()
-	if err == nil {
-		t.Error("Expected cycle detection error, got nil")
+			order, err := ComputeProcessingOrder(nodes)
+			require.Error(t, err)
+			require.Nil(t, order)
+		})
 	}
 }
 
