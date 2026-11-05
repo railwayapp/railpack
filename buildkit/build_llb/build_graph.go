@@ -13,7 +13,6 @@ import (
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/buildkit/util/system"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/railwayapp/railpack/buildkit/graph"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 )
@@ -21,7 +20,7 @@ import (
 const githubTokenEnvVar = "GITHUB_TOKEN"
 
 type BuildGraph struct {
-	graph      *graph.Graph
+	graph      *Graph
 	CacheStore *BuildKitCacheStore
 	Plan       *plan.BuildPlan
 	Platform   *specs.Platform
@@ -47,7 +46,7 @@ func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *Buil
 	usedSecretsBase := llb.Image("alpine:latest", llb.WithCustomName("[railpack] loading secrets"))
 
 	g := &BuildGraph{
-		graph:      graph.NewGraph(),
+		graph:      NewGraph(),
 		CacheStore: cacheStore,
 		Plan:       plan,
 		Platform:   platform,
@@ -73,29 +72,21 @@ func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *Buil
 
 	// Add dependencies to each node
 	for _, node := range g.graph.GetNodes() {
-		llbNode := node.(*StepNode)
-		for _, input := range llbNode.Step.Inputs {
+		for _, input := range node.Step.Inputs {
 			// This input does not reference another step
 			if input.Step == "" {
 				continue
 			}
 
 			if depNode, exists := g.graph.GetNode(input.Step); exists {
-				// Create edges between the current node and the dependency node
-				parents := llbNode.GetParents()
-				parents = append(parents, depNode)
-				llbNode.SetParents(parents)
-
-				children := depNode.GetChildren()
-				children = append(children, llbNode)
-				depNode.SetChildren(children)
+				// Keep both directions so traversal can follow dependencies and find leaves.
+				node.parents = append(node.parents, depNode)
+				depNode.children = append(depNode.children, node)
 			}
 		}
 	}
 
 	g.graph.ComputeTransitiveDependencies()
-
-	// g.graph.PrintGraph()
 
 	return g, nil
 }
@@ -110,8 +101,7 @@ func (g *BuildGraph) GenerateLLB() (*BuildGraphOutput, error) {
 
 	// Process all nodes in order
 	for _, node := range order {
-		llbNode := node.(*StepNode)
-		if err := g.processNode(llbNode); err != nil {
+		if err := g.processNode(node); err != nil {
 			return nil, err
 		}
 	}
@@ -123,7 +113,7 @@ func (g *BuildGraph) GenerateLLB() (*BuildGraphOutput, error) {
 	graphEnv := NewGraphEnvironment()
 	for _, input := range g.Plan.Deploy.Inputs {
 		if node, exists := g.graph.GetNode(input.Step); exists {
-			graphEnv.Merge(node.(*StepNode).OutputEnv)
+			graphEnv.Merge(node.OutputEnv)
 		}
 	}
 
@@ -141,18 +131,17 @@ func (g *BuildGraph) processNode(node *StepNode) error {
 	}
 
 	// Check if all parents are processed
-	for _, parent := range node.GetParents() {
-		parentNode := parent.(*StepNode)
-		if !parentNode.Processed {
+	for _, parent := range node.parents {
+		if !parent.Processed {
 			// If this node is marked in-progress, we have a dependency violation
 			if node.InProgress {
 				return fmt.Errorf("dependency violation: %s waiting for unprocessed parent %s",
-					node.Step.Name, parentNode.Step.Name)
+					node.Step.Name, parent.Step.Name)
 			}
 
 			// Mark this node as in-progress and process the parent
 			node.InProgress = true
-			if err := g.processNode(parentNode); err != nil {
+			if err := g.processNode(parent); err != nil {
 				node.InProgress = false
 				return err
 			}
@@ -165,9 +154,8 @@ func (g *BuildGraph) processNode(node *StepNode) error {
 	currentGraphEnv := NewGraphEnvironment()
 
 	// Merge the output envs of all the parent nodes
-	for _, parent := range node.GetParents() {
-		parentNode := parent.(*StepNode)
-		currentGraphEnv.Merge(parentNode.OutputEnv)
+	for _, parent := range node.parents {
+		currentGraphEnv.Merge(parent.OutputEnv)
 	}
 
 	node.InputEnv = currentGraphEnv
@@ -448,4 +436,151 @@ func isMiseInstallCommand(cmd string) bool {
 	}
 	// Check if command starts with "mise install"
 	return strings.HasPrefix(cmd, "mise install")
+}
+
+// Stores build step dependencies for LLB generation.
+type Graph struct {
+	nodes map[string]*StepNode
+}
+
+func NewGraph() *Graph {
+	return &Graph{
+		nodes: make(map[string]*StepNode),
+	}
+}
+
+func (g *Graph) AddNode(node *StepNode) {
+	g.nodes[node.Step.Name] = node
+}
+
+func (g *Graph) GetNode(name string) (*StepNode, bool) {
+	node, exists := g.nodes[name]
+	return node, exists
+}
+
+func (g *Graph) GetNodes() map[string]*StepNode {
+	return g.nodes
+}
+
+// Orders dependencies before their consumers and rejects cycles.
+func (g *Graph) ComputeProcessingOrder() ([]*StepNode, error) {
+	order := make([]*StepNode, 0, len(g.nodes))
+	visited := make(map[string]bool)
+	temp := make(map[string]bool)
+
+	var visit func(node *StepNode) error
+	visit = func(node *StepNode) error {
+		if temp[node.Step.Name] {
+			return fmt.Errorf("cycle detected: %s", node.Step.Name)
+		}
+		if visited[node.Step.Name] {
+			return nil
+		}
+		temp[node.Step.Name] = true
+
+		// Visit parents first to ensure they are processed before this node
+		for _, parent := range node.parents {
+			if err := visit(parent); err != nil {
+				return err
+			}
+		}
+
+		delete(temp, node.Step.Name)
+		visited[node.Step.Name] = true
+		order = append(order, node)
+		return nil
+	}
+
+	// Start with leaf nodes (nodes with no children)
+	for _, node := range g.nodes {
+		if len(node.children) == 0 {
+			if err := visit(node); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// Process any remaining nodes
+	for _, node := range g.nodes {
+		if !visited[node.Step.Name] {
+			if err := visit(node); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return order, nil
+}
+
+// Removes direct dependencies already reachable through another parent.
+func (g *Graph) ComputeTransitiveDependencies() {
+	for _, node := range g.nodes {
+		var newParents []*StepNode
+		for _, parent := range node.parents {
+			isRedundant := false
+			for _, otherParent := range node.parents {
+				if otherParent == parent {
+					continue
+				}
+
+				visited := make(map[string]bool)
+				var traverse func(*StepNode)
+				traverse = func(n *StepNode) {
+					if n == parent {
+						isRedundant = true
+						return
+					}
+					for _, p := range n.parents {
+						if !visited[p.Step.Name] {
+							visited[p.Step.Name] = true
+							traverse(p)
+						}
+					}
+				}
+				traverse(otherParent)
+
+				if isRedundant {
+					break
+				}
+			}
+
+			if !isRedundant {
+				newParents = append(newParents, parent)
+			} else {
+				// Remove child relationship from parent
+				parentChildren := removeNodeFromSlice(parent.children, node)
+				parent.children = parentChildren
+			}
+		}
+		node.parents = newParents
+	}
+}
+
+func removeNodeFromSlice(nodes []*StepNode, target *StepNode) []*StepNode {
+	result := make([]*StepNode, 0, len(nodes))
+	for _, n := range nodes {
+		if n != target {
+			result = append(result, n)
+		}
+	}
+	return result
+}
+
+func (g *Graph) PrintGraph() {
+	fmt.Println("\nGraph Structure:")
+	fmt.Println("=====================")
+
+	for name, node := range g.nodes {
+		fmt.Printf("\nNode: %s\n", name)
+		fmt.Printf("  Parents (%d):\n", len(node.parents))
+		for _, parent := range node.parents {
+			fmt.Printf("    - %s\n", parent.Step.Name)
+		}
+
+		fmt.Printf("  Children (%d):\n", len(node.children))
+		for _, child := range node.children {
+			fmt.Printf("    - %s\n", child.Step.Name)
+		}
+	}
+	fmt.Println("\n=====================")
 }
