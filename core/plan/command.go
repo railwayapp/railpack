@@ -60,8 +60,13 @@ func NewExecCommand(cmd string, options ...ExecOptions) Command {
 	return exec
 }
 
+// Wraps a command so it runs through a shell. BuildKit later splits the result with
+// shlex (llb.Shlex), where nothing can be escaped inside single quotes, so a raw quote
+// in cmd ends the wrapper early and the rest becomes extra args that `sh -c` ignores.
 func ShellCommandString(cmd string) string {
-	return "sh -c '" + cmd + "'"
+	// close the quote, emit an escaped quote, reopen: the POSIX idiom shlex also understands
+	escaped := strings.ReplaceAll(cmd, "'", `'\''`)
+	return "sh -c '" + escaped + "'"
 }
 
 func NewExecShellCommand(cmd string, options ...ExecOptions) Command {
