@@ -134,7 +134,7 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 
 	var pipeR *io.PipeReader
 	var pipeW *io.PipeWriter
-	errCh := make(chan error, 1)
+	var errCh <-chan error
 
 	// Only set up pipe and docker load if we're not saving to a directory
 	if opts.OutputDir == "" {
@@ -143,13 +143,10 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 		defer func() { _ = pipeR.Close() }()
 
 		// Pipe the image into `docker load`
-		go func() {
-			cmd := exec.Command("docker", "load")
-			cmd.Stdin = pipeR
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			errCh <- cmd.Run()
-		}()
+		cmd := exec.Command("docker", "load")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		errCh = runWithPipedStdin(cmd, pipeR)
 	}
 
 	progressDone := make(chan bool)
@@ -250,6 +247,18 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 	// Wait for progress monitoring to complete
 	<-progressDone
 
+	// If docker load already died, the solve error is just the broken export pipe, so report the cause.
+	// This must be checked before pipeW is closed, which makes docker load fail on a solve error too.
+	if err != nil && errCh != nil {
+		select {
+		case loadErr := <-errCh:
+			if loadErr != nil {
+				return fmt.Errorf("docker load failed: %w", loadErr)
+			}
+		default:
+		}
+	}
+
 	if pipeW != nil {
 		_ = pipeW.Close()
 	}
@@ -277,6 +286,27 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 	core.PrettyPrintBox(buildOutput)
 
 	return nil
+}
+
+// Runs cmd with r as its stdin. Once cmd exits nothing drains r, so r is closed to fail any
+// pending and future writes; otherwise the exporter writing the image blocks Solve forever.
+// The exit error is sent before r is closed, so a writer that fails can already read it.
+func runWithPipedStdin(cmd *exec.Cmd, r *io.PipeReader) <-chan error {
+	errCh := make(chan error, 1)
+	cmd.Stdin = r
+
+	go func() {
+		err := cmd.Run()
+		errCh <- err
+
+		if err != nil {
+			_ = r.CloseWithError(fmt.Errorf("%s exited: %w", cmd.Path, err))
+		} else {
+			_ = r.CloseWithError(fmt.Errorf("%s exited before reading all input", cmd.Path))
+		}
+	}()
+
+	return errCh
 }
 
 // determine the image name from the app dir path
