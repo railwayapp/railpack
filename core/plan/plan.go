@@ -53,10 +53,7 @@ func (p *BuildPlan) AddStep(step Step) {
 func (p *BuildPlan) Normalize() {
 	// Remove empty inputs from steps
 	for i := range p.Steps {
-		if p.Steps[i].Inputs == nil {
-			continue
-		}
-		normalizedInputs := []Layer{}
+		var normalizedInputs []Layer
 		for _, input := range p.Steps[i].Inputs {
 			if !input.IsEmpty() {
 				normalizedInputs = append(normalizedInputs, input)
@@ -67,17 +64,13 @@ func (p *BuildPlan) Normalize() {
 
 	// Remove empty inputs from deploy
 	if p.Deploy.Inputs != nil {
-		normalizedDeployInputs := []Layer{}
+		var normalizedDeployInputs []Layer
 		for _, input := range p.Deploy.Inputs {
 			if !input.IsEmpty() {
 				normalizedDeployInputs = append(normalizedDeployInputs, input)
 			}
 		}
-		if len(normalizedDeployInputs) == 0 {
-			p.Deploy.Inputs = nil
-		} else {
-			p.Deploy.Inputs = normalizedDeployInputs
-		}
+		p.Deploy.Inputs = normalizedDeployInputs
 	}
 
 	referencedSteps := p.referencedSteps()
@@ -86,7 +79,7 @@ func (p *BuildPlan) Normalize() {
 		return
 	}
 
-	normalizedSteps := make([]Step, 0, len(p.Steps))
+	normalizedSteps := make([]Step, 0, len(referencedSteps))
 	for _, step := range p.Steps {
 		if referencedSteps[step.Name] {
 			normalizedSteps = append(normalizedSteps, step)
@@ -103,7 +96,6 @@ func (p *BuildPlan) referencedSteps() map[string]bool {
 		if name == "" || referenced[name] {
 			return
 		}
-		// A missing deploy step still counts as a reference for pruning.
 		referenced[name] = true
 		pending = append(pending, name)
 	}
@@ -123,9 +115,8 @@ func (p *BuildPlan) referencedSteps() map[string]bool {
 	}
 
 	for len(pending) > 0 {
-		last := len(pending) - 1
-		name := pending[last]
-		pending = pending[:last]
+		name := pending[len(pending)-1]
+		pending = pending[:len(pending)-1]
 		step := stepsByName[name]
 		if step == nil {
 			continue

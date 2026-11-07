@@ -185,11 +185,11 @@ func TestNormalize(t *testing.T) {
 					},
 					{
 						Name:   "step2",
-						Inputs: []Layer{},
+						Inputs: nil,
 					},
 					{
 						Name:   "step4",
-						Inputs: []Layer{},
+						Inputs: nil,
 					},
 				},
 				Deploy: Deploy{
@@ -242,7 +242,7 @@ func TestNormalize(t *testing.T) {
 				Steps: []Step{
 					{
 						Name:   "step1",
-						Inputs: []Layer{},
+						Inputs: nil,
 					},
 					{
 						Name: "step2",
@@ -258,7 +258,7 @@ func TestNormalize(t *testing.T) {
 					},
 					{
 						Name:   "step5",
-						Inputs: []Layer{},
+						Inputs: nil,
 					},
 				},
 				Deploy: Deploy{
