@@ -53,10 +53,7 @@ func (p *BuildPlan) AddStep(step Step) {
 func (p *BuildPlan) Normalize() {
 	// Remove empty inputs from steps
 	for i := range p.Steps {
-		if p.Steps[i].Inputs == nil {
-			continue
-		}
-		normalizedInputs := []Layer{}
+		var normalizedInputs []Layer
 		for _, input := range p.Steps[i].Inputs {
 			if !input.IsEmpty() {
 				normalizedInputs = append(normalizedInputs, input)
@@ -67,82 +64,66 @@ func (p *BuildPlan) Normalize() {
 
 	// Remove empty inputs from deploy
 	if p.Deploy.Inputs != nil {
-		normalizedDeployInputs := []Layer{}
+		var normalizedDeployInputs []Layer
 		for _, input := range p.Deploy.Inputs {
 			if !input.IsEmpty() {
 				normalizedDeployInputs = append(normalizedDeployInputs, input)
 			}
 		}
-		if len(normalizedDeployInputs) == 0 {
-			p.Deploy.Inputs = nil
-		} else {
-			p.Deploy.Inputs = normalizedDeployInputs
-		}
+		p.Deploy.Inputs = normalizedDeployInputs
 	}
 
-	// Track which steps are referenced by deploy or transitively referenced steps
-	referencedSteps := make(map[string]bool)
-
-	// Start with steps referenced directly by deploy
-	if p.Deploy.Base.Step != "" {
-		referencedSteps[p.Deploy.Base.Step] = true
+	referencedSteps := p.referencedSteps()
+	if len(referencedSteps) == 0 {
+		// Plans without a deploy step reference keep all build steps.
+		return
 	}
 
-	if p.Deploy.Inputs != nil {
-		for _, input := range p.Deploy.Inputs {
-			if input.Step != "" {
-				referencedSteps[input.Step] = true
-			}
+	normalizedSteps := make([]Step, 0, len(referencedSteps))
+	for _, step := range p.Steps {
+		if referencedSteps[step.Name] {
+			normalizedSteps = append(normalizedSteps, step)
 		}
 	}
+	p.Steps = normalizedSteps
+}
 
-	// Keep finding new referenced steps until no more are found
-	// Use a map to track which steps we've already checked to avoid infinite loops
-	checkedSteps := make(map[string]bool)
-	// We use maxIterations to prevent infinite loops from circular dependencies.
-	// If we exceed this maximum possible number of unique edges, we can safely
-	// break as we've already collected all reachable steps.
-	maxIterations := len(p.Steps) * len(p.Steps) // Maximum possible unique edges in a directed graph
-
-	for range maxIterations {
-		newReferences := false
-		for _, step := range p.Steps {
-			// Skip if this step isn't referenced
-			if !referencedSteps[step.Name] {
-				continue
-			}
-
-			// Skip if we've already checked this step's inputs
-			if checkedSteps[step.Name] {
-				continue
-			}
-
-			// Mark this step as checked
-			checkedSteps[step.Name] = true
-
-			// Check this step's inputs for references
-			if step.Inputs != nil {
-				for _, input := range step.Inputs {
-					if input.Step != "" && !referencedSteps[input.Step] {
-						referencedSteps[input.Step] = true
-						newReferences = true
-					}
-				}
-			}
+// Walks upstream from the step references in deploy.
+func (p *BuildPlan) referencedSteps() map[string]bool {
+	referenced := make(map[string]bool)
+	var pending []string
+	push := func(name string) {
+		if name == "" || referenced[name] {
+			return
 		}
-		if !newReferences {
-			break
-		}
+		referenced[name] = true
+		pending = append(pending, name)
 	}
 
-	// Keep only steps that are referenced
-	if len(referencedSteps) > 0 {
-		normalizedSteps := make([]Step, 0, len(p.Steps))
-		for _, step := range p.Steps {
-			if referencedSteps[step.Name] {
-				normalizedSteps = append(normalizedSteps, step)
-			}
-		}
-		p.Steps = normalizedSteps
+	push(p.Deploy.Base.Step)
+	for _, input := range p.Deploy.Inputs {
+		push(input.Step)
 	}
+	if len(pending) == 0 {
+		return referenced
+	}
+
+	stepsByName := make(map[string]*Step, len(p.Steps))
+	for i := range p.Steps {
+		step := &p.Steps[i]
+		stepsByName[step.Name] = step
+	}
+
+	for len(pending) > 0 {
+		name := pending[len(pending)-1]
+		pending = pending[:len(pending)-1]
+		step := stepsByName[name]
+		if step == nil {
+			continue
+		}
+		for _, input := range step.Inputs {
+			push(input.Step)
+		}
+	}
+	return referenced
 }
