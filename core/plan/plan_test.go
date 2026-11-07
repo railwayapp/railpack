@@ -100,6 +100,17 @@ func TestNormalize(t *testing.T) {
 			},
 		},
 		{
+			name: "prunes steps when deploy references a missing step",
+			plan: &BuildPlan{
+				Steps:  []Step{{Name: "unused"}},
+				Deploy: Deploy{Base: NewStepLayer("missing")},
+			},
+			expectedPlan: &BuildPlan{
+				Steps:  []Step{},
+				Deploy: Deploy{Base: NewStepLayer("missing")},
+			},
+		},
+		{
 			name: "removes empty inputs",
 			plan: &BuildPlan{
 				Steps: []Step{
@@ -379,4 +390,19 @@ func TestNormalize(t *testing.T) {
 			require.Equal(t, tc.expectedPlan.Deploy.Base, tc.plan.Deploy.Base, "Deploy base mismatch")
 		})
 	}
+}
+
+func TestNormalizeFollowsLastDuplicateStep(t *testing.T) {
+	firstBuild := Step{Name: "build", Inputs: []Layer{NewStepLayer("old-deps")}}
+	lastBuild := Step{Name: "build", Inputs: []Layer{NewStepLayer("deps")}}
+	deps := Step{Name: "deps"}
+	p := BuildPlan{
+		Steps:  []Step{{Name: "old-deps"}, deps, firstBuild, lastBuild},
+		Deploy: Deploy{Base: NewStepLayer("build")},
+	}
+
+	p.Normalize()
+
+	// BuildKit uses the last definition of a step name when it constructs the graph.
+	require.Equal(t, []Step{deps, firstBuild, lastBuild}, p.Steps)
 }
