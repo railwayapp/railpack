@@ -50,6 +50,13 @@ jobs:
       - name: Test Unit
         run: mise run test
 
-      # Windows runners cannot run Linux containers, so stop at the generated plan
-      - name: Generate Plan
-        run: mise run cli -- plan examples/go-workspaces
+      # CLI end-to-end checks from the integration suite that need no Docker. Windows
+      # runners cannot run Linux containers, so image builds stay on the Linux jobs.
+      - name: Test CLI schema and info
+        shell: bash
+        env:
+          EXAMPLE_PROJECT_NAME: go-workspaces
+        run: |
+          mkdir -p tmp
+          mise run test:integration:schema
+          mise run test:integration:info
