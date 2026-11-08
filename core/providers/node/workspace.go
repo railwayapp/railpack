@@ -72,7 +72,7 @@ func (w *Workspace) findWorkspacePackages(app *app.App) error {
 				continue
 			}
 
-			dir := filepath.Dir(match)
+			dir := filepath.ToSlash(filepath.Dir(match))
 			w.Packages = append(w.Packages, &WorkspacePackage{
 				Path:        dir,
 				PackageJson: packageJson,
@@ -85,6 +85,7 @@ func (w *Workspace) findWorkspacePackages(app *app.App) error {
 
 // convertWorkspacePattern converts npm/pnpm workspace patterns to glob patterns
 func convertWorkspacePattern(pattern string) string {
+	pattern = filepath.ToSlash(pattern)
 	// npm/pnpm uses packages/* or packages/** for glob patterns
 	// - packages/* -> packages/*/package.json (single level)
 	// - packages/** -> packages/**/package.json (recursive)
@@ -99,7 +100,7 @@ func convertWorkspacePattern(pattern string) string {
 	}
 
 	// Direct path or other pattern, just append package.json
-	return filepath.Join(pattern, "package.json")
+	return filepath.ToSlash(filepath.Join(pattern, "package.json"))
 }
 
 // readPackageJson reads a package.json file from the given path
@@ -118,6 +119,7 @@ func (w *Workspace) HasWorkspaces() bool {
 
 // GetPackage returns a workspace package by path
 func (w *Workspace) GetPackage(path string) *WorkspacePackage {
+	path = filepath.ToSlash(path)
 	for _, pkg := range w.Packages {
 		if pkg.Path == path {
 			return pkg

@@ -45,6 +45,16 @@ func TestGetImageName(t *testing.T) {
 			appDir:   "/path/to/myapp" + string(filepath.Separator),
 			expected: "railpack-app",
 		},
+		{
+			name:     "windows backslash path",
+			appDir:   `C:\path\to\myapp`,
+			expected: "myapp",
+		},
+		{
+			name:     "windows backslash path ending with separator",
+			appDir:   `C:\path\to\myapp\`,
+			expected: "railpack-app",
+		},
 	}
 
 	for _, tt := range tests {
