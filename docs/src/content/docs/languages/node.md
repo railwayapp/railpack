@@ -251,7 +251,7 @@ static exports). Next.js reads `distDir` from your config when set. Set the
 directory. Railpack uses your app's `build` script to produce the static
 output.
 
-Note that if a SPA framework is *not* detected automatically, can you force SPA mode
+Note that if a SPA framework is *not* detected automatically, you can force SPA mode
 by specifying a `RAILPACK_SPA_OUTPUT_DIR` environment variable. This will enable SPA
 mode and serve the specified directory as a static site. Some of the SPA detection
 uses regexes on framework configuration files, which will fail if the default framework
