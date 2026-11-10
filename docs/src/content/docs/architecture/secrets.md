@@ -9,8 +9,11 @@ differences being:
 - Environment variables are saved in the final image and should not contain
   sensitive information. Since they are in the final image, providers can add
   variables that will be available to the app at runtime.
-- Secrets are never logged or saved in the build logs. They are also only
-  available at build time and not saved to the final image.
+- Secrets are available at build time and are not automatically saved to the
+  final image. Build commands can still print secrets or persist them in build
+  artifacts, and secret values are not automatically filtered from logs, so you
+  are responsible for preventing build commands and artifacts from exposing
+  them.
 
 ## Environment Variables
 
@@ -59,42 +62,42 @@ deploy variables with the same name.
 
 ## Secrets
 
-The names of all secrets that should be used during the build are added to the
-top of the build plan, and each step's `secrets` array specifies which secrets
-should invalidate that step's layer cache when their values change. While all
-secrets are available to every command as environment variables, only the ones
-listed in a step's `secrets` array will trigger a cache invalidation if
-modified.
+The generated build plan has a top-level `secrets` array containing the names
+of every secret that can be used during the build. You can define names in the
+root `secrets` array or directly in a step's `secrets` array. Explicit secrets
+on retained steps are automatically added to the generated plan's top-level
+array and do not need to be repeated at the root.
 
 Under the hood, Railpack uses [BuildKit secrets
 mounts](https://docs.docker.com/build/building/secrets/) to supply an exec
 command with the secret value as an environment variable.
 
-By default, all secrets defined in the build plan are available to each step.
-You can explicitly specify which secrets a step should have access to using the
-`secrets` array. An empty array indicates that no secrets should be available to
-that step.
+The frontend mounts every secret in the plan's top-level `secrets` array into
+every exec command. A step's `secrets` array does not restrict access. It
+selects the values that invalidate that step's layer cache. An empty array
+disables secret-based cache invalidation for the step, but secrets in the
+top-level array remain available to its exec commands.
 
 ```json title="railpack.json"
 {
-  "secrets": ["DATABASE_URL", "API_KEY", "STRIPE_LIVE_KEY"],
   "steps": {
     "build": {
-      "secrets": ["DATABASE_URL", "API_KEY"] // Only these secrets are available to this step
+      "secrets": ["DATABASE_URL", "API_KEY"]
     }
   }
 }
 ```
 
-You can also use `"*"` in a step's secrets array to indicate that it should have
-access to all secrets defined in the build plan:
+Use `"*"` in a step's `secrets` array to invalidate it when any secret from the
+root `secrets` array in `railpack.json` changes. Secrets defined on another
+step are not included:
 
 ```json title="railpack.json"
 {
   "secrets": ["DATABASE_URL", "API_KEY", "STRIPE_LIVE_KEY"],
   "steps": {
     "build": {
-      "secrets": ["*"] // This step has access to all secrets
+      "secrets": ["*"]
     }
   }
 }
@@ -111,35 +114,90 @@ If building with [the CLI](/reference/cli/#build), Railpack will check that all
 the secrets defined in the build plan have variables.
 
 ```bash
-railpack build --env STRIPE_LIVE_KEY=sk_live_asdf
+export STRIPE_LIVE_KEY=sk_live_asdf
+railpack build --env STRIPE_LIVE_KEY
 ```
 
 #### Custom Frontend
 
-If building with the [BuildKit frontend](/platforms/buildkit-frontend),
-you should still provide the secrets when generating the plan with `--env`. This
-adds the secrets to the build plan. You then need to pass the secrets to Docker
-or BuildKit with the `--secret` flag.
+Before using the [BuildKit frontend](/platforms/buildkit-frontend), generate a
+`railpack-plan.json`. Secret names can come from `railpack.json` or `--env`
+during this generation step. The frontend consumes only the resulting
+`railpack-plan.json`, so you must provide Docker or BuildKit with a value for
+every name in that plan's top-level `secrets` array.
 
 ```bash
 # Generate a build plan
-railpack plan --env STRIPE_LIVE_KEY=sk_live_asdf --out test/railpack-plan.json
+export STRIPE_LIVE_KEY=sk_live_123
+railpack plan --env STRIPE_LIVE_KEY --out test/railpack-plan.json
+
+# Hash the same value that will be supplied to BuildKit
+secrets_hash=$(
+  echo -n "STRIPE_LIVE_KEY=sk_live_123" |
+    sha256sum |
+    awk '{print $1}'
+)
 
 # Build with the custom frontend
-STRIPE_LIVE_KEY=asdf123456789 docker build \
-  --build-arg BUILDKIT_SYNTAX="ghcr.io/railwayapp/railpack:railpack-frontend" \
+docker build \
+  --build-arg BUILDKIT_SYNTAX="ghcr.io/railwayapp/railpack-frontend" \
   -f test/railpack-plan.json \
   --secret id=STRIPE_LIVE_KEY,env=STRIPE_LIVE_KEY \
-  --build-arg secrets-hash=asdfasdf \
+  --build-arg secrets-hash="$secrets_hash" \
   examples/node-bun
 ```
 
 For more information about running Railpack in production, see the [Running
 Railpack in Production](/platforms/running-railpack-in-production) guide.
 
-### Layer Invalidation
+### BuildKit Secret Filtering
 
-By default, BuildKit will not invalidate a layer if a secret is changed. To get
-around this, Railpack uses a hash of the secret values and mounts this as a file
-in the layer. This will bust the layer cache if the secret is changed. Pass the
-secret hash to BuildKit with the `--build-arg secrets-hash=<hash>` flag.
+BuildKit does not make every secret passed on the command line automatically
+available to a frontend. The frontend requests values by ID using the names in
+the plan's top-level `secrets` array:
+
+- A secret present in the array and supplied to BuildKit is mounted into every
+  exec command.
+- A supplied secret absent from the array is never requested or mounted.
+- A secret present in the array but not supplied causes the build to fail
+  because the frontend requests required secret mounts.
+
+BuildKit's frontend API does not provide a way to enumerate every supplied
+secret ID. Railpack can request a known ID but cannot discover undeclared
+secrets from the BuildKit session.
+
+## Secrets & Layer Invalidation
+
+BuildKit intentionally excludes secret contents from an exec operation's cache
+key. Without additional input, changing a mounted secret can reuse a layer
+created with its previous value.
+
+Railpack accepts an opaque hash through the `secrets-hash` build argument and
+uses it to create cache dependencies. The hash must be deterministic and must
+change whenever any supplied value represented by it changes. The CLI computes
+this automatically. Frontend users must pass it with
+`--build-arg secrets-hash=<hash>` for Docker or
+`--opt build-arg:secrets-hash=<hash>` for `buildctl`.
+
+The compiled `secrets` array on each step determines how the hash is used:
+
+- An empty array adds no secret-based cache dependency.
+- Concrete names derive a hash from only those mounted values. Changes to other
+  secrets do not invalidate the step's resulting layer.
+- `"*"` depends directly on the complete supplied `secrets-hash`.
+
+The frontend never reads `railpack.json`; it reads the compiled
+`railpack-plan.json`. During plan generation, a `"*"` from `railpack.json`
+normally becomes the concrete names from its root `secrets` array. It does not
+include names defined only on other steps, so those values do not invalidate
+the wildcard step.
+
+If the generated plan has no concrete secret names, `"*"` remains in that
+step's `secrets` array. A manually authored `railpack-plan.json` may also
+contain `"*"`. In either case, the frontend makes that step depend on the
+complete supplied `secrets-hash`.
+
+The value passed as `secrets-hash` can include values that are not present in
+the plan's top-level `secrets` array. Those values are still not mounted.
+However, a `"*"` that reaches the frontend will invalidate when the complete
+hash changes, including changes caused by such extra values.
