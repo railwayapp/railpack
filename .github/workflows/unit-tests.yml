@@ -1,8 +1,6 @@
 name: Linting, Formatting, and Unit Tests
 
-# Security: Actions are pinned to commit SHAs instead of tags/versions where possible.
-# Tags are mutable and can be force-pushed, allowing attackers to replace trusted
-# code with malicious code. SHAs are immutable and protect against supply chain attacks.
+# Action versions are managed and locked to immutable commit SHAs in actions.lock
 
 on:
   push:
@@ -24,8 +22,8 @@ jobs:
     name: Check and Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
 
       - name: Go Checks
         run: mise run check
