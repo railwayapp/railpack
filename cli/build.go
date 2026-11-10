@@ -8,7 +8,9 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/railwayapp/railpack/buildkit"
@@ -144,8 +146,8 @@ func validateSecrets(plan *plan.BuildPlan, env *app.Environment) error {
 // generate a hash all of build secrets to invalidate all caches when any secret changes
 func getSecretsHash(env *app.Environment) string {
 	var secretsValue strings.Builder
-	for _, v := range env.Variables {
-		secretsValue.WriteString(v)
+	for _, k := range slices.Sorted(maps.Keys(env.Variables)) {
+		secretsValue.WriteString(env.Variables[k])
 	}
 	hasher := sha256.New()
 	hasher.Write([]byte(secretsValue.String()))
