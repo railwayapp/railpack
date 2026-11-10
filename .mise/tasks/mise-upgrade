@@ -132,10 +132,10 @@ else
 fi
 
 echo "Updating GitHub Actions..."
-if GITHUB_TOKEN="$(mise token github --raw)" pinact run -u; then
+if gh actions-lock --relock; then
   if [[ -n "$(git status --porcelain -- .github/workflows)" ]]; then
     git add -- .github/workflows
-    git commit -m "chore: update github actions"
+    git commit -m "chore: update github actions lockfile"
   fi
 else
   echo "Error: failed to update GitHub Actions (continuing upgrade)" >&2
