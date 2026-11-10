@@ -3,8 +3,8 @@ title: Secrets and Environment Variables
 description: How Railpack handles secrets and environment variables
 ---
 
-Build secrets and environment variables are treated separately. The main
-differences being:
+[Build secrets](https://docs.docker.com/build/building/secrets/) and
+environment variables are treated separately. The main differences are:
 
 - Environment variables are saved in the final image and should not contain
   sensitive information. Since they are in the final image, providers can add
@@ -15,11 +15,22 @@ differences being:
   are responsible for preventing build commands and artifacts from exposing
   them.
 
+Some examples of when you might use each:
+
+- **Environment variables**: `NODE_ENV`, `PYTHON_ENV`, `TZ`, or other values
+  that configure your application's environment or behavior.
+- **Build secrets**: `SENTRY_AUTH_TOKEN` for reporting a build to Sentry, or
+  an API key used to collect static assets during the build.
+
+Do not use build secrets or build-plan environment variables for sensitive
+runtime values such as `DATABASE_URL` or `STRIPE_API_KEY`. Configure those in
+your platform's runtime environment instead.
+
 ## Environment Variables
 
-Environment variables can be set in two ways:
+Environment variables can be set in a few ways:
 
-1. Through step variables:
+1. Within a step. The variable is available only in that step:
 
 ```json title="railpack.json"
 {
@@ -33,7 +44,8 @@ Environment variables can be set in two ways:
 }
 ```
 
-2. Through the deploy section for runtime variables:
+2. In the deploy configuration. These variables are available only at runtime
+   and are not set during the build:
 
 ```json title="railpack.json"
 {
@@ -45,22 +57,36 @@ Environment variables can be set in two ways:
 }
 ```
 
+You can also use
+[`mise.toml`](https://mise.jdx.dev/environments/)
+to configure environment variables in the generated container.
+
+3. With the CLI's `--env` flag. These variables are available during every
+   build step and at runtime. Pass `NAME=value` to set a value directly, or
+   pass `NAME` to copy its value from the current process environment:
+
+```bash
+TZ=America/Los_Angeles railpack build \
+  --env TZ \
+  --env LANG=en_US.UTF-8
+```
+
 ## Runtime Railpack Variables
 
 The final image includes runtime metadata that is not available to build
 commands:
 
-| Name                | Description                              |
-| :------------------ | :--------------------------------------- |
-| `RAILPACK_VERSION`  | Version used to produce the image        |
-| `RAILPACK_BUILT_AT` | Build time as Unix epoch seconds (UTC)   |
+| Name                | Description                            |
+| :------------------ | :------------------------------------- |
+| `RAILPACK_VERSION`  | Version used to produce the image      |
+| `RAILPACK_BUILT_AT` | Build time as Unix epoch seconds (UTC) |
 
 Runtime metadata is added after generating the build graph, so it does not
 invalidate application layer caches. The `RAILPACK_` namespace in the final
 image is reserved for generated runtime metadata, which takes precedence over
 deploy variables with the same name.
 
-## Secrets
+## Build Secrets
 
 The generated build plan has a top-level `secrets` array containing the names
 of every secret that can be used during the build. You can define names in the
@@ -68,9 +94,9 @@ root `secrets` array or directly in a step's `secrets` array. Explicit secrets
 on retained steps are automatically added to the generated plan's top-level
 array and do not need to be repeated at the root.
 
-Under the hood, Railpack uses [BuildKit secrets
-mounts](https://docs.docker.com/build/building/secrets/) to supply an exec
-command with the secret value as an environment variable.
+Under the hood, [BuildKit secret
+mounts](https://docs.docker.com/build/building/secrets/) supply each exec
+command with the secret values as environment variables.
 
 The frontend mounts every secret in the plan's top-level `secrets` array into
 every exec command. A step's `secrets` array does not restrict access. It
@@ -78,10 +104,11 @@ selects the values that invalidate that step's layer cache. An empty array
 disables secret-based cache invalidation for the step, but secrets in the
 top-level array remain available to its exec commands.
 
-```json title="railpack.json"
+```json5 title="railpack.json"
 {
   "steps": {
     "build": {
+      // Only these secret changes invalidate this step's cache.
       "secrets": ["DATABASE_URL", "API_KEY"]
     }
   }
@@ -92,7 +119,7 @@ Use `"*"` in a step's `secrets` array to invalidate it when any secret from the
 root `secrets` array in `railpack.json` changes. Secrets defined on another
 step are not included:
 
-```json title="railpack.json"
+```json5 title="railpack.json"
 {
   "secrets": ["DATABASE_URL", "API_KEY", "STRIPE_LIVE_KEY"],
   "steps": {
@@ -103,25 +130,36 @@ step are not included:
 }
 ```
 
-### Providing Secrets
+An empty array prevents secret changes from invalidating that step's cache. It
+does not prevent the command from accessing top-level secrets.
 
-You can add secrets when building or generating a build plan with the `--env`
-flag. The names of these variables will be added to the build plan as secrets.
+### Providing Secrets when Building with the CLI
 
-#### CLI Build
+Use the `--secret` flag when building or generating a build plan. Pass
+`NAME=value` to set a value directly, or pass `NAME` to copy its value from the
+current process environment.
 
-If building with [the CLI](/reference/cli/#build), Railpack will check that all
-the secrets defined in the build plan have variables.
+In terms of `railpack.json` configuration, you can think of this flag supplying
+the secret during the build, adding its name to the top-level `secrets` key, and using
+`"secrets": ["*"]` by default for all steps.
+
+The CLI checks that values were supplied for all secrets required by the build
+plan. This example copyies `TZ` and `SENTRY_AUTH_TOKEN` from
+the current process environment while setting `LANG` and
+`POSTHOG_PERSONAL_API_KEY` directly:
 
 ```bash
-export STRIPE_LIVE_KEY=sk_live_asdf
-railpack build --env STRIPE_LIVE_KEY
+TZ=America/Los_Angeles SENTRY_AUTH_TOKEN=sntrys_1234 railpack build \
+  --env TZ \
+  --env LANG=en_US.UTF-8 \
+  --secret SENTRY_AUTH_TOKEN \
+  --secret POSTHOG_PERSONAL_API_KEY=phx_1234
 ```
 
 #### Custom Frontend
 
 Before using the [BuildKit frontend](/platforms/buildkit-frontend), generate a
-`railpack-plan.json`. Secret names can come from `railpack.json` or `--env`
+`railpack-plan.json`. Secret names can come from `railpack.json` or `--secret`
 during this generation step. The frontend consumes only the resulting
 `railpack-plan.json`, so you must provide Docker or BuildKit with a value for
 every name in that plan's top-level `secrets` array.
@@ -129,7 +167,7 @@ every name in that plan's top-level `secrets` array.
 ```bash
 # Generate a build plan
 export STRIPE_LIVE_KEY=sk_live_123
-railpack plan --env STRIPE_LIVE_KEY --out test/railpack-plan.json
+railpack plan --secret STRIPE_LIVE_KEY --out test/railpack-plan.json
 
 # Hash the same value that will be supplied to BuildKit
 secrets_hash=$(

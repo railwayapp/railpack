@@ -93,11 +93,11 @@ the Railpack CLI.
 The names of secrets available to build commands must be present in the build
 plan's top-level `secrets` array. Names can be declared in the root or
 step-level `secrets` field of `railpack.json`, or passed to `prepare` with
-`--env`.
+`--secret`.
 
 ```sh
 export STRIPE_LIVE_KEY=sk_live_123
-railpack prepare /dir/to/build --env STRIPE_LIVE_KEY
+railpack prepare /dir/to/build --secret STRIPE_LIVE_KEY
 ```
 
 These secrets can be used to configure the plan, but the names will also be
@@ -164,7 +164,7 @@ export STRIPE_LIVE_KEY=sk_live_123
 
 # Prepare the app and generate the build plan
 railpack prepare "$APP_DIR" \
-  --env STRIPE_LIVE_KEY \
+  --secret STRIPE_LIVE_KEY \
   --plan-out ./railpack-plan.json \
   --info-out ./railpack-info.json
 
@@ -176,7 +176,7 @@ secrets_hash=$(
 )
 
 # Build with BuildKit and the Railpack frontend
-docker buildx build \
+STRIPE_LIVE_KEY="$STRIPE_LIVE_KEY" docker buildx build \
   --build-arg BUILDKIT_SYNTAX="ghcr.io/railwayapp/railpack-frontend" \
   -f ./railpack-plan.json \
   --secret id=STRIPE_LIVE_KEY,env=STRIPE_LIVE_KEY \
