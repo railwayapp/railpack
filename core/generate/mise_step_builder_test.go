@@ -91,6 +91,38 @@ func TestGetPackageVersionsWithNoToolVersions(t *testing.T) {
 	require.Empty(t, packages)
 }
 
+func TestGetPackageVersionsFromSymlinkedAppDir(t *testing.T) {
+	parentDir := t.TempDir()
+	appDir := filepath.Join(parentDir, "app")
+	require.NoError(t, os.Mkdir(appDir, 0755))
+	require.NoError(t, os.WriteFile(
+		filepath.Join(appDir, "mise.toml"),
+		[]byte("[tools]\nnode = \"20.19.0\"\n"),
+		0644,
+	))
+
+	// Mise reports physical config paths, so an unresolved app symlink would filter out its own configs.
+	linkDir := filepath.Join(parentDir, "link")
+	require.NoError(t, os.Symlink(appDir, linkDir))
+
+	ctx := CreateTestContext(t, linkDir)
+
+	resolver, err := resolver.NewResolver(t.TempDir())
+	require.NoError(t, err)
+
+	builder := &MiseStepBuilder{
+		Resolver: resolver,
+		app:      ctx.App,
+		env:      ctx.Env,
+	}
+
+	packages, err := builder.GetMisePackageVersions(ctx)
+	require.NoError(t, err)
+
+	require.Contains(t, packages, "node")
+	require.Equal(t, "20.19.0", packages["node"].Version)
+}
+
 func TestGetSupportingMiseConfigFiles(t *testing.T) {
 	dir := t.TempDir()
 

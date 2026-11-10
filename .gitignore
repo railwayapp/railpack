@@ -46,6 +46,8 @@ build/
 tmp/
 
 examples/*/size.json
+# Created by mise run setup.
+/examples/node-pnpm-symlink
 
 ### AI Tooling ###
 .claude/settings.local.json

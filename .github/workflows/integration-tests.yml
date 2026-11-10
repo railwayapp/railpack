@@ -26,10 +26,14 @@ jobs:
       examples: ${{ steps.find-examples.outputs.examples }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9b200bcecbfd6303e69a4a261b2e09e3757440a7 # v5.2.0
+      - name: Set up test environment
+        run: mise run setup
       - name: Find examples with test.json
         id: find-examples
         run: |
-          examples=$(find examples -name "test.json" -exec dirname {} \; | xargs -n 1 basename | jq -R -s -c 'split("\n")[:-1]')
+          # Follow symlinked examples so their test.json files are included in the matrix.
+          examples=$(find -L examples -mindepth 2 -maxdepth 2 -name "test.json" -exec dirname {} \; | xargs -n 1 basename | jq -R -s -c 'split("\n")[:-1]')
           echo "examples=$examples" >> "$GITHUB_OUTPUT"
 
   # integration tests plan, build, and run example projects. Running the example projects requires both the builder and runtime
@@ -196,8 +200,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       
       # intermittent docker pull failures kept failing the entire pipeline, which is why we are retrying
-      - name: Start BuildKit
-        run: mise run retry --attempts 5 -- mise run run-buildkit-container
+      - name: Set up test environment
+        run: mise run retry --attempts 5 -- mise run setup
 
       # required for integration tests that use multiple platforms
       - name: Set up QEMU
@@ -260,8 +264,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Start BuildKit
-        run: mise run run-buildkit-container
+      - name: Set up test environment
+        run: mise run setup
 
       # QEMU provides x86 emulation on this ARM runner for any cross-platform build steps
       - name: Set up QEMU
