@@ -1,2 +1,11 @@
 # These people must approve every change
 *                 @coffee-cup @paulocsanz
+
+# Markdown documentation
+*.md              @iloveitaly
+
+# Test snapshot files
+*.snap            @iloveitaly
+*.snap.json       @iloveitaly
+__snapshots__/    @iloveitaly
+
