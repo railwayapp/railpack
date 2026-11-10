@@ -1,11 +1,21 @@
 # These people must approve every change
-*                 @coffee-cup @paulocsanz
+*                       @coffee-cup @paulocsanz
 
 # Markdown documentation
-*.md              @iloveitaly
+*.md                    @coffee-cup @paulocsanz @iloveitaly
 
 # Test snapshot files
-*.snap            @iloveitaly
-*.snap.json       @iloveitaly
-__snapshots__/    @iloveitaly
+*.snap                  @coffee-cup @paulocsanz @iloveitaly
+*.snap.json             @coffee-cup @paulocsanz @iloveitaly
+__snapshots__/          @coffee-cup @paulocsanz @iloveitaly
+
+# Automated toolchain & dependency updates (mise-upgrade, package updates)
+core/mise/version.txt   @coffee-cup @paulocsanz @iloveitaly
+go.mod                  @coffee-cup @paulocsanz @iloveitaly
+go.sum                  @coffee-cup @paulocsanz @iloveitaly
+mise.toml               @coffee-cup @paulocsanz @iloveitaly
+*.lock                  @coffee-cup @paulocsanz @iloveitaly
+*.lockb                 @coffee-cup @paulocsanz @iloveitaly
+docs/package.json       @coffee-cup @paulocsanz @iloveitaly
+
 

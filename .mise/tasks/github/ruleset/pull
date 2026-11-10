@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#MISE description="Pull repository rulesets from GitHub API into .github/rulesets/"
+
+set -euo pipefail
+
+output_dir=".github/rulesets"
+mkdir -p "$output_dir"
+
+repo_name=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+echo "Fetching rulesets for $repo_name..."
+
+rulesets_json=$(gh api repos/:owner/:repo/rulesets)
+
+# Filter repository-level rulesets (skip organization-inherited ones)
+repo_rulesets=$(echo "$rulesets_json" | jq -c '[.[] | select(.source_type == "Repository")]')
+count=$(echo "$repo_rulesets" | jq 'length')
+
+if [ "$count" -eq 0 ]; then
+  echo "No repository rulesets found for $repo_name."
+  exit 0
+fi
+
+echo "$repo_rulesets" | jq -c '.[]' | while read -r item; do
+  id=$(echo "$item" | jq -r '.id')
+  name=$(echo "$item" | jq -r '.name')
+
+  # Generate slug filename: lowercase alphanumeric and hyphens
+  slug=$(echo "$name" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g' | sed -E 's/^-+|-+$//g')
+  filename="${slug}.json"
+  filepath="${output_dir}/${filename}"
+
+  echo "Pulling '$name' (ID: $id) -> $filepath"
+  gh api "repos/:owner/:repo/rulesets/$id" | jq '{
+    name: .name,
+    target: .target,
+    enforcement: .enforcement,
+    bypass_actors: (.bypass_actors // []),
+    conditions: .conditions,
+    rules: [.rules[] | {type: .type} + (if .parameters then {parameters: .parameters} else {} end)]
+  }' > "$filepath"
+done
+
+echo "Done. Saved $count ruleset(s) to $output_dir"
