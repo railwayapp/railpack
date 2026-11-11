@@ -1,9 +1,8 @@
 package java
 
 import (
-	"strconv"
-
 	"github.com/railwayapp/railpack/core/generate"
+	"github.com/railwayapp/railpack/internal/utils"
 )
 
 const DEFAULT_JDK_VERSION = "21"
@@ -15,9 +14,12 @@ func (p *JavaProvider) setJDKVersion(ctx *generate.GenerateContext, miseStep *ge
 	}
 
 	if p.usesGradle(ctx) {
-		gradleVersion, err := strconv.Atoi(miseStep.Resolver.Get("gradle").Version)
-		if err == nil && gradleVersion <= 5 {
-			miseStep.Version(jdk, "8", "Gradle <= 5")
+		if gradlePkg := miseStep.Resolver.Get("gradle"); gradlePkg != nil {
+			// Legacy Gradle releases (e.g. Gradle 5.6.4) cannot run on modern Java 21 and require JDK 8.
+			semver, err := utils.ParseSemver(gradlePkg.Version)
+			if err == nil && semver.Major <= 5 {
+				miseStep.Version(jdk, "8", "Gradle <= 5")
+			}
 		}
 	}
 }
