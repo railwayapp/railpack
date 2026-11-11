@@ -10,7 +10,10 @@ import (
 )
 
 const (
-	DEFAULT_GO_VERSION = "1.25"
+	// MAINTENANCE should match the oldest Go version continuing to receive security updates
+	// https://endoflife.date/go
+	DEFAULT_GO_VERSION = "1.26"
+
 	GO_BUILD_CACHE_KEY = "go-build"
 	GO_BINARY_NAME     = "out"
 	GO_PATH            = "/go"

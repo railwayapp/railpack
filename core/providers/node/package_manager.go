@@ -19,9 +19,12 @@ const (
 	PackageManagerYarn1     PackageManager = "yarn1"
 	PackageManagerYarnBerry PackageManager = "yarnberry"
 
-	DEFAULT_PNPM_VERSION = "9"
-	PNPM_HOME            = "/opt/pnpm"
-	PNPM_STORE_DIR       = PNPM_HOME + "/store"
+	// MAINTENANCE keep this aligned with the latest pnpm version continuing to receive security updates
+	// https://github.com/pnpm/pnpm/security/policy
+	DEFAULT_PNPM_VERSION = "12"
+
+	PNPM_HOME      = "/opt/pnpm"
+	PNPM_STORE_DIR = PNPM_HOME + "/store"
 )
 
 func (p *PackageJson) hasProductionDependency(dependency string) bool {
@@ -383,6 +386,7 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 	if p == PackageManagerPnpm {
 		pnpm := packages.Default("pnpm", DEFAULT_PNPM_VERSION)
 
+		// MAINTENANCE add additional lockfile versions => pnpm version mappings
 		lockfile, err := ctx.App.ReadFile("pnpm-lock.yaml")
 		if err == nil {
 			switch {
@@ -396,7 +400,7 @@ func (p PackageManager) GetPackageManagerPackages(ctx *generate.GenerateContext,
 				packages.Version(pnpm, "8", "pnpm-lock.yaml")
 			case strings.HasPrefix(lockfile, "lockfileVersion: '9.0'") || strings.HasPrefix(lockfile, "lockfileVersion: 9.0"):
 				// pnpm 9 introduced lockfileVersion 9.0.
-				// pnpm 10 and 11 continue using the same 9.0 format (no bump).
+				// pnpm 10, 11, and 12 still write 9.0, so this stays on the oldest release that can read it.
 				packages.Version(pnpm, "9", "pnpm-lock.yaml")
 			default:
 				log.Warnf("could not detect pnpm lockfile version")

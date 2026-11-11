@@ -19,7 +19,9 @@ import (
 )
 
 const (
-	DEFAULT_PHP_VERSION  = "8.4"
+	// MAINTENANCE should match the oldest PHP version continuing to receive security updates
+	DEFAULT_PHP_VERSION = "8.4"
+
 	DefaultCaddyfilePath = "/Caddyfile"
 	COMPOSER_CACHE_DIR   = "/opt/cache/composer"
 )
@@ -567,6 +569,7 @@ func withoutSpread(packages []string) []string {
 }
 
 func getPhpImage(phpVersion string) string {
+	// MAINTENANCE this image suffix needs to be kept up to date with the latest FrankenPHP release
 	return fmt.Sprintf("dunglas/frankenphp:php%s-trixie", phpVersion)
 }
 

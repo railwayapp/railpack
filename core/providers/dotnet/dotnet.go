@@ -15,7 +15,9 @@ import (
 )
 
 const (
-	DEFAULT_DOTNET_VERSION   = "8.0"
+	// MAINTENANCE should match the oldest .NET version continuing to receive security updates
+	DEFAULT_DOTNET_VERSION = "8.0"
+
 	DOTNET_ROOT              = "/mise/installs/dotnet"
 	DOTNET_DEPENDENCIES_ROOT = "/root/.nuget/packages"
 )
