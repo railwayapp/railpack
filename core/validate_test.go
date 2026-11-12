@@ -53,14 +53,14 @@ func TestValidateCommands(t *testing.T) {
 		buildStep := plan.NewStep("build")
 		buildStep.Commands = []plan.Command{plan.NewExecShellCommand("npm build")}
 		buildPlan.Steps = append(buildPlan.Steps, *buildStep)
-		require.True(t, validateCommands(buildPlan, testApp, logger))
+		require.True(t, validateCommands(buildPlan, testApp, logger, &ValidatePlanOptions{}))
 	})
 
 	t.Run("plan without commands", func(t *testing.T) {
 		buildPlan := plan.NewBuildPlan()
 		buildStep := plan.NewStep("build")
 		buildPlan.Steps = append(buildPlan.Steps, *buildStep)
-		require.False(t, validateCommands(buildPlan, testApp, logger))
+		require.False(t, validateCommands(buildPlan, testApp, logger, &ValidatePlanOptions{}))
 	})
 }
 
