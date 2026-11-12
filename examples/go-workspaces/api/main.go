@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"runtime"
+
+	"example.com/shared"
 )
 
 func main() {
-	fmt.Printf("This is the api %s\n", runtime.Version())
+	fmt.Println(shared.FormatBanner("api", runtime.Version()))
 }

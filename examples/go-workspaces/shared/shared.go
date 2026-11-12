@@ -1,10 +1,9 @@
-package main
+// Library module in the workspace imported by example.com/api via go.work
+// without a replace directive in api/go.mod.
+package shared
 
-import (
-	"fmt"
-	"runtime"
-)
+import "fmt"
 
-func main() {
-	fmt.Printf("This is the shared package %s\n", runtime.Version())
+func FormatBanner(service, version string) string {
+	return fmt.Sprintf("This is the %s %s (from shared)", service, version)
 }

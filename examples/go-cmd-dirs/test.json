@@ -1,5 +1,21 @@
 [
   {
-    "expectedOutput": "Hello from Go go1.25.3"
+    // Exercises cmd/* entrypoint detection when the module root contains:
+    // - greeting.go: a root library package (with "package main" inside a block comment)
+    // - generate.go: a `//go:build ignore` helper script declaring `package main`
+    // - greeting_test.go: a root `*_test.go` file
+    // - cmd/common: a non-main helper package under cmd/ that sorts before cmd/server
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 8080,
+      "expectedOutput": "Hello from Go go1.25.3 [cmd/server]"
+    }
+  },
+  {
+    "envs": {
+      "RAILPACK_GO_BIN": "worker"
+    },
+    "expectedOutput": "Hello from Go go1.25.3 [cmd/worker]"
   }
 ]
