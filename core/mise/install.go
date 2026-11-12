@@ -248,9 +248,9 @@ func extractZip(archivePath, binaryPath string) error {
 	}
 	defer cleanup()
 
-	binaryName := getBinaryName()
+	binaryPathInArchive := "mise/bin/mise.exe"
 	for _, f := range r.File {
-		if strings.HasSuffix(f.Name, binaryName) {
+		if f.Name == binaryPathInArchive {
 			rc, err := f.Open()
 			if err != nil {
 				return err
@@ -266,7 +266,7 @@ func extractZip(archivePath, binaryPath string) error {
 		}
 	}
 
-	return fmt.Errorf("binary not found in archive")
+	return fmt.Errorf("binary not found in archive at %s", binaryPathInArchive)
 }
 
 func validateInstallation(cacheDir string) error {
@@ -317,6 +317,11 @@ func createAtomicWriter(targetPath string) (writeAndMove func(write func(tempFil
 		}
 
 		if err := os.Rename(tempPath, targetPath); err != nil {
+			// Windows cannot replace a running executable, so a concurrent install that won
+			// the race already left a complete binary here. validateInstallation still checks it.
+			if _, statErr := os.Stat(targetPath); statErr == nil {
+				return nil
+			}
 			return fmt.Errorf("failed to move temp file to target: %w", err)
 		}
 

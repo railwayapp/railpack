@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"path/filepath"
+	"path"
 	"slices"
 	"strings"
 
@@ -338,8 +338,9 @@ func (g *BuildGraph) convertFileCommandToLLB(cmd plan.FileCommand, state llb.Sta
 		return state, fmt.Errorf("asset %q not found", cmd.Name)
 	}
 
-	// Create parent directories for the file
-	parentDir := filepath.Dir(cmd.Path)
+	// Create parent directories for the file. Container paths are always POSIX, so
+	// filepath.Dir would produce \etc\mise on a Windows host.
+	parentDir := path.Dir(cmd.Path)
 	if parentDir != "/" {
 		s := state.File(llb.Mkdir(parentDir, 0755, llb.WithParents(true)))
 		state = s
