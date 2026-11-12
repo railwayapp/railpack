@@ -132,6 +132,10 @@ else
 fi
 
 echo "Updating GitHub Actions..."
+if ! gh extension list | grep "actions-lock" >/dev/null; then
+  gh extension install github/gh-actions-lock --pin v0.4.1 || true
+fi
+
 if gh actions-lock --relock; then
   if [[ -n "$(git status --porcelain -- .github/workflows)" ]]; then
     git add -- .github/workflows
