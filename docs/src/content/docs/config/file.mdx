@@ -144,6 +144,7 @@ The root configuration can have these fields:
 | :----------------- | :------------------------------------------------------------------------------ |
 | `provider`         | The provider to use for deployment (optional, autodetected by default)          |
 | `buildAptPackages` | List of apt packages to install during the build step                           |
+| `buildAptSources`  | List of third-party apt repositories to add during the build step |
 | `packages`         | Map of package name to package version                                          |
 | `caches`           | Map of cache name to cache definitions. The cache names are referenced in steps |
 | `secrets`          | List of secrets that should be made available to commands                       |
@@ -327,6 +328,7 @@ The deploy section configures how the container runs:
 | `paths`        | Paths to prepend to the $PATH environment variable                      |
 | `inputs`       | List of layers for the deploy step (from steps, images, or local files) |
 | `aptPackages`  | List of Apt packages to install in the final image                      |
+| `aptSources`   | List of third-party Apt repositories to add to the final image |
 
 ### Locale
 

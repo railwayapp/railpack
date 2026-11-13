@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	a "github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/mise"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/resolver"
@@ -57,6 +58,7 @@ type MiseStepBuilder struct {
 	DisplayName           string
 	Resolver              *resolver.Resolver
 	SupportingAptPackages []string
+	AptSources            []config.AptSource
 	MisePackages          []*resolver.PackageRef
 	SupportingMiseFiles   []string
 	Assets                map[string]string
@@ -256,12 +258,10 @@ func (b *MiseStepBuilder) GetLayer() plan.Layer {
 func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) error {
 	baseLayer := plan.NewImageLayer(RailpackBuilderImage)
 
-	if len(b.SupportingAptPackages) > 0 {
+	if len(b.SupportingAptPackages) > 0 || len(b.AptSources) > 0 {
 		aptStep := plan.NewStep("packages:apt:build")
 		aptStep.Inputs = []plan.Layer{baseLayer}
-		aptStep.AddCommands([]plan.Command{
-			options.NewAptInstallCommand(b.SupportingAptPackages),
-		})
+		options.addAptCommands(aptStep, b.AptSources, b.SupportingAptPackages)
 		aptStep.Caches = options.Caches.GetAptCaches()
 		aptStep.Secrets = []string{}
 

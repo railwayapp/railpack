@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/resolver"
 )
@@ -11,6 +12,7 @@ type ImageStepBuilder struct {
 	Packages         []*resolver.PackageRef
 	ResolveStepImage func(options *BuildStepOptions) string
 	AptPackages      []string
+	AptSources       []config.AptSource
 }
 
 func (c *GenerateContext) NewImageStep(name string, resolveStepImage func(options *BuildStepOptions) string) *ImageStepBuilder {
@@ -58,11 +60,7 @@ func (b *ImageStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) e
 		plan.NewImageLayer(image),
 	}
 
-	if len(b.AptPackages) > 0 {
-		step.Commands = []plan.Command{
-			options.NewAptInstallCommand(b.AptPackages),
-		}
-	}
+	options.addAptCommands(step, b.AptSources, b.AptPackages)
 
 	p.Steps = append(p.Steps, *step)
 
