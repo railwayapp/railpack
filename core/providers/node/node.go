@@ -779,7 +779,7 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 		return "react-router"
 	} else if p.isAstro(ctx) {
 		return "astro"
-	} else if p.hasDependency("@nestjs/core") {
+	} else if p.isNest() {
 		return "nest"
 	} else if p.packageManager == PackageManagerBun {
 		return "bun"
@@ -798,4 +798,8 @@ func (p *NodeProvider) isNuxt() bool {
 
 func (p *NodeProvider) isRemix() bool {
 	return p.hasDependency("@remix-run/node")
+}
+
+func (p *NodeProvider) isNest() bool {
+	return p.hasDependency("@nestjs/core")
 }
