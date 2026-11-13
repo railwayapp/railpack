@@ -27,7 +27,7 @@
     "step": "build"
    }
   ],
-  "startCommand": "java $JAVA_OPTS -jar  $(ls -1 */build/libs/*jar | grep -v plain)",
+  "startCommand": "java  $JAVA_OPTS -jar app.jar",
   "variables": {
    "RAILPACK_VERSION": "dev"
   }
@@ -72,6 +72,10 @@
    "commands": [
     {
      "cmd": "./gradlew clean build -x check -x test -Pproduction"
+    },
+    {
+     "cmd": "sh -c 'cp $(find . -path \"*/build/libs/*.jar\" ! -name \"*-plain.jar\" | sort | head -n 1) app.jar'",
+     "customName": "cp $(find . -path \"*/build/libs/*.jar\" ! -name \"*-plain.jar\" | sort | head -n 1) app.jar"
     }
    ],
    "inputs": [
