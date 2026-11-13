@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
+	"github.com/railwayapp/railpack/core/resolver"
 	"github.com/railwayapp/railpack/internal/utils"
 )
 
@@ -154,17 +155,19 @@ func (p *PythonProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 
 	mainPythonFile := p.getMainPythonFile(ctx)
 	hasMainPythonFile := mainPythonFile != ""
+	mainModule := strings.TrimSuffix(mainPythonFile, ".py")
 
 	if p.isFasthtml(ctx) && hasMainPythonFile && p.usesDep(ctx, "uvicorn") {
-		startCommand = "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
+		startCommand = fmt.Sprintf("uvicorn %s:app --host 0.0.0.0 --port ${PORT:-8000}", mainModule)
 	}
 
-	if p.isFastapi(ctx) && hasMainPythonFile && p.usesDep(ctx, "uvicorn") {
-		startCommand = "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
+	// fastapi's standard extra installs uvicorn without a direct server dependency
+	if p.isFastapi(ctx) && hasMainPythonFile && (p.usesProductionDep(ctx, "uvicorn") || p.usesProductionDep(ctx, "fastapi[standard]")) {
+		startCommand = fmt.Sprintf("uvicorn %s:app --host 0.0.0.0 --port ${PORT:-8000}", mainModule)
 	}
 
 	if p.isFlask(ctx) && hasMainPythonFile && p.usesDep(ctx, "gunicorn") {
-		startCommand = "gunicorn --bind 0.0.0.0:${PORT:-8000} main:app"
+		startCommand = fmt.Sprintf("gunicorn --bind 0.0.0.0:${PORT:-8000} %s:app", mainModule)
 	}
 
 	if startCommand == "" && hasMainPythonFile {
@@ -423,6 +426,33 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	// Disable Python compilation to avoid incompatibility issues with some packages
 	// https://mise.jdx.dev/lang/python.html#python.compile
 	miseStep.AddMiseSetting("python.compile", false)
+
+	p.suggestExplicitPythonVersion(ctx)
+}
+
+// suggests an explicit interpreter when requires-python is present and the default is still selected
+//
+// - mise deliberately does not select interpreters from compatibility ranges
+// - resolving combined bounds, compatible releases (~=), and exclusions (!=) here would need a separate pep 440 resolver
+//
+// https://github.com/jdx/mise/discussions/4258
+func (p *PythonProvider) suggestExplicitPythonVersion(ctx *generate.GenerateContext) {
+	if pkg := ctx.Resolver.Get("python"); pkg == nil || pkg.Source != resolver.DefaultSource {
+		return
+	}
+
+	var manifest pyprojectManifest
+	if err := ctx.App.ReadTOML("pyproject.toml", &manifest); err != nil {
+		return
+	}
+	if strings.TrimSpace(manifest.Project.RequiresPython) == "" {
+		return
+	}
+
+	ctx.Logger.LogSuggestion(
+		"`requires-python` in `pyproject.toml` does not select the Python version. Set `.python-version` or `RAILPACK_PYTHON_VERSION` to a compatible version",
+		"/config/resolving-errors#python-version-mismatch",
+	)
 }
 
 func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[string]string {
@@ -600,7 +630,7 @@ func (p *PythonProvider) isFlask(ctx *generate.GenerateContext) bool {
 }
 
 func (p *PythonProvider) isFastapi(ctx *generate.GenerateContext) bool {
-	return p.usesDep(ctx, "fastapi")
+	return p.usesProductionDep(ctx, "fastapi")
 }
 
 func (p *PythonProvider) getRuntime(ctx *generate.GenerateContext) string {
