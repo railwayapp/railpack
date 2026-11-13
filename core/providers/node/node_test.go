@@ -393,3 +393,31 @@ func nodeStepHasExecCommand(
 
 	return false
 }
+
+func TestGetRuntime(t *testing.T) {
+	tests := []struct {
+		name    string
+		path    string
+		runtime string
+	}{
+		{name: "nest", path: "../../../examples/node-nest", runtime: "nest"},
+		// SvelteKit projects also ship a vite.config, so this guards the check order against Vite
+		{name: "sveltekit", path: "../../../examples/node-svelte-kit", runtime: "sveltekit"},
+		{name: "plain vite with svelte stays vite", path: "../../../examples/node-vite-svelte", runtime: "vite"},
+		{name: "astro", path: "../../../examples/node-astro", runtime: "astro"},
+		{name: "plain node", path: "../../../examples/node-npm", runtime: "node"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := testingUtils.CreateGenerateContext(t, tt.path)
+			provider := NodeProvider{}
+			detected, err := provider.Detect(ctx)
+			require.NoError(t, err)
+			require.True(t, detected)
+
+			require.NoError(t, provider.Initialize(ctx))
+			require.Equal(t, tt.runtime, provider.getRuntime(ctx))
+		})
+	}
+}

@@ -771,12 +771,16 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 		return "remix"
 	} else if p.isTanstackStart() {
 		return "tanstack-start"
+	} else if p.isSvelteKit() {
+		return "sveltekit"
 	} else if p.isVite(ctx) {
 		return "vite"
 	} else if p.isReactRouter(ctx) {
 		return "react-router"
 	} else if p.isAstro(ctx) {
 		return "astro"
+	} else if p.isNest() {
+		return "nest"
 	} else if p.packageManager == PackageManagerBun {
 		return "bun"
 	}
@@ -794,4 +798,8 @@ func (p *NodeProvider) isNuxt() bool {
 
 func (p *NodeProvider) isRemix() bool {
 	return p.hasDependency("@remix-run/node")
+}
+
+func (p *NodeProvider) isNest() bool {
+	return p.hasDependency("@nestjs/core")
 }
