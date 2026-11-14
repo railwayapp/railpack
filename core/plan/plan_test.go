@@ -380,3 +380,64 @@ func TestNormalize(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeWindowsPaths(t *testing.T) {
+	plan := &BuildPlan{
+		Steps: []Step{
+			{
+				Name: "build",
+				Inputs: []Layer{
+					{
+						Step: "base",
+						Filter: Filter{
+							Include: []string{`packages\api`, `src\**`},
+							Exclude: []string{`dist\temp`},
+						},
+					},
+				},
+				Commands: []Command{
+					CopyCommand{Src: `packages\api\package.json`, Dest: `packages\api\package.json`},
+					PathCommand{Path: `node_modules\.bin`},
+					FileCommand{Path: `config\app`, Name: "config.json"},
+				},
+			},
+		},
+		Deploy: Deploy{
+			Base:  NewStepLayer("build"),
+			Paths: []string{`usr\local\bin`, `app\bin`},
+			Inputs: []Layer{
+				{
+					Step: "build",
+					Filter: Filter{
+						Include: []string{`out\public`},
+					},
+				},
+			},
+		},
+		Exclude: []string{`tmp\build`, `cache\mise`},
+	}
+
+	plan.Normalize()
+
+	require.Equal(t, []string{"usr/local/bin", "app/bin"}, plan.Deploy.Paths)
+	require.Equal(t, []string{"tmp/build", "cache/mise"}, plan.Exclude)
+	require.Equal(t, []string{"out/public"}, plan.Deploy.Inputs[0].Include)
+
+	require.Len(t, plan.Steps, 1)
+	step := plan.Steps[0]
+	require.Equal(t, []string{"packages/api", "src/**"}, step.Inputs[0].Include)
+	require.Equal(t, []string{"dist/temp"}, step.Inputs[0].Exclude)
+
+	copyCmd, ok := step.Commands[0].(CopyCommand)
+	require.True(t, ok)
+	require.Equal(t, "packages/api/package.json", copyCmd.Src)
+	require.Equal(t, "packages/api/package.json", copyCmd.Dest)
+
+	pathCmd, ok := step.Commands[1].(PathCommand)
+	require.True(t, ok)
+	require.Equal(t, "node_modules/.bin", pathCmd.Path)
+
+	fileCmd, ok := step.Commands[2].(FileCommand)
+	require.True(t, ok)
+	require.Equal(t, "config/app", fileCmd.Path)
+}

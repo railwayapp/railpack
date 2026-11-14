@@ -142,9 +142,9 @@ func (p *GoProvider) InstallGoDeps(ctx *generate.GenerateContext, install *gener
 
 	workspacePackages := p.GoWorkspacePackages(ctx)
 	for _, pkgPath := range workspacePackages {
-		install.AddCommand(plan.NewCopyCommand(filepath.Join(pkgPath, "go.mod")))
+		install.AddCommand(plan.NewCopyCommand(filepath.ToSlash(filepath.Join(pkgPath, "go.mod"))))
 		if ctx.App.HasFile(filepath.Join(pkgPath, "go.sum")) {
-			install.AddCommand(plan.NewCopyCommand(filepath.Join(pkgPath, "go.sum")))
+			install.AddCommand(plan.NewCopyCommand(filepath.ToSlash(filepath.Join(pkgPath, "go.sum"))))
 		}
 	}
 
@@ -249,7 +249,7 @@ func (p *GoProvider) GoWorkspacePackages(ctx *generate.GenerateContext) []string
 			continue
 		}
 
-		dir := filepath.Dir(modFile)
+		dir := filepath.ToSlash(filepath.Dir(modFile))
 		packages = append(packages, dir)
 	}
 
