@@ -1,0 +1,33 @@
+# shellcheck shell=bash
+# description: verifies execution cache hits or misses from the BuildKit log
+#
+# - $1 is the generated Railpack plan JSON path and $2 is the BuildKit rawjson log path
+# - $3 is true for an ordinary warm-cache build or false for a --no-cache build
+# - the plan only identifies execution steps through entries with a `cmd` field,
+#   using `customName` as the vertex name when present
+# - image pulls and file operations have no `cmd` entry, so their cached status is ignored
+# - only completed vertices are checked because earlier updates can omit the cached field
+# - at least one successful completion is required to avoid passing an unrecognized log
+# - rawjson shares stderr with client diagnostics, so only JSON object lines are parsed
+#
+# example: {"cmd":"npm run build"} matches a vertex with "name":"npm run build"
+# a completed vertex with "cached":true passes when $3 is true and fails when $3 is false
+assert_execution_cache() {
+  local generated_plan_json_path=$1
+  local buildkit_progress_log_path=$2
+  local expected_cache_hit=$3
+  jq -e -R -s --slurpfile plan "$generated_plan_json_path" --argjson expected_cached "$expected_cache_hit" '
+    split("\n") | map(select(startswith("{")) | fromjson)
+    | [$plan[0].steps[].commands[]? | select(.cmd != null) | .customName // .cmd] as $commands
+    | [.[].vertexes[]? | select(.name as $name | $commands | index($name))
+       | select(.completed != null and (.error // "") == "")] as $completed_execution_vertices
+    | if ($completed_execution_vertices | length) == 0 then
+        error("no completed execution steps found in build log")
+      elif any($completed_execution_vertices[]; (.cached // false) != $expected_cached) then
+        error("expected execution cached=" + ($expected_cached | tostring) + ": " +
+          ([$completed_execution_vertices[] | select((.cached // false) != $expected_cached) | .name]
+           | unique | join(", ")))
+      else true
+      end
+  ' "$buildkit_progress_log_path" > /dev/null
+}
