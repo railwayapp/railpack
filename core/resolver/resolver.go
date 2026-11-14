@@ -128,6 +128,28 @@ func (r *Resolver) Get(name string) *RequestedPackage {
 	return r.packages[name]
 }
 
+// Prefer the concrete version during planning, with an optional provider-specific fallback on failure.
+// The fallback is variadic because Go has no optional parameters: callers can omit it
+// to use the requested version, or supply one provider-specific default.
+// Resolution errors are surfaced when the final build plan resolves all packages.
+func (r *Resolver) ResolveVersion(name string, fallback ...string) string {
+	if pkgs, err := r.ResolvePackages(); err == nil {
+		if pkg, ok := pkgs[name]; ok && pkg.ResolvedVersion != nil {
+			return *pkg.ResolvedVersion
+		}
+	}
+
+	if len(fallback) > 0 {
+		return fallback[0]
+	}
+
+	if requested := r.Get(name); requested != nil {
+		return requested.Version
+	}
+
+	return ""
+}
+
 func (r *Resolver) Default(name, defaultVersion string) PackageRef {
 	r.packages[name] = NewRequestedPackage(name, defaultVersion)
 

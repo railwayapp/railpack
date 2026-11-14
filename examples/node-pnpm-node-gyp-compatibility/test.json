@@ -1,0 +1,11 @@
+[
+  {
+    // https://github.com/railwayapp/railpack/issues/727
+    // Match the reported Node/pnpm versions; .npmrc forces the node-gyp path
+    // instead of letting a prebuilt native binary mask an incompatible node-gyp.
+    "expectedOutput": [
+      "Node version: v20.20.2",
+      "better-sqlite3 source build works on Node 20 with pnpm"
+    ]
+  }
+]

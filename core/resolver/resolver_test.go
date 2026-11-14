@@ -104,6 +104,53 @@ func TestPackageResolverWithPreviousVersions(t *testing.T) {
 	assert.Equal(t, DefaultSource, pkg.Source)
 }
 
+func TestResolveVersionReturnsConcreteVersion(t *testing.T) {
+	resolver, err := NewResolver(mise.TestInstallDir)
+	require.NoError(t, err)
+	resolver.Default("node", "20.x")
+
+	version := resolver.ResolveVersion("node")
+
+	require.Regexp(t, `^20\.\d+\.\d+$`, version)
+	require.Equal(t, version, resolver.ResolveVersion("node", "18"))
+	require.Equal(t, "20.x", resolver.Get("node").Version)
+}
+
+func TestResolveVersionFallsBackToRequestWhenUnavailable(t *testing.T) {
+	resolver, err := NewResolver(mise.TestInstallDir)
+	require.NoError(t, err)
+	node := resolver.Default("node", "20.20.2")
+	resolver.SetVersionAvailable(node, func(string) bool {
+		return false
+	})
+
+	require.Equal(t, "20.20.2", resolver.ResolveVersion("node"))
+	_, err = resolver.ResolvePackages()
+	require.Error(t, err, "the final package resolution must still report the failure")
+}
+
+func TestResolveVersionReturnsEmptyForUnknownPackage(t *testing.T) {
+	resolver, err := NewResolver(mise.TestInstallDir)
+	require.NoError(t, err)
+
+	require.Empty(t, resolver.ResolveVersion("node"))
+}
+
+func TestResolveVersionPreservesExplicitFallback(t *testing.T) {
+	resolver, err := NewResolver(mise.TestInstallDir)
+	require.NoError(t, err)
+	elixir := resolver.Default("elixir", "1.17")
+	resolver.SetVersionAvailable(elixir, func(string) bool {
+		return false
+	})
+
+	// Elixir historically uses its provider default when resolution fails, rather than the request.
+	require.Equal(t, "1.18", resolver.ResolveVersion("elixir", "1.18"))
+	require.Equal(t, "1.17", resolver.ResolveVersion("elixir"))
+	_, err = resolver.ResolvePackages()
+	require.Error(t, err)
+}
+
 func TestResolvingPackagesNotAvailable(t *testing.T) {
 	resolver, err := NewResolver(mise.TestInstallDir)
 	require.NoError(t, err)

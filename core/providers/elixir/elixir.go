@@ -210,11 +210,7 @@ func (p *ElixirProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 
 	erlang := miseStep.Default("erlang", DEFAULT_ERLANG_VERSION)
 
-	pkgs, err := miseStep.Resolver.ResolvePackages()
-	elixirVersion := DEFAULT_ELIXIR_VERSION
-	if err == nil && pkgs["elixir"] != nil && pkgs["elixir"].ResolvedVersion != nil {
-		elixirVersion = *pkgs["elixir"].ResolvedVersion
-	}
+	elixirVersion := miseStep.Resolver.ResolveVersion("elixir", DEFAULT_ELIXIR_VERSION)
 
 	elixirSemverVersion := utils.ExtractSemverVersion(elixirVersion)
 	elixirSemver, err := utils.ParseSemver(elixirSemverVersion)

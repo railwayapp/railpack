@@ -140,7 +140,7 @@
      "path": "/opt/pnpm"
     },
     {
-     "cmd": "pnpm add -g node-gyp"
+     "cmd": "pnpm add -g node-gyp@11"
     },
     {
      "cmd": "pnpm install --frozen-lockfile --prefer-offline"

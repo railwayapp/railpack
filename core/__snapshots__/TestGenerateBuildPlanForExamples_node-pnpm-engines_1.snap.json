@@ -116,7 +116,7 @@
      "path": "/opt/pnpm"
     },
     {
-     "cmd": "pnpm add -g node-gyp"
+     "cmd": "pnpm add -g node-gyp@12"
     },
     {
      "cmd": "pnpm install"

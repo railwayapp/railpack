@@ -501,3 +501,4 @@ There are some manual maintenance tasks that need to be done periodically:
 * PNPM lockfile versions are manually mapped to minimum pnpm versions
 * Pnpm default version needs to be updated as LTS versions are released.
 * Node default version needs to be updated as LTS versions are released.
+* The `node-gyp` compatibility map in `core/providers/node/package_manager.go` and its tests need to be updated when new `node-gyp` majors change their Node.js requirements.
