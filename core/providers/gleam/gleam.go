@@ -1,11 +1,16 @@
 package gleam
 
 import (
+	"fmt"
+
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 )
 
-type GleamProvider struct{}
+type GleamProvider struct {
+	config        GleamConfig
+	includeSource bool
+}
 
 func (p *GleamProvider) Name() string {
 	return "gleam"
@@ -16,6 +21,13 @@ func (p *GleamProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 }
 
 func (p *GleamProvider) Initialize(ctx *generate.GenerateContext) error {
+	if err := ctx.Config.ProviderConfig(p.Name(), &p.config); err != nil {
+		return fmt.Errorf("invalid gleam provider config: %w", err)
+	}
+	p.includeSource = ctx.Env.IsConfigVariableTruthy("GLEAM_INCLUDE_SOURCE")
+	if p.config.IncludeSource != nil {
+		p.includeSource = *p.config.IncludeSource
+	}
 	return nil
 }
 
@@ -42,7 +54,7 @@ func (p *GleamProvider) Plan(ctx *generate.GenerateContext) error {
 	outPath := "build/erlang-shipment/."
 
 	includedPath := outPath
-	if ctx.Env.IsConfigVariableTruthy("GLEAM_INCLUDE_SOURCE") {
+	if p.includeSource {
 		includedPath = "."
 	}
 

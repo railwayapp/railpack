@@ -1,10 +1,12 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
 	"github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
@@ -392,4 +394,74 @@ func nodeStepHasExecCommand(
 	}
 
 	return false
+}
+
+func TestNodePackageManagerIsDetectedFromProject(t *testing.T) {
+	tests := []struct {
+		name       string
+		configJSON string
+		env        map[string]string
+	}{
+		{
+			name:       "JSON config does not override detection",
+			configJSON: `{"node":{"packageManager":"bun"}}`,
+		},
+		{
+			name: "environment does not override detection",
+			env: map[string]string{
+				"RAILPACK_NODE_PACKAGE_MANAGER": "bun",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := testingUtils.CreateGenerateContext(t, "../../../examples/node-pnpm-dev-engines")
+			for name, value := range tt.env {
+				ctx.Env.SetVariable(name, value)
+			}
+			if tt.configJSON != "" {
+				fileConfig := config.EmptyConfig()
+				require.NoError(t, json.Unmarshal([]byte(tt.configJSON), fileConfig))
+				ctx.Config = config.Merge(ctx.Config, fileConfig)
+			}
+
+			provider := NodeProvider{}
+			require.NoError(t, provider.Initialize(ctx))
+			require.Equal(t, PackageManagerPnpm, provider.packageManager)
+		})
+	}
+}
+
+func TestNodeProviderConfigSchema(t *testing.T) {
+	schema := (&NodeProvider{}).ConfigSchema()
+	require.Equal(t, "object", schema.Type)
+
+	tests := []struct {
+		name        string
+		property    string
+		wantPresent bool
+		wantType    string
+	}{
+		{
+			name:        "version is available",
+			property:    "version",
+			wantPresent: true,
+			wantType:    "string",
+		},
+		{
+			name:     "package manager is not configurable",
+			property: "packageManager",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			propertySchema, ok := schema.Properties.Get(tt.property)
+			require.Equal(t, tt.wantPresent, ok)
+			if tt.wantPresent {
+				require.Equal(t, tt.wantType, propertySchema.Type)
+			}
+		})
+	}
 }

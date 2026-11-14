@@ -18,13 +18,18 @@ const (
 	DEFAULT_RUBY_VERSION = "3.4"
 )
 
-type RubyProvider struct{}
+type RubyProvider struct {
+	config RubyConfig
+}
 
 func (p *RubyProvider) Name() string {
 	return "ruby"
 }
 
 func (p *RubyProvider) Initialize(ctx *generate.GenerateContext) error {
+	if err := ctx.Config.ProviderConfig(p.Name(), &p.config); err != nil {
+		return fmt.Errorf("invalid ruby provider config: %w", err)
+	}
 	return nil
 }
 
@@ -265,6 +270,9 @@ func (p *RubyProvider) InstallMisePackages(ctx *generate.GenerateContext, miseSt
 			miseStep.Version(ruby, version, "Gemfile.lock")
 			ctx.Logger.LogDeprecation("Gemfile.lock RUBY VERSION is deprecated.", "/languages/ruby#versions")
 		}
+	}
+	if p.config.Version != "" {
+		miseStep.Version(ruby, p.config.Version, "railpack config > ruby > version")
 	}
 
 	miseStep.AddSupportingAptPackage("libyaml-dev")

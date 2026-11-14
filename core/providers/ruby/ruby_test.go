@@ -1,11 +1,13 @@
 package ruby
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/resolver"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 )
@@ -41,11 +43,12 @@ func TestDetect(t *testing.T) {
 
 func TestRubyVersion(t *testing.T) {
 	tests := []struct {
-		name    string
-		path    string
-		version string
-		source  string
-		env     map[string]string
+		name       string
+		path       string
+		version    string
+		source     string
+		env        map[string]string
+		fileConfig string
 	}{
 		{
 			name:    "gemfile lock fallback",
@@ -59,6 +62,14 @@ func TestRubyVersion(t *testing.T) {
 			version: "3.3",
 			source:  "RAILPACK_RUBY_VERSION",
 			env:     map[string]string{"RAILPACK_RUBY_VERSION": "3.3"},
+		},
+		{
+			name:       "config overrides environment and mise config",
+			path:       "../../../examples/ruby-vanilla",
+			version:    "3.5",
+			source:     "railpack config > ruby > version",
+			env:        map[string]string{"RAILPACK_RUBY_VERSION": "3.3"},
+			fileConfig: `{"ruby":{"version":"3.5"}}`,
 		},
 		{
 			name:    "mise config overrides lockfile",
@@ -89,18 +100,43 @@ func TestRubyVersion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := testingUtils.CreateGenerateContext(t, tt.path)
+			if tt.fileConfig != "" {
+				fileConfig := config.EmptyConfig()
+				require.NoError(t, json.Unmarshal([]byte(tt.fileConfig), fileConfig))
+				ctx.Config = config.Merge(ctx.Config, fileConfig)
+			}
 			if tt.env != nil {
 				envVars := tt.env
 				ctx.Env = app.NewEnvironment(&envVars)
 			}
 
 			provider := RubyProvider{}
+			require.NoError(t, provider.Initialize(ctx))
 			provider.InstallMisePackages(ctx, ctx.GetMiseStepBuilder())
 
 			pkg := ctx.Resolver.Get("ruby")
 			require.NotNil(t, pkg)
 			require.Equal(t, tt.version, pkg.Version)
 			require.Equal(t, tt.source, pkg.Source)
+		})
+	}
+}
+
+func TestRubyProviderConfigSchema(t *testing.T) {
+	tests := []struct {
+		property string
+		wantType string
+	}{
+		{property: "version", wantType: "string"},
+	}
+
+	schema := (&RubyProvider{}).ConfigSchema()
+	require.Equal(t, "object", schema.Type)
+	for _, tt := range tests {
+		t.Run(tt.property, func(t *testing.T) {
+			propertySchema, ok := schema.Properties.Get(tt.property)
+			require.True(t, ok)
+			require.Equal(t, tt.wantType, propertySchema.Type)
 		})
 	}
 }
