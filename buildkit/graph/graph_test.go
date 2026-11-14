@@ -160,7 +160,9 @@ func TestTransitiveDependencies(t *testing.T) {
 	nodeC.SetChildren([]Node{nodeD, nodeE})
 
 	// Remove redundant edges
-	g.ComputeTransitiveDependencies()
+	if err := g.ComputeTransitiveDependencies(); err != nil {
+		t.Fatalf("ComputeTransitiveDependencies failed: %v", err)
+	}
 
 	// Verify D's parents (should only have B and C as parents)
 	dParents := nodeD.GetParents()
@@ -173,5 +175,47 @@ func TestTransitiveDependencies(t *testing.T) {
 		if parent.GetName() == "A" {
 			t.Error("Node A should not be a direct parent of D after transitive reduction")
 		}
+	}
+}
+
+func TestTransitiveDependencies_CycleDetection(t *testing.T) {
+	g := NewGraph()
+
+	// Cyclic graph:
+	// A.parents = [B, C]
+	// B.parents = [A]
+	// C.parents = [A]
+	// Transitive reduction without prior cycle detection would treat B as reachable
+	// via C -> A -> B and C as reachable via B -> A -> C, erasing A's parents and masking the cycle.
+	nodeA := NewTestNode("A")
+	nodeB := NewTestNode("B")
+	nodeC := NewTestNode("C")
+
+	g.AddNode(nodeA)
+	g.AddNode(nodeB)
+	g.AddNode(nodeC)
+
+	nodeA.SetParents([]Node{nodeB, nodeC})
+	nodeB.SetParents([]Node{nodeA})
+	nodeC.SetParents([]Node{nodeA})
+
+	nodeA.SetChildren([]Node{nodeB, nodeC})
+	nodeB.SetChildren([]Node{nodeA})
+	nodeC.SetChildren([]Node{nodeA})
+
+	err := g.ComputeTransitiveDependencies()
+	if err == nil {
+		t.Fatal("Expected cycle detection error from ComputeTransitiveDependencies, got nil")
+	}
+
+	// Verify cycle is not erased: A still has its parents
+	if len(nodeA.GetParents()) != 2 {
+		t.Fatalf("Expected node A to retain 2 parents, got %d", len(nodeA.GetParents()))
+	}
+
+	// Verify ComputeProcessingOrder also still detects the cycle
+	_, orderErr := g.ComputeProcessingOrder()
+	if orderErr == nil {
+		t.Fatal("Expected cycle detection error from ComputeProcessingOrder, got nil")
 	}
 }

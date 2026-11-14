@@ -44,3 +44,37 @@ func TestBuildGraphNoCache(t *testing.T) {
 		require.Len(t, opts, 1)
 	})
 }
+
+func TestBuildGraphCycleDetection(t *testing.T) {
+	p := &plan.BuildPlan{
+		Steps: []plan.Step{
+			{
+				Name: "stepA",
+				Inputs: []plan.Layer{
+					{Step: "stepB"},
+					{Step: "stepC"},
+				},
+			},
+			{
+				Name: "stepB",
+				Inputs: []plan.Layer{
+					{Step: "stepA"},
+				},
+			},
+			{
+				Name: "stepC",
+				Inputs: []plan.Layer{
+					{Step: "stepA"},
+				},
+			},
+		},
+	}
+
+	localState := llb.Local("context")
+	cacheStore := NewBuildKitCacheStore("")
+	platform := specs.Platform{OS: "linux", Architecture: "amd64"}
+
+	_, err := NewBuildGraph(p, &localState, cacheStore, "", &platform, "", false)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cycle detected")
+}
