@@ -1,0 +1,67 @@
+# global options
+{
+	# Disable the admin API, config autosave to disk (persist_config), and automatic TLS
+	# provisioning (auto_https), since the container is immutable and TLS terminates at the proxy
+	admin off
+	persist_config off
+	auto_https off
+
+	log {
+		format json
+	}
+
+	servers {
+		# trust railway's proxy
+		trusted_proxies static private_ranges 100.0.0.0/8
+	}
+}
+
+# site block, listens on the $PORT environment variable, automatically assigned by railway
+:{$PORT:80} {
+	log {
+		format json
+	}
+
+	respond /health 200
+
+	# Security headers
+	header {
+		# Prevent some browsers from MIME-sniffing a response away from the declared Content-Type
+		X-Content-Type-Options "nosniff"
+		# Remove Server header
+		-Server
+	}
+
+	# serve from the 'build/web' folder (`flutter build web` output directory)
+	root * {{.DIST_DIR}}
+
+	# Compression with more formats
+	encode {
+		gzip
+		zstd
+	}
+
+	# --- Flutter-specific routing & cache control ---
+	# Unlike Vite/Webpack SPAs that content-hash every bundle filename, `flutter build web`
+	# emits fixed-name bootstrap files (`index.html`, `flutter_bootstrap.js`, `main.dart.js`,
+	# `flutter_service_worker.js`, `version.json`) and relies on its service worker manifest
+	# for cache invalidation. Browsers must revalidate these files on every load (`no-cache`)
+	# so users are not stranded on a stale build after a deploy.
+	#
+	# Wrapped in a `route` block so directives execute in written order: Caddy's default
+	# directive order runs `header` *before* `try_files`, which would mean a request to `/`
+	# or `/settings` has not yet been rewritten to `/index.html` when `@bootstrap` is evaluated.
+	route {
+		# match against direct HTML file matches, folder-level index.html, and optionally fallback to root index.html
+		try_files {path} {path}.html {path}/index.html{{if .IndexFallback}} /index.html{{end}}
+
+		@bootstrap path /index.html /flutter_bootstrap.js /flutter_service_worker.js /main.dart.js /version.json
+		header @bootstrap Cache-Control "no-cache"
+
+		# Handle static files
+		file_server {
+			hide .git
+			hide .env*
+		}
+	}
+}
