@@ -98,14 +98,14 @@ func (g *Graph) ComputeTransitiveDependencies() {
 		for _, parent := range node.GetParents() {
 			isRedundant := false
 			for _, otherParent := range node.GetParents() {
-				if otherParent == parent {
+				if otherParent.GetName() == parent.GetName() {
 					continue
 				}
 
 				visited := make(map[string]bool)
 				var traverse func(Node)
 				traverse = func(n Node) {
-					if n == parent {
+					if n.GetName() == parent.GetName() {
 						isRedundant = true
 						return
 					}
@@ -139,7 +139,7 @@ func (g *Graph) ComputeTransitiveDependencies() {
 func removeNodeFromSlice(nodes []Node, target Node) []Node {
 	result := make([]Node, 0, len(nodes))
 	for _, n := range nodes {
-		if n != target {
+		if n.GetName() != target.GetName() {
 			result = append(result, n)
 		}
 	}
