@@ -100,6 +100,8 @@ Railpack supports multiple Python package managers:
 - **uv** - Uses `pyproject.toml` and `uv.lock`
 - **pipenv** - Uses `Pipfile`
 
+When `requirements.txt` or `pyproject.toml` references local files, paths, or editable packages (such as vendored wheels via `file:` pins), the full application source is included in the install layer automatically.
+
 ### Config Variables
 
 | Variable | Description | Example |
