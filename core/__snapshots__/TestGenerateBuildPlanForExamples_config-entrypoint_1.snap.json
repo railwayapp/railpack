@@ -1,0 +1,148 @@
+{
+ "caches": {
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  }
+ },
+ "deploy": {
+  "base": {
+   "step": "packages:apt:runtime"
+  },
+  "entrypoint": [
+   "mise",
+   "exec",
+   "--",
+   "bash",
+   "-c"
+  ],
+  "healthcheck": {
+   "interval": "1s",
+   "timeout": "3s",
+   "url": "http://127.0.0.1:${PORT}/"
+  },
+  "inputs": [
+   {
+    "include": [
+     "/mise/shims",
+     "/mise/installs",
+     "/usr/local/bin/mise",
+     "/etc/mise/config.toml",
+     "/root/.local/state/mise"
+    ],
+    "step": "packages:mise"
+   },
+   {
+    "step": "build"
+   },
+   {
+    "exclude": [
+     ".venv"
+    ],
+    "include": [
+     "."
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "python main.py",
+  "variables": {
+   "PIP_DEFAULT_TIMEOUT": "100",
+   "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+   "PYTHONDONTWRITEBYTECODE": "1",
+   "PYTHONFAULTHANDLER": "1",
+   "PYTHONHASHSEED": "random",
+   "PYTHONUNBUFFERED": "1",
+   "RAILPACK_VERSION": "dev"
+  }
+ },
+ "exclude": [
+  ".venv",
+  "venv"
+ ],
+ "steps": [
+  {
+   "assets": {
+    "generated-mise-toml": "[generated-mise-toml]"
+   },
+   "commands": [
+    {
+     "path": "/mise/shims"
+    },
+    {
+     "dest": "mise.toml",
+     "src": "mise.toml"
+    },
+    {
+     "customName": "create mise config",
+     "name": "generated-mise-toml",
+     "path": "/etc/mise/config.toml"
+    },
+    {
+     "cmd": "mise install",
+     "customName": "install mise packages: python"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.10.15"
+    }
+   ],
+   "name": "packages:mise",
+   "variables": {
+    "MISE_CACHE_DIR": "/mise/cache",
+    "MISE_CONFIG_DIR": "/mise",
+    "MISE_DATA_DIR": "/mise",
+    "MISE_INSTALLS_DIR": "/mise/installs",
+    "MISE_SHIMS_DIR": "/mise/shims"
+   }
+  },
+  {
+   "inputs": [
+    {
+     "step": "packages:mise"
+    }
+   ],
+   "name": "install"
+  },
+  {
+   "inputs": [
+    {
+     "step": "install"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ]
+  },
+  {
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y curl'",
+     "customName": "install apt packages: curl"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.10.15"
+    }
+   ],
+   "name": "packages:apt:runtime"
+  }
+ ]
+}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/moby/buildkit/client/llb"
 	"github.com/moby/buildkit/util/system"
+	dockerspec "github.com/moby/docker-image-spec/specs-go/v1"
 	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/railwayapp/railpack/buildkit/build_llb"
 	p "github.com/railwayapp/railpack/core/plan"
@@ -67,9 +68,10 @@ func ConvertPlanToLLB(plan *p.BuildPlan, opts ConvertPlanOptions) (*llb.State, *
 	state := getStartState(*graphOutput.State)
 	imageEnv := getImageEnv(graphOutput, plan)
 
-	startCommand := plan.Deploy.StartCmd
-	if startCommand == "" {
-		startCommand = "/bin/bash"
+	entrypoint, cmd := containerProcess(plan.Deploy)
+	healthcheck, err := plan.Deploy.Healthcheck.ToImageConfig()
+	if err != nil {
+		return nil, nil, err
 	}
 
 	image := Image{
@@ -83,15 +85,39 @@ func ConvertPlanToLLB(plan *p.BuildPlan, opts ConvertPlanOptions) (*llb.State, *
 			},
 		},
 		Variant: platform.Variant,
-		Config: specs.ImageConfig{
-			Env:        imageEnv,
-			WorkingDir: WorkingDir,
-			Entrypoint: []string{"/bin/bash", "-c"},
-			Cmd:        []string{startCommand},
+		Config: dockerspec.DockerOCIImageConfig{
+			ImageConfig: specs.ImageConfig{
+				Env:        imageEnv,
+				WorkingDir: WorkingDir,
+				Entrypoint: entrypoint,
+				Cmd:        cmd,
+			},
+			DockerOCIImageConfigExt: dockerspec.DockerOCIImageConfigExt{
+				Healthcheck: healthcheck,
+			},
 		},
 	}
 
 	return &state, &image, nil
+}
+
+// Uses /bin/bash -c when no entrypoint is configured so the start command can use shell syntax.
+func containerProcess(deploy p.Deploy) (entrypoint []string, cmd []string) {
+	if len(deploy.Entrypoint) == 0 {
+		startCommand := deploy.StartCmd
+		if startCommand == "" {
+			// Start an interactive shell when no command is configured.
+			startCommand = "/bin/bash"
+		}
+		return []string{"/bin/bash", "-c"}, []string{startCommand}
+	}
+
+	// No start command means the entrypoint array is the whole process.
+	if deploy.StartCmd == "" {
+		return deploy.Entrypoint, nil
+	}
+
+	return deploy.Entrypoint, []string{deploy.StartCmd}
 }
 
 func getStartState(buildState llb.State) llb.State {

@@ -111,3 +111,82 @@ func TestDeployVariablesDoNotAffectLLB(t *testing.T) {
 	require.Equal(t, firstDefinition.ToPB(), secondDefinition.ToPB())
 	require.NotEqual(t, firstImage.Config.Env, secondImage.Config.Env)
 }
+
+func TestContainerProcess(t *testing.T) {
+
+	t.Run("default entrypoint uses the start command", func(t *testing.T) {
+		image := convertDeployToImage(t, plan.Deploy{StartCmd: "npm start"})
+		require.Equal(t, []string{"/bin/bash", "-c"}, image.Config.Entrypoint)
+		require.Equal(t, []string{"npm start"}, image.Config.Cmd)
+	})
+
+	t.Run("missing start command falls back to bash", func(t *testing.T) {
+		image := convertDeployToImage(t, plan.Deploy{})
+		require.Equal(t, []string{"/bin/bash", "-c"}, image.Config.Entrypoint)
+		require.Equal(t, []string{"/bin/bash"}, image.Config.Cmd)
+	})
+
+	t.Run("custom entrypoint keeps the start command as one argument", func(t *testing.T) {
+		image := convertDeployToImage(t, plan.Deploy{
+			Entrypoint: []string{"./entrypoint.sh"},
+			StartCmd:   "echo hello-from-cmd",
+		})
+		require.Equal(t, []string{"./entrypoint.sh"}, image.Config.Entrypoint)
+		require.Equal(t, []string{"echo hello-from-cmd"}, image.Config.Cmd)
+	})
+
+	t.Run("custom entrypoint without a start command omits cmd", func(t *testing.T) {
+		image := convertDeployToImage(t, plan.Deploy{Entrypoint: []string{"./server", "--port", "8080"}})
+		require.Equal(t, []string{"./server", "--port", "8080"}, image.Config.Entrypoint)
+		require.Nil(t, image.Config.Cmd)
+	})
+
+	t.Run("empty entrypoint keeps the default shell", func(t *testing.T) {
+		image := convertDeployToImage(t, plan.Deploy{Entrypoint: []string{}, StartCmd: "npm start"})
+		require.Equal(t, []string{"/bin/bash", "-c"}, image.Config.Entrypoint)
+		require.Equal(t, []string{"npm start"}, image.Config.Cmd)
+	})
+
+}
+
+func TestImageHealthcheck(t *testing.T) {
+	t.Run("omitted healthcheck stays unset", func(t *testing.T) {
+		image := convertDeployToImage(t, plan.Deploy{})
+		require.Nil(t, image.Config.Healthcheck)
+	})
+
+	t.Run("command-only healthcheck uses dockerfile defaults", func(t *testing.T) {
+		image := convertDeployToImage(t, plan.Deploy{Healthcheck: &plan.Healthcheck{Command: "true"}})
+		require.Equal(t, []string{"CMD", "/bin/bash", "-c", "true"}, image.Config.Healthcheck.Test)
+		require.Equal(t, 30*time.Second, image.Config.Healthcheck.Interval)
+		require.Equal(t, 30*time.Second, image.Config.Healthcheck.Timeout)
+		require.Equal(t, time.Duration(0), image.Config.Healthcheck.StartPeriod)
+		require.Equal(t, 5*time.Second, image.Config.Healthcheck.StartInterval)
+		require.Equal(t, 3, image.Config.Healthcheck.Retries)
+	})
+
+	t.Run("healthcheck overrides replace defaults", func(t *testing.T) {
+		image := convertDeployToImage(t, plan.Deploy{Healthcheck: &plan.Healthcheck{
+			Command:  "true",
+			Interval: "30s",
+			Timeout:  "5s",
+			Retries:  3,
+		}})
+		require.Equal(t, 30*time.Second, image.Config.Healthcheck.Interval)
+		require.Equal(t, 5*time.Second, image.Config.Healthcheck.Timeout)
+		require.Equal(t, 5*time.Second, image.Config.Healthcheck.StartInterval)
+		require.Equal(t, 3, image.Config.Healthcheck.Retries)
+	})
+}
+
+func convertDeployToImage(t *testing.T, deploy plan.Deploy) *Image {
+	t.Helper()
+	buildPlan := plan.NewBuildPlan()
+	buildPlan.Deploy = deploy
+	buildPlan.Deploy.Base = plan.NewImageLayer("alpine:latest")
+	_, image, err := ConvertPlanToLLB(buildPlan, ConvertPlanOptions{
+		BuildPlatform: specs.Platform{OS: "linux", Architecture: "amd64"},
+	})
+	require.NoError(t, err)
+	return image
+}

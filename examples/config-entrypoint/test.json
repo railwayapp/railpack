@@ -1,0 +1,13 @@
+[
+  {
+    // bash -c passes the start command string through mise exec, which loads FROM_MISE.
+    // The URL healthcheck runs curl and expands PORT inside the container.
+    "envs": { "PORT": "8000" },
+    "httpCheck": {
+      "path": "/",
+      "expected": 200,
+      "internalPort": 8000,
+      "expectedOutput": "from-mise"
+    }
+  }
+]

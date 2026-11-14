@@ -35,6 +35,8 @@ generate an image. Things that it includes are:
   - Configuration for how the container runs, including:
     - Inputs: List of inputs for the deploy step
     - Start command: The command to run when the container starts
+    - Entrypoint: Optional exec-form entrypoint. Omitted, this is `/bin/bash -c`
+    - Healthcheck: Optional Docker image healthcheck. The BuildKit backend writes it into the image config
     - Variables: Environment variables available to the start command
     - Paths: Paths to prepend to the $PATH environment variable
 

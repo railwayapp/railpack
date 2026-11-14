@@ -267,7 +267,22 @@ func (c *GenerateContext) applyConfig() {
 			c.Deploy.StartCmd = c.Config.Deploy.StartCmd
 		}
 
+		// Clone the argument array so later plan changes cannot mutate the source config.
+		if c.Config.Deploy.Entrypoint != nil {
+			c.Deploy.Entrypoint = slices.Clone(c.Config.Deploy.Entrypoint)
+		}
+
+		if c.Config.Deploy.Healthcheck != nil {
+			// new(value) preserves an independent copy of the source config.
+			c.Deploy.Healthcheck = new(*c.Config.Deploy.Healthcheck)
+		}
+
 		c.applyDeployAptPackages()
+		// URL probes need curl in the generated runtime; custom bases supply their own executables.
+		if c.Deploy.Healthcheck != nil && c.Deploy.Healthcheck.URL != "" &&
+			(c.Config.Deploy.Base == nil || c.Config.Deploy.Base.IsEmpty()) {
+			c.Deploy.AddAptPackages([]string{"curl"})
+		}
 		c.Deploy.DeployInputs = plan.Spread(c.Config.Deploy.Inputs, c.Deploy.DeployInputs)
 		c.Deploy.Paths = plan.SpreadStrings(c.Config.Deploy.Paths, c.Deploy.Paths)
 		maps.Copy(c.Deploy.Variables, c.Config.Deploy.Variables)

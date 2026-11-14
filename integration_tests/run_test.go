@@ -205,7 +205,7 @@ func TestExamplesIntegration(t *testing.T) {
 				}
 
 				if testCase.HTTPCheck != nil {
-					if err := runContainerWithHTTPCheck(t, imageName, testCase.Envs, testCase.HTTPCheck, networkName); err != nil {
+					if err := runContainerWithHTTPCheck(t, imageName, testCase.Envs, testCase.HTTPCheck, networkName, buildResult.Plan.Deploy.Healthcheck != nil); err != nil {
 						t.Fatal(err)
 					}
 					return

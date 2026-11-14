@@ -8,6 +8,8 @@ type DeployBuilder struct {
 	Base         plan.Layer
 	DeployInputs []plan.Layer
 	StartCmd     string
+	Entrypoint   []string
+	Healthcheck  *plan.Healthcheck
 	Variables    map[string]string
 	Paths        []string
 	AptPackages  []string
@@ -80,6 +82,8 @@ func (b *DeployBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) {
 
 	p.Deploy.Inputs = append(p.Deploy.Inputs, b.DeployInputs...)
 	p.Deploy.StartCmd = b.StartCmd
+	p.Deploy.Entrypoint = b.Entrypoint
+	p.Deploy.Healthcheck = b.Healthcheck
 	p.Deploy.Variables = b.Variables
 	p.Deploy.Paths = b.Paths
 }

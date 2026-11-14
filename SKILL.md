@@ -163,8 +163,10 @@ Use the documented model:
 - Set root `buildAptPackages` for build-only Apt packages.
 - Set `steps.<name>` for inputs, commands, caches, variables, assets, secrets,
   and deploy outputs.
-- Set `deploy` for runtime base, inputs, Apt packages, paths, variables, and
-  start command.
+- Set `deploy` for runtime base, inputs, Apt packages, paths, variables,
+  start command, entrypoint, and healthcheck. `healthcheck` is the image
+  `HEALTHCHECK`. A hosting platform's HTTP healthcheck path is separate, and
+  exactly one of `url` or `command` is required.
 - Filter layer inputs with `include` and `exclude` when only selected artifacts
   should enter another step or the runtime image.
 

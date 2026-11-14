@@ -501,3 +501,5 @@ There are some manual maintenance tasks that need to be done periodically:
 * PNPM lockfile versions are manually mapped to minimum pnpm versions
 * Pnpm default version needs to be updated as LTS versions are released.
 * Node default version needs to be updated as LTS versions are released.
+
+* Keep the healthcheck defaults in `core/plan/healthcheck.go`, their tests, and the [configuration reference](/config/file/#healthcheck) in sync with the published [Dockerfile HEALTHCHECK defaults](https://docs.docker.com/reference/dockerfile/#healthcheck). Review interval, timeout, start period, start interval, and retries when updating them.
