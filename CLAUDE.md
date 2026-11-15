@@ -40,6 +40,38 @@ Follow these instructions carefully when writing code:
   framework's spellings (`production` vs `prod`, `false` vs `0`): a lookalike
   value can select a different mode or stay truthy.
 
+## Code comments
+
+Default to no comment. Names, structure, and the command itself should explain what the code does.
+
+The reader is a world-class engineer who may not know this domain or every third-party system. Add a concise one-line comment only when they would otherwise miss *why*:
+
+- a business rule the code can't express
+- non-obvious behavior or a gotcha in an external API, library, or tool
+- a workaround for a tooling limitation
+- a non-obvious edge case being handled
+
+If the comment restates the next line, its names, or the command's flags, delete it.
+
+Bad, restates the command:
+
+```just
+# install shared agent skills into the global skills dir
+pnpx skills add https://github.com/iloveitaly/ai-skills -g --all
+```
+
+Good, explains a tool limitation the code can't show:
+
+```just
+# docker can't copy files out of an image, only a container, so create a throwaway one
+docker create --name tmp-js-container {{JAVASCRIPT_IMAGE_TAG}}
+docker cp tmp-js-container:/app/build/production/client public
+```
+
+- Describe behavior as it exists today—don't frame comments around version history or "old vs new."
+- Do not remove existing comments.
+- Do not capitalize or add periods at the end of single-line comments.
+
 # Workflow
 
 - If mise is not available in your environment, [install it](https://mise.jdx.dev/installing-mise.html)
