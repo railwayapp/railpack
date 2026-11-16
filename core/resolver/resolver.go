@@ -29,6 +29,10 @@ type RequestedPackage struct {
 	// If true, the package will not be installed with mise
 	// but the version will still be resolved and displayed in the output
 	SkipMiseInstall bool
+
+	// If true and the requested version is still "latest", the generated mise config keeps "latest"
+	// so mise resolves the current release at install time instead of freezing the host-resolved pin.
+	UseLatestVersion bool
 }
 
 type ResolvedPackage struct {
@@ -156,4 +160,8 @@ func (r *Resolver) SetVersionAvailable(ref PackageRef, isVersionAvailable func(v
 
 func (r *Resolver) SetSkipMiseInstall(ref PackageRef, skipMiseInstall bool) {
 	r.packages[ref.Name].SkipMiseInstall = skipMiseInstall
+}
+
+func (r *Resolver) SetUseLatestVersion(ref PackageRef, useLatestVersion bool) {
+	r.packages[ref.Name].UseLatestVersion = useLatestVersion
 }
