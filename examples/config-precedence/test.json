@@ -1,0 +1,13 @@
+[
+  {
+    // railpack.json startCommand beats Procfile
+    "expectedOutput": "from-file"
+  },
+  {
+    // RAILPACK_START_CMD beats railpack.json
+    "expectedOutput": "from-env",
+    "envs": {
+      "RAILPACK_START_CMD": "echo from-env"
+    }
+  }
+]
