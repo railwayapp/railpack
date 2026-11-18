@@ -210,6 +210,18 @@ func TestPlaywrightInstallationIsOptIn(t *testing.T) {
 	})
 }
 
+func TestPdmKeepsLatestVersion(t *testing.T) {
+	ctx := testingUtils.CreateGenerateContext(t, "../../../examples/python-pdm")
+	provider := PythonProvider{}
+	miseStep := ctx.GetMiseStepBuilder()
+
+	provider.InstallMisePackages(ctx, miseStep)
+
+	pdm := ctx.Resolver.Get("pipx:pdm")
+	require.NotNil(t, pdm)
+	require.True(t, pdm.UseLatestVersion)
+}
+
 func TestDependencySpecMatches(t *testing.T) {
 	require.True(t, dependencySpecMatches("Playwright[chromium]>=1.49", "playwright"))
 	require.True(t, dependencySpecMatches("playwright @ https://example.com/playwright.whl", "playwright"))
