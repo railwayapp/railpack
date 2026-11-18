@@ -32,6 +32,7 @@ type GenerateBuildPlanOptions struct {
 	PreviousVersions         map[string]string
 	ConfigFilePath           string
 	ErrorMissingStartCommand bool // enabled on railway
+	Vars                     map[string]string
 }
 
 type BuildResult struct {
@@ -87,6 +88,11 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		for name, version := range options.PreviousVersions {
 			ctx.Resolver.SetPreviousVersion(name, version)
 		}
+	}
+
+	// Set user variables to be available in all steps
+	if options.Vars != nil {
+		maps.Copy(ctx.UserVariables, options.Vars)
 	}
 
 	// Figure out what providers to use
@@ -333,6 +339,9 @@ func GenerateConfigFromOptions(options *GenerateBuildPlanOptions) *c.Config {
 	if options.StartCommand != "" {
 		config.Deploy.StartCmd = options.StartCommand
 	}
+
+	// User-provided variables take precedence over generated deployment variables.
+	maps.Copy(config.Deploy.Variables, options.Vars)
 
 	return config
 }
