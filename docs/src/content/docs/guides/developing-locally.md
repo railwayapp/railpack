@@ -39,6 +39,8 @@ Set this in a `mise.local.toml`:
 ```toml title="mise.local.toml"
 [env]
 DOCKER_HOST = "ssh://user@host"
+# Set when the remote host CPU differs from this machine.
+DOCKER_DEFAULT_PLATFORM = "linux/amd64"
 ```
 
 Leave `BUILDKIT_HOST` unset unless the remote container is not named
@@ -52,13 +54,11 @@ docker info -f '{{.Name}} {{.OperatingSystem}}'
 docker context inspect -f '{{.Endpoints.docker.Host}}'
 ```
 
-If you use a remote Docker host with a different CPU architecture, specify
-the target platform explicitly. Without `--platform`, the CLI selects the
-architecture of the machine running Railpack, not the remote Docker host;
-`DOCKER_HOST` only changes where the build executes. Use a flag such as
-`--platform linux/amd64` for CLI builds, or set `"platform": "linux/amd64"`
-in an example's `test.json`, matching a platform supported by the remote
-BuildKit worker.
+If the remote host CPU differs from this machine, set
+`DOCKER_DEFAULT_PLATFORM` as shown above or pass `--platform`. Without either,
+the build uses the CPU of the machine running the CLI. `DOCKER_HOST` only
+changes where the build executes. An example can still set `"platform"` in
+`test.json` when that case needs a specific architecture.
 
 Use the `cli` task to run the Railpack CLI (this is like `railpack --help`)
 
