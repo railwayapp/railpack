@@ -23,7 +23,7 @@ type DeployConfig struct {
 
 type StepConfig struct {
 	plan.Step
-	DeployOutputs []plan.Filter `json:"deployOutputs,omitempty" jsonschema:"description=Parts of this step that should be included in the final image. If empty, the /app directory will be used."`
+	DeployOutputs DeployOutputs `json:"deployOutputs,omitempty" jsonschema:"description=Parts of this step that should be included in the final image. If empty, the /app directory will be used."`
 }
 
 type Config struct {
@@ -79,7 +79,7 @@ func Merge(configs ...*Config) *Config {
 
 func (s *StepConfig) UnmarshalJSON(data []byte) error {
 	var temp struct {
-		DeployOutputs []plan.Filter `json:"deployOutputs,omitempty"`
+		DeployOutputs DeployOutputs `json:"deployOutputs,omitempty"`
 	}
 	if err := json.Unmarshal(data, &temp); err != nil {
 		return err
