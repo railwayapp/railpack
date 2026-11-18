@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/railwayapp/railpack/core/app"
+	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/resolver"
 	"github.com/stretchr/testify/require"
 )
@@ -172,6 +173,68 @@ func TestPartitionMiseConfigFiles(t *testing.T) {
 	included, excluded := (&MiseStepBuilder{app: userApp}).partitionMiseConfigFiles()
 	require.Equal(t, []string{"mise.toml"}, included)
 	require.ElementsMatch(t, []string{"mise.local.toml", ".nvmrc"}, excluded)
+}
+
+func TestMiseStepBuilderUseLatestVersion(t *testing.T) {
+	strPtr := func(s string) *string { return &s }
+
+	buildToml := func(t *testing.T, optIn bool, requested *string, resolvedVersion string) string {
+		t.Helper()
+		ctx := CreateTestContext(t, "../../examples/python-pdm")
+		builder := ctx.GetMiseStepBuilder()
+		ref := builder.Default("pipx:pdm", "latest")
+		if optIn {
+			builder.UseLatestVersion(ref)
+		}
+		if requested != nil && *requested != "latest" {
+			builder.Version(ref, *requested, "test pin")
+		}
+		p := plan.NewBuildPlan()
+		options := &BuildStepOptions{
+			ResolvedPackages: map[string]*resolver.ResolvedPackage{
+				"pipx:pdm": {
+					Name:             "pipx:pdm",
+					RequestedVersion: requested,
+					ResolvedVersion:  strPtr(resolvedVersion),
+					Source:           "test",
+				},
+			},
+			Caches: ctx.Caches,
+		}
+		require.NoError(t, builder.Build(p, options))
+		return builder.Assets["generated-mise-toml"]
+	}
+
+	// Opted in with default "latest" keeps "latest" so mise resolves at install time.
+	t.Run("opted in with latest keeps latest", func(t *testing.T) {
+		toml := buildToml(t, true, strPtr("latest"), "2.29.5")
+		require.Contains(t, toml, `"pipx:pdm" = "latest"`)
+		require.NotContains(t, toml, "2.29.5")
+	})
+
+	// Opted in but user pinned a concrete version keeps the pinned resolved version.
+	t.Run("opted in with user pin keeps pinned version", func(t *testing.T) {
+		toml := buildToml(t, true, strPtr("2.29.5"), "2.29.5")
+		require.Contains(t, toml, `"pipx:pdm" = "2.29.5"`)
+	})
+
+	// Without the opt-in, "latest" still resolves to the host-pinned version.
+	t.Run("without opt-in latest resolves to pinned version", func(t *testing.T) {
+		toml := buildToml(t, false, strPtr("latest"), "2.29.5")
+		require.Contains(t, toml, `"pipx:pdm" = "2.29.5"`)
+		require.NotContains(t, toml, `"latest"`)
+	})
+
+	// Opted in but the resolved package carries no requested version: Build must
+	// not panic and must fall back to the resolved pinned version.
+	t.Run("opted in with nil requested version falls back to pinned version", func(t *testing.T) {
+		var toml string
+		require.NotPanics(t, func() {
+			toml = buildToml(t, true, nil, "2.29.5")
+		})
+		require.Contains(t, toml, `"pipx:pdm" = "2.29.5"`)
+		require.NotContains(t, toml, `"pipx:pdm" = "latest"`)
+	})
 }
 
 func TestMiseLockfilePath(t *testing.T) {
