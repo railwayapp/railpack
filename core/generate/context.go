@@ -245,7 +245,7 @@ func (c *GenerateContext) applyPackagesFromConfig() {
 		version := c.Config.Packages[pkg]
 		pkgRef := miseStep.Default(pkg, version)
 		// `custom config` and not `railpack.json` is used since the source of the custom config could be a CLI flag or custom config file
-		miseStep.Version(pkgRef, version, "custom config")
+		miseStep.Version(pkgRef, version, resolver.CustomConfigSource)
 	}
 }
 
