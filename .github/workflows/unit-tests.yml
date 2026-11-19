@@ -25,6 +25,9 @@ jobs:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v5
 
+      - name: Set up test environment
+        run: mise run setup
+
       - name: Go Checks
         run: mise run check
 
