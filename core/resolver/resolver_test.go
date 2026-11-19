@@ -133,3 +133,24 @@ func TestResolverHasCustomConfig(t *testing.T) {
 	resolver.Version(pnpm, "11", CustomConfigSource)
 	assert.True(t, resolver.HasCustomConfig("pnpm"))
 }
+
+func TestResolverVersionPreservesCustomConfig(t *testing.T) {
+	resolver, err := NewResolver(mise.TestInstallDir)
+	require.NoError(t, err)
+
+	pnpm := resolver.Default("pnpm", "10")
+	resolver.Version(pnpm, "11", CustomConfigSource)
+	require.Equal(t, "11", resolver.Get("pnpm").Version)
+	require.Equal(t, CustomConfigSource, resolver.Get("pnpm").Source)
+
+	// A version detected from the app directory (packageManager, mise.toml,
+	// .tool-versions) must not overwrite the custom config in between the
+	// provider's version-dependent decisions and applyConfig().
+	resolver.Version(pnpm, "10", "mise")
+	require.Equal(t, "11", resolver.Get("pnpm").Version)
+	require.Equal(t, CustomConfigSource, resolver.Get("pnpm").Source)
+
+	// Another explicit custom-config write is still allowed.
+	resolver.Version(pnpm, "12", CustomConfigSource)
+	require.Equal(t, "12", resolver.Get("pnpm").Version)
+}

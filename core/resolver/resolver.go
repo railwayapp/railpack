@@ -152,6 +152,13 @@ func (r *Resolver) Default(name, defaultVersion string) PackageRef {
 
 func (r *Resolver) Version(ref PackageRef, version, source string) PackageRef {
 	if pkg, exists := r.packages[ref.Name]; exists {
+		// Custom config is re-applied by applyConfig() and always wins in the final
+		// plan. Providers make version-dependent decisions (e.g. the pnpm global bin
+		// directory) before that point, so other sources must not overwrite the
+		// configured version in the meantime (packageManager, mise.toml, .tool-versions).
+		if pkg.Source == CustomConfigSource && source != CustomConfigSource {
+			return ref
+		}
 		pkg.SetVersion(strings.TrimSpace(version), source)
 	}
 	return ref
