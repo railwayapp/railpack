@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+#MISE description="Push repository rulesets from .github/rulesets/ to GitHub API"
+
+set -euo pipefail
+
+rulesets_dir=".github/rulesets"
+
+if [ ! -d "$rulesets_dir" ]; then
+  echo "Error: Directory '$rulesets_dir' does not exist. Run 'mise run github:ruleset:pull' first." >&2
+  exit 1
+fi
+
+target_arg="${1:-}"
+
+if [ -n "$target_arg" ]; then
+  if [ -f "$target_arg" ]; then
+    files=("$target_arg")
+  elif [ -f "${rulesets_dir}/${target_arg}" ]; then
+    files=("${rulesets_dir}/${target_arg}")
+  elif [ -f "${rulesets_dir}/${target_arg}.json" ]; then
+    files=("${rulesets_dir}/${target_arg}.json")
+  else
+    echo "Error: Could not find ruleset file matching '$target_arg'" >&2
+    exit 1
+  fi
+else
+  shopt -s nullglob
+  files=("$rulesets_dir"/*.json)
+  shopt -u nullglob
+fi
+
+if [ ${#files[@]} -eq 0 ]; then
+  echo "No ruleset JSON files found in $rulesets_dir"
+  exit 0
+fi
+
+repo_name=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+echo "Fetching existing rulesets for $repo_name to match by name..."
+remote_rulesets=$(gh api repos/:owner/:repo/rulesets)
+
+for filepath in "${files[@]}"; do
+  if [ ! -f "$filepath" ]; then
+    continue
+  fi
+
+  name=$(jq -r '.name // empty' "$filepath")
+  if [ -z "$name" ]; then
+    echo "Skipping $filepath: missing required 'name' field." >&2
+    continue
+  fi
+
+  existing_id=$(echo "$remote_rulesets" | jq -r --arg n "$name" '.[] | select(.name == $n and .source_type == "Repository") | .id' | head -n 1)
+
+  if [ -n "$existing_id" ]; then
+    echo "Updating existing ruleset '$name' (ID: $existing_id) from $filepath..."
+    gh api --method PUT "repos/:owner/:repo/rulesets/$existing_id" --input "$filepath" > /dev/null
+    echo "✓ Successfully updated '$name'"
+  else
+    echo "Creating new ruleset '$name' from $filepath..."
+    gh api --method POST "repos/:owner/:repo/rulesets" --input "$filepath" > /dev/null
+    echo "✓ Successfully created '$name'"
+  fi
+done
+
+echo "Done."
