@@ -400,10 +400,7 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	}
 
 	if p.hasPdm(ctx) {
-		// Keep "latest" in the generated config so mise resolves the current PDM at install time
-		// instead of freezing the host-resolved pin and missing upstream fixes.
-		pdmRef := miseStep.Default("pipx:pdm", "latest")
-		miseStep.UseLatestVersion(pdmRef)
+		miseStep.Default("pipx:pdm", "latest")
 		packages = append(packages, "pipx:pdm")
 	}
 
