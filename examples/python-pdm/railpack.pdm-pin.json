@@ -1,0 +1,11 @@
+{
+  // TODO: remove this file (and its configFile reference in test.json). It only
+  // exists to work around PDM <= 2.29.6 crashing with hishel 2.0
+  // ("module 'hishel' has no attribute 'SyncSqliteStorage'"). PDM 2.29.7 is the
+  // first release compatible with hishel 2.0; once it passes mise's 14-day
+  // minimum-release-age cutoff (~Nov 20 2026), the default resolution will
+  // pick a working PDM on its own and this pin is no longer needed.
+  "packages": {
+    "pipx:pdm": "2.29.7"
+  }
+}

@@ -1,5 +1,9 @@
 [
   {
-    "expectedOutput": "Hello from Python-PDM"
+    // TODO: remove the configFile workaround below (and railpack.pdm-pin.json)
+    // once PDM 2.29.7+ passes the 14-day minimum-release-age cutoff. See the
+    // TODO in railpack.pdm-pin.json for details.
+    "expectedOutput": "Hello from Python-PDM",
+    "configFile": "railpack.pdm-pin.json"
   }
 ]

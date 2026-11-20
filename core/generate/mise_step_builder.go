@@ -144,10 +144,6 @@ func (b *MiseStepBuilder) SkipMiseInstall(name resolver.PackageRef) {
 	b.Resolver.SetSkipMiseInstall(name, true)
 }
 
-func (b *MiseStepBuilder) UseLatestVersion(name resolver.PackageRef) {
-	b.Resolver.SetUseLatestVersion(name, true)
-}
-
 // GetMisePackageVersions gets all package versions from mise that are defined in the app directory environment
 // this can include additional packages defined outside the app directory, but we filter those out
 func (b *MiseStepBuilder) GetMisePackageVersions(ctx *GenerateContext) (map[string]*MisePackageInfo, error) {
@@ -321,25 +317,10 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 		packagesToInstall := make(map[string]string)
 		for _, pkg := range b.MisePackages {
 			resolved, ok := options.ResolvedPackages[pkg.Name]
-			if !ok || resolved == nil || resolved.ResolvedVersion == nil {
-				continue
-			}
 
-			var requested *resolver.RequestedPackage
-			if b.Resolver != nil {
-				requested = b.Resolver.Get(pkg.Name)
+			if ok && resolved.ResolvedVersion != nil && !b.Resolver.Get(pkg.Name).SkipMiseInstall {
+				packagesToInstall[pkg.Name] = *resolved.ResolvedVersion
 			}
-			if requested != nil && requested.SkipMiseInstall {
-				continue
-			}
-
-			// Opted-in defaults keep "latest" so the builder resolves the current release at install time.
-			if requested != nil && requested.UseLatestVersion && resolved.RequestedVersion != nil && *resolved.RequestedVersion == "latest" {
-				packagesToInstall[pkg.Name] = "latest"
-				continue
-			}
-
-			packagesToInstall[pkg.Name] = *resolved.ResolvedVersion
 		}
 
 		miseToml, err := mise.GenerateMiseToml(packagesToInstall, b.MiseSettings)
