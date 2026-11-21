@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/app"
@@ -40,7 +41,9 @@ type BuildResult struct {
 	ResolvedPackages  map[string]*resolver.ResolvedPackage `json:"resolvedPackages,omitempty"`
 	Metadata          map[string]string                    `json:"metadata,omitempty"`
 	DetectedProviders []string                             `json:"detectedProviders,omitempty"`
-	Logs              []logger.Msg                         `json:"logs,omitempty"`
+	// Other providers whose Detect() also matched, in detection order. Informational only.
+	OtherMatchedProviders []string     `json:"otherMatchedProviders,omitempty"`
+	Logs                  []logger.Msg `json:"logs,omitempty"`
 	// always serialized so consumers of the info file can read the outcome of a failed build
 	Success bool `json:"success"`
 }
@@ -90,7 +93,7 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 	}
 
 	// Figure out what providers to use
-	providerToUse, detectedProviderName := getProviders(ctx, config)
+	providerToUse, detectedProviderName, otherMatchedProviders := getProviders(ctx, config)
 	ctx.Metadata.Set("providers", detectedProviderName)
 
 	// TODO: We should indicate if we have packages specified in the config
@@ -143,13 +146,14 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 	}
 
 	buildResult := &BuildResult{
-		RailpackVersion:   railpackVersion,
-		Plan:              buildPlan,
-		ResolvedPackages:  resolvedPackages,
-		Metadata:          ctx.Metadata.Properties,
-		DetectedProviders: []string{detectedProviderName},
-		Logs:              logger.Logs,
-		Success:           true,
+		RailpackVersion:       railpackVersion,
+		Plan:                  buildPlan,
+		ResolvedPackages:      resolvedPackages,
+		Metadata:              ctx.Metadata.Properties,
+		DetectedProviders:     []string{detectedProviderName},
+		OtherMatchedProviders: otherMatchedProviders,
+		Logs:                  logger.Logs,
+		Success:               true,
 	}
 
 	return buildResult, nil
@@ -324,37 +328,71 @@ func GenerateConfigFromOptions(options *GenerateBuildPlanOptions) *c.Config {
 	return config
 }
 
-func getProviders(ctx *generate.GenerateContext, config *c.Config) (providers.Provider, string) {
+func getProviders(ctx *generate.GenerateContext, config *c.Config) (providers.Provider, string, []string) {
 	allProviders := providers.GetLanguageProviders()
 
 	var providerToUse providers.Provider
 	var detectedProvider string
+	var matchedProviders []string
+	decided := false
 
-	// Even if there are providers manually specified, we want to detect to see what type of app this is
+	// Even if there are providers manually specified, we want to detect to see what type of app this is.
+	// Every provider is checked so we can report other matches, but only the first one decides the plan.
 	for _, provider := range allProviders {
-		matched, err := provider.Detect(ctx)
+		var matched bool
+		var err error
+		if decided {
+			matched, err = detectQuietly(ctx, provider)
+		} else {
+			matched, err = provider.Detect(ctx)
+		}
 		if err != nil {
-			log.Warnf("Failed to detect provider `%s`: %s", provider.Name(), err.Error())
+			if !decided {
+				log.Warnf("Failed to detect provider `%s`: %s", provider.Name(), err.Error())
+			}
 			continue
 		}
 
-		if matched {
-			detectedProvider = provider.Name()
+		if !matched {
+			continue
+		}
 
-			// If there are no providers manually specified in the config,
-			if config.Provider == nil {
-				if err := provider.Initialize(ctx); err != nil {
-					ctx.Logger.LogWarn("Failed to initialize provider `%s`: %s", provider.Name(), err.Error())
-					continue
-				}
+		matchedProviders = append(matchedProviders, provider.Name())
 
-				ctx.Logger.LogInfo("Detected %s", utils.CapitalizeFirst(provider.Name()))
+		if decided {
+			continue
+		}
 
-				providerToUse = provider
+		detectedProvider = provider.Name()
+
+		// If there are no providers manually specified in the config,
+		if config.Provider == nil {
+			if err := provider.Initialize(ctx); err != nil {
+				ctx.Logger.LogWarn("Failed to initialize provider `%s`: %s", provider.Name(), err.Error())
+				continue
 			}
 
-			break
+			ctx.Logger.LogInfo("Detected %s", utils.CapitalizeFirst(provider.Name()))
+
+			providerToUse = provider
 		}
+
+		decided = true
+	}
+
+	var otherMatchedProviders []string
+	for _, name := range matchedProviders {
+		if name != detectedProvider {
+			otherMatchedProviders = append(otherMatchedProviders, name)
+		}
+	}
+
+	if len(otherMatchedProviders) > 0 {
+		names := make([]string, len(otherMatchedProviders))
+		for i, name := range otherMatchedProviders {
+			names[i] = utils.CapitalizeFirst(name)
+		}
+		ctx.Logger.LogInfo("Also matched %s", strings.Join(names, ", "))
 	}
 
 	if config.Provider != nil {
@@ -362,17 +400,28 @@ func getProviders(ctx *generate.GenerateContext, config *c.Config) (providers.Pr
 
 		if provider == nil {
 			ctx.Logger.LogWarn("Provider `%s` not found", *config.Provider)
-			return providerToUse, detectedProvider
+			return providerToUse, detectedProvider, otherMatchedProviders
 		}
 
 		if err := provider.Initialize(ctx); err != nil {
 			ctx.Logger.LogWarn("Failed to initialize provider `%s`: %s", *config.Provider, err.Error())
-			return providerToUse, detectedProvider
+			return providerToUse, detectedProvider, otherMatchedProviders
 		}
 
 		ctx.Logger.LogInfo("Using provider %s from config", utils.CapitalizeFirst(*config.Provider))
 		providerToUse = provider
 	}
 
-	return providerToUse, detectedProvider
+	return providerToUse, detectedProvider, otherMatchedProviders
+}
+
+// detectQuietly runs Detect for a provider that can no longer be selected. Some Detect
+// implementations log (e.g. the shell provider warns when start.sh is missing), so their
+// output is discarded to keep the build logs the same as when detection stopped at the first match.
+func detectQuietly(ctx *generate.GenerateContext, provider providers.Provider) (bool, error) {
+	original := ctx.Logger
+	ctx.Logger = logger.NewLogger()
+	defer func() { ctx.Logger = original }()
+
+	return provider.Detect(ctx)
 }

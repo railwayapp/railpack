@@ -12,6 +12,8 @@ import (
 
 	"github.com/gkampitakis/go-snaps/snaps"
 	"github.com/railwayapp/railpack/core/app"
+	c "github.com/railwayapp/railpack/core/config"
+	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/logger"
 	"github.com/railwayapp/railpack/core/mise"
 	"github.com/railwayapp/railpack/core/plan"
@@ -299,4 +301,85 @@ func TestProviderDefaultExcludes(t *testing.T) {
 			require.Equal(t, tt.excludes, buildResult.Plan.Exclude)
 		})
 	}
+}
+
+func newProviderTestContext(t *testing.T, files map[string]string, config *c.Config) *generate.GenerateContext {
+	t.Helper()
+
+	dir := t.TempDir()
+	for name, content := range files {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644))
+	}
+
+	userApp, err := app.NewApp(dir)
+	require.NoError(t, err)
+
+	ctx, err := generate.NewGenerateContext(userApp, app.NewEnvironment(nil), config, logger.NewLogger())
+	require.NoError(t, err)
+
+	return ctx
+}
+
+func logMessages(ctx *generate.GenerateContext) []string {
+	var msgs []string
+	for _, msg := range ctx.Logger.Logs {
+		msgs = append(msgs, msg.Msg)
+	}
+	return msgs
+}
+
+func TestGetProviders_ReportsOtherMatchedProviders(t *testing.T) {
+	pythonAndNode := map[string]string{
+		"requirements.txt": "flask\n",
+		"main.py":          "print('hello')\n",
+		"package.json":     `{"scripts": {"start": "node index.js"}}`,
+	}
+
+	t.Run("first match is used and later matches are reported", func(t *testing.T) {
+		config := c.EmptyConfig()
+		ctx := newProviderTestContext(t, pythonAndNode, config)
+
+		provider, detected, others := getProviders(ctx, config)
+
+		require.NotNil(t, provider)
+		require.Equal(t, "python", provider.Name())
+		require.Equal(t, "python", detected)
+		require.Equal(t, []string{"node"}, others)
+		require.Contains(t, logMessages(ctx), "Also matched Node")
+		// Providers checked after the decision must not add their own logs
+		// (the shell provider warns when start.sh is missing).
+		for _, msg := range logMessages(ctx) {
+			require.NotContains(t, msg, "start.sh")
+		}
+	})
+
+	t.Run("single match reports nothing extra", func(t *testing.T) {
+		config := c.EmptyConfig()
+		ctx := newProviderTestContext(t, map[string]string{
+			"package.json": `{"scripts": {"start": "node index.js"}}`,
+		}, config)
+
+		provider, detected, others := getProviders(ctx, config)
+
+		require.NotNil(t, provider)
+		require.Equal(t, "node", detected)
+		require.Empty(t, others)
+		for _, msg := range logMessages(ctx) {
+			require.NotContains(t, msg, "Also matched")
+		}
+	})
+
+	t.Run("provider from config does not change what was detected", func(t *testing.T) {
+		config := c.EmptyConfig()
+		node := "node"
+		config.Provider = &node
+		ctx := newProviderTestContext(t, pythonAndNode, config)
+
+		provider, detected, others := getProviders(ctx, config)
+
+		require.NotNil(t, provider)
+		require.Equal(t, "node", provider.Name())
+		require.Equal(t, "python", detected)
+		require.Equal(t, []string{"node"}, others)
+	})
 }
