@@ -34,16 +34,24 @@ Integration tests and local builds store images and BuildKit cache on
 the Docker host. Point Docker at another machine to keep tens of
 gigabytes of that data off your laptop if you are actively working on Railpack.
 
-Set this in a `mise.local.toml`:
+Set this in a `mise.local.toml` so both Docker and BuildKit operations run on the
+same remote host (instead of wearing out your laptop's disk and CPU):
 
 ```toml title="mise.local.toml"
 [env]
 DOCKER_HOST = "ssh://user@host"
+# Optional: connect to BuildKit directly over Tailscale TCP
+# BUILDKIT_HOST = "tcp://<tailscale-ip>:1234"
 ```
 
-Leave `BUILDKIT_HOST` unset unless the remote container is not named
-`buildkit`. Use key/agent SSH auth. The remote host needs a running
-privileged `buildkit` container.
+By default, `docker-container://buildkit` tunnels BuildKit over `DOCKER_HOST`
+SSH. If you want a direct TCP connection to BuildKit on the remote host without
+exposing an unauthenticated port on your public network, bind `buildkit` to your
+Tailscale IP instead of `0.0.0.0`:
+
+```bash
+docker rm -f buildkit 2>/dev/null; docker run --rm --privileged -d --name buildkit --network host -v buildkit-state:/var/lib/buildkit moby/buildkit --addr unix:///run/buildkit/buildkitd.sock --addr "tcp://$(tailscale ip -4):1234"
+```
 
 Confirm the engine with `docker info` (`Name` is the hostname):
 
