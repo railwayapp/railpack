@@ -99,6 +99,6 @@ dependencies:
         repo_id: 209873006
     'jdx/mise-action@v5':
         ref: 'v5'
-        commit: 'sha1-b44d12e7d0d8ee7461bb893e1b1993500433185b'
+        commit: 'sha1-924e7c586e33d7d4bae9c14e26c5d22e2beb6e78'
         owner_id: 216188
         repo_id: 738284564
