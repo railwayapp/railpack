@@ -3,47 +3,47 @@
 lockfile_version = 3
 
 [[tools."github:moby/buildkit"]]
-version = "0.34.2"
+version = "0.35.1"
 backend = "github:moby/buildkit"
 specifiers = ["latest"]
 
 [tools."github:moby/buildkit"."platforms.linux-arm64"]
-checksum = "sha256:a4ad483a33b2f1544c5ccce1c5956c559e1a6e84b8bf6cedd847d695885237a3"
+checksum = "sha256:46c7d1799250bd8b31266ed718715ab9d3464bad0455d5bfbe48e2eeb92ca965"
 checksum_source = "mise-versions"
-url = "https://github.com/moby/buildkit/releases/download/v0.34.2/buildkit-v0.34.2.linux-arm64.tar.gz"
-url_api = "https://api.github.com/repos/moby/buildkit/releases/assets/705594620"
+url = "https://github.com/moby/buildkit/releases/download/v0.35.1/buildkit-v0.35.1.linux-arm64.tar.gz"
+url_api = "https://api.github.com/repos/moby/buildkit/releases/assets/769109638"
 
 [tools."github:moby/buildkit"."platforms.linux-arm64-musl"]
-checksum = "sha256:a4ad483a33b2f1544c5ccce1c5956c559e1a6e84b8bf6cedd847d695885237a3"
+checksum = "sha256:46c7d1799250bd8b31266ed718715ab9d3464bad0455d5bfbe48e2eeb92ca965"
 checksum_source = "mise-versions"
-url = "https://github.com/moby/buildkit/releases/download/v0.34.2/buildkit-v0.34.2.linux-arm64.tar.gz"
-url_api = "https://api.github.com/repos/moby/buildkit/releases/assets/705594620"
+url = "https://github.com/moby/buildkit/releases/download/v0.35.1/buildkit-v0.35.1.linux-arm64.tar.gz"
+url_api = "https://api.github.com/repos/moby/buildkit/releases/assets/769109638"
 
 [tools."github:moby/buildkit"."platforms.linux-x64"]
-checksum = "sha256:b9f18b8e37eb450e9e5df03117045237cdd12d3c4a0034ffeeaa857852a15e13"
-url = "https://github.com/moby/buildkit/releases/download/v0.34.2/buildkit-v0.34.2.linux-amd64.tar.gz"
-url_api = "https://api.github.com/repos/moby/buildkit/releases/assets/705594617"
+checksum = "sha256:b248c2b91698aafef11818fe8b681dc5e341581f7d5676709ff45ca1f29b0408"
+checksum_source = "mise-versions"
+url = "https://github.com/moby/buildkit/releases/download/v0.35.1/buildkit-v0.35.1.linux-amd64.tar.gz"
+url_api = "https://api.github.com/repos/moby/buildkit/releases/assets/769109644"
 
 [tools."github:moby/buildkit"."platforms.linux-x64-musl"]
-checksum = "sha256:b9f18b8e37eb450e9e5df03117045237cdd12d3c4a0034ffeeaa857852a15e13"
+checksum = "sha256:b248c2b91698aafef11818fe8b681dc5e341581f7d5676709ff45ca1f29b0408"
 checksum_source = "mise-versions"
-url = "https://github.com/moby/buildkit/releases/download/v0.34.2/buildkit-v0.34.2.linux-amd64.tar.gz"
-url_api = "https://api.github.com/repos/moby/buildkit/releases/assets/705594617"
+url = "https://github.com/moby/buildkit/releases/download/v0.35.1/buildkit-v0.35.1.linux-amd64.tar.gz"
+url_api = "https://api.github.com/repos/moby/buildkit/releases/assets/769109644"
 
 [tools."github:moby/buildkit"."platforms.macos-arm64"]
-checksum = "sha256:a1e588828f21424dc686441091e5d04c2d2957d385d14a65d43cf823ff3ee508"
-checksum_source = "mise-versions"
-url = "https://github.com/moby/buildkit/releases/download/v0.34.2/buildkit-v0.34.2.darwin-arm64.tar.gz"
-url_api = "https://api.github.com/repos/moby/buildkit/releases/assets/705594627"
+checksum = "sha256:69a84f3d350caa927b398a8ff65130b02b28e72e80d083893dea17606682df86"
+url = "https://github.com/moby/buildkit/releases/download/v0.35.1/buildkit-v0.35.1.darwin-arm64.tar.gz"
+url_api = "https://api.github.com/repos/moby/buildkit/releases/assets/769109640"
 
 [tools."github:moby/buildkit"."platforms.macos-x64"]
-checksum = "sha256:e93be26829578f6bc7cfdb7f8b0b6ee1f7641757e6147989edea1433ff3530ce"
+checksum = "sha256:35f1f05051c50473c98644aaca7965523dbcf509d02bfa10c1f6627f2295ceaf"
 checksum_source = "mise-versions"
-url = "https://github.com/moby/buildkit/releases/download/v0.34.2/buildkit-v0.34.2.darwin-amd64.tar.gz"
-url_api = "https://api.github.com/repos/moby/buildkit/releases/assets/705594646"
+url = "https://github.com/moby/buildkit/releases/download/v0.35.1/buildkit-v0.35.1.darwin-amd64.tar.gz"
+url_api = "https://api.github.com/repos/moby/buildkit/releases/assets/769109645"
 
 [tools."github:moby/buildkit"."platforms.windows-x64"]
-checksum = "sha256:346b4dc3383cd8b0be4e8717043e8a079365dc0af5f3108fd6fc197e0dfe6cde"
+checksum = "sha256:5e9d59a218632a99c7f8590d49522a139e9ac57cea53a1f6eb92bd5e9c8eb199"
 checksum_source = "mise-versions"
-url = "https://github.com/moby/buildkit/releases/download/v0.34.2/buildkit-v0.34.2.windows-amd64.tar.gz"
-url_api = "https://api.github.com/repos/moby/buildkit/releases/assets/705594598"
+url = "https://github.com/moby/buildkit/releases/download/v0.35.1/buildkit-v0.35.1.windows-amd64.tar.gz"
+url_api = "https://api.github.com/repos/moby/buildkit/releases/assets/769109629"
