@@ -949,66 +949,6 @@ November 17, 2025 · [GitHub release](https://github.com/railwayapp/railpack/rel
 
 **Full Changelog**: [v0.11.0...v0.12.0](https://github.com/railwayapp/railpack/compare/v0.11.0...v0.12.0)
 
-## v0.11.0
-November 11, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.11.0)
-
-### Providers
-
-#### New
-
-*   **Dotnet:** Railpack now supports building [.NET applications](https://railpack.com/languages/dotnet). The provider defaults to the latest LTS version of .NET, and the version can be customized using `mise` configuration files (e.g., `.tool-versions`, `mise.toml`). by @jaredLunde and @iloveitaly in [#126](https://github.com/railwayapp/railpack/pull/126) and [#323](https://github.com/railwayapp/railpack/pull/323)
-*   **Shell:** The [Shell provider](https://railpack.com/languages/shell) now supports `zsh` as an interpreter and automatically detects the required shell (bash or zsh) from your start script's shebang (e.g., `#!/bin/zsh`). by @iloveitaly in [#328](https://github.com/railwayapp/railpack/pull/328) and [#327](https://github.com/railwayapp/railpack/pull/327)
-*   **Deno:** You can now specify the Deno version for your project using `mise` configuration files like `.tool-versions` or `mise.toml` with the [Deno provider](https://railpack.com/languages/deno). by @iloveitaly in [#325](https://github.com/railwayapp/railpack/pull/325)
-
-**Full Changelog**: [v0.10.0...v0.11.0](https://github.com/railwayapp/railpack/compare/v0.10.0...v0.11.0)
-
-## v0.10.0
-November 6, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.10.0)
-
-### Providers
-
-#### New
-
-* **Gleam:** Railpack now has first-class support for Gleam projects. by @aleksrutins in [#313](https://github.com/railwayapp/railpack/pull/313)
-* **Elixir:** Erlang and Elixir versions defined in `mise` config files (e.g., `mise.toml`, `.tool-versions`) will now be used instead of Railpack's defaults. by @iloveitaly in [#306](https://github.com/railwayapp/railpack/pull/306)
-* **Node.js:** The `engines` field in `package.json` is now used to determine the versions of Node.js and the package manager (npm, yarn, pnpm), but only if a version is not specified in a lockfile or other config. by @iloveitaly in [#251](https://github.com/railwayapp/railpack/pull/251)
-  For example, to use Node.js v20 and pnpm v9, you can add the following to your `package.json`:
-  ```json
-  {
-    "engines": {
-      "node": "20.x",
-      "pnpm": "9.x"
-    }
-  }
-  ```
-
-#### Fixed
-
-* **Python:** `mise` Python compilation is disabled by default to avoid package compilation issues on newly released python versions. by @coffee-cup in [#301](https://github.com/railwayapp/railpack/pull/301)
-
-**Full Changelog**: [v0.9.2...v0.10.0](https://github.com/railwayapp/railpack/compare/v0.9.2...v0.10.0)
-
-## v0.9.2
-October 22, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.9.2)
-
-### What's Changed
-* chore: mise update 2025.10.11 by @iloveitaly in [#297](https://github.com/railwayapp/railpack/pull/297)
-* docs: fix env var display on docs by @iloveitaly in [#298](https://github.com/railwayapp/railpack/pull/298)
-* docs: update python with mise-compatible version files by @crisog in [#290](https://github.com/railwayapp/railpack/pull/290)
-* fix: use default mise backend for uv by @iloveitaly in [#260](https://github.com/railwayapp/railpack/pull/260)
-* test: http checks on example projects by @iloveitaly in [#250](https://github.com/railwayapp/railpack/pull/250)
-* chore: mise update 2025.10.13 by @iloveitaly in [#302](https://github.com/railwayapp/railpack/pull/302)
-* build: add mise upgrade task by @iloveitaly in [#303](https://github.com/railwayapp/railpack/pull/303)
-* test: assert against specific rust version defined by rust-toolchain.toml by @iloveitaly in [#299](https://github.com/railwayapp/railpack/pull/299)
-* fix: use channel key not version from rust-toolchain.toml by @iloveitaly in [#304](https://github.com/railwayapp/railpack/pull/304)
-* refactor: cleanup rust provider by @iloveitaly in [#305](https://github.com/railwayapp/railpack/pull/305)
-* docs: minor docs and comments by @iloveitaly in [#309](https://github.com/railwayapp/railpack/pull/309)
-
-### New Contributors
-* @crisog made their first contribution in [#290](https://github.com/railwayapp/railpack/pull/290)
-
-**Full Changelog**: [v0.9.1...v0.9.2](https://github.com/railwayapp/railpack/compare/v0.9.1...v0.9.2)
-
 ## Older releases
 
 This page covers the last year. See all releases on [GitHub](https://github.com/railwayapp/railpack/releases).

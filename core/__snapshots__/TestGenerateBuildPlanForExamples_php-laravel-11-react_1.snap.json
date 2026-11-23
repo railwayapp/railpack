@@ -91,7 +91,7 @@
    ],
    "inputs": [
     {
-     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.10.15"
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.11.12"
     }
    ],
    "name": "packages:mise",
@@ -112,7 +112,7 @@
    ],
    "inputs": [
     {
-     "image": "dunglas/frankenphp:php8.2.35-trixie"
+     "image": "dunglas/frankenphp:php8.2.36-trixie"
     }
    ],
    "name": "packages:image"
