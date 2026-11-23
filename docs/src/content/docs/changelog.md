@@ -7,6 +7,26 @@ tableOfContents:
   maxHeadingLevel: 2
 ---
 
+## v0.43.1
+November 23, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.43.1)
+
+### Providers
+
+#### Fixed
+
+* **PHP:** the default `php.ini` shipped with [PHP builds](https://railpack.com/languages/php) now sets `session.upload_progress.enabled = Off` to protect apps from CVE-2026-109619 (php2shell), with no effect on projects that ship their own `php.ini`. by @paulocsanz in [#817](https://github.com/railwayapp/railpack/pull/817)
+
+### Mise Upgrades
+
+Updated mise from v2026.10.14 to [v2026.11.12](https://github.com/jdx/mise/releases/tag/v2026.11.12).
+
+* **Release-age cooldown for every backend:** the default 24-hour `minimum_release_age` now applies to all backends, and Python, Ruby, Rust channels, .NET, Deno, Erlang, conda, and more now report release dates, so brand-new runtime releases are held back from builds for 24 hours. ([v2026.10.15](https://github.com/jdx/mise/releases/tag/v2026.10.15))
+* **Stricter, more reliable installs:** `lockfile_mode = "generate"` is now the default so lockfiles rebuild cleanly across platforms, and install verification fails closed with pinned checksums enforced, Node signatures required, no silent fallback to source builds, and SLSA/attestation checks enforced. ([v2026.10.19](https://github.com/jdx/mise/releases/tag/v2026.10.19))
+* **Go and CMake minimum versions ignored:** a bare `go 1.21` line in `go.mod` no longer selects a Go version (use a `toolchain` line, an exact `go X.Y.Z` line, `.go-version`, or `mise.toml` instead), and `cmake_minimum_required` in `CMakeLists.txt` is ignored. ([v2026.11.0](https://github.com/jdx/mise/releases/tag/v2026.11.0))
+* **npm provenance verified by default:** `npm:` tool installs now verify Sigstore provenance and pin the publishing repository in `mise.lock`, and new lockfiles use format version 4 which older mise versions refuse to read. ([v2026.11.1](https://github.com/jdx/mise/releases/tag/v2026.11.1))
+
+**Full Changelog**: [v0.43.0...v0.43.1](https://github.com/railwayapp/railpack/compare/v0.43.0...v0.43.1)
+
 ## v0.43.0
 October 19, 2026 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.43.0)
 
@@ -893,61 +913,6 @@ November 24, 2025 · [GitHub release](https://github.com/railwayapp/railpack/rel
 *   **General:** `mise` configuration files in the application directory are now automatically trusted, suppressing "untrusted config" warnings. by @iloveitaly in [#352](https://github.com/railwayapp/railpack/pull/352)
 
 **Full Changelog**: [v0.13.0...v0.14.0](https://github.com/railwayapp/railpack/compare/v0.13.0...v0.14.0)
-
-## v0.13.0
-November 18, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.13.0)
-
-### Providers
-
-#### New
-
-* **Node:** Added support for Node.js v25 by ensuring `libatomic1` is explicitly installed. by @iloveitaly in [#259](https://github.com/railwayapp/railpack/pull/259)
-* **Node:** Railpack now ensures Node.js is available during the build phase via mise even when not required for the runtime (e.g. when using Bun), ensuring packages requiring `node-gyp` build correctly. by @iloveitaly in [#259](https://github.com/railwayapp/railpack/pull/259)
-
-#### Fixed
-
-* **Node:** We've improved how `node_modules` caching works during the build phase, specifically fixing issues where commands like `npm ci` (which remove `node_modules`) caused build failures. See the [Node documentation](https://railpack.com/languages/node) for more details. by @iloveitaly in [#259](https://github.com/railwayapp/railpack/pull/259)
-
-### CLI
-
-#### New
-
-* **Mise:** Updated the internal `mise` version to 2025.11.6. by @iloveitaly in https://github.com/railwayapp/railpack/commit/d249231615dda1f2b4d7ade419f07890e2896079
-
-#### Fixed
-
-* **Mise:** Added backoff retries for `mise` registry downloads to help prevent build failures during intermittent network issues. by @iloveitaly in [#360](https://github.com/railwayapp/railpack/pull/360)
-
-**Full Changelog**: [v0.12.0...v0.13.0](https://github.com/railwayapp/railpack/compare/v0.12.0...v0.13.0)
-
-## v0.12.0
-November 17, 2025 · [GitHub release](https://github.com/railwayapp/railpack/releases/tag/v0.12.0)
-
-### Providers
-
-#### New
-
-* **Go:** The Go provider now respects the Go version specified in your `mise` configuration files (e.g., `mise.toml`, `.tool-versions`). by @iloveitaly in [#300](https://github.com/railwayapp/railpack/pull/300)
-* **Ruby:** The Ruby provider now respects the Ruby version specified in your `mise` configuration files (e.g., `mise.toml`, `.tool-versions`). by @iloveitaly in [#339](https://github.com/railwayapp/railpack/pull/339)
-* **Node:** For Bun projects that require Node.js for build tooling (like `node-gyp`), Railpack now installs Node.js using `mise`, respecting versions from `.nvmrc`, `.node-version`, and other `mise` configurations. by @iloveitaly in [#341](https://github.com/railwayapp/railpack/pull/341)
-* **Gleam:** You can now include your project's source code in the final image by setting the `RAILPACK_GLEAM_INCLUDE_SOURCE=true` environment variable. by @iloveitaly in [#318](https://github.com/railwayapp/railpack/pull/318)
-
-#### Fixed
-
-* **Python:** The Python provider now configures `pipx` to use `uv` for installing packages, resulting in faster dependency installation. by @iloveitaly in [#324](https://github.com/railwayapp/railpack/pull/324)
-* **All:** Railpack now parses `mise` configuration files (like `mise.toml` and `.tool-versions`) more idiomatically, improving compatibility and correctness. by @iloveitaly in [#344](https://github.com/railwayapp/railpack/pull/344)
-
-### CLI
-
-#### New
-
-* **Caching:** You can now disable specific caches during the build process by setting the `RAILPACK_DISABLE_CACHE` environment variable. For example, to disable the `apt` and `pip` caches, set `RAILPACK_DISABLE_CACHE="apt,pip"`. To disable all caches, set it to `*`. by @aleksrutins in [#316](https://github.com/railwayapp/railpack/pull/316)
-
-#### Fixed
-
-* **Security:** Railpack now enables `mise`'s "paranoid mode" by default, a security feature that requires explicit user consent before installing new tools or running code from project-specific configurations. by @iloveitaly in [#336](https://github.com/railwayapp/railpack/pull/336)
-
-**Full Changelog**: [v0.11.0...v0.12.0](https://github.com/railwayapp/railpack/compare/v0.11.0...v0.12.0)
 
 ## Older releases
 
