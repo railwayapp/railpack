@@ -1,7 +1,7 @@
 [
   {
     "expectedOutput": "npm dependencies loaded: 2026-07-21 true",
-    // NPM_CONFIG_PRODUCTION currently emits a deprecation warning during installation.
+    // npm warns because package.json and package-lock.json are intentionally out of sync.
     "stderrAllowed": true
   }
 ]

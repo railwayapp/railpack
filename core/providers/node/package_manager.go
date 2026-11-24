@@ -163,7 +163,9 @@ func (p PackageManager) installDeps(ctx *generate.GenerateContext, install *gene
 
 		// ideally, `npm ci` should be used instead of `npm install`, but we default to npm install to avoid build failures
 		// https://github.com/railwayapp/railpack/pull/643
-		installCmd := "npm install"
+		// --include=dev keeps devDependencies available while NODE_ENV=production.
+		// npm gives include precedence over omit, including an .npmrc omit=dev.
+		installCmd := "npm install --include=dev"
 		if customInstallCmd, _ := ctx.Env.GetConfigVariable("NODE_NPM_INSTALL"); customInstallCmd != "" {
 			installCmd = customInstallCmd
 		}
