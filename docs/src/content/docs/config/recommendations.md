@@ -8,7 +8,7 @@ description: Environment and tooling recommendations for Railpack-built images
 Railpack does not set a timezone. Set `TZ` explicitly for your application.
 `TZ=UTC` is a good default.
 
-```json title="railpack.json"
+```json5 title="railpack.json"
 {
   "deploy": {
     "variables": {
@@ -26,7 +26,7 @@ can cause compatibility issues with mise and other tooling.
 
 Install Python via mise whenever you use pipx:
 
-```json title="railpack.json"
+```json5 title="railpack.json"
 {
   "packages": {
     "python": "latest",
@@ -45,7 +45,7 @@ is available in the runtime image. If your application requires a different
 locale, install the corresponding locale packages via
 [`deploy.aptPackages`](/config/file).
 
-```json title="railpack.json"
+```json5 title="railpack.json"
 {
   "deploy": {
     "variables": {
@@ -198,7 +198,7 @@ RAILPACK_NODE_NPM_INSTALL="npm ci"
 You can also customize the install command in `railpack.json` if you need more
 control over the install step:
 
-```json title="railpack.json"
+```json5 title="railpack.json"
 {
   "$schema": "https://schema.railpack.com",
   "steps": {
