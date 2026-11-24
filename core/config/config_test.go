@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/railwayapp/railpack/core/plan"
+	"github.com/railwayapp/railpack/internal/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -376,4 +378,76 @@ func TestMergeConfigExcludeInclude(t *testing.T) {
 	if diff := cmp.Diff(expected, *result); diff != "" {
 		t.Errorf("configs mismatch (-want +got):\n%s", diff)
 	}
+}
+
+func TestDeployOutputsShorthand(t *testing.T) {
+	jsonConfig := `{
+		"steps": {
+			"build": {
+				"inputs": [".", "$install"],
+				"commands": ["echo build"],
+				"deployOutputs": [
+					// The bare "dist" entry exercises shorthand alongside a full filter object.
+					"dist",
+					{"include": ["public"], "exclude": ["public/**/*.map"]}
+				]
+			}
+		},
+		"deploy": {
+			"inputs": [{"step": "build", "include": ["other"]}]
+		}
+	}`
+	configJSON, err := utils.StandardizeJSON([]byte(jsonConfig))
+	require.NoError(t, err)
+	var c Config
+
+	err = json.Unmarshal(configJSON, &c)
+
+	require.NoError(t, err)
+	step := c.Steps["build"]
+
+	require.NotNil(t, step)
+	require.Equal(t, DeployOutputs{
+		plan.NewIncludeFilter([]string{"dist"}),
+		plan.NewFilter([]string{"public"}, []string{"public/**/*.map"}),
+	}, step.DeployOutputs)
+	// Layer shortcuts and object inputs must retain their own decoding rules.
+	require.Equal(t, []plan.Layer{plan.NewLocalLayer(), plan.NewStepLayer("install")}, step.Inputs)
+	require.Len(t, step.Commands, 1)
+	require.Equal(t, []plan.Layer{plan.NewStepLayer("build", plan.NewIncludeFilter([]string{"other"}))}, c.Deploy.Inputs)
+}
+
+func TestDeployOutputsSchemaAcceptsPathStringsAndFilterObjects(t *testing.T) {
+	schema := GetJsonSchema()
+
+	steps, ok := schema.Properties.Get("steps")
+
+	require.True(t, ok)
+
+	outputs, ok := steps.AdditionalProperties.Properties.Get("deployOutputs")
+
+	require.True(t, ok)
+	require.Equal(t, "array", outputs.Type)
+	require.Len(t, outputs.Items.OneOf, 2)
+	require.Equal(t, "string", outputs.Items.OneOf[0].Type)
+	object := outputs.Items.OneOf[1]
+
+	require.Equal(t, "object", object.Type)
+	for _, name := range []string{"include", "exclude"} {
+		property, ok := object.Properties.Get(name)
+
+		require.True(t, ok)
+		require.Equal(t, "array", property.Type)
+		require.Equal(t, "string", property.Items.Type)
+	}
+
+	// Layer inputs still need their schema for step references and input shortcuts.
+	inputs, ok := steps.AdditionalProperties.Properties.Get("inputs")
+
+	require.True(t, ok)
+
+	stepInput, ok := inputs.Items.OneOf[0].Properties.Get("step")
+
+	require.True(t, ok)
+	require.Equal(t, "string", stepInput.Type)
 }
