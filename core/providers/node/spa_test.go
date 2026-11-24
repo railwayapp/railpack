@@ -54,6 +54,12 @@ func TestVite(t *testing.T) {
 			isVite: false,
 		},
 		{
+			name:   "vite-fresh",
+			path:   "../../../examples/node-vite-fresh",
+			isSPA:  false,
+			isVite: false,
+		},
+		{
 			name:      "cra",
 			path:      "../../../examples/node-cra",
 			isSPA:     true,

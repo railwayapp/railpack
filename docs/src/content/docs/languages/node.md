@@ -203,6 +203,15 @@ Node deploys, set up Nitro per the
 [TanStack hosting docs](https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro).
 Railpack caches `node_modules/.vite`.
 
+#### Nitro
+
+Vite apps that build with the [Nitro](https://nitro.build) Vite plugin are
+deployed as a Node server, not a static site. This is detected when `nitro` is
+a dependency and the Vite config references it, or when `fresh` is a
+dependency and the Vite config imports `fresh/vite` (Fresh 3 registers Nitro
+for you). If there is no `start` script, the server is started with
+`node .output/server/index.mjs`.
+
 ### Install
 
 Railpack will only include the necessary files to install dependencies in order

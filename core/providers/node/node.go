@@ -169,6 +169,8 @@ func (p *NodeProvider) Plan(ctx *generate.GenerateContext) error {
 				"https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro",
 			)
 		}
+	} else if p.usesViteNitro(ctx) && p.GetStartCommand(ctx) == DefaultNitroStartCommand {
+		ctx.Logger.LogInfo("No start script found; using the Nitro server at .output/server/index.mjs")
 	}
 
 	// Deploy
@@ -272,10 +274,12 @@ func (p *NodeProvider) GetStartCommand(ctx *generate.GenerateContext) string {
 	} else if files, err := ctx.App.FindFiles("{index.js,index.ts}"); err == nil && len(files) > 0 {
 		return p.packageManager.RunScriptCommand(files[0])
 	} else if p.isNuxt() {
-		// Default Nuxt start command
-		return "node .output/server/index.mjs"
+		// Nuxt builds with Nitro
+		return DefaultNitroStartCommand
 	} else if start := p.getTanstackStartCommand(ctx); start != "" {
 		return start
+	} else if p.usesViteNitro(ctx) {
+		return DefaultNitroStartCommand
 	} else if start := p.getSvelteKitStartCommand(); start != "" {
 		return start
 	} else if pkg, _, ok := p.resolveNxDeployPackage(ctx); ok {
@@ -771,6 +775,8 @@ func (p *NodeProvider) getRuntime(ctx *generate.GenerateContext) string {
 		return "remix"
 	} else if p.isTanstackStart() {
 		return "tanstack-start"
+	} else if p.usesViteNitro(ctx) {
+		return "nitro"
 	} else if p.isVite(ctx) {
 		return "vite"
 	} else if p.isReactRouter(ctx) {
