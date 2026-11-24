@@ -30,7 +30,7 @@ generate an image. Things that it includes are:
 - Caches
   - Map of cache definitions that can be referenced by steps
 - Secrets
-  - List of secret names that are referenced by steps
+  - Array of secret names mounted into build commands
 - Deploy
   - Configuration for how the container runs, including:
     - Inputs: List of inputs for the deploy step
@@ -61,7 +61,7 @@ Steps contain:
     - Path command: Add a directory to the global PATH
     - File command: Create a new file with optional permissions
 - Secrets
-  - List of secret names that this step uses
+  - Secret names whose values invalidate this step's layer cache
 - Assets
   - Mapping of name to file contents referenced in file commands
 - Variables
