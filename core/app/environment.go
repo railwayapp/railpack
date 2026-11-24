@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 )
 
@@ -19,33 +18,24 @@ func NewEnvironment(variables *map[string]string) *Environment {
 	return &Environment{Variables: *variables}
 }
 
-// FromEnvs collects variables from the given environment variable names
-func FromEnvs(envs []string) (*Environment, error) {
-	env := NewEnvironment(nil)
-	re := regexp.MustCompile(`(?s)([A-Za-z0-9_+\-]*)(?:=?)(.*)`)
+// ParseKeyValueStrings parses CLI arguments in NAME or NAME=VALUE form. A
+// name-only entry resolves its value from the current process environment.
+func ParseKeyValueStrings(pairs []string) (map[string]string, error) {
+	vars := make(map[string]string)
 
-	for _, e := range envs {
-		matches := re.FindStringSubmatch(e)
-		if len(matches) < 3 {
+	for _, pair := range pairs {
+		name, value, hasValue := strings.Cut(pair, "=")
+		if hasValue {
+			vars[name] = value
 			continue
 		}
 
-		name := matches[1]
-		value := matches[2]
-
-		if value == "" {
-			// A bare NAME inherits from the process env; NAME= is skipped.
-			if !strings.Contains(e, "=") {
-				if v, ok := os.LookupEnv(name); ok {
-					env.SetVariable(name, v)
-				}
-			}
-		} else {
-			env.SetVariable(name, value)
+		if value, ok := os.LookupEnv(name); ok {
+			vars[name] = value
 		}
 	}
 
-	return env, nil
+	return vars, nil
 }
 
 // GetVariable returns the value of the given variable name
