@@ -1,4 +1,4 @@
----
+mise use github:railwayapp/railpack@latest---
 title: Installation
 description: How to install Railpack
 ---
