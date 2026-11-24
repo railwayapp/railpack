@@ -509,3 +509,71 @@ func TestGenerateContextProviderDefaultExcludes(t *testing.T) {
 		require.Empty(t, buildPlan.Exclude)
 	})
 }
+
+func buildDeployFromConfig(t *testing.T, cfg *config.Config) *plan.BuildPlan {
+	t.Helper()
+	// These tests apply deploy config directly; an empty app avoids unrelated provider defaults.
+	ctx := CreateTestContext(t, t.TempDir())
+	ctx.Config = cfg
+	ctx.applyConfig()
+	buildPlan := plan.NewBuildPlan()
+	ctx.Deploy.Build(buildPlan, &BuildStepOptions{})
+	return buildPlan
+}
+
+func TestApplyConfigCopiesEntrypoint(t *testing.T) {
+	cfg := config.EmptyConfig()
+	cfg.Deploy.Entrypoint = []string{"./entrypoint.sh"}
+	buildPlan := buildDeployFromConfig(t, cfg)
+	require.Equal(t, cfg.Deploy.Entrypoint, buildPlan.Deploy.Entrypoint)
+	buildPlan.Deploy.Entrypoint[0] = "./other.sh"
+	require.Equal(t, "./entrypoint.sh", cfg.Deploy.Entrypoint[0])
+
+	t.Run("omitted entrypoint stays unset", func(t *testing.T) {
+		require.Nil(t, buildDeployFromConfig(t, config.EmptyConfig()).Deploy.Entrypoint)
+	})
+	t.Run("explicit empty entrypoint is preserved", func(t *testing.T) {
+		cfg := config.EmptyConfig()
+		cfg.Deploy.Entrypoint = []string{}
+		require.NotNil(t, buildDeployFromConfig(t, cfg).Deploy.Entrypoint)
+	})
+}
+
+func TestApplyConfigCopiesHealthcheck(t *testing.T) {
+	cfg := config.EmptyConfig()
+	cfg.Deploy.Healthcheck = &plan.Healthcheck{Command: "true"}
+	buildPlan := buildDeployFromConfig(t, cfg)
+	require.Equal(t, cfg.Deploy.Healthcheck, buildPlan.Deploy.Healthcheck)
+	require.NotSame(t, cfg.Deploy.Healthcheck, buildPlan.Deploy.Healthcheck)
+	buildPlan.Deploy.Healthcheck.Command = "false"
+	require.Equal(t, "true", cfg.Deploy.Healthcheck.Command)
+
+	t.Run("omitted healthcheck stays unset", func(t *testing.T) {
+		require.Nil(t, buildDeployFromConfig(t, config.EmptyConfig()).Deploy.Healthcheck)
+	})
+}
+
+func TestHealthcheckURLInstallsCurlForGeneratedRuntime(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		healthcheck *plan.Healthcheck
+		base        *plan.Layer
+		expected    []string
+	}{
+		{"URL probe", &plan.Healthcheck{URL: "http://localhost/status"}, nil, []string{"curl"}},
+		{"command probe", &plan.Healthcheck{Command: "true"}, nil, nil},
+		{"no probe", nil, nil, nil},
+		{"custom base supplies curl", &plan.Healthcheck{URL: "http://localhost/status"}, &plan.Layer{Image: "custom:latest"}, nil},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := CreateTestContext(t, t.TempDir())
+			ctx.Config = config.EmptyConfig()
+			ctx.Config.Deploy.Base = tt.base
+			ctx.Config.Deploy.Healthcheck = tt.healthcheck
+			// Explicit package lists cannot remove the URL probe's runtime dependency.
+			ctx.Config.Deploy.AptPackages = []string{}
+			ctx.applyConfig()
+			require.ElementsMatch(t, tt.expected, ctx.Deploy.AptPackages)
+		})
+	}
+}

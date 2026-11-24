@@ -337,14 +337,20 @@ func (b *MiseStepBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) er
 		}
 		sort.Strings(pkgNames)
 
-		step.AddCommands([]plan.Command{
+		commands := []plan.Command{
 			plan.NewFileCommand("/etc/mise/config.toml", "generated-mise-toml", plan.FileOptions{
 				CustomName: "create mise config",
 			}),
 			plan.NewExecCommand(MiseInstallCommand, plan.ExecOptions{
 				CustomName: "install mise packages: " + strings.Join(pkgNames, ", "),
 			}),
-		})
+		}
+		// BuildKit refuses to copy an output path that was never created. mise install
+		// leaves these out when the config selects no tools, as with a [env]-only mise.toml.
+		if len(packagesToInstall) == 0 {
+			commands = append(commands, plan.NewExecCommand("mkdir -p /mise/shims /mise/installs /root/.local/state/mise"))
+		}
+		step.AddCommands(commands)
 	}
 
 	step.Assets = b.Assets
