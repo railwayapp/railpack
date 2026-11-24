@@ -3,9 +3,22 @@ package elixir
 import (
 	"testing"
 
+	"github.com/railwayapp/railpack/core/resolver"
 	testingUtils "github.com/railwayapp/railpack/core/testing"
 	"github.com/stretchr/testify/require"
 )
+
+func TestElixirUsesDefaultVersionWhenUnspecified(t *testing.T) {
+	ctx := testingUtils.CreateGenerateContext(t, t.TempDir())
+	provider := ElixirProvider{}
+
+	provider.InstallMisePackages(ctx, ctx.GetMiseStepBuilder())
+
+	elixir := ctx.Resolver.Get("elixir")
+	require.NotNil(t, elixir)
+	require.Equal(t, DEFAULT_ELIXIR_VERSION, elixir.Version)
+	require.Equal(t, resolver.DefaultSource, elixir.Source)
+}
 
 func TestElixir(t *testing.T) {
 	tests := []struct {
