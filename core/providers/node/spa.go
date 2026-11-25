@@ -100,10 +100,11 @@ func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.
 		indexFallback = *indexFallbackConfig
 	}
 
-	staticfile.SetSiteMetadata(ctx, outputDir, spaFramework, spaAssetsDir(spaFramework), indexFallback)
+	distDir := path.Join("/app", outputDir)
+	staticfile.SetSiteMetadata(ctx, distDir, spaFramework, spaAssetsDir(spaFramework), indexFallback)
 
 	data := map[string]any{
-		"DIST_DIR":      path.Join("/app", outputDir),
+		"DIST_DIR":      distDir,
 		"IndexFallback": indexFallback,
 	}
 

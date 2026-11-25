@@ -332,3 +332,14 @@ func TestGenerateBuildPlan_StaticSiteMetadata(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateBuildPlan_StaticSiteMetadataKeepsAnAbsoluteRoot(t *testing.T) {
+	userApp, err := app.NewApp("../examples/staticfile-index")
+	require.NoError(t, err)
+	// Caddy serves an absolute root as given, not under /app.
+	env := app.NewEnvironment(&map[string]string{"RAILPACK_STATIC_FILE_ROOT": "/srv/site"})
+	buildResult, err := GenerateBuildPlan(userApp, env, &GenerateBuildPlanOptions{})
+	require.NoError(t, err)
+	require.True(t, buildResult.Success)
+	require.Equal(t, "/srv/site", buildResult.Metadata["staticOutputDir"])
+}
