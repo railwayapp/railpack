@@ -49,7 +49,7 @@ func CreateTestContext(t *testing.T, path string) *GenerateContext {
 	env := app.NewEnvironment(nil)
 	config := config.EmptyConfig()
 
-	ctx, err := NewGenerateContext(userApp, env, config, logger.NewLogger())
+	ctx, err := NewGenerateContext(userApp, env, config, logger.NewLogger(), "")
 	require.NoError(t, err)
 
 	return ctx
@@ -438,7 +438,7 @@ func TestGenerateContextDockerignore(t *testing.T) {
 		config := config.EmptyConfig()
 
 		// Context creation should fail due to dockerignore parsing error
-		ctx, err := NewGenerateContext(userApp, env, config, logger.NewLogger())
+		ctx, err := NewGenerateContext(userApp, env, config, logger.NewLogger(), "")
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to parse .dockerignore")
 		require.Nil(t, ctx)

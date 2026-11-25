@@ -18,6 +18,18 @@ The following options are available across multiple commands:
 | `--config-file`         | Path to config file to use                                                                                                 |
 | `--error-missing-start` | Error if no start command is found. Enabled by default on Railway.                                                         |
 
+## Host mise cache
+
+To resolve package versions, the CLI downloads mise to `/tmp/railpack/mise`. The
+download and any mise binary already in that directory must match the SHA-256
+checksums pinned for the mise version, or the command fails.
+
+Set the `RAILPACK_MISE_DIR` environment variable in the shell that runs the CLI to
+use a different directory. It is not read from the app's environment. On hosts
+shared with other users, point it at a directory they cannot write to. Go callers
+can set `GenerateBuildPlanOptions.MiseInstallDir`, which takes precedence over
+`RAILPACK_MISE_DIR`.
+
 ## Commands
 
 ### build

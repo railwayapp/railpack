@@ -22,6 +22,8 @@ const (
 	InstallDir                = "/tmp/railpack/mise"
 	TestInstallDir            = "/tmp/railpack/mise-test"
 	IdiomaticVersionFileTools = "python,node,ruby,elixir,go,java,yarn,pnpm,bun,deno,dotnet,rust"
+	// read from the process environment, not the app's, so an app being built cannot redirect it
+	InstallDirEnv = "RAILPACK_MISE_DIR"
 	// applied only to the first GetLatestVersion check to skip very recent releases
 	MinimumReleaseAge = "14d"
 )
@@ -36,7 +38,13 @@ const (
 	ErrMiseGetLatestVersion = "failed to resolve version %s of %s"
 )
 
+// An empty cacheDir falls back to $RAILPACK_MISE_DIR, then InstallDir.
 func New(cacheDir string) (*Mise, error) {
+	cacheDir, err := resolveInstallDir(cacheDir)
+	if err != nil {
+		return nil, err
+	}
+
 	binaryPath, err := ensureInstalled(cacheDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to ensure mise is installed: %w", err)
@@ -50,6 +58,22 @@ func New(cacheDir string) (*Mise, error) {
 		cacheDir:    cacheDir,
 		githubToken: githubToken,
 	}, nil
+}
+
+func resolveInstallDir(dir string) (string, error) {
+	if dir == "" {
+		dir = os.Getenv(InstallDirEnv)
+	}
+	if dir == "" {
+		dir = InstallDir
+	}
+
+	// mise runs with this dir as both HOME and its working directory, where a relative path would no longer resolve
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve mise install directory %q: %w", dir, err)
+	}
+	return absDir, nil
 }
 
 // gets the latest version of a package matching the version constraint

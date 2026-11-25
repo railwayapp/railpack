@@ -13,7 +13,8 @@ const (
 )
 
 type Resolver struct {
-	mise             *mise.Mise
+	// shared so callers reuse the instance whose binary was already checksum-verified
+	Mise             *mise.Mise
 	packages         map[string]*RequestedPackage
 	previousVersions map[string]string
 }
@@ -63,7 +64,7 @@ func NewResolver(miseDir string) (*Resolver, error) {
 	}
 
 	return &Resolver{
-		mise:             mise,
+		Mise:             mise,
 		packages:         make(map[string]*RequestedPackage),
 		previousVersions: make(map[string]string),
 	}, nil
@@ -80,7 +81,7 @@ func (r *Resolver) ResolvePackages() (map[string]*ResolvedPackage, error) {
 		// If there is a custom version validator, we get possible versions and pick the latest one that matches
 		// Ex: this is used with PHP to match against a available runtime available on docker hub
 		if pkg.IsVersionAvailable != nil {
-			versions, err := r.mise.GetAllVersions(name, fuzzyVersion)
+			versions, err := r.Mise.GetAllVersions(name, fuzzyVersion)
 			if err != nil {
 				return nil, err
 			}
@@ -98,7 +99,7 @@ func (r *Resolver) ResolvePackages() (map[string]*ResolvedPackage, error) {
 		} else {
 			// Otherwise, we just get the latest version
 			var err error
-			latestVersion, err = r.mise.GetLatestVersion(name, fuzzyVersion)
+			latestVersion, err = r.Mise.GetLatestVersion(name, fuzzyVersion)
 			if err != nil {
 				// If we are not installing with Mise, then we don't need to error if we can't resolve the version
 				if pkg.SkipMiseInstall {

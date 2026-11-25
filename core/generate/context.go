@@ -11,7 +11,6 @@ import (
 	a "github.com/railwayapp/railpack/core/app"
 	"github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/logger"
-	"github.com/railwayapp/railpack/core/mise"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/core/resolver"
 	"github.com/railwayapp/railpack/internal/utils"
@@ -66,8 +65,9 @@ func (c CommandWrapper) IsSpread() bool {
 	return false
 }
 
-func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, logger *logger.Logger) (*GenerateContext, error) {
-	resolver, err := resolver.NewResolver(mise.InstallDir)
+// An empty miseInstallDir uses $RAILPACK_MISE_DIR, then mise.InstallDir.
+func NewGenerateContext(app *a.App, env *a.Environment, config *config.Config, logger *logger.Logger, miseInstallDir string) (*GenerateContext, error) {
+	resolver, err := resolver.NewResolver(miseInstallDir)
 	if err != nil {
 		return nil, err
 	}
