@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/charmbracelet/log"
 	"github.com/railwayapp/railpack/core/generate"
 	"github.com/railwayapp/railpack/core/plan"
 	"github.com/railwayapp/railpack/internal/utils"
@@ -14,10 +13,6 @@ import (
 
 const (
 	DEFAULT_PYTHON_VERSION = "3.13"
-	UV_CACHE_DIR           = "/opt/uv-cache"
-	PIP_CACHE_DIR          = "/opt/pip-cache"
-	VENV_PATH              = "/app/.venv"
-	LOCAL_BIN_PATH         = "/root/.local/bin"
 	PLAYWRIGHT_CACHE_DIR   = "/root/.cache/ms-playwright"
 	PLAYWRIGHT_INSTALL_VAR = "PYTHON_PLAYWRIGHT_INSTALL"
 )
@@ -72,6 +67,7 @@ func (p *PythonProvider) Detect(ctx *generate.GenerateContext) (bool, error) {
 func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 	ctx.SetProviderDefaultExcludes(pythonDefaultExcludePatterns)
 
+	pm := p.detectPackageManager(ctx)
 	p.InstallMisePackages(ctx, ctx.GetMiseStepBuilder())
 
 	install := ctx.NewCommandStep("install")
@@ -81,23 +77,8 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 	install.UseSecretsWithPrefixes([]string{"PYTHON", "PIP", "PIPX", "UV", "PDM", "POETRY"})
 
 	build := ctx.NewCommandStep("build")
-	installOutputs := []string{}
-
-	if p.hasRequirements(ctx) {
-		installOutputs = p.InstallPip(ctx, install)
-	} else if p.hasPyproject(ctx) && p.hasUv(ctx) {
-		installOutputs = p.InstallUv(ctx, install)
-		build.AddCommands([]plan.Command{
-			// the project is not installed during the install phase, because it requires the project source
-			plan.NewExecCommand("uv sync --locked --no-dev --no-editable"),
-		})
-	} else if p.hasPyproject(ctx) && p.hasPoetry(ctx) {
-		installOutputs = p.InstallPoetry(ctx, install)
-	} else if p.hasPyproject(ctx) && p.hasPdm(ctx) {
-		installOutputs = p.InstallPDM(ctx, install)
-	} else if p.hasPipfile(ctx) {
-		installOutputs = p.InstallPipenv(ctx, install)
-	}
+	installOutputs := pm.Install(p, ctx, install)
+	pm.ConfigureBuildStep(ctx, build)
 
 	usesPlaywright := p.usesProductionDep(ctx, "playwright")
 	installPlaywright := ctx.Env.IsConfigVariableTruthy(PLAYWRIGHT_INSTALL_VAR)
@@ -119,7 +100,7 @@ func (p *PythonProvider) Plan(ctx *generate.GenerateContext) error {
 		installOutputs = append(installOutputs, PLAYWRIGHT_CACHE_DIR)
 	}
 
-	p.addMetadata(ctx)
+	p.addMetadata(ctx, pm)
 
 	build.AddInput(plan.NewStepLayer(install.Name()))
 	build.AddInput(plan.NewLocalLayer())
@@ -194,130 +175,6 @@ func (p *PythonProvider) StartCommandHelp() string {
 		"Otherwise, it will run the main.py or app.py file in your project root"
 }
 
-func (p *PythonProvider) InstallUv(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
-	ctx.Logger.LogInfo("Using uv")
-
-	install.AddCache(ctx.Caches.AddCache("uv", UV_CACHE_DIR))
-	install.AddEnvVars(map[string]string{
-		"UV_COMPILE_BYTECODE": "1",
-		"UV_LINK_MODE":        "copy",
-		"UV_CACHE_DIR":        UV_CACHE_DIR,
-		"UV_PYTHON_DOWNLOADS": "never",
-		"VIRTUAL_ENV":         VENV_PATH,
-	})
-
-	install.AddEnvVars(p.GetPythonEnvVars(ctx))
-
-	p.copyInstallFiles(ctx, install)
-	installCommands := []plan.Command{
-		plan.NewPathCommand(LOCAL_BIN_PATH),
-		plan.NewPathCommand(VENV_PATH + "/bin"),
-		// if we exclude workspace packages, uv.lock will fail the frozen test and the user will get an error
-		// to avoid this, we (a) detect if workspace packages are required (b) if they aren't, we don't include project
-		// source in order to optimize layer caching (c) install project in the build phase.
-		plan.NewExecCommand("uv sync --locked --no-dev --no-install-project"),
-	}
-
-	install.AddCommands(installCommands)
-
-	return []string{VENV_PATH}
-}
-
-func (p *PythonProvider) InstallPipenv(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
-	ctx.Logger.LogInfo("Using pipenv")
-
-	install.AddEnvVars(p.GetPythonEnvVars(ctx))
-	install.AddEnvVars(map[string]string{
-		"PIPENV_CHECK_UPDATE":       "false",
-		"PIPENV_VENV_IN_PROJECT":    "1",
-		"PIPENV_IGNORE_VIRTUALENVS": "1",
-	})
-
-	install.AddCommands([]plan.Command{
-		plan.NewPathCommand(LOCAL_BIN_PATH),
-		plan.NewPathCommand(VENV_PATH + "/bin"),
-	})
-
-	if ctx.App.HasFile("Pipfile.lock") {
-		install.AddCommands([]plan.Command{
-			plan.NewCopyCommand("Pipfile"),
-			plan.NewCopyCommand("Pipfile.lock"),
-			plan.NewExecCommand("pipenv install --deploy --ignore-pipfile"),
-		})
-	} else {
-		install.AddCommands([]plan.Command{
-			plan.NewCopyCommand("Pipfile"),
-			plan.NewExecCommand("pipenv install --skip-lock"),
-		})
-	}
-
-	return []string{VENV_PATH}
-}
-
-func (p *PythonProvider) InstallPDM(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
-	ctx.Logger.LogInfo("Using pdm")
-
-	install.AddEnvVars(p.GetPythonEnvVars(ctx))
-	install.AddEnvVars(map[string]string{
-		"PDM_CHECK_UPDATE": "false",
-	})
-
-	p.copyInstallFiles(ctx, install)
-	installCommands := []plan.Command{
-		plan.NewPathCommand(LOCAL_BIN_PATH),
-		plan.NewPathCommand(VENV_PATH + "/bin"),
-		plan.NewExecCommand("pdm install --check --prod --no-editable"),
-	}
-
-	install.AddCommands(installCommands)
-
-	return []string{VENV_PATH}
-}
-
-func (p *PythonProvider) InstallPoetry(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
-	ctx.Logger.LogInfo("Using poetry")
-
-	install.AddEnvVars(p.GetPythonEnvVars(ctx))
-	install.AddEnvVars(map[string]string{
-		"VIRTUAL_ENV":                   VENV_PATH,
-		"POETRY_VIRTUALENVS_PATH":       VENV_PATH,
-		"POETRY_VIRTUALENVS_IN_PROJECT": "true",
-	})
-
-	p.copyInstallFiles(ctx, install)
-	installCommands := []plan.Command{
-		plan.NewPathCommand(LOCAL_BIN_PATH),
-		plan.NewPathCommand(VENV_PATH + "/bin"),
-		plan.NewExecCommand("poetry install --no-interaction --no-ansi --only main --no-root"),
-	}
-
-	install.AddCommands(installCommands)
-
-	return []string{VENV_PATH}
-}
-
-func (p *PythonProvider) InstallPip(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) []string {
-	ctx.Logger.LogInfo("Using pip")
-
-	install.AddCache(ctx.Caches.AddCache("pip", PIP_CACHE_DIR))
-	install.AddEnvVars(p.GetPythonEnvVars(ctx))
-	install.AddEnvVars(map[string]string{
-		"PIP_CACHE_DIR": PIP_CACHE_DIR,
-		"VIRTUAL_ENV":   VENV_PATH,
-	})
-
-	install.AddCommands([]plan.Command{
-		plan.NewExecCommand(fmt.Sprintf("python -m venv %s", VENV_PATH)),
-		plan.NewPathCommand(VENV_PATH + "/bin"),
-	})
-	p.copyInstallFiles(ctx, install)
-	install.AddCommands([]plan.Command{
-		plan.NewExecCommand("pip install -r requirements.txt"),
-	})
-
-	return []string{VENV_PATH}
-}
-
 func (p *PythonProvider) AddRuntimeDeps(ctx *generate.GenerateContext) {
 	for dep, requiredPkgs := range pythonRuntimeDepRequirements {
 		if p.usesDep(ctx, dep) {
@@ -381,38 +238,7 @@ func (p *PythonProvider) InstallMisePackages(ctx *generate.GenerateContext, mise
 	// Collect all packages that will be used by the provider
 	packages := []string{"python"}
 
-	// Install package managers
-	if p.hasPdm(ctx) || p.hasPipfile(ctx) {
-		miseStep.Default("pipx", "latest")
-		packages = append(packages, "pipx")
-
-		// prefer to use uv tooling as much as we can
-		miseStep.AddMiseSetting("pipx.uvx", true)
-
-		// without uv installed, pipx.uvx will not be respected
-		miseStep.Default("uv", "latest")
-		packages = append(packages, "uv")
-	}
-
-	if p.hasPoetry(ctx) {
-		miseStep.Default("poetry", "latest")
-		packages = append(packages, "poetry")
-	}
-
-	if p.hasPdm(ctx) {
-		miseStep.Default("pipx:pdm", "latest")
-		packages = append(packages, "pipx:pdm")
-	}
-
-	if p.hasUv(ctx) {
-		miseStep.Default("uv", "latest")
-		packages = append(packages, "uv")
-	}
-
-	if p.hasPipfile(ctx) {
-		miseStep.Default("pipx:pipenv", "latest")
-		packages = append(packages, "pipx:pipenv")
-	}
+	packages = append(packages, p.getPackageManagerTools(ctx, miseStep)...)
 
 	miseStep.UseMiseVersions(ctx, packages)
 
@@ -436,62 +262,6 @@ func (p *PythonProvider) GetPythonEnvVars(ctx *generate.GenerateContext) map[str
 	}
 }
 
-func (p *PythonProvider) copyInstallFiles(ctx *generate.GenerateContext, install *generate.CommandStepBuilder) {
-	if p.installNeedsAllFiles(ctx) {
-		install.AddInput(plan.NewLocalLayer())
-		return
-	}
-
-	patterns := []string{
-		"requirements.txt",
-		"pyproject.toml",
-		"Pipfile",
-		"poetry.lock",
-		"uv.lock",
-		"pdm.lock",
-	}
-
-	for _, pattern := range patterns {
-		if files, err := ctx.App.FindFiles(pattern); err == nil {
-			for _, file := range files {
-				install.AddCommand(plan.NewCopyCommand(file))
-			}
-		}
-	}
-}
-
-// inspect python dependency files and determine if local packages are referenced, and therefore all files are required
-// for installation.
-func (p *PythonProvider) installNeedsAllFiles(ctx *generate.GenerateContext) bool {
-	if requirementsContent, err := ctx.App.ReadFile("requirements.txt"); err == nil {
-		return strings.Contains(requirementsContent, "file://")
-	}
-
-	// inspect pyproject.toml for local path references or uv workspace usage
-	if pyprojectContent, err := ctx.App.ReadFile("pyproject.toml"); err == nil {
-		if strings.Contains(pyprojectContent, "file://") || strings.Contains(pyprojectContent, "path = ") {
-			return true
-		}
-	}
-
-	// TODO just having a `uv.tool.workspace` key doesn't necessarily mean you are listing a workspace item as a dependency
-	// parse TOML using existing helper to check for tool.uv.workspace key
-	var pyproject map[string]any
-	if err := ctx.App.ReadTOML("pyproject.toml", &pyproject); err == nil {
-		if tool, ok := pyproject["tool"].(map[string]any); ok {
-			if uv, ok := tool["uv"].(map[string]any); ok {
-				if _, exists := uv["workspace"]; exists {
-					return true
-				}
-			}
-		}
-	} else {
-		log.Infof("Failed to read pyproject.toml: %v", err)
-	}
-
-	return false
-}
-
 func (p *PythonProvider) usesBinaryPsycopg(ctx *generate.GenerateContext) bool {
 	return p.usesDep(ctx, "psycopg2-binary") || p.usesDep(ctx, "psycopg[binary]")
 }
@@ -512,19 +282,10 @@ func (p *PythonProvider) usesMysql(ctx *generate.GenerateContext) bool {
 	return p.usesDep(ctx, "mysqlclient") || containsDjangoMysql
 }
 
-func (p *PythonProvider) addMetadata(ctx *generate.GenerateContext) {
-	hasPoetry := p.hasPoetry(ctx)
-	hasPdm := p.hasPdm(ctx)
-	hasUv := p.hasUv(ctx)
-
-	pkgManager := "pip"
-
-	if hasPoetry {
-		pkgManager = "poetry"
-	} else if hasPdm {
-		pkgManager = "pdm"
-	} else if hasUv {
-		pkgManager = "uv"
+func (p *PythonProvider) addMetadata(ctx *generate.GenerateContext, pm PackageManager) {
+	pkgManager := pm.Name()
+	if pkgManager == "" || pkgManager == "pipenv" {
+		pkgManager = "pip"
 	}
 
 	ctx.Metadata.Set("pythonPackageManager", pkgManager)
@@ -565,30 +326,6 @@ func parseVersionFromPipfile(ctx *generate.GenerateContext) (string, string) {
 	}
 
 	return "", ""
-}
-
-func (p *PythonProvider) hasRequirements(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasFile("requirements.txt")
-}
-
-func (p *PythonProvider) hasPyproject(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasFile("pyproject.toml")
-}
-
-func (p *PythonProvider) hasPipfile(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasFile("Pipfile")
-}
-
-func (p *PythonProvider) hasPoetry(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasFile("poetry.lock")
-}
-
-func (p *PythonProvider) hasPdm(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasFile("pdm.lock")
-}
-
-func (p *PythonProvider) hasUv(ctx *generate.GenerateContext) bool {
-	return ctx.App.HasFile("uv.lock")
 }
 
 func (p *PythonProvider) isFasthtml(ctx *generate.GenerateContext) bool {
