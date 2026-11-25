@@ -25,8 +25,8 @@ url = "https://github.com/astral-sh/python-build-standalone/releases/download/20
 provenance = "github-attestations"
 
 [tools.python."platforms.macos-arm64"]
-checksum = "sha256:7e58607647b5b4832092a339ff1c55eeeccee128221232509b8fc8d27957065e"
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.15.2+20261110-aarch64-apple-darwin-install_only_stripped.tar.gz"
+checksum = "blake3:076eaaabad8d9eaa6ba2d6d81cf41daaca5237fb8bae705410bcaad6c8edca3f"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261123/cpython-3.15.2+20261123-aarch64-apple-darwin-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
 [tools.python."platforms.macos-x64"]
@@ -40,5 +40,5 @@ url = "https://github.com/astral-sh/python-build-standalone/releases/download/20
 provenance = "github-attestations"
 
 [[tools.uv]]
-version = "0.13.7"
-backend = "asdf:uv"
+version = "0.13.9"
+backend = "aqua:astral-sh/uv"
