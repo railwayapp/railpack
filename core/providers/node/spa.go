@@ -100,6 +100,8 @@ func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.
 		indexFallback = *indexFallbackConfig
 	}
 
+	staticfile.SetSiteMetadata(ctx, outputDir, spaFramework, spaAssetsDir(spaFramework), indexFallback)
+
 	data := map[string]any{
 		"DIST_DIR":      path.Join("/app", outputDir),
 		"IndexFallback": indexFallback,
@@ -142,6 +144,24 @@ func (p *NodeProvider) DeploySPA(ctx *generate.GenerateContext, build *generate.
 	})
 
 	return nil
+}
+
+// The directory, relative to the output directory, where each framework writes
+// files with a content hash in their name by default.
+func spaAssetsDir(framework string) string {
+	switch framework {
+	case "vite", "react-router":
+		return "assets"
+	case "astro":
+		return "_astro"
+	case "next":
+		return "_next/static"
+	case "cra":
+		return "static"
+	case "expo":
+		return "_expo/static"
+	}
+	return ""
 }
 
 func (p *NodeProvider) getOutputDirectory(ctx *generate.GenerateContext) string {
