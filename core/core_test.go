@@ -300,3 +300,46 @@ func TestProviderDefaultExcludes(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateBuildPlan_StaticSiteMetadata(t *testing.T) {
+	tests := []struct {
+		path          string
+		outputDir     string
+		framework     string
+		assetsDir     string
+		indexFallback string
+	}{
+		{"../examples/node-vite-react", "/app/dist", "vite", "assets", "true"},
+		{"../examples/node-astro", "/app/dist", "astro", "_astro", "true"},
+		{"../examples/staticfile-index", "/app", "", "", ""},
+		{"../examples/staticfile-index-fallback", "", "", "", "true"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			userApp, err := app.NewApp(tt.path)
+			require.NoError(t, err)
+			buildResult, err := GenerateBuildPlan(userApp, app.NewEnvironment(nil), &GenerateBuildPlanOptions{})
+			require.NoError(t, err)
+			require.True(t, buildResult.Success)
+			if tt.outputDir != "" {
+				require.Equal(t, tt.outputDir, buildResult.Metadata["staticOutputDir"])
+			} else {
+				require.NotEmpty(t, buildResult.Metadata["staticOutputDir"])
+			}
+			require.Equal(t, tt.framework, buildResult.Metadata["staticFramework"])
+			require.Equal(t, tt.assetsDir, buildResult.Metadata["staticAssetsDir"])
+			require.Equal(t, tt.indexFallback, buildResult.Metadata["staticIndexFallback"])
+		})
+	}
+}
+
+func TestGenerateBuildPlan_StaticSiteMetadataKeepsAnAbsoluteRoot(t *testing.T) {
+	userApp, err := app.NewApp("../examples/staticfile-index")
+	require.NoError(t, err)
+	// Caddy serves an absolute root as given, not under /app.
+	env := app.NewEnvironment(&map[string]string{"RAILPACK_STATIC_FILE_ROOT": "/srv/site"})
+	buildResult, err := GenerateBuildPlan(userApp, env, &GenerateBuildPlanOptions{})
+	require.NoError(t, err)
+	require.True(t, buildResult.Success)
+	require.Equal(t, "/srv/site", buildResult.Metadata["staticOutputDir"])
+}

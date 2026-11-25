@@ -71,6 +71,8 @@ func (p *StaticfileProvider) Plan(ctx *generate.GenerateContext) error {
 		return err
 	}
 
+	SetSiteMetadata(ctx, servedDir(rootDir), "", "", indexFallback)
+
 	ctx.Deploy.AddInputs([]plan.Layer{
 		installCaddyStep.GetLayer(),
 		plan.NewStepLayer(build.Name(), plan.Filter{
