@@ -1,0 +1,16 @@
+{
+  "name": "node-vite-fresh",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@preact/signals": "^2",
+    "fresh": "npm:@frsh/fresh@^3.0.0-alpha.202610031718",
+    "preact": "^11",
+    "vite": "^8"
+  }
+}

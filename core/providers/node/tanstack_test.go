@@ -74,11 +74,11 @@ func TestTanstackStartSrvxFallback(t *testing.T) {
 		require.True(t, provider.usesTanstackNitro(ctx))
 		require.False(t, provider.isSPA(ctx))
 		require.False(t, provider.isVite(ctx))
-		require.Equal(t, DefaultTanstackNitroStartCommand, provider.GetStartCommand(ctx))
+		require.Equal(t, DefaultNitroStartCommand, provider.GetStartCommand(ctx))
 
 		err = provider.Plan(ctx)
 		require.NoError(t, err)
-		require.Equal(t, DefaultTanstackNitroStartCommand, ctx.Deploy.StartCmd)
+		require.Equal(t, DefaultNitroStartCommand, ctx.Deploy.StartCmd)
 	})
 }
 

@@ -9,13 +9,12 @@ import (
 
 const (
 	DefaultViteOutputDirectory = "dist"
+
+	// The Nitro Vite plugin builds a self-contained server, matching the Nuxt output layout.
+	DefaultNitroStartCommand = "node .output/server/index.mjs"
 )
 
-func (p *NodeProvider) isVitePackage(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
-	hasViteBuildCommand := strings.Contains(strings.ToLower(pkg.PackageJson.GetScript("build")), "vite build")
-	hasVitePackage := pkg.PackageJson.hasDependency("vite")
-	hasBuildCommand := pkg.PackageJson.HasScript("build")
-
+func viteConfigFiles(pkg *WorkspacePackage) []string {
 	viteConfigJS := "vite.config.js"
 	viteConfigTS := "vite.config.ts"
 	if pkg.Path != "" {
@@ -23,10 +22,19 @@ func (p *NodeProvider) isVitePackage(pkg *WorkspacePackage, ctx *generate.Genera
 		viteConfigTS = pkg.Path + "/vite.config.ts"
 	}
 
-	hasViteConfig := ctx.App.HasFile(viteConfigJS) || ctx.App.HasFile(viteConfigTS)
+	return []string{viteConfigJS, viteConfigTS}
+}
 
-	// SvelteKit and TanStack Start do not build as static sites by default
-	if p.isSvelteKitPackage(pkg) || p.isTanstackStartPackage(pkg) {
+func (p *NodeProvider) isVitePackage(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+	hasViteBuildCommand := strings.Contains(strings.ToLower(pkg.PackageJson.GetScript("build")), "vite build")
+	hasVitePackage := pkg.PackageJson.hasDependency("vite")
+	hasBuildCommand := pkg.PackageJson.HasScript("build")
+
+	viteConfigs := viteConfigFiles(pkg)
+	hasViteConfig := ctx.App.HasFile(viteConfigs[0]) || ctx.App.HasFile(viteConfigs[1])
+
+	// SvelteKit, TanStack Start and Nitro apps do not build as static sites by default
+	if p.isSvelteKitPackage(pkg) || p.isTanstackStartPackage(pkg) || p.usesViteNitroPackage(pkg, ctx) {
 		return false
 	}
 
@@ -39,6 +47,29 @@ func (p *NodeProvider) isVitePackage(pkg *WorkspacePackage, ctx *generate.Genera
 
 func (p *NodeProvider) isVite(ctx *generate.GenerateContext) bool {
 	return p.isVitePackage(p.workspace.Root, ctx)
+}
+
+// True when the app builds with the Nitro Vite plugin, which outputs a self-contained
+// server to .output/ instead of static assets in dist/. Fresh 3 registers nitro() inside
+// its own fresh() plugin, so there nitro is only a transitive dependency.
+func (p *NodeProvider) usesViteNitroPackage(pkg *WorkspacePackage, ctx *generate.GenerateContext) bool {
+	if pkg == nil || pkg.PackageJson == nil {
+		return false
+	}
+
+	hasNitro := pkg.PackageJson.hasDependency("nitro")
+	hasFresh := pkg.PackageJson.hasDependency("fresh")
+	if !hasNitro && !hasFresh {
+		return false
+	}
+
+	_, configContent, _ := ctx.App.ReadFirstFileOf(viteConfigFiles(pkg)...)
+	return (hasNitro && strings.Contains(configContent, "nitro")) ||
+		(hasFresh && strings.Contains(configContent, "fresh/vite"))
+}
+
+func (p *NodeProvider) usesViteNitro(ctx *generate.GenerateContext) bool {
+	return p.usesViteNitroPackage(p.workspace.Root, ctx)
 }
 
 func (p *NodeProvider) getViteOutputDirectory(ctx *generate.GenerateContext) string {
