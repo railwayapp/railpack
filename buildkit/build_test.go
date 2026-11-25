@@ -1,9 +1,12 @@
 package buildkit
 
 import (
+	"io"
 	"maps"
+	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/moby/buildkit/client"
 	"github.com/stretchr/testify/require"
@@ -192,4 +195,32 @@ func TestCacheEntriesFromFlags(t *testing.T) {
 			{Type: "gha", Attrs: map[string]string{"scope": "ci"}},
 		}, got)
 	})
+}
+
+func TestRunWithPipedStdinUnblocksWriterWhenCommandFails(t *testing.T) {
+	pipeR, pipeW := io.Pipe()
+	defer func() { _ = pipeR.Close() }()
+
+	// stands in for `docker load` failing without draining stdin, e.g. when the daemon is down
+	errCh := runWithPipedStdin(exec.Command("sh", "-c", "exit 1"), pipeR)
+
+	writeErr := make(chan error, 1)
+	go func() {
+		chunk := make([]byte, 32*1024)
+		for {
+			if _, err := pipeW.Write(chunk); err != nil {
+				writeErr <- err
+				return
+			}
+		}
+	}()
+
+	select {
+	case err := <-writeErr:
+		require.ErrorContains(t, err, "exited")
+	case <-time.After(10 * time.Second):
+		t.Fatal("write to the image pipe blocked after the command exited")
+	}
+
+	require.Error(t, <-errCh)
 }
