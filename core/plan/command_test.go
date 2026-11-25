@@ -1,9 +1,11 @@
 package plan
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
+	"github.com/moby/buildkit/client/llb"
 	"github.com/stretchr/testify/require"
 )
 
@@ -135,5 +137,61 @@ func TestUnmarshalCommandFromJSONRawMessage(t *testing.T) {
 			require.NoError(t, err)
 			require.True(t, tt.checkType(cmd), "Command was not parsed into expected type: %+v", cmd)
 		})
+	}
+}
+
+func TestShellCommandStringEscapesSingleQuotes(t *testing.T) {
+	tests := []struct {
+		name     string
+		cmd      string
+		expected string
+	}{
+		{
+			name:     "no quotes is unchanged",
+			cmd:      "npm run build && npm prune",
+			expected: `sh -c 'npm run build && npm prune'`,
+		},
+		{
+			name:     "quoted argument with a space",
+			cmd:      "echo 'hello world' > out.txt",
+			expected: `sh -c 'echo '\''hello world'\'' > out.txt'`,
+		},
+		{
+			name:     "double quotes are left alone",
+			cmd:      `echo "hello world"`,
+			expected: `sh -c 'echo "hello world"'`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, ShellCommandString(tt.cmd))
+		})
+	}
+}
+
+// BuildKit splits exec commands with llb.Shlex, so `sh -c` must receive the command byte for byte.
+func TestShellCommandStringSurvivesBuildKitShlex(t *testing.T) {
+	cmds := []string{
+		"npm run build",
+		"echo 'hello world' > out.txt",
+		"sed -i 's/a/b/' x && echo 'c d'",
+		`python -c 'print("it'"'"'s")'`,
+		`echo 'it'\''s'`,
+		"echo '$HOME' $HOME \"$HOME\"",
+		"''",
+		// a user typo should reach sh and fail there, not get silently reshaped
+		"echo 'unterminated",
+		`printf '%s\n' a\ b`,
+		"echo 'line one\nline two'\necho done",
+	}
+
+	for _, cmd := range cmds {
+		var ei llb.ExecInfo
+		llb.Shlex(ShellCommandString(cmd)).SetRunOption(&ei)
+
+		args, err := ei.State.GetArgs(context.Background())
+		require.NoError(t, err)
+		require.Equal(t, []string{"sh", "-c", cmd}, args, cmd)
 	}
 }
