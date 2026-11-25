@@ -17,7 +17,7 @@ Update all three to the new codename. Keep the `-scm` / `-slim` suffixes.
 CI only rebuilds and pushes `ghcr.io/railwayapp/railpack-{builder,runtime}:mise-*` when `core/mise/version.txt` is **newer than origin/main**. Dockerfile `FROM` changes do nothing in production until that happens. **Never overwrite an existing `mise-*` tag.**
 
 - If `version.txt` already differs from origin/main, the Debian change can ride that bump.
-- Otherwise set `core/mise/version.txt` to the latest mise release (`gh release view --repo jdx/mise --json tagName --jq .tagName`, strip a leading `v`).
+- Otherwise set `core/mise/version.txt` to the latest mise release (`gh release view --repo jdx/mise --json tagName --jq .tagName`, strip a leading `v`), and replace `core/mise/SHASUMS256.txt` with that release's copy (`gh release download <tag> --repo jdx/mise --pattern SHASUMS256.txt --output core/mise/SHASUMS256.txt --clobber`). Mise installs fail until the two match.
 
 Leave the comment in `.github/workflows/integration-tests.yml` that explains this coupling.
 
