@@ -32,6 +32,11 @@ type GenerateBuildPlanOptions struct {
 	PreviousVersions         map[string]string
 	ConfigFilePath           string
 	ErrorMissingStartCommand bool // enabled on railway
+
+	// Directory for the host-side mise binary and cache. Takes precedence over
+	// $RAILPACK_MISE_DIR; defaults to /tmp/railpack/mise. On shared hosts, use a
+	// directory other local users cannot write to.
+	MiseInstallDir string
 }
 
 type BuildResult struct {
@@ -77,7 +82,7 @@ func GenerateBuildPlan(app *app.App, env *app.Environment, options *GenerateBuil
 		return failedBuildResult(logger, err)
 	}
 
-	ctx, err := generate.NewGenerateContext(app, env, config, logger)
+	ctx, err := generate.NewGenerateContext(app, env, config, logger, options.MiseInstallDir)
 	if err != nil {
 		return failedBuildResult(logger, err)
 	}

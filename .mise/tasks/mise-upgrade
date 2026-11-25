@@ -73,6 +73,10 @@ if [[ "$new" != "$latest" ]]; then
   exit 1
 fi
 
+# core/mise refuses any mise download or installed binary that doesn't match these pinned checksums
+checksums_file="$repo_root/core/mise/SHASUMS256.txt"
+gh release download "$latest_tag" --repo jdx/mise --pattern SHASUMS256.txt --output "$checksums_file" --clobber
+
 # although there are other updates below that are NOT tied to mise, linking all maint work to a mise upgrade
 # eliminates daily PRs which would be annoying and groups these changes with important updates (mise versions)
 # which impact our users.
@@ -82,7 +86,7 @@ if git diff --quiet -- "$file"; then
 fi
 
 # `fix` scope because mise versions do impact the end-user functionality
-git add -- "$file"
+git add -- "$file" "$checksums_file"
 git commit -m "fix: update mise to $latest"
 
 # Update snapshots before running any assertion tests — a new mise version

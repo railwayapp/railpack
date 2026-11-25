@@ -23,7 +23,7 @@ func CreateGenerateContext(t *testing.T, path string) *generate.GenerateContext 
 
 	config := config.EmptyConfig()
 
-	ctx, err := generate.NewGenerateContext(userApp, env, config, logger.NewLogger())
+	ctx, err := generate.NewGenerateContext(userApp, env, config, logger.NewLogger(), "")
 	if err != nil {
 		t.Fatalf("error creating generate context: %v", err)
 	}
