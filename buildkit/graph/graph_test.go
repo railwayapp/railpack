@@ -175,3 +175,45 @@ func TestTransitiveDependencies(t *testing.T) {
 		}
 	}
 }
+
+func TestTransitiveDependenciesWithSeparateNodeInstances(t *testing.T) {
+	g := NewGraph()
+
+	// Graph with redundant edge where nodes with the same name are distinct instances:
+	// directA and indirectA are distinct instances representing node "A".
+	// B depends on indirectA.
+	// C depends on directA and B.
+	// The direct dependency from C to directA is redundant because C depends on B which depends on A.
+	directA := NewTestNode("A")
+	indirectA := NewTestNode("A")
+	nodeB := NewTestNode("B")
+	nodeC := NewTestNode("C")
+	separateC := NewTestNode("C")
+
+	g.AddNode(directA)
+	g.AddNode(nodeB)
+	g.AddNode(nodeC)
+
+	nodeB.SetParents([]Node{indirectA})
+	nodeC.SetParents([]Node{directA, nodeB})
+
+	// directA has separateC as child (different instance, same name)
+	directA.SetChildren([]Node{separateC})
+	nodeB.SetChildren([]Node{nodeC})
+
+	g.ComputeTransitiveDependencies()
+
+	// C's parents should only be B
+	cParents := nodeC.GetParents()
+	if len(cParents) != 1 {
+		t.Fatalf("Expected 1 parent for C after transitive reduction, got %d", len(cParents))
+	}
+	if cParents[0].GetName() != "B" {
+		t.Errorf("Expected parent to be B, got %s", cParents[0].GetName())
+	}
+
+	// directA's children should be empty (separateC was removed via name equality)
+	if len(directA.GetChildren()) != 0 {
+		t.Errorf("Expected directA to have 0 children after transitive reduction, got %d", len(directA.GetChildren()))
+	}
+}
