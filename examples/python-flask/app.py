@@ -1,3 +1,4 @@
+# intentionally named app.py to catch startup commands that hardcode the main module
 import os
 from flask import Flask
 

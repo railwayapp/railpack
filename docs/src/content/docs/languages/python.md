@@ -132,6 +132,10 @@ Railpack installs system dependencies for common Python packages:
 
 Railpack detects and configures start commands for popular frameworks:
 
+The commands below assume your entry file is `main.py`. The module name follows
+the detected file: for example, `server.py` uses `server:app`, and `app.py` uses
+`app:app`.
+
 ### FastHTML
 
 Railpack detects FastHTML projects when `python-fasthtml` is listed as a
@@ -151,9 +155,13 @@ detected:
 ### FastAPI
 
 Railpack detects FastAPI projects when `fastapi` is listed as a dependency.
-When detected and `uvicorn` is available as a dependency:
+When `uvicorn` is declared directly or `standard` is included in FastAPI's
+requested extras:
 
 - Starts with `uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}`
+
+`standard` can appear anywhere in an extras list. Poetry and Pipenv declarations
+using `extras = [...]` are also supported.
 
 ### Django
 

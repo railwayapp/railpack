@@ -1,3 +1,4 @@
+# intentionally named server.py to catch startup commands that hardcode the main module
 from fastapi import FastAPI
 
 app = FastAPI()
