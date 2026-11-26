@@ -93,7 +93,9 @@ func NewBuildGraph(plan *plan.BuildPlan, localState *llb.State, cacheStore *Buil
 		}
 	}
 
-	g.graph.ComputeTransitiveDependencies()
+	if err := g.graph.ComputeTransitiveDependencies(); err != nil {
+		return nil, err
+	}
 
 	// g.graph.PrintGraph()
 
