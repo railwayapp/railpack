@@ -97,6 +97,9 @@ the standard railpack runtime base because mise does not support precompiled PHP
 together on the FrankenPHP image. `...` entries from apt package lists are removed,
 and combined list of build and deploy packages are available in the final deploy image.
 
+[`buildAptSources` and `deploy.aptSources`](/guides/installing-packages#third-party-repositories)
+are combined on the FrankenPHP image the same way.
+
 Packages added for Composer (`git`, `zip`, `unzip`, and `ca-certificates`) stay installed.
 
 For example:

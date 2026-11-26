@@ -161,10 +161,11 @@ Use the documented model:
 - Set `provider` only to override failed or ambiguous autodetection.
 - Set `packages` for Mise-managed tools and versions.
 - Set root `buildAptPackages` for build-only Apt packages.
+- Set root `buildAptSources` for build-only third-party Apt repositories.
 - Set `steps.<name>` for inputs, commands, caches, variables, assets, secrets,
   and deploy outputs.
-- Set `deploy` for runtime base, inputs, Apt packages, paths, variables, and
-  start command.
+- Set `deploy` for runtime base, inputs, Apt packages, Apt sources, paths,
+  variables, and start command.
 - Filter layer inputs with `include` and `exclude` when only selected artifacts
   should enter another step or the runtime image.
 

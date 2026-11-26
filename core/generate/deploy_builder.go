@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"github.com/railwayapp/railpack/core/config"
 	"github.com/railwayapp/railpack/core/plan"
 )
 
@@ -11,6 +12,7 @@ type DeployBuilder struct {
 	Variables    map[string]string
 	Paths        []string
 	AptPackages  []string
+	AptSources   []config.AptSource
 }
 
 func NewDeployBuilder() *DeployBuilder {
@@ -64,12 +66,10 @@ func (b *DeployBuilder) AddAptPackages(packages []string) {
 func (b *DeployBuilder) Build(p *plan.BuildPlan, options *BuildStepOptions) {
 	baseLayer := b.Base
 
-	if len(b.AptPackages) > 0 {
+	if len(b.AptPackages) > 0 || len(b.AptSources) > 0 {
 		runtimeAptStep := plan.NewStep("packages:apt:runtime")
 		runtimeAptStep.Inputs = []plan.Layer{baseLayer}
-		runtimeAptStep.AddCommands([]plan.Command{
-			options.NewAptInstallCommand(b.AptPackages),
-		})
+		options.addAptCommands(runtimeAptStep, b.AptSources, b.AptPackages)
 		runtimeAptStep.Caches = options.Caches.GetAptCaches()
 		runtimeAptStep.Secrets = []string{}
 		p.Steps = append(p.Steps, *runtimeAptStep)

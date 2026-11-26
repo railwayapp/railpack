@@ -1,0 +1,122 @@
+{
+ "caches": {
+  "apt": {
+   "directory": "/var/cache/apt",
+   "type": "locked"
+  },
+  "apt-lists": {
+   "directory": "/var/lib/apt/lists",
+   "type": "locked"
+  }
+ },
+ "deploy": {
+  "base": {
+   "step": "packages:apt:runtime"
+  },
+  "inputs": [
+   {
+    "include": [
+     "."
+    ],
+    "step": "build"
+   }
+  ],
+  "startCommand": "sh start.sh",
+  "variables": {
+   "RAILPACK_VERSION": "dev"
+  }
+ },
+ "steps": [
+  {
+   "assets": {
+    "railpack-5b924dd468de.sources": "Types: deb\nURIs: https://cli.github.com/packages\nSuites: stable\nComponents: main\nSigned-By: /etc/apt/keyrings/railpack-5b924dd468de.gpg\n"
+   },
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'mkdir -p /etc/apt/keyrings \u0026\u0026 /usr/lib/apt/apt-helper download-file https://cli.github.com/packages/githubcli-archive-keyring.gpg /etc/apt/keyrings/railpack-5b924dd468de.gpg'",
+     "customName": "download apt signing key: https://cli.github.com/packages/githubcli-archive-keyring.gpg"
+    },
+    {
+     "customName": "add apt source: https://cli.github.com/packages",
+     "name": "railpack-5b924dd468de.sources",
+     "path": "/etc/apt/sources.list.d/railpack-5b924dd468de.sources"
+    },
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y gh'",
+     "customName": "install apt packages: gh"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-builder:mise-2026.10.15"
+    }
+   ],
+   "name": "packages:apt:build"
+  },
+  {
+   "inputs": [
+    {
+     "step": "packages:apt:build"
+    }
+   ],
+   "name": "packages:mise"
+  },
+  {
+   "commands": [
+    {
+     "cmd": "sh -c 'gh --version \u003e build-gh-version.txt \u0026\u0026 ! grep -q Debian build-gh-version.txt'",
+     "customName": "gh --version \u003e build-gh-version.txt \u0026\u0026 ! grep -q Debian build-gh-version.txt"
+    }
+   ],
+   "inputs": [
+    {
+     "step": "packages:mise"
+    },
+    {
+     "include": [
+      "."
+     ],
+     "local": true
+    }
+   ],
+   "name": "build",
+   "secrets": [
+    "*"
+   ]
+  },
+  {
+   "assets": {
+    "railpack-b3ebe1d580ca.sources": "Types: deb\nURIs: https://download.docker.com/linux/debian\nSuites: trixie\nComponents: stable\nSigned-By: /etc/apt/keyrings/railpack-b3ebe1d580ca.asc\n"
+   },
+   "caches": [
+    "apt",
+    "apt-lists"
+   ],
+   "commands": [
+    {
+     "cmd": "sh -c 'mkdir -p /etc/apt/keyrings \u0026\u0026 /usr/lib/apt/apt-helper download-file https://download.docker.com/linux/debian/gpg /etc/apt/keyrings/railpack-b3ebe1d580ca.asc'",
+     "customName": "download apt signing key: https://download.docker.com/linux/debian/gpg"
+    },
+    {
+     "customName": "add apt source: https://download.docker.com/linux/debian",
+     "name": "railpack-b3ebe1d580ca.sources",
+     "path": "/etc/apt/sources.list.d/railpack-b3ebe1d580ca.sources"
+    },
+    {
+     "cmd": "sh -c 'apt-get update \u0026\u0026 apt-get install -y docker-ce-cli'",
+     "customName": "install apt packages: docker-ce-cli"
+    }
+   ],
+   "inputs": [
+    {
+     "image": "ghcr.io/railwayapp/railpack-runtime:mise-2026.10.15"
+    }
+   ],
+   "name": "packages:apt:runtime"
+  }
+ ]
+}

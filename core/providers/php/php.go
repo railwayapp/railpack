@@ -503,6 +503,9 @@ func (p *PhpProvider) phpImagePackage(ctx *generate.GenerateContext) (*generate.
 	})
 
 	imageStep.AptPackages = combinedImageAptPackages(ctx)
+	// Same as packages: the image is shared, and clearing deploy sources stops the generic runtime apt step from adding them again.
+	imageStep.AptSources = slices.Concat(ctx.Config.BuildAptSources, ctx.Config.Deploy.AptSources)
+	ctx.Config.Deploy.AptSources = nil
 
 	php := imageStep.Default("php", DEFAULT_PHP_VERSION)
 

@@ -253,6 +253,10 @@ func (c *GenerateContext) applyConfig() {
 	c.applyPackagesFromConfig()
 	c.applyBuildAptPackages()
 
+	if len(c.Config.BuildAptSources) > 0 {
+		c.GetMiseStepBuilder().AptSources = c.Config.BuildAptSources
+	}
+
 	// Apply the cache config to the context
 	maps.Copy(c.Caches.Caches, c.Config.Caches)
 	c.Secrets = plan.SpreadStrings(c.Config.Secrets, c.Secrets)
@@ -268,6 +272,7 @@ func (c *GenerateContext) applyConfig() {
 		}
 
 		c.applyDeployAptPackages()
+		c.Deploy.AptSources = c.Config.Deploy.AptSources
 		c.Deploy.DeployInputs = plan.Spread(c.Config.Deploy.Inputs, c.Deploy.DeployInputs)
 		c.Deploy.Paths = plan.SpreadStrings(c.Config.Deploy.Paths, c.Deploy.Paths)
 		maps.Copy(c.Deploy.Variables, c.Config.Deploy.Variables)
