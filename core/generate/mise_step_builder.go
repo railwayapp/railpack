@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -489,11 +490,11 @@ var miseConfigEnvPattern = regexp.MustCompile(`^(?:\.?mise|config)\.([^.]+)(?:\.
 
 // Lockfile that sits next to a mise config, including conf.d fragments and mise.<env>.toml.
 func miseLockfilePath(configPath string) string {
-	name := filepath.Base(configPath)
-	dir := filepath.Dir(configPath)
+	name := path.Base(configPath)
+	dir := path.Dir(configPath)
 	// Fragments in conf.d share the lockfile of the directory that contains conf.d.
-	if filepath.Base(dir) == "conf.d" {
-		dir = filepath.Dir(dir)
+	if path.Base(dir) == "conf.d" {
+		dir = path.Dir(dir)
 	}
 
 	env := ""
@@ -515,5 +516,5 @@ func miseLockfilePath(configPath string) string {
 	if dir == "." {
 		return lockName
 	}
-	return filepath.Join(dir, lockName)
+	return path.Join(dir, lockName)
 }

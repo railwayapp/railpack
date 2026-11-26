@@ -6,6 +6,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -41,6 +42,15 @@ func TestGenerateBuildPlanForExamples(t *testing.T) {
 
 		// For each example, generate a build plan that we can snapshot test
 		t.Run(entry.Name(), func(t *testing.T) {
+			if runtime.GOOS == "windows" {
+				switch entry.Name() {
+				case "python-compiled":
+					t.Skip("mise cannot resolve Python 3.7 on Windows")
+				case "java-gradle":
+					t.Skip("Windows has no executable bit, so the plan adds chmod +x gradlew")
+				}
+			}
+
 			examplePath := filepath.Join(examplesDir, entry.Name())
 
 			userApp, err := app.NewApp(examplePath)

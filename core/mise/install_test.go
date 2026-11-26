@@ -1,6 +1,7 @@
 package mise
 
 import (
+	"archive/zip"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -97,4 +98,44 @@ func TestIsTemporaryUnwrapsWrappedErrors(t *testing.T) {
 	require.True(t, IsTemporary(fmt.Errorf("failed to ensure mise is installed: %w", temporary)))
 	require.False(t, IsTemporary(fmt.Errorf("binary not found in archive")))
 	require.False(t, IsTemporary(nil))
+}
+
+func writeTestZip(t *testing.T, entries [][2]string) string {
+	t.Helper()
+	archivePath := filepath.Join(t.TempDir(), "mise.zip")
+	f, err := os.Create(archivePath)
+	require.NoError(t, err)
+	defer func() { _ = f.Close() }()
+
+	w := zip.NewWriter(f)
+	for _, e := range entries {
+		entry, err := w.Create(e[0])
+		require.NoError(t, err)
+		_, err = entry.Write([]byte(e[1]))
+		require.NoError(t, err)
+	}
+	require.NoError(t, w.Close())
+	return archivePath
+}
+
+func TestExtractZipUsesExactBinaryPath(t *testing.T) {
+	// the decoy comes first so a suffix match would pick the wrong entry
+	archivePath := writeTestZip(t, [][2]string{
+		{"other/mise.exe", "decoy"},
+		{"mise/bin/mise.exe", "real"},
+	})
+
+	binaryPath := filepath.Join(t.TempDir(), "mise-test.exe")
+	require.NoError(t, extractZip(archivePath, binaryPath))
+
+	got, err := os.ReadFile(binaryPath)
+	require.NoError(t, err)
+	require.Equal(t, "real", string(got))
+}
+
+func TestExtractZipMissingBinary(t *testing.T) {
+	archivePath := writeTestZip(t, [][2]string{{"README.md", "docs"}})
+
+	err := extractZip(archivePath, filepath.Join(t.TempDir(), "mise-test.exe"))
+	require.ErrorContains(t, err, "binary not found in archive")
 }

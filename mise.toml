@@ -33,6 +33,8 @@ run = [
 # Named volume for /var/lib/buildkit: the image declares it as a VOLUME, so
 # without this every run mints a leaked 64-hex anonymous volume.
 # host-gateway is required on Linux (including GHA) so host.docker.internal resolves to the host, allowing BuildKit to access the local image registry (:7890)
+# Git Bash on Windows rewrites /etc/buildkit/... into a Windows path, so the config never reaches the container
+env = { MSYS_NO_PATHCONV = "1" }
 run = '''
 docker rm -f buildkit 2>/dev/null || true
 docker run --rm --privileged -d --name buildkit \

@@ -11,6 +11,8 @@ import (
 	"maps"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -33,13 +35,6 @@ import (
 )
 
 const (
-	buildkitHostNotSetError = `BUILDKIT_HOST environment variable is not set.
-
-To start a local BuildKit daemon and set the environment variable run:
-
-	docker run --rm --privileged -d --name buildkit moby/buildkit
-	export BUILDKIT_HOST='docker-container://buildkit'`
-
 	buildkitInfoError = `failed to get buildkit information.
 
 Most likely the $BUILDKIT_HOST is not running. Here's an example of how to start the build container:
@@ -48,6 +43,22 @@ Most likely the $BUILDKIT_HOST is not running. Here's an example of how to start
 
 Use 'railpack --verbose' to view more error details`
 )
+
+// returns platform-specific instructions for starting BuildKit and setting BUILDKIT_HOST.
+// PowerShell sets variables with $env:VAR, while bash/zsh use export.
+func buildkitHostNotSetError() string {
+	setEnvLine := "export BUILDKIT_HOST='docker-container://buildkit'"
+	if runtime.GOOS == "windows" {
+		setEnvLine = "$env:BUILDKIT_HOST = 'docker-container://buildkit'"
+	}
+
+	return fmt.Sprintf(`BUILDKIT_HOST environment variable is not set.
+
+To start a local BuildKit daemon and set the environment variable run:
+
+	docker run --rm --privileged -d --name buildkit moby/buildkit
+	%s`, setEnvLine)
+}
 
 type BuildWithBuildkitClientOptions struct {
 	ImageName    string
@@ -74,7 +85,7 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 
 	buildkitHost := os.Getenv("BUILDKIT_HOST")
 	if buildkitHost == "" {
-		return errors.New(buildkitHostNotSetError)
+		return errors.New(buildkitHostNotSetError())
 	}
 
 	log.Debugf("Connecting to buildkit host: %s", buildkitHost)
@@ -281,7 +292,7 @@ func BuildWithBuildkitClient(appDir string, plan *plan.BuildPlan, opts BuildWith
 
 // determine the image name from the app dir path
 func getImageName(appDir string) string {
-	parts := strings.Split(appDir, string(os.PathSeparator))
+	parts := strings.Split(filepath.ToSlash(appDir), "/")
 	name := parts[len(parts)-1]
 
 	// TODO how could this happen in practice?

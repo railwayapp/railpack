@@ -2,7 +2,7 @@ package golang
 
 import (
 	"fmt"
-	"path/filepath"
+	"path"
 	"strings"
 
 	"github.com/railwayapp/railpack/core/generate"
@@ -78,7 +78,7 @@ func (p *GoProvider) Build(ctx *generate.GenerateContext, build *generate.Comman
 		buildCmd = baseBuildCmd
 	} else if dirs, err := ctx.App.FindDirectories("cmd/*"); err == nil && len(dirs) > 0 {
 		// Try to find a command in the cmd directory if no other build command is specified
-		cmdName := filepath.Base(dirs[0])
+		cmdName := path.Base(dirs[0])
 		ctx.Logger.LogInfo("Building command: %s", cmdName)
 		buildCmd = fmt.Sprintf("%s ./cmd/%s", baseBuildCmd, cmdName)
 	} else if p.isGoMod(ctx) {
@@ -88,7 +88,7 @@ func (p *GoProvider) Build(ctx *generate.GenerateContext, build *generate.Comman
 		// For workspaces without explicit module selection, try to find a module with main package
 		packages := p.GoWorkspacePackages(ctx)
 		for _, pkg := range packages {
-			if ctx.App.HasFile(filepath.Join(pkg, "main.go")) {
+			if ctx.App.HasFile(path.Join(pkg, "main.go")) {
 				ctx.Logger.LogInfo("Building workspace module: %s", pkg)
 				buildCmd = fmt.Sprintf("%s ./%s", baseBuildCmd, pkg)
 				break
@@ -142,9 +142,9 @@ func (p *GoProvider) InstallGoDeps(ctx *generate.GenerateContext, install *gener
 
 	workspacePackages := p.GoWorkspacePackages(ctx)
 	for _, pkgPath := range workspacePackages {
-		install.AddCommand(plan.NewCopyCommand(filepath.Join(pkgPath, "go.mod")))
-		if ctx.App.HasFile(filepath.Join(pkgPath, "go.sum")) {
-			install.AddCommand(plan.NewCopyCommand(filepath.Join(pkgPath, "go.sum")))
+		install.AddCommand(plan.NewCopyCommand(path.Join(pkgPath, "go.mod")))
+		if ctx.App.HasFile(path.Join(pkgPath, "go.sum")) {
+			install.AddCommand(plan.NewCopyCommand(path.Join(pkgPath, "go.sum")))
 		}
 	}
 
@@ -212,7 +212,7 @@ func (p *GoProvider) goBuildCache(ctx *generate.GenerateContext) string {
 func (p *GoProvider) hasRootGoFiles(ctx *generate.GenerateContext) bool {
 	if files, err := ctx.App.FindFiles("*.go"); err == nil {
 		for _, file := range files {
-			if filepath.Dir(file) == "." {
+			if path.Dir(file) == "." {
 				return true
 			}
 		}
@@ -249,7 +249,7 @@ func (p *GoProvider) GoWorkspacePackages(ctx *generate.GenerateContext) []string
 			continue
 		}
 
-		dir := filepath.Dir(modFile)
+		dir := path.Dir(modFile)
 		packages = append(packages, dir)
 	}
 
