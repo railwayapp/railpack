@@ -444,6 +444,7 @@ func (b *MiseStepBuilder) getSupportingMiseConfigFiles() []string {
 	files := []string{}
 
 	add := func(file string) {
+		file = filepath.ToSlash(file)
 		if !seen[file] {
 			seen[file] = true
 			files = append(files, file)
@@ -489,6 +490,7 @@ var miseConfigEnvPattern = regexp.MustCompile(`^(?:\.?mise|config)\.([^.]+)(?:\.
 
 // Lockfile that sits next to a mise config, including conf.d fragments and mise.<env>.toml.
 func miseLockfilePath(configPath string) string {
+	configPath = filepath.ToSlash(configPath)
 	name := filepath.Base(configPath)
 	dir := filepath.Dir(configPath)
 	// Fragments in conf.d share the lockfile of the directory that contains conf.d.
@@ -515,5 +517,5 @@ func miseLockfilePath(configPath string) string {
 	if dir == "." {
 		return lockName
 	}
-	return filepath.Join(dir, lockName)
+	return filepath.ToSlash(filepath.Join(dir, lockName))
 }

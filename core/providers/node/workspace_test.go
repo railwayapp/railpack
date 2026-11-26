@@ -3,7 +3,7 @@ package node
 import (
 	"testing"
 
-	testingUtils "github.com/railwayapp/railpack/core/testing"
+	"github.com/railwayapp/railpack/core/app"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,8 +36,9 @@ func TestWorkspace(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := testingUtils.CreateGenerateContext(t, tt.path)
-			workspace, err := NewWorkspace(ctx.App)
+			userApp, err := app.NewApp(tt.path)
+			require.NoError(t, err)
+			workspace, err := NewWorkspace(userApp)
 			require.NoError(t, err)
 
 			require.Equal(t, tt.hasWorkspaces, workspace.HasWorkspaces())
@@ -55,6 +56,11 @@ func TestWorkspace(t *testing.T) {
 				web := workspace.GetPackage("packages/web")
 				require.NotNil(t, web)
 				require.Equal(t, "@monorepo/web", web.PackageJson.Name)
+
+				// Verify Windows-style backslash lookup also works
+				apiWin := workspace.GetPackage(`packages\api`)
+				require.NotNil(t, apiWin)
+				require.Equal(t, "@monorepo/api", apiWin.PackageJson.Name)
 			} else if tt.hasWorkspaces && tt.name == "pnpm workspaces" {
 				pkgA := workspace.GetPackage("packages/pkg-a")
 				require.NotNil(t, pkgA)
@@ -114,6 +120,26 @@ func TestConvertWorkspacePattern(t *testing.T) {
 			pattern:  "apps/",
 			expected: "apps/package.json",
 		},
+		{
+			name:     "windows backslash path",
+			pattern:  `packages\foo`,
+			expected: "packages/foo/package.json",
+		},
+		{
+			name:     "windows backslash pattern ending with slash",
+			pattern:  `apps\`,
+			expected: "apps/package.json",
+		},
+		{
+			name:     "windows wildcard pattern",
+			pattern:  `packages\*`,
+			expected: "packages/*/package.json",
+		},
+		{
+			name:     "windows recursive wildcard pattern",
+			pattern:  `packages\**`,
+			expected: "packages/**/package.json",
+		},
 	}
 
 	for _, tt := range tests {
@@ -149,8 +175,9 @@ func TestWorkspaceAllPackageJson(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := testingUtils.CreateGenerateContext(t, tt.path)
-			workspace, err := NewWorkspace(ctx.App)
+			userApp, err := app.NewApp(tt.path)
+			require.NoError(t, err)
+			workspace, err := NewWorkspace(userApp)
 			require.NoError(t, err)
 
 			all := workspace.AllPackageJson()
@@ -188,8 +215,9 @@ func TestWorkspaceHasProductionDependency(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := testingUtils.CreateGenerateContext(t, tt.path)
-			workspace, err := NewWorkspace(ctx.App)
+			userApp, err := app.NewApp(tt.path)
+			require.NoError(t, err)
+			workspace, err := NewWorkspace(userApp)
 			require.NoError(t, err)
 
 			require.Equal(t, tt.want, workspace.HasProductionDependency(tt.dependency))

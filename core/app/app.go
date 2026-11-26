@@ -313,5 +313,5 @@ func (a *App) stripSourcePath(absPath string) (string, error) {
 	if err != nil {
 		return "", errors.New("failed to parse source path")
 	}
-	return rel, nil
+	return filepath.ToSlash(rel), nil
 }

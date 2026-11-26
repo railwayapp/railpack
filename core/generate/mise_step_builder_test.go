@@ -197,6 +197,11 @@ func TestMiseLockfilePath(t *testing.T) {
 		".config/mise/mise.toml":            ".config/mise/mise.lock",
 		".config/mise/mise.local.toml":      ".config/mise/mise.local.lock",
 		"rust-toolchain.toml":               "mise.lock",
+		`.config\mise.toml`:                 ".config/mise.lock",
+		`.config\mise.production.toml`:      ".config/mise.production.lock",
+		`.mise\config.toml`:                 ".mise/mise.lock",
+		`mise\conf.d\tools.toml`:            "mise/mise.lock",
+		`.config\mise\conf.d\foo.toml`:      ".config/mise/mise.lock",
 	}
 	for configPath, lockPath := range cases {
 		require.Equal(t, lockPath, miseLockfilePath(configPath), configPath)

@@ -85,3 +85,13 @@ func TestFindFilesWithContent(t *testing.T) {
 	matches = app.FindFilesWithContent("[invalid", regex)
 	require.Empty(t, matches)
 }
+
+func TestStripSourcePath(t *testing.T) {
+	app, err := NewApp("../../examples/node-bun")
+	require.NoError(t, err)
+
+	nested := filepath.Join(app.Source, "sub", "file.txt")
+	rel, err := app.stripSourcePath(nested)
+	require.NoError(t, err)
+	require.Equal(t, "sub/file.txt", rel)
+}

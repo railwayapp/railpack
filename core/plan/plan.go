@@ -2,6 +2,7 @@ package plan
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/railwayapp/railpack/core/mise"
 )
@@ -51,6 +52,42 @@ func (p *BuildPlan) AddStep(step Step) {
 }
 
 func (p *BuildPlan) Normalize() {
+	// Normalize paths in deploy and steps to use forward slashes
+	for i, path := range p.Deploy.Paths {
+		p.Deploy.Paths[i] = filepath.ToSlash(path)
+	}
+	for i, excl := range p.Exclude {
+		p.Exclude[i] = filepath.ToSlash(excl)
+	}
+
+	for i := range p.Steps {
+		for j, cmd := range p.Steps[i].Commands {
+			switch c := cmd.(type) {
+			case CopyCommand:
+				c.Src = filepath.ToSlash(c.Src)
+				c.Dest = filepath.ToSlash(c.Dest)
+				p.Steps[i].Commands[j] = c
+			case PathCommand:
+				c.Path = filepath.ToSlash(c.Path)
+				p.Steps[i].Commands[j] = c
+			case FileCommand:
+				c.Path = filepath.ToSlash(c.Path)
+				p.Steps[i].Commands[j] = c
+			}
+		}
+		for j := range p.Steps[i].Inputs {
+			p.Steps[i].Inputs[j].Include = normalizeFilterPaths(p.Steps[i].Inputs[j].Include)
+			p.Steps[i].Inputs[j].Exclude = normalizeFilterPaths(p.Steps[i].Inputs[j].Exclude)
+		}
+	}
+
+	if p.Deploy.Inputs != nil {
+		for j := range p.Deploy.Inputs {
+			p.Deploy.Inputs[j].Include = normalizeFilterPaths(p.Deploy.Inputs[j].Include)
+			p.Deploy.Inputs[j].Exclude = normalizeFilterPaths(p.Deploy.Inputs[j].Exclude)
+		}
+	}
+
 	// Remove empty inputs from steps
 	for i := range p.Steps {
 		if p.Steps[i].Inputs == nil {

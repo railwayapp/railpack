@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -76,7 +77,7 @@ func NewExecShellCommand(cmd string, options ...ExecOptions) Command {
 }
 
 func NewPathCommand(path string, customName ...string) Command {
-	pathCmd := PathCommand{Path: path}
+	pathCmd := PathCommand{Path: filepath.ToSlash(path)}
 	return pathCmd
 }
 
@@ -86,12 +87,12 @@ func NewCopyCommand(src string, dst ...string) Command {
 		dstPath = dst[0]
 	}
 
-	copyCmd := CopyCommand{Src: src, Dest: dstPath}
+	copyCmd := CopyCommand{Src: filepath.ToSlash(src), Dest: filepath.ToSlash(dstPath)}
 	return copyCmd
 }
 
 func NewFileCommand(path, name string, options ...FileOptions) Command {
-	fileCmd := FileCommand{Path: path, Name: name}
+	fileCmd := FileCommand{Path: filepath.ToSlash(path), Name: name}
 	if len(options) > 0 {
 		fileCmd.CustomName = options[0].CustomName
 		fileCmd.Mode = options[0].Mode
