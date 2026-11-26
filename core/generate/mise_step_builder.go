@@ -152,7 +152,13 @@ func (b *MiseStepBuilder) GetMisePackageVersions(ctx *GenerateContext) (map[stri
 		return nil, err
 	}
 
-	appDir := ctx.GetAppSource()
+	// mise resolves symlinks in --cd, so we must resolve any symlinks to avoid filtering out configuration files
+	// https://github.com/railwayapp/railpack/issues/775
+	appDir, err := filepath.EvalSymlinks(ctx.GetAppSource())
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve app directory: %w", err)
+	}
+
 	output, err := miseInstance.GetCurrentList(appDir, b.absoluteIgnoredMiseConfigPaths(appDir))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get package versions: %w", err)
