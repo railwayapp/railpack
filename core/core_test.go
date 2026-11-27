@@ -285,6 +285,7 @@ func TestProviderDefaultExcludes(t *testing.T) {
 		{name: "bun", appPath: "../examples/node-bun", excludes: []string{"node_modules"}},
 		{name: "deno", appPath: "../examples/deno-2", excludes: []string{"node_modules"}},
 		{name: "python", appPath: "../examples/python-pip", excludes: []string{".venv", "venv"}},
+		{name: "flutter", appPath: "../examples/flutter-web", excludes: []string{".dart_tool", "build"}},
 		{name: "other provider", appPath: "../examples/go-mod", excludes: []string{}},
 	}
 
